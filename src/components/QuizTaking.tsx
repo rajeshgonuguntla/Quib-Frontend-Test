@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useParams, Link } from 'react-router';
+import { useNavigate, useParams, Link, useLocation } from 'react-router';
 import { Award, Clock, Flag, ChevronLeft, ChevronRight, CheckCircle, Sun, Moon } from 'lucide-react';
 import { useTheme, getC } from './ThemeContext';
 
@@ -9,56 +9,111 @@ interface Question {
   question: string;
   options?: string[];
   answer?: string;
+  explanation?: string;
 }
+
+interface QuizMeta {
+  title: string;
+  channelName: string;
+  videoLength: string;
+  youtubeUrl: string;
+}
+const readStoredQuestions = (): Question[] => {
+  try {
+    const raw = sessionStorage.getItem('generatedQuestions');
+    if (!raw) {
+      return [];
+    }
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as Question[]) : [];
+  } catch {
+    return [];
+  }
+};
+
+const readStoredVideoMeta = (fallbackUrl: string): QuizMeta => {
+  const defaultMeta: QuizMeta = {
+    title: 'Generated Quiz',
+    channelName: 'Unknown Channel',
+    videoLength: '--:--',
+    youtubeUrl: fallbackUrl,
+  };
+
+  try {
+    const raw = sessionStorage.getItem('generatedVideoMeta');
+    if (!raw) {
+      return defaultMeta;
+    }
+    const parsed = JSON.parse(raw) as Partial<QuizMeta>;
+    return {
+      title: parsed.title || defaultMeta.title,
+      channelName: parsed.channelName || defaultMeta.channelName,
+      videoLength: parsed.videoLength || defaultMeta.videoLength,
+      youtubeUrl: parsed.youtubeUrl || fallbackUrl,
+    };
+  } catch {
+    return defaultMeta;
+  }
+};
+
 
 export function QuizTaking() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const location = useLocation();
   const { isDark, toggleTheme } = useTheme();
   const C = getC(isDark);
+  const youtubeUrl: string = location.state?.youtubeUrl || sessionStorage.getItem('youtubeUrl') || '';
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string | string[]>>({});
   const [flagged, setFlagged] = useState<Set<number>>(new Set());
-  const [timeLeft, setTimeLeft] = useState(1800);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const [questions] = useState<Question[]>(() => location.state?.questions ?? readStoredQuestions());
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const questions: Question[] = [
-    {
-      id: 0, type: 'mcq',
-      question: 'What is the primary goal of supervised learning in machine learning?',
-      options: ['To find hidden patterns in unlabeled data', 'To learn from labeled training data to make predictions', 'To maximize rewards through trial and error', 'To reduce the dimensionality of data']
-    },
-    {
-      id: 1, type: 'mcq',
-      question: 'Which of the following is NOT a common activation function in neural networks?',
-      options: ['ReLU (Rectified Linear Unit)', 'Sigmoid', 'Tanh', 'Logarithmic']
-    },
-    {
-      id: 2, type: 'trueFalse',
-      question: 'Overfitting occurs when a model performs well on training data but poorly on unseen test data.',
-      options: ['True', 'False']
-    },
-    {
-      id: 3, type: 'mcq',
-      question: 'What does the term "gradient descent" refer to in machine learning?',
-      options: ['A method for data visualization', 'An optimization algorithm to minimize loss functions', 'A technique for feature selection', 'A type of neural network architecture']
-    },
-    {
-      id: 4, type: 'trueFalse',
-      question: 'A confusion matrix can only be used for binary classification problems.',
-      options: ['True', 'False']
+  const [videoMeta] = useState<QuizMeta>(() =>
+    location.state?.videoMeta ?? readStoredVideoMeta(youtubeUrl)
+  );
+
+  // 90 seconds per question, minimum 5 minutes
+  const initialTime = Math.max(questions.length * 90, 300);
+  const [timeLeft, setTimeLeft] = useState(initialTime);
+
+useEffect(() => {
+    setIsLoading(true);
+    setError(null);
+    if (!youtubeUrl) {
+      setError('YouTube URL is missing. Please go back and paste the video URL again.');
+      setIsLoading(false);
+      return;
     }
-  ];
 
-  useEffect(() => {
+    if (questions.length === 0) {
+      setError('Quiz data is missing. Please generate the quiz again from setup.');
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(false);
+  }, [youtubeUrl, questions]);
+
+
+useEffect(() => {
     const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 0) { clearInterval(timer); handleSubmit(); return 0; }
+      setTimeLeft((prev: number) => {
+        if (prev <= 0) {
+          clearInterval(timer);
+          handleSubmit();
+          return 0;
+        }
         return prev - 1;
       });
     }, 1000);
+
     return () => clearInterval(timer);
   }, []);
+
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -78,7 +133,11 @@ export function QuizTaking() {
     setFlagged(newFlagged);
   };
 
-  const handleSubmit = () => navigate(`/results/${id}`);
+  const handleSubmit = () => {
+    navigate(`/results/${id}`, {
+      state: { questions, answers, videoMeta },
+    });
+  };
   const answeredCount = Object.keys(answers).length;
   const unansweredCount = questions.length - answeredCount;
 
@@ -92,7 +151,7 @@ export function QuizTaking() {
               <span className="text-[1.05rem] font-[700] tracking-tight">Quib</span>
             </Link>
             <div className="hidden md:block text-sm" style={{ color: C.text2 }}>
-              Introduction to Machine Learning
+              {videoMeta.title}
             </div>
           </div>
           <div className="flex items-center gap-4">

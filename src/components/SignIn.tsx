@@ -5,6 +5,9 @@ import { Input } from './Input';
 import { Card } from './Card';
 import { Award, Mail, Lock, Chrome } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
+import GoogleLoginButton from './GoogleLoginButton';
+import { GoogleOAuthProvider } from '@react-oauth/google';
+
 
 export function SignIn() {
   const navigate = useNavigate();
@@ -97,14 +100,10 @@ export function SignIn() {
           </div>
 
           <div className="space-y-4 mb-8">
-            <Button 
-              variant="secondary" 
-              className="w-full justify-center"
-              onClick={handleGoogleAuth}
-            >
-              <Chrome className="w-5 h-5" />
-              Continue with Google
-            </Button>
+            <GoogleOAuthProvider clientId="663197581456-b6gc3pn3mlu4bj233afq9kps22834dmp.apps.googleusercontent.com">
+            <GoogleLoginButton />
+        </GoogleOAuthProvider>
+
           </div>
 
           <div className="space-y-4 mb-6">

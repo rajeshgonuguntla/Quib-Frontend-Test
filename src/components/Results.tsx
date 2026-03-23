@@ -1,24 +1,94 @@
 import { useState } from 'react';
-import { useNavigate, useParams, Link } from 'react-router';
+import { useNavigate, useParams, Link, useLocation } from 'react-router';
 import { ChevronDown, ChevronUp, CheckCircle, XCircle, Linkedin, Smile, Sun, Moon, FileText, Download, Share2, Link2, Check, Copy } from 'lucide-react';
 import { useTheme, getC } from './ThemeContext';
+
+interface Question {
+  id: number;
+  type: 'mcq' | 'trueFalse' | 'shortAnswer';
+  question: string;
+  options?: string[];
+  answer?: string;
+  explanation?: string;
+}
+
+interface QuizMeta {
+  title: string;
+  channelName: string;
+  videoLength: string;
+  youtubeUrl: string;
+}
+
+const readStored = <T,>(key: string, fallback: T): T => {
+  try {
+    const raw = sessionStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+};
 
 export function Results() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const location = useLocation();
   const { isDark, toggleTheme } = useTheme();
   const C = getC(isDark);
   const [expandedQuestions, setExpandedQuestions] = useState<Set<number>>(new Set());
   const [copied, setCopied] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
 
-  const score = 92;
-  const passed = score >= 70;
-  const totalQuestions = 5;
-  const correctAnswers = 4;
-  const quizTitle = 'Introduction to Machine Learning';
+  const questions: Question[] =
+    location.state?.questions ?? readStored<Question[]>('generatedQuestions', []);
+  const answers: Record<number, string | string[]> = location.state?.answers ?? {};
+  const videoMeta: QuizMeta =
+    location.state?.videoMeta ??
+    readStored<QuizMeta>('generatedVideoMeta', {
+      title: 'Generated Quiz',
+      channelName: 'Unknown Channel',
+      videoLength: '--:--',
+      youtubeUrl: '',
+    });
+
+  const quizTitle = videoMeta.title || 'Generated Quiz';
   const shareUrl = `${window.location.origin}/quiz/${id}`;
+
+  const questionReview = questions.map((q, index) => {
+    const userAnswer = (answers[index] as string | undefined) ?? '';
+    const correctAnswer = q.answer ?? '';
+    const isCorrect =
+      correctAnswer.length > 0 &&
+      userAnswer.trim().toLowerCase() === correctAnswer.trim().toLowerCase();
+    return {
+      id: index,
+      question: q.question,
+      type: q.type,
+      userAnswer: userAnswer || 'Not answered',
+      correctAnswer,
+      isCorrect,
+      explanation: q.explanation ?? '',
+    };
+  });
+
+  const totalQuestions = questions.length;
+  const correctAnswers = questionReview.filter((q) => q.isCorrect).length;
+  const score = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
+  const passed = score >= 70;
   const shareText = `I scored ${score}% on "${quizTitle}" on Quib! Can you beat my score?`;
+
+  const breakdown = (
+    ['mcq', 'trueFalse', 'shortAnswer'] as Question['type'][]
+  )
+    .map((type) => {
+      const label =
+        type === 'mcq' ? 'Multiple Choice' : type === 'trueFalse' ? 'True / False' : 'Short Answer';
+      const qs = questionReview.filter((_, i) => questions[i]?.type === type);
+      if (qs.length === 0) return null;
+      const correct = qs.filter((q) => q.isCorrect).length;
+      return { topic: label, score: Math.round((correct / qs.length) * 100), total: qs.length };
+    })
+    .filter(Boolean) as { topic: string; score: number; total: number }[];
+
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(shareUrl);
@@ -26,19 +96,6 @@ export function Results() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const breakdown = [
-    { topic: 'Supervised Learning', score: 100, total: 2 },
-    { topic: 'Neural Networks', score: 83, total: 2 },
-    { topic: 'Model Evaluation', score: 100, total: 1 }
-  ];
-
-  const questionReview = [
-    { id: 0, question: 'What is the primary goal of supervised learning in machine learning?', userAnswer: 'To learn from labeled training data to make predictions', correctAnswer: 'To learn from labeled training data to make predictions', isCorrect: true, explanation: 'Supervised learning involves training a model on labeled data where both input features and corresponding output labels are provided.' },
-    { id: 1, question: 'Which of the following is NOT a common activation function in neural networks?', userAnswer: 'Sigmoid', correctAnswer: 'Logarithmic', isCorrect: false, explanation: 'Logarithmic is not a standard activation function. Common activation functions include ReLU, Sigmoid, Tanh, and Softmax.' },
-    { id: 2, question: 'Overfitting occurs when a model performs well on training data but poorly on unseen test data.', userAnswer: 'True', correctAnswer: 'True', isCorrect: true, explanation: 'Overfitting happens when a model learns the training data too well, including noise, and fails to generalize to new data.' },
-    { id: 3, question: 'What does the term "gradient descent" refer to in machine learning?', userAnswer: 'An optimization algorithm to minimize loss functions', correctAnswer: 'An optimization algorithm to minimize loss functions', isCorrect: true, explanation: 'Gradient descent is an iterative optimization algorithm used to minimize the loss function by adjusting model parameters.' },
-    { id: 4, question: 'A confusion matrix can only be used for binary classification problems.', userAnswer: 'False', correctAnswer: 'False', isCorrect: true, explanation: 'Confusion matrices can be used for multi-class classification problems as well, not just binary classification.' }
-  ];
 
   const toggleQuestion = (id: number) => {
     const newExpanded = new Set(expandedQuestions);
