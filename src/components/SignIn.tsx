@@ -45,7 +45,7 @@ export function SignIn() {
           </div>
           <h2 className="text-4xl font-[400] mb-6" style={{ fontFamily: "var(--serif)", letterSpacing: '-0.01em', lineHeight: 1.1 }}>Transform your YouTube learning</h2>
           <p className="text-xl text-white/90 mb-8">
-            Join thousands of learners earning verified credentials from YouTube content
+            Join thousands of learners testing their knowledge from YouTube content
           </p>
           <div className="space-y-4">
             <div className="flex items-start gap-3">
@@ -89,6 +89,36 @@ export function SignIn() {
       <div className="flex-1 flex items-center justify-center p-8 bg-white">
         <div className="w-full max-w-md">
           <div className="mb-8">
+            {/* Quib Cube Logo */}
+            <div className="flex items-center gap-3 mb-6 cursor-pointer" onClick={() => navigate('/')}>
+              <svg viewBox="250 250 300 300" xmlns="http://www.w3.org/2000/svg" className="w-10 h-10">
+                <defs>
+                  <linearGradient id="siTopG" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stopColor="#d0d0d0" /><stop offset="100%" stopColor="#b0b0b0" /></linearGradient>
+                  <linearGradient id="siLeftG" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor="#909090" /><stop offset="100%" stopColor="#707070" /></linearGradient>
+                  <linearGradient id="siRightG" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor="#a0a0a0" /><stop offset="100%" stopColor="#808080" /></linearGradient>
+                  <linearGradient id="siBTop" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stopColor="#ff4d4d" /><stop offset="100%" stopColor="#ff2d2d" /></linearGradient>
+                  <linearGradient id="siBLeft" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor="#cc0000" /><stop offset="100%" stopColor="#990000" /></linearGradient>
+                  <linearGradient id="siBRight" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor="#ff1a1a" /><stop offset="100%" stopColor="#cc0000" /></linearGradient>
+                </defs>
+                <g opacity="0.5">
+                  <g transform="translate(310,270)"><polygon points="0,30 50,5 100,30 50,55" fill="url(#siTopG)" /><polygon points="0,30 0,80 50,105 50,55" fill="url(#siLeftG)" /><polygon points="100,30 100,80 50,105 50,55" fill="url(#siRightG)" /></g>
+                  <g transform="translate(390,270)"><polygon points="0,30 50,5 100,30 50,55" fill="url(#siTopG)" /><polygon points="0,30 0,80 50,105 50,55" fill="url(#siLeftG)" /><polygon points="100,30 100,80 50,105 50,55" fill="url(#siRightG)" /></g>
+                </g>
+                <g opacity="0.7">
+                  <g transform="translate(270,320)"><polygon points="0,30 50,5 100,30 50,55" fill="url(#siTopG)" /><polygon points="0,30 0,80 50,105 50,55" fill="url(#siLeftG)" /><polygon points="100,30 100,80 50,105 50,55" fill="url(#siRightG)" /></g>
+                  <g transform="translate(350,295)"><polygon points="0,30 50,5 100,30 50,55" fill="url(#siTopG)" /><polygon points="0,30 0,80 50,105 50,55" fill="url(#siLeftG)" /><polygon points="100,30 100,80 50,105 50,55" fill="url(#siRightG)" /></g>
+                  <g transform="translate(430,320)"><polygon points="0,30 50,5 100,30 50,55" fill="url(#siTopG)" /><polygon points="0,30 0,80 50,105 50,55" fill="url(#siLeftG)" /><polygon points="100,30 100,80 50,105 50,55" fill="url(#siRightG)" /></g>
+                </g>
+                <g>
+                  <g transform="translate(310,370)"><polygon points="0,30 50,5 100,30 50,55" fill="url(#siTopG)" /><polygon points="0,30 0,80 50,105 50,55" fill="url(#siLeftG)" /><polygon points="120,30 120,80 50,105 50,55" fill="url(#siRightG)" /></g>
+                  <g transform="translate(350,345)"><polygon points="0,30 50,5 100,30 50,55" fill="url(#siBTop)" /><polygon points="0,30 0,80 50,105 50,55" fill="url(#siBLeft)" /><polygon points="100,30 100,80 50,105 50,55" fill="url(#siBRight)" /><polygon points="0,30 50,5 100,30 50,55" fill="#fff" opacity="0.2" /></g>
+                  <g transform="translate(390,370)"><polygon points="0,30 50,5 100,30 50,55" fill="url(#siTopG)" /><polygon points="0,30 0,80 50,105 50,55" fill="url(#siLeftG)" /><polygon points="100,30 100,80 50,105 50,55" fill="url(#siRightG)" /></g>
+                  <g transform="translate(350,395)"><polygon points="0,30 50,5 100,30 50,55" fill="url(#siTopG)" /><polygon points="0,30 0,80 50,105 50,55" fill="url(#siLeftG)" /><polygon points="100,30 100,80 50,105 50,55" fill="url(#siRightG)" /></g>
+                </g>
+                <circle cx="400" cy="400" r="100" fill="#ff2d2d" opacity="0.06" />
+              </svg>
+              <span className="text-2xl font-[700] text-gray-900" style={{ fontFamily: "var(--display)" }}>Quib</span>
+            </div>
             <h1 className="text-3xl font-[400] text-gray-900 mb-2" style={{ fontFamily: "var(--serif)", letterSpacing: '-0.01em' }}>
               {isSignUp ? 'Create your account' : 'Welcome back'}
             </h1>
@@ -100,7 +130,7 @@ export function SignIn() {
           </div>
 
           <div className="space-y-4 mb-8">
-            <GoogleOAuthProvider clientId="663197581456-b6gc3pn3mlu4bj233afq9kps22834dmp.apps.googleusercontent.com">
+            <GoogleOAuthProvider clientId="944587700647-v4d2dqg9io3q3qbgjoif32g21bcifg9s.apps.googleusercontent.com">
             <GoogleLoginButton />
         </GoogleOAuthProvider>
 
