@@ -6,6 +6,7 @@ import { Dashboard } from './components/Dashboard';
 import { MyQuizzes } from './components/MyQuizzes';
 import { MyCertificates } from './components/MyCertificates';
 import { QuizSetup } from './components/QuizSetup';
+import { PlaylistSetup } from './components/PlaylistSetup';
 import { QuizTaking } from './components/QuizTaking';
 import { Results } from './components/Results';
 import { Certificate } from './components/Certificate';
@@ -25,6 +26,7 @@ export default function App() {
           <Route path="/certificates" element={<MyCertificates />} />
           <Route path="/quiz-setup" element={<QuizSetup />} />
           <Route path="/quiz-setup/:id" element={<QuizSetup />} />
+          <Route path="/playlist-setup/:id" element={<PlaylistSetup />} />
           <Route path="/quiz/:id" element={<QuizTaking />} />
           <Route path="/results/:id" element={<Results />} />
           <Route path="/certificate/:id" element={<Certificate />} />

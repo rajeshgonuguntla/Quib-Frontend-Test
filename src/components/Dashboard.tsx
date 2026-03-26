@@ -32,8 +32,14 @@ export function Dashboard() {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  const isPlaylistUrl = (url: string) => url.includes('list=');
+
   const handleGenerate = () => {
     if (!youtubeUrl) return;
+    if (isPlaylistUrl(youtubeUrl)) {
+      navigate('/playlist-setup/new', { state: { playlistUrl: youtubeUrl } });
+      return;
+    }
     setIsGenerating(true);
     setTimeout(() => {
       navigate('/quiz-setup/new', { state: { youtubeUrl, difficulty, questionCount, timedExam, questionTypes } });

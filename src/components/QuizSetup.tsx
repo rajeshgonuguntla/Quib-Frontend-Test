@@ -33,10 +33,14 @@ interface QuizMeta {
   youtubeUrl: string;
 }
 
-const getYoutubeThumbnail = (url: string): string => {
+const getYoutubeVideoId = (url: string): string => {
   const matchWatch = url.match(/[?&]v=([^&]+)/);
   const matchShort = url.match(/youtu\.be\/([^?&]+)/);
-  const videoId = matchWatch?.[1] ?? matchShort?.[1];
+  return matchWatch?.[1] ?? matchShort?.[1] ?? '';
+};
+
+const getYoutubeThumbnail = (url: string): string => {
+  const videoId = getYoutubeVideoId(url);
   return videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : '';
 };
 
@@ -348,21 +352,25 @@ export function QuizSetup() {
           style={{ background: C.bg1, border: `1px solid ${C.border}` }}
         >
           <div className="aspect-video relative" style={{ background: C.bg2 }}>
-            {quizData.thumbnail ? (
-              <img
-                src={quizData.thumbnail}
-                alt={quizData.videoTitle}
-                className="w-full h-full object-cover"
+            {getYoutubeVideoId(videoMeta.youtubeUrl) ? (
+              <iframe
+                src={`https://www.youtube.com/embed/${getYoutubeVideoId(videoMeta.youtubeUrl)}`}
+                title={quizData.videoTitle}
+                className="w-full h-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                style={{ border: 'none' }}
               />
-            ) : null}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div
-                className="w-16 h-16 rounded-full flex items-center justify-center"
-                style={{ background: 'rgba(225,6,0,0.15)', border: '1px solid rgba(225,6,0,0.3)', backdropFilter: 'blur(4px)' }}
-              >
-                <Play className="w-7 h-7 ml-1" style={{ color: C.red }} />
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div
+                  className="w-16 h-16 rounded-full flex items-center justify-center"
+                  style={{ background: 'rgba(225,6,0,0.15)', border: '1px solid rgba(225,6,0,0.3)', backdropFilter: 'blur(4px)' }}
+                >
+                  <Play className="w-7 h-7 ml-1" style={{ color: C.red }} />
+                </div>
               </div>
-            </div>
+            )}
           </div>
           <div className="p-6">
             <h2 className="text-xl font-[400] mb-3" style={{ color: C.text, fontFamily: "var(--display)" }}>{quizData.videoTitle}</h2>
