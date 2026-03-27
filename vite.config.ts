@@ -61,7 +61,7 @@
       proxy: {
         '/api': {
          // target: 'http://localhost:8451',
-          target: 'https://quib-app-backend-944587700647.europe-west1.run.app/',
+          target: 'https://quib-app-backend-944587700647.europe-west1.run.app',
           changeOrigin: true,
           secure: false,
         },
