@@ -13,6 +13,7 @@ import { Certificate } from './components/Certificate';
 import { Verification } from './components/Verification';
 import { Settings } from './components/Settings';
 import { Educators } from './components/Educators';
+import { ProtectedRoute, PublicOnlyRoute } from './auth';
 
 export default function App() {
   return (
@@ -20,19 +21,23 @@ export default function App() {
       <Router>
         <Routes>
           <Route path="/" element={<LandingPage />} />
-          <Route path="/signin" element={<SignIn />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/my-quizzes" element={<MyQuizzes />} />
-          <Route path="/certificates" element={<MyCertificates />} />
-          <Route path="/quiz-setup" element={<QuizSetup />} />
-          <Route path="/quiz-setup/:id" element={<QuizSetup />} />
-          <Route path="/playlist-setup/:id" element={<PlaylistSetup />} />
-          <Route path="/quiz/:id" element={<QuizTaking />} />
-          <Route path="/results/:id" element={<Results />} />
-          <Route path="/certificate/:id" element={<Certificate />} />
+          <Route element={<PublicOnlyRoute />}>
+            <Route path="/signin" element={<SignIn />} />
+          </Route>
           <Route path="/verify/:certId" element={<Verification />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/educators" element={<Educators />} />
+          <Route element={<ProtectedRoute />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/my-quizzes" element={<MyQuizzes />} />
+            <Route path="/certificates" element={<MyCertificates />} />
+            <Route path="/quiz-setup" element={<QuizSetup />} />
+            <Route path="/quiz-setup/:id" element={<QuizSetup />} />
+            <Route path="/playlist-setup/:id" element={<PlaylistSetup />} />
+            <Route path="/quiz/:id" element={<QuizTaking />} />
+            <Route path="/results/:id" element={<Results />} />
+            <Route path="/certificate/:id" element={<Certificate />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/educators" element={<Educators />} />
+          </Route>
         </Routes>
       </Router>
     </ThemeProvider>
