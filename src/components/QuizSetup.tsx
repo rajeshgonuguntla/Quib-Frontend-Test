@@ -208,7 +208,11 @@ export function QuizSetup() {
       }
 
       try {
-        const response = await axios.post('/api/quiz/generate', { youtubeUrl });
+        const apiBase = import.meta.env.PROD
+        ? 'https://quib-app-backend-944587700647.europe-west1.run.app'
+        : '';
+        console.log("API Base URL:", apiBase);
+        const response = await axios.post('${apiBase}/api/quiz/generate', { youtubeUrl });
         const parsedQuestions = extractQuestionsFromResponse(response.data);
         const parsedMeta = extractMetaFromResponse(response.data, youtubeUrl);
 
