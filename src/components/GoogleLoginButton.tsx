@@ -13,11 +13,7 @@ function GoogleLoginButton() {
     }
 
     try {
-      const apiBase = import.meta.env.PROD
-        ? 'https://quib-app-backend-944587700647.europe-west1.run.app'
-        : '';
-        console.log("API Base URL:", apiBase);
-      const res = await axios.post(`${apiBase}/api/auth/google`, {
+      const res = await axios.post('/api/auth/google', {
         token: credentialResponse.credential,
       });
 
