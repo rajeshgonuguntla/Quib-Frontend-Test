@@ -10,7 +10,17 @@ export function Dashboard() {
   const location = useLocation();
   const { isDark } = useTheme();
   const C = getC(isDark);
-  const [youtubeUrl, setYoutubeUrl] = useState(location.state?.youtubeUrl || '');
+  
+  // Handle redirect from sign-in with playlist or video URL
+  const incomingPlaylistUrl = location.state?.playlistUrl;
+  const incomingVideoUrl = location.state?.youtubeUrl;
+  
+  if (incomingPlaylistUrl) {
+    navigate('/playlist-setup/new', { state: { playlistUrl: incomingPlaylistUrl }, replace: true });
+    return null;
+  }
+  
+  const [youtubeUrl, setYoutubeUrl] = useState(incomingVideoUrl || '');
   const [difficulty, setDifficulty] = useState('medium');
   const [questionCount, setQuestionCount] = useState(10);
   const [timedExam, setTimedExam] = useState(false);
@@ -43,7 +53,7 @@ export function Dashboard() {
     setIsGenerating(true);
     setTimeout(() => {
       navigate('/quiz-setup/new', { state: { youtubeUrl, difficulty, questionCount, timedExam, questionTypes } });
-    }, 8000);
+    }, 800);
   };
 
   const recentQuizzes = [

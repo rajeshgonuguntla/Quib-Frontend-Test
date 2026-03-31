@@ -38,7 +38,16 @@ export function LandingPage() {
     if (el && !revealRefs.current.includes(el)) revealRefs.current.push(el);
   };
 
-  const handleGenerate = () => { if (youtubeUrl) navigate('/quiz-setup'); };
+  const isPlaylistUrl = (url: string) => url.includes('list=');
+
+  const handleGenerate = () => {
+    if (!youtubeUrl) return;
+    if (isPlaylistUrl(youtubeUrl)) {
+      navigate('/signin', { state: { playlistUrl: youtubeUrl } });
+    } else {
+      navigate('/signin', { state: { youtubeUrl } });
+    }
+  };
   const fileInputRef = useRef<HTMLInputElement>(null);
   const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
