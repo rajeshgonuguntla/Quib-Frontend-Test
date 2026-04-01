@@ -10,10 +10,10 @@
 
   axios.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
-  const isApiCall = typeof config.url === 'string' && config.url.startsWith('/api/');
-  const isGoogleAuthEndpoint = typeof config.url === 'string' && config.url.startsWith('/api/auth/google');
+  const url = typeof config.url === 'string' ? config.url : '';
+  const isGoogleAuthEndpoint = url.includes('/api/auth/google');
 
-  if (token && isApiCall && !isGoogleAuthEndpoint) {
+  if (token && !isGoogleAuthEndpoint) {
     if (config.headers?.set) {
       config.headers.set('Authorization', `Bearer ${token}`);
     } else {
