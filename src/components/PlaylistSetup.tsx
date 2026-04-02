@@ -108,10 +108,7 @@ export function PlaylistSetup() {
       }
 
       try {
-        const apiBase = import.meta.env.PROD
-        ? 'https://quib-app-backend-944587700647.europe-west1.run.app'
-        : '';
-        const response = await axios.post(`${apiBase}/api/quiz/generate-playlist`, { playlistUrl });
+        const response = await axios.post('/api/quiz/generate-playlist', { playlistUrl });
         if (!isMounted) return;
 
         if (!response.data.quizzes?.length) {
