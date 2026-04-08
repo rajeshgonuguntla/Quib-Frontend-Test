@@ -131,70 +131,7 @@ export function Dashboard() {
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="dash-fade-up grid grid-cols-2 md:grid-cols-4 gap-4 mb-8" style={{ animationDelay: '0.05s' }}>
-        {stats.map((stat) => (
-          <div
-            key={stat.label}
-            className="rounded-xl p-5 relative overflow-hidden transition-all duration-300 cursor-default"
-            style={{
-              background: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)',
-              border: `1px solid ${C.border}`,
-              backdropFilter: 'blur(12px)',
-              WebkitBackdropFilter: 'blur(12px)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = isDark ? '0 8px 24px rgba(0,0,0,0.2)' : '0 8px 24px rgba(0,0,0,0.08)';
-              e.currentTarget.style.borderColor = C.border2;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = 'none';
-              e.currentTarget.style.borderColor = C.border;
-            }}
-          >
-            {/* Accent line at top */}
-            <div
-              className="absolute top-0 left-0 right-0"
-              style={{
-                height: 1,
-                background: `linear-gradient(90deg, transparent, ${stat.color}40, transparent)`,
-              }}
-            />
-            <div className="mb-4">
-              <div
-                className="w-10 h-10 rounded-lg flex items-center justify-center"
-                style={{
-                  background: `${stat.color}15`,
-                  boxShadow: `0 0 12px ${stat.color}15`,
-                }}
-              >
-                <stat.icon className="w-5 h-5" style={{ color: stat.color }} />
-              </div>
-            </div>
-            <div
-              className="text-2xl font-[700] mb-0.5"
-              style={{ color: C.text, fontFamily: "var(--mono)", letterSpacing: '-0.02em' }}
-            >
-              {stat.value}
-            </div>
-            <div
-              style={{
-                color: C.text2,
-                fontFamily: "var(--mono)",
-                fontSize: '0.65rem',
-                letterSpacing: '0.06em',
-                textTransform: 'uppercase' as const,
-                fontWeight: 400,
-              }}
-            >
-              {stat.label}
-            </div>
-          </div>
-        ))}
-      </div>
-
+      
       {/* Generate Quiz Card */}
       <div
         className="dash-fade-up rounded-xl p-6 md:p-8 mb-8"

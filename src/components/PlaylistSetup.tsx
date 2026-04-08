@@ -117,7 +117,7 @@ export function PlaylistSetup() {
           clearInterval(interval);
           return;
         }
-
+console.log('Received playlist quiz response:', response.data);
         setResult(response.data);
         setProgress(100);
         setLoading(false);
