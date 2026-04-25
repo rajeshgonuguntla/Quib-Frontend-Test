@@ -1,5 +1,5 @@
 import { useRef, useEffect } from 'react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { Sun, Moon, ArrowRight } from 'lucide-react';
 import { useTheme, getC } from './ThemeContext';
 import { CubeMorphBackground } from './CubeMorphBackground';
@@ -7,6 +7,7 @@ import { CubeMorphBackground } from './CubeMorphBackground';
 export function Educators() {
   const { isDark, toggleTheme } = useTheme();
   const C = getC(isDark);
+  const navigate = useNavigate();
 
   // Scroll reveal
   const revealRefs = useRef<(HTMLElement | null)[]>([]);
@@ -29,25 +30,25 @@ export function Educators() {
   const navBg = isDark ? 'rgba(6,6,8,0.88)' : 'rgba(255,255,255,0.85)';
 
   const agents = [
-    { emoji: '🐉', name: 'Dragon — Deep Diver', desc: 'Multi-layered questions that build on each other. Tests conceptual depth and the ability to connect ideas across topics.', tags: ['Critical Thinking', 'Synthesis', 'Graduate Level'] },
-    { emoji: '🐅', name: 'Tiger — Speed Driller', desc: 'Rapid-fire recall questions with tight time limits. Builds fluency and automaticity in foundational knowledge.', tags: ['Recall', 'Speed', 'Fundamentals'] },
-    { emoji: '🐍', name: 'Serpent — Logic Weaver', desc: 'Trick questions, edge cases, and subtle distinctions. Trains students to read carefully and reason precisely.', tags: ['Reasoning', 'Edge Cases', 'Advanced'] },
-    { emoji: '🐎', name: 'Horse — Steady Pacer', desc: 'Spaced repetition across your full syllabus. Keeps students on track with consistent, adaptive review sessions.', tags: ['Retention', 'Spaced Repetition', 'All Levels'] },
-    { emoji: '🐒', name: 'Monkey — Creative Prober', desc: 'Unexpected angles and what-if scenarios. Pushes students beyond rote memorisation into creative application.', tags: ['Creativity', 'Application', 'Engagement'] },
-    { emoji: '🐕', name: 'Dog — Patient Tutor', desc: 'Gentle scaffolding with hints and encouragement. Meets struggling students where they are without judgement.', tags: ['Scaffolding', 'Support', 'Beginners'] },
+    { emoji: '📝', name: 'Auto-Generated Quizzes', desc: 'Quib watches your video and creates a full set of quiz questions — multiple choice, short answer, and more — matched to the actual content.', tags: ['Auto-Generated', 'Multiple Formats', 'Instant'] },
+    { emoji: '📄', name: 'Video Summaries', desc: 'Every course comes with a structured summary of the video so students can review key concepts without rewatching the whole thing.', tags: ['Key Concepts', 'Time-Saving', 'Revision'] },
+    { emoji: '🎯', name: 'Topic Segmentation', desc: 'Quib automatically breaks the video into logical sections, making it easy for students to navigate and focus on specific parts of the material.', tags: ['Structured', 'Navigation', 'Chapters'] },
+    { emoji: '📊', name: 'Progress Tracking', desc: 'See how each student is performing across every question — identify gaps before they become problems and focus your time where it matters most.', tags: ['Analytics', 'Gaps', 'Insights'] },
+    { emoji: '🏆', name: 'Certificates of Completion', desc: 'Students who pass the course quiz earn a verifiable certificate they can share with employers or include in their portfolio.', tags: ['Verifiable', 'Shareable', 'Credential'] },
+    { emoji: '🔗', name: 'One-Link Sharing', desc: 'Share a single link with your class. No sign-up friction, no setup on the student side — just click and start learning.', tags: ['Instant Access', 'No Friction', 'Simple'] },
   ];
 
   const stats = [
-    { num: '12', label: 'Agent Archetypes' },
-    { num: '3min', label: 'Setup Time' },
+    { num: '30s', label: 'Course Setup Time' },
+    { num: '100%', label: 'YouTube Compatible' },
     { num: '40+', label: 'Subject Areas' },
     { num: '98%', label: 'Educator Satisfaction' },
   ];
 
   const steps = [
-    { num: '01', title: 'Define Your Subject', desc: 'Upload your syllabus, lesson plans, or just describe your course. Quib maps your curriculum automatically and understands the scope of what students need to learn.' },
-    { num: '02', title: 'Choose Your Agent Style', desc: 'Pick from 12 agent archetypes — each modelled on a zodiac teaching style. The Dragon asks deep questions. The Tiger runs rapid-fire sprints. The Serpent tests reasoning.' },
-    { num: '03', title: 'Deploy to Students', desc: 'Share a single link. Your AI agent is live — quizzing students, adapting to their level, surfacing gaps, and reporting insights back to you in real time.' },
+    { num: '01', title: 'Paste a YouTube Link', desc: 'Drop in any YouTube video URL — a lecture, a documentary, a tutorial, anything. Quib processes the full transcript and understands the content in seconds.' },
+    { num: '02', title: 'Quib Builds Your Course', desc: 'Quib automatically generates quizzes, summaries, and topic breakdowns from the video. No editing, no manual work — your course is ready before the page finishes loading.' },
+    { num: '03', title: 'Share With Your Students', desc: 'Send a single link to your class. Students watch, learn, and take the quiz — earning a certificate when they pass. You see every result in real time.' },
   ];
 
   return (
@@ -62,7 +63,7 @@ export function Educators() {
           <span className="text-[1.05rem] font-[700] tracking-tight">Quib</span>
         </Link>
 
-        <ul className="hidden md:flex gap-7 list-none">
+        <ul className="hidden md:flex gap-7 list-none absolute left-1/2 -translate-x-1/2">
           {[
             { label: 'Platform', href: '/' },
             { label: 'For Educators', href: '/educators' },
@@ -145,8 +146,8 @@ export function Educators() {
               marginBottom: '1.5rem',
             }}
           >
-            Build your own<br />
-            <em style={{ fontStyle: 'italic', color: C.red }}>AI teaching agent</em>
+            Build a course from<br />
+            <em style={{ fontStyle: 'italic', color: C.red }}>a YouTube video</em>
           </h1>
 
           <p
@@ -159,11 +160,12 @@ export function Educators() {
               margin: '0 auto 2.5rem',
             }}
           >
-            Quib partners with educators to design custom AI agents that understand your subject, your students, and your style — so every learner gets the support they need.
+            Paste any YouTube link and Quib instantly builds a full course — quizzes, summaries, and certificates included. No setup, no editing, ready in seconds.
           </p>
 
           <div className="flex items-center justify-center gap-3">
             <button
+              onClick={() => navigate('/educator-course-builder')}
               className="px-7 py-3 rounded-lg text-[0.875rem] font-[600] transition-all"
               style={{
                 background: C.red,
@@ -174,7 +176,7 @@ export function Educators() {
               onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.9')}
               onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
             >
-              Build Your Agent
+              Build Your Course
             </button>
             <button
               className="px-6 py-3 rounded-lg text-[0.875rem] font-[500] transition-all"
@@ -240,10 +242,10 @@ export function Educators() {
               marginBottom: 12,
             }}
           >
-            Three steps to your<br />personal teaching agent
+            Three steps to a<br />ready-to-share course
           </h2>
           <p style={{ fontSize: '0.9rem', color: C.text2, lineHeight: 1.7, maxWidth: 480, marginBottom: 48 }}>
-            No coding, no complexity. Just tell Quib what you teach and how you teach it.
+            No coding, no complexity. Just a YouTube link and you're done.
           </p>
 
           <div
@@ -295,7 +297,7 @@ export function Educators() {
               marginBottom: 12,
             }}
           >
-            Agent Archetypes
+            What You Get
           </p>
           <h2
             style={{
@@ -307,10 +309,10 @@ export function Educators() {
               marginBottom: 12,
             }}
           >
-            Teaching styles,<br />encoded in AI
+            Everything included,<br />built from your video
           </h2>
           <p style={{ fontSize: '0.9rem', color: C.text2, lineHeight: 1.7, maxWidth: 480, marginBottom: 48 }}>
-            Each archetype brings a different pedagogical approach. Mix and match them for your course.
+            One YouTube link generates all of this — automatically, in seconds.
           </p>
 
           <div className="grid md:grid-cols-2 gap-5">
@@ -382,7 +384,7 @@ export function Educators() {
               marginBottom: 24,
             }}
           >
-            "I built a Serpent agent for my organic chemistry class in under five minutes. My students are finally engaging with the material outside of lectures."
+            "I pasted a YouTube lecture into Quib and had a full quiz-based course ready in under 30 seconds. My students are finally engaging with the material outside of class."
           </blockquote>
           <div style={{ fontSize: '0.82rem', color: C.text2 }}>
             <strong style={{ color: isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)', fontWeight: 600 }}>Dr. Sarah Chen</strong>
@@ -404,13 +406,14 @@ export function Educators() {
               marginBottom: 20,
             }}
           >
-            Ready to build your<br />
-            <em style={{ fontStyle: 'italic', color: C.red }}>teaching agent</em>?
+            Turn any YouTube video<br />
+            <em style={{ fontStyle: 'italic', color: C.red }}>into a course today</em>
           </h2>
           <p style={{ fontSize: '0.95rem', color: C.text2, lineHeight: 1.7, maxWidth: 440, margin: '0 auto 36px' }}>
-            Join hundreds of educators already using Quib to create AI agents that understand their subject and amplify their impact.
+            Join hundreds of educators already using Quib to turn YouTube videos into courses their students actually engage with.
           </p>
           <button
+            onClick={() => navigate('/educator-course-builder')}
             className="inline-flex items-center gap-2 px-8 py-3.5 rounded-lg text-[0.9rem] font-[600] transition-all"
             style={{
               background: C.red,
@@ -433,7 +436,7 @@ export function Educators() {
             <div>
               <span className="text-[1.05rem] font-[700] tracking-tight" style={{ color: C.text }}>Quib</span>
               <p className="text-sm mt-3" style={{ color: C.text2, lineHeight: 1.6 }}>
-                AI-powered teaching agents built for educators who care about every student.
+                Turn any YouTube video into a full course — quizzes, summaries, and certificates in seconds.
               </p>
             </div>
             <div>

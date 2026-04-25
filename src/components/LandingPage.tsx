@@ -105,6 +105,9 @@ export function LandingPage() {
         </ul>
 
         <div className="flex items-center gap-3">
+          <Link to="/educators" className="text-[0.875rem] font-[400] no-underline transition-opacity hover:opacity-100 hidden md:inline" style={{ color: C.text2, letterSpacing: '0.01em', opacity: 0.8 }}>
+            For Educators
+          </Link>
           <button
             onClick={toggleTheme}
             className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"

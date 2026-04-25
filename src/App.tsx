@@ -13,6 +13,8 @@ import { Certificate } from './components/Certificate';
 import { Verification } from './components/Verification';
 import { Settings } from './components/Settings';
 import { Educators } from './components/Educators';
+import { EducatorCourseBuilder } from './components/EducatorCourseBuilder';
+import { CourseDetails } from './components/CourseDetails';
 import { ProtectedRoute, PublicOnlyRoute } from './auth';
 
 export default function App() {
@@ -25,6 +27,9 @@ export default function App() {
             <Route path="/signin" element={<SignIn />} />
           </Route>
           <Route path="/verify/:certId" element={<Verification />} />
+          <Route path="/educators" element={<Educators />} />
+          <Route path="/educator-course-builder" element={<EducatorCourseBuilder />} />
+          <Route path="/course-details" element={<CourseDetails />} />
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/my-quizzes" element={<MyQuizzes />} />
