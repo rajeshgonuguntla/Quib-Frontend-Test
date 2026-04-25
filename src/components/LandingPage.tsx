@@ -1,15 +1,18 @@
 import { useState, useEffect, useRef, ChangeEvent } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link, useNavigate, useLocation } from 'react-router';
 import { StepCard } from './StepCard';
 import { Sun, Moon, Upload } from 'lucide-react';
 import { useTheme, getC } from './ThemeContext';
+import { CubeLoader } from './CubeLoader';
 
 export function LandingPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { isDark, toggleTheme } = useTheme();
   const C = getC(isDark);
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [glowNode, setGlowNode] = useState<string>('01');
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const steps = ['01', '02', '03'];
@@ -21,6 +24,17 @@ export function LandingPage() {
     }, 3000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    // Check if coming from signup
+    if (location.state?.fromSignup) {
+      setIsLoading(true);
+      const timer = setTimeout(() => {
+        setIsLoading(false);
+      }, 3000); // Show loader for 3 seconds
+      return () => clearTimeout(timer);
+    }
+  }, [location.state]);
 
   const revealRefs = useRef<(HTMLElement | null)[]>([]);
   useEffect(() => {
@@ -65,6 +79,10 @@ export function LandingPage() {
   ];
 
   const navBg = isDark ? 'rgba(6,6,8,0.88)' : 'rgba(255,255,255,0.85)';
+
+  if (isLoading) {
+    return <CubeLoader />;
+  }
 
   return (
     <div style={{ background: C.bg, color: C.text, fontFamily: "var(--display)", overflowX: 'hidden' }}>

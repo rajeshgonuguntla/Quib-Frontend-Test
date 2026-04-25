@@ -19,13 +19,13 @@ export function SignIn() {
   const handleAuth = () => {
     // Mock authentication
     const returnTo = location.state?.returnTo || '/dashboard';
-    navigate(returnTo, { state: location.state });
+    navigate(returnTo, { state: { ...location.state, fromSignup: true } });
   };
 
   const handleGoogleAuth = () => {
     // Mock Google auth
     const returnTo = location.state?.returnTo || '/dashboard';
-    navigate(returnTo, { state: location.state });
+    navigate(returnTo, { state: { ...location.state, fromSignup: true } });
   };
 
   return (
