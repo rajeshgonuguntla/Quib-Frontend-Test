@@ -22,6 +22,13 @@ export function EducatorCourseBuilder() {
 
   const navBg = isDark ? 'rgba(6,6,8,0.88)' : 'rgba(255,255,255,0.85)';
 
+  // Spinner animation styles
+  const spinnerStyles = `
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  `;
+
   const handleBuild = async () => {
     const trimmed = url.trim();
     if (!trimmed || loading) return;
@@ -40,7 +47,48 @@ export function EducatorCourseBuilder() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: C.bg, color: C.text, fontFamily: 'var(--display)', display: 'flex', flexDirection: 'column' }}>
+    <>
+      <style>{spinnerStyles}</style>
+      <div style={{ minHeight: '100vh', background: C.bg, color: C.text, fontFamily: 'var(--display)', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+      {/* Loading Overlay */}
+      {loading && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: isDark ? 'rgba(6,6,8,0.7)' : 'rgba(255,255,255,0.7)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+          }}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem' }}>
+            <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ background: C.redDim, border: `1px solid ${C.red}` }}>
+              <div
+                style={{
+                  width: '1.5rem',
+                  height: '1.5rem',
+                  border: `2px solid ${isDark ? 'rgba(225,6,0,0.3)' : 'rgba(225,6,0,0.2)'}`,
+                  borderTop: `2px solid ${C.red}`,
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite',
+                }}
+              />
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <p style={{ fontSize: '1rem', fontWeight: 600, color: C.text, margin: '0 0 0.5rem 0' }}>Building your course…</p>
+              <p style={{ fontSize: '0.875rem', color: C.text2, margin: 0 }}>This may take a moment</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* NAV */}
       <nav
         className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-between px-5 md:px-10"
@@ -91,8 +139,8 @@ export function EducatorCourseBuilder() {
                 onClick={() => setUrl(s.url)}
                 className="flex items-center justify-between w-full px-3 py-2 rounded-xl text-left transition-all duration-150"
                 style={{ background: C.bg1, border: `1px solid ${C.border}`, color: C.text, cursor: 'pointer' }}
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = isDark ? 'rgba(225,6,0,0.25)' : 'rgba(225,6,0,0.2)'; e.currentTarget.style.background = C.bg2; }}
-                onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = C.bg1; }}
+                onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => { e.currentTarget.style.borderColor = isDark ? 'rgba(225,6,0,0.25)' : 'rgba(225,6,0,0.2)'; e.currentTarget.style.background = C.bg2; }}
+                onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = C.bg1; }}
               >
                 <span className="text-[0.875rem] font-[500]">{s.label}</span>
                 <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: C.redDim, border: `1px solid ${isDark ? 'rgba(225,6,0,0.15)' : 'rgba(225,6,0,0.1)'}` }}>
@@ -156,6 +204,7 @@ export function EducatorCourseBuilder() {
           </p>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
