@@ -96,11 +96,11 @@ export function MyCertificates() {
               {searchQuery ? 'Try a different search term.' : 'Complete quizzes to earn certificates.'}
             </p>
             <button
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/home')}
               className="px-5 py-2 rounded-lg text-sm font-[600] text-white"
               style={{ background: C.red }}
             >
-              Take a Quiz
+              Go to Home
             </button>
           </div>
         ) : (

@@ -68,8 +68,8 @@ export function Certificate() {
             <Award className="w-7 h-7 text-[#E10600]" />
             <span className="text-xl font-bold text-gray-900">Quib</span>
           </div>
-          <Button variant="ghost" onClick={() => navigate('/dashboard')}>
-            Back to Dashboard
+          <Button variant="ghost" onClick={() => navigate('/home')}>
+            Back to Home
           </Button>
         </div>
       </header>

@@ -109,7 +109,7 @@ export function Results() {
       {/* Header */}
       <header className="px-8 py-4 sticky top-0 z-50" style={{ background: C.bg1, borderBottom: `1px solid ${C.border}` }}>
         <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <Link to="/dashboard" className="flex items-center gap-1.5 no-underline" style={{ color: C.text }}>
+          <Link to="/home" className="flex items-center gap-1.5 no-underline" style={{ color: C.text }}>
             <span className="text-[1.05rem] font-[700] tracking-tight">Quib</span>
           </Link>
           <div className="flex items-center gap-3">
@@ -123,13 +123,13 @@ export function Results() {
               {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
             <button
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/home')}
               className="px-4 py-2 rounded-lg text-sm font-[500] cursor-pointer transition-colors"
               style={{ background: 'transparent', border: `1px solid ${C.border2}`, color: C.text2 }}
               onMouseEnter={(e) => { e.currentTarget.style.background = C.bg2; e.currentTarget.style.color = C.text; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = C.text2; }}
             >
-              Back to Dashboard
+              Back to Home
             </button>
           </div>
         </div>
@@ -473,13 +473,13 @@ export function Results() {
         {/* Bottom Actions */}
         <div className="flex items-center justify-center gap-4">
           <button
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate('/home')}
             className="px-6 py-3 rounded-lg text-sm font-[500] cursor-pointer transition-colors"
             style={{ background: 'transparent', border: `1px solid ${C.border2}`, color: C.text2 }}
             onMouseEnter={(e) => { e.currentTarget.style.background = C.bg2; e.currentTarget.style.color = C.text; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = C.text2; }}
           >
-            Back to Dashboard
+            Back to Home
           </button>
         </div>
       </main>

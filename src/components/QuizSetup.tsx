@@ -266,7 +266,7 @@ export function QuizSetup() {
 
   if (loading) {
     return (
-      <DarkLayout activeNav="dashboard" title="Preparing Your Quiz" subtitle="This usually takes 20–30 seconds">
+      <DarkLayout activeNav="my-quizzes" title="Preparing Your Quiz" subtitle="This usually takes 20–30 seconds">
         <div className="max-w-lg space-y-6">
           {/* Progress bar */}
           <div
@@ -318,7 +318,7 @@ export function QuizSetup() {
 
   if (setupError) {
     return (
-      <DarkLayout activeNav="dashboard" title="Something went wrong" subtitle="We couldn't generate your quiz">
+      <DarkLayout activeNav="my-quizzes" title="Something went wrong" subtitle="We couldn't generate your quiz">
         <div className="max-w-lg">
           <div
             className="rounded-xl p-6 flex flex-col gap-5"
@@ -329,7 +329,7 @@ export function QuizSetup() {
               <p className="text-sm leading-relaxed" style={{ color: C.text2 }}>{setupError}</p>
             </div>
             <button
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/home')}
               className="self-start px-5 py-2.5 rounded-lg text-sm font-[500] cursor-pointer transition-colors"
               style={{ background: C.bg2, border: `1px solid ${C.border2}`, color: C.text2 }}
               onMouseEnter={(e) => { e.currentTarget.style.color = C.text; }}
@@ -344,7 +344,7 @@ export function QuizSetup() {
   }
 
   return (
-    <DarkLayout activeNav="dashboard" title="Quiz Ready!" subtitle="Review the details below and start when you're ready">
+    <DarkLayout activeNav="my-quizzes" title="Quiz Ready!" subtitle="Review the details below and start when you're ready">
       <div className="space-y-6 max-w-4xl">
         {/* Video Preview Card */}
         <div
@@ -476,7 +476,7 @@ export function QuizSetup() {
         {/* Actions */}
         <div className="flex items-center gap-4 pt-2">
           <button
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate('/home')}
             className="px-6 py-3 rounded-lg text-sm font-[500] cursor-pointer transition-colors"
             style={{
               background: 'transparent',

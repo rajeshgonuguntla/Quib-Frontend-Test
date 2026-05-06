@@ -19,7 +19,7 @@ function GoogleLoginButton() {
 
       localStorage.setItem('token', res.data.token);
 
-      const returnTo = location.state?.returnTo || '/dashboard';
+      const returnTo = location.state?.returnTo || '/home';
       navigate(returnTo, { state: location.state });
     } catch (error) {
       console.error('Login Failed', error);

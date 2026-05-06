@@ -10,7 +10,7 @@ function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
 }
 
-function clearToken(): void {
+export function clearToken(): void {
   localStorage.removeItem(TOKEN_KEY);
 }
 
@@ -35,6 +35,14 @@ function parseJwtPayload(token: string): JwtPayload | null {
     return null;
   }
 }
+
+// DEV BYPASS - REMOVE BEFORE PUSH TO GITHUB
+export function setDevToken(): void {
+  const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+  const payload = btoa(JSON.stringify({ exp: 4102444800, sub: 'dev-user' })).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+  localStorage.setItem(TOKEN_KEY, `${header}.${payload}.dev-signature`);
+}
+// END DEV BYPASS
 
 export function isTokenValid(): boolean {
   const token = getToken();
@@ -74,7 +82,8 @@ export function ProtectedRoute() {
 
 export function PublicOnlyRoute() {
   if (isTokenValid()) {
-    return <Navigate to="/dashboard" replace />;
+    const hasInterests = !!localStorage.getItem('quib_interests');
+    return <Navigate to={hasInterests ? '/home' : '/onboarding'} replace />;
   }
 
   return <Outlet />;

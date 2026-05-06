@@ -192,7 +192,7 @@ console.log('Received playlist quiz response:', response.data);
 
   if (loading) {
     return (
-      <DarkLayout activeNav="dashboard" title="Generating Playlist Quizzes" subtitle="This may take a few minutes depending on playlist size">
+      <DarkLayout activeNav="my-quizzes" title="Generating Playlist Quizzes" subtitle="This may take a few minutes depending on playlist size">
         <div className="max-w-lg space-y-6">
           <div
             className="rounded-xl p-6"
@@ -242,7 +242,7 @@ console.log('Received playlist quiz response:', response.data);
 
   if (setupError) {
     return (
-      <DarkLayout activeNav="dashboard" title="Something went wrong" subtitle="We couldn't generate your playlist quizzes">
+      <DarkLayout activeNav="my-quizzes" title="Something went wrong" subtitle="We couldn't generate your playlist quizzes">
         <div className="max-w-lg">
           <div
             className="rounded-xl p-6 flex flex-col gap-5"
@@ -253,7 +253,7 @@ console.log('Received playlist quiz response:', response.data);
               <p className="text-sm leading-relaxed" style={{ color: C.text2 }}>{setupError}</p>
             </div>
             <button
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/home')}
               className="self-start px-5 py-2.5 rounded-lg text-sm font-[500] cursor-pointer transition-colors"
               style={{ background: C.bg2, border: `1px solid ${C.border2}`, color: C.text2 }}
               onMouseEnter={(e) => { e.currentTarget.style.color = C.text; }}
@@ -276,7 +276,7 @@ console.log('Received playlist quiz response:', response.data);
 
   if (allCompleted) {
     return (
-      <DarkLayout activeNav="dashboard" title="Playlist Complete!" subtitle={`You completed all ${totalQuizzes} quizzes`}>
+      <DarkLayout activeNav="my-quizzes" title="Playlist Complete!" subtitle={`You completed all ${totalQuizzes} quizzes`}>
         <div className="max-w-2xl space-y-6">
           <div className="rounded-xl p-6" style={{ background: C.bg1, border: `1px solid ${C.border}` }}>
             <div className="flex items-center gap-4 mb-5">
@@ -298,7 +298,7 @@ console.log('Received playlist quiz response:', response.data);
             </div>
           </div>
           <button
-            onClick={() => { sessionStorage.removeItem('playlistResult'); sessionStorage.removeItem('playlistCurrentIndex'); sessionStorage.removeItem('playlistCompleted'); navigate('/dashboard'); }}
+            onClick={() => { sessionStorage.removeItem('playlistResult'); sessionStorage.removeItem('playlistCurrentIndex'); sessionStorage.removeItem('playlistCompleted'); navigate('/home'); }}
             className="px-6 py-3 rounded-lg text-sm font-[600] cursor-pointer transition-all"
             style={{ background: C.red, border: 'none', color: '#fff', boxShadow: '0 0 20px rgba(225,6,0,0.3)' }}
           >
@@ -311,7 +311,7 @@ console.log('Received playlist quiz response:', response.data);
 
   return (
     <DarkLayout
-      activeNav="dashboard"
+      activeNav="my-quizzes"
       title={`Video ${currentQuizIndex + 1} of ${totalQuizzes}`}
       subtitle="Watch the video, then start the quiz"
     >
@@ -356,7 +356,7 @@ console.log('Received playlist quiz response:', response.data);
           {/* Actions */}
           <div className="flex items-center gap-4">
             <button
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/home')}
               className="px-6 py-3 rounded-lg text-sm font-[500] cursor-pointer transition-colors"
               style={{ background: 'transparent', border: `1px solid ${C.border2}`, color: C.text2 }}
               onMouseEnter={(e) => { e.currentTarget.style.background = C.bg2; e.currentTarget.style.color = C.text; }}

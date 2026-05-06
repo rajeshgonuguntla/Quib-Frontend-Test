@@ -2,7 +2,8 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router';
 import { ThemeProvider } from './components/ThemeContext';
 import { LandingPage } from './components/LandingPage';
 import { SignIn } from './components/SignIn';
-import { Dashboard } from './components/Dashboard';
+import { HomeFeed } from './components/HomeFeed';
+import { Onboarding } from './components/Onboarding';
 import { MyQuizzes } from './components/MyQuizzes';
 import { MyCertificates } from './components/MyCertificates';
 import { QuizSetup } from './components/QuizSetup';
@@ -14,6 +15,7 @@ import { Verification } from './components/Verification';
 import { Settings } from './components/Settings';
 import { Educators } from './components/Educators';
 import { EducatorCourseBuilder } from './components/EducatorCourseBuilder';
+import { EducatorProfile } from './components/EducatorProfile';
 import { CourseDetails } from './components/CourseDetails';
 import { ProtectedRoute, PublicOnlyRoute } from './auth';
 
@@ -31,7 +33,9 @@ export default function App() {
           <Route path="/educator-course-builder" element={<EducatorCourseBuilder />} />
           <Route path="/course-details" element={<CourseDetails />} />
           <Route element={<ProtectedRoute />}>
-            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/onboarding" element={<Onboarding />} />
+            <Route path="/home" element={<HomeFeed />} />
+            <Route path="/educator/:id" element={<EducatorProfile />} />
             <Route path="/my-quizzes" element={<MyQuizzes />} />
             <Route path="/certificates" element={<MyCertificates />} />
             <Route path="/quiz-setup" element={<QuizSetup />} />

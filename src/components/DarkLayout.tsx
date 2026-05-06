@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef, ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { LayoutDashboard, FileText, Settings as SettingsIcon, Search, LogOut, ChevronDown, Sun, Moon } from 'lucide-react';
+import { clearToken } from '../auth';
+import { FileText, Settings as SettingsIcon, Search, LogOut, ChevronDown, Sun, Moon } from 'lucide-react';
 import { useTheme, getC } from './ThemeContext';
 
 interface DarkLayoutProps {
   children: ReactNode;
-  activeNav: 'dashboard' | 'my-quizzes' | 'settings';
+  activeNav: 'my-quizzes' | 'settings' | 'certificates';
   title?: string;
   subtitle?: string;
   sectionLabel?: string;
@@ -17,7 +18,7 @@ interface DarkLayoutProps {
 
 export function DarkLayout({
   children, activeNav, title, subtitle, sectionLabel, showSearch = true,
-  searchPlaceholder = 'Search quizzes...',
+  searchPlaceholder = 'Search courses...',
   searchValue, onSearchChange,
 }: DarkLayoutProps) {
   const navigate = useNavigate();
@@ -38,8 +39,7 @@ export function DarkLayout({
   }, [showProfileMenu]);
 
   const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
-    { id: 'my-quizzes', label: 'My Quizzes', icon: FileText, path: '/my-quizzes' },
+    { id: 'my-quizzes', label: 'My Courses', icon: FileText, path: '/my-quizzes' },
     { id: 'settings', label: 'Settings', icon: SettingsIcon, path: '/settings' },
   ];
 
@@ -200,7 +200,7 @@ export function DarkLayout({
                       Settings
                     </button>
                     <button
-                      onClick={() => { navigate('/'); setShowProfileMenu(false); }}
+                      onClick={() => { clearToken(); navigate('/'); setShowProfileMenu(false); }}
                       className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-2 cursor-pointer transition-colors"
                       style={{ color: C.red, background: 'transparent', borderTop: `1px solid ${C.border}` }}
                       onMouseEnter={(e) => (e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.04)')}

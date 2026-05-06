@@ -147,7 +147,7 @@ useEffect(() => {
       <header className="px-8 py-4 sticky top-0 z-50" style={{ background: C.bg1, borderBottom: `1px solid ${C.border}` }}>
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-6">
-            <Link to="/dashboard" className="flex items-center gap-1.5 no-underline" style={{ color: C.text }}>
+            <Link to="/home" className="flex items-center gap-1.5 no-underline" style={{ color: C.text }}>
               <span className="text-[1.05rem] font-[700] tracking-tight">Quib</span>
             </Link>
             <div className="hidden md:block text-sm" style={{ color: C.text2 }}>

@@ -1,343 +1,418 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { DarkLayout } from './DarkLayout';
-import { FileText, Play, Clock, TrendingUp, Calendar, CheckCircle2, AlertCircle, Zap } from 'lucide-react';
+import { BookOpen, Clock, TrendingUp, CheckCircle2, PlayCircle, BarChart2, Zap } from 'lucide-react';
+import { YTThumbnail } from './YTThumbnail';
 import { useTheme, getC } from './ThemeContext';
+
+interface Course {
+  id: string;
+  title: string;
+  channel: string;
+  channelInitials: string;
+  channelColor: string;
+  category: string;
+  categoryColor: string;
+  videoId: string;
+  status: 'completed' | 'in-progress' | 'not-started';
+  progress: number;
+  score: number | null;
+  quizzes: number;
+  duration: string;
+  lastActivity: string;
+}
+
+const ALL_COURSES: Course[] = [
+  {
+    id: '1',
+    title: 'Introduction to Machine Learning',
+    channel: '3Blue1Brown',
+    channelInitials: '3B',
+    channelColor: '#4f8ef7',
+    category: 'AI & ML',
+    categoryColor: '#6366f1',
+    videoId: 'aircAruvnKk',
+    status: 'completed',
+    progress: 100,
+    score: 92,
+    quizzes: 3,
+    duration: '19 min',
+    lastActivity: '2 days ago',
+  },
+  {
+    id: '2',
+    title: 'React Hooks Complete Guide',
+    channel: 'Traversy Media',
+    channelInitials: 'TM',
+    channelColor: '#0ea5e9',
+    category: 'Web Dev',
+    categoryColor: '#06b6d4',
+    videoId: 'LDB4uaJ87e0',
+    status: 'in-progress',
+    progress: 60,
+    score: null,
+    quizzes: 2,
+    duration: '1h 48 min',
+    lastActivity: '1 week ago',
+  },
+  {
+    id: '3',
+    title: 'Advanced TypeScript Patterns',
+    channel: 'Fireship',
+    channelInitials: 'FS',
+    channelColor: '#ff6b35',
+    category: 'Programming',
+    categoryColor: '#22c55e',
+    videoId: 'ysEN5RaKOlA',
+    status: 'not-started',
+    progress: 0,
+    score: null,
+    quizzes: 1,
+    duration: '12 min',
+    lastActivity: '2 weeks ago',
+  },
+  {
+    id: '4',
+    title: 'Python for Data Science',
+    channel: 'freeCodeCamp',
+    channelInitials: 'FC',
+    channelColor: '#0a0a23',
+    category: 'Programming',
+    categoryColor: '#22c55e',
+    videoId: 'rfscVS0vtbw',
+    status: 'completed',
+    progress: 100,
+    score: 88,
+    quizzes: 4,
+    duration: '4h 26 min',
+    lastActivity: '3 weeks ago',
+  },
+  {
+    id: '5',
+    title: "Math's Fundamental Flaw",
+    channel: 'Veritasium',
+    channelInitials: 'VR',
+    channelColor: '#8b5cf6',
+    category: 'Mathematics',
+    categoryColor: '#3b82f6',
+    videoId: 'HeQX2HjkcNo',
+    status: 'in-progress',
+    progress: 35,
+    score: null,
+    quizzes: 2,
+    duration: '34 min',
+    lastActivity: '1 month ago',
+  },
+  {
+    id: '6',
+    title: 'Linear Algebra – Lecture 1',
+    channel: 'MIT OpenCourseWare',
+    channelInitials: 'MIT',
+    channelColor: '#a31f34',
+    category: 'Mathematics',
+    categoryColor: '#3b82f6',
+    videoId: 'ZK3O402wf1c',
+    status: 'completed',
+    progress: 100,
+    score: 95,
+    quizzes: 3,
+    duration: '39 min',
+    lastActivity: '1 month ago',
+  },
+  {
+    id: '7',
+    title: 'Build GPT from Scratch',
+    channel: 'Andrej Karpathy',
+    channelInitials: 'AK',
+    channelColor: '#7c3aed',
+    category: 'AI & ML',
+    categoryColor: '#6366f1',
+    videoId: 'kCc8FmEb1nY',
+    status: 'not-started',
+    progress: 0,
+    score: null,
+    quizzes: 1,
+    duration: '1h 56 min',
+    lastActivity: '2 months ago',
+  },
+  {
+    id: '8',
+    title: 'How Does the Immune System Work?',
+    channel: 'TED-Ed',
+    channelInitials: 'TE',
+    channelColor: '#e62b1e',
+    category: 'Biology',
+    categoryColor: '#10b981',
+    videoId: 'PSZwnBNDNf0',
+    status: 'completed',
+    progress: 100,
+    score: 90,
+    quizzes: 2,
+    duration: '5 min',
+    lastActivity: '2 months ago',
+  },
+];
+
+const STATUS_CONFIG = {
+  completed:    { label: 'Completed',   bg: 'rgba(34,197,94,0.1)',  color: '#22c55e', border: 'rgba(34,197,94,0.25)' },
+  'in-progress':{ label: 'In Progress', bg: 'rgba(249,115,22,0.1)', color: '#f97316', border: 'rgba(249,115,22,0.25)' },
+  'not-started':{ label: 'Not Started', bg: 'rgba(100,116,139,0.1)',color: '#94a3b8', border: 'rgba(100,116,139,0.2)' },
+};
 
 export function MyQuizzes() {
   const navigate = useNavigate();
   const { isDark } = useTheme();
   const C = getC(isDark);
-  const [activeTab, setActiveTab] = useState<'all' | 'active' | 'completed'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'in-progress' | 'completed'>('all');
 
-  const allQuizzes = [
-    { id: '1', title: 'Introduction to Machine Learning', status: 'completed', score: 92, date: '2 days ago', duration: '45 min', questions: 20, progress: undefined as number | undefined },
-    { id: '2', title: 'React Hooks Complete Guide', status: 'in-progress', score: null, date: '1 week ago', duration: '30 min', questions: 15, progress: 60 },
-    { id: '3', title: 'Advanced TypeScript Patterns', status: 'generated', score: null, date: '2 weeks ago', duration: '25 min', questions: 10, progress: undefined },
-    { id: '4', title: 'Python for Data Science', status: 'completed', score: 88, date: '3 weeks ago', duration: '50 min', questions: 25, progress: undefined },
-    { id: '5', title: 'Node.js Backend Development', status: 'in-progress', score: null, date: '1 month ago', duration: '40 min', questions: 20, progress: 35 },
-    { id: '6', title: 'CSS Grid and Flexbox Mastery', status: 'completed', score: 95, date: '1 month ago', duration: '35 min', questions: 18, progress: undefined },
-    { id: '7', title: 'JavaScript ES6+ Features', status: 'completed', score: 90, date: '2 months ago', duration: '30 min', questions: 15, progress: undefined },
-    { id: '8', title: 'Docker Container Fundamentals', status: 'generated', score: null, date: '2 months ago', duration: '45 min', questions: 22, progress: undefined },
-  ];
-
-  const filteredQuizzes = allQuizzes.filter((quiz) => {
-    if (activeTab === 'active') return quiz.status === 'in-progress' || quiz.status === 'generated';
-    if (activeTab === 'completed') return quiz.status === 'completed';
+  const filtered = ALL_COURSES.filter(c => {
+    if (activeTab === 'in-progress') return c.status === 'in-progress' || c.status === 'not-started';
+    if (activeTab === 'completed') return c.status === 'completed';
     return true;
   });
 
   const stats = {
-    total: allQuizzes.length,
-    active: allQuizzes.filter((q) => q.status === 'in-progress' || q.status === 'generated').length,
-    completed: allQuizzes.filter((q) => q.status === 'completed').length,
+    total: ALL_COURSES.length,
+    inProgress: ALL_COURSES.filter(c => c.status === 'in-progress').length,
+    completed: ALL_COURSES.filter(c => c.status === 'completed').length,
+    avgScore: Math.round(
+      ALL_COURSES.filter(c => c.score).reduce((a, c) => a + (c.score ?? 0), 0) /
+      ALL_COURSES.filter(c => c.score).length
+    ),
   };
 
   const statCards = [
-    { label: 'Total Quizzes', value: stats.total, icon: FileText, color: C.red },
-    { label: 'Active Quizzes', value: stats.active, icon: AlertCircle, color: '#f97316' },
-    { label: 'Completed', value: stats.completed, icon: CheckCircle2, color: '#22c55e' },
+    { label: 'Total Courses', value: stats.total,      icon: BookOpen,      color: C.red },
+    { label: 'In Progress',   value: stats.inProgress, icon: PlayCircle,    color: '#f97316' },
+    { label: 'Completed',     value: stats.completed,  icon: CheckCircle2,  color: '#22c55e' },
+    { label: 'Avg Score',     value: `${stats.avgScore}%`, icon: BarChart2, color: '#3b82f6' },
   ];
 
   const tabs = [
-    { key: 'all' as const, label: 'All Quizzes', count: allQuizzes.length },
-    { key: 'active' as const, label: 'Active', count: stats.active },
-    { key: 'completed' as const, label: 'Completed', count: stats.completed },
+    { key: 'all' as const,         label: 'All Courses', count: ALL_COURSES.length },
+    { key: 'in-progress' as const, label: 'In Progress', count: stats.inProgress },
+    { key: 'completed' as const,   label: 'Completed',   count: stats.completed },
   ];
 
   return (
-    <DarkLayout activeNav="my-quizzes" showSearch={false} sectionLabel="LIBRARY" title="My Quizzes" subtitle="Manage and track all your quizzes in one place">
-      {/* Stats Cards */}
-      <div className="dash-fade-up grid grid-cols-3 gap-4 mb-8">
-        {statCards.map((s) => (
+    <DarkLayout activeNav="my-quizzes" showSearch={false} sectionLabel="LEARNING" title="My Courses" subtitle="Track your progress across all enrolled courses">
+
+      {/* Stats */}
+      <div className="dash-fade-up grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        {statCards.map(s => (
           <div
             key={s.label}
-            className="rounded-xl p-5 relative overflow-hidden transition-all duration-300 cursor-default"
-            style={{
-              background: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)',
-              border: `1px solid ${C.border}`,
-              backdropFilter: 'blur(12px)',
-              WebkitBackdropFilter: 'blur(12px)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = isDark ? '0 8px 24px rgba(0,0,0,0.2)' : '0 8px 24px rgba(0,0,0,0.08)';
-              e.currentTarget.style.borderColor = C.border2;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = 'none';
-              e.currentTarget.style.borderColor = C.border;
-            }}
+            className="rounded-xl p-5 relative overflow-hidden transition-all duration-300"
+            style={{ background: C.bg1, border: `1px solid ${C.border}` }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.borderColor = C.border2; e.currentTarget.style.boxShadow = isDark ? '0 8px 24px rgba(0,0,0,0.2)' : '0 8px 24px rgba(0,0,0,0.08)'; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = C.border; e.currentTarget.style.boxShadow = 'none'; }}
           >
-            {/* Accent line at top */}
-            <div
-              className="absolute top-0 left-0 right-0"
-              style={{
-                height: 1,
-                background: `linear-gradient(90deg, transparent, ${s.color}40, transparent)`,
-              }}
-            />
-            <div className="mb-4">
-              <div
-                className="w-10 h-10 rounded-lg flex items-center justify-center"
-                style={{ background: `${s.color}15`, boxShadow: `0 0 12px ${s.color}15` }}
-              >
-                <s.icon className="w-5 h-5" style={{ color: s.color }} />
-              </div>
+            <div className="absolute top-0 left-0 right-0" style={{ height: 1, background: `linear-gradient(90deg, transparent, ${s.color}50, transparent)` }} />
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center mb-3" style={{ background: `${s.color}15` }}>
+              <s.icon className="w-4.5 h-4.5" style={{ color: s.color, width: 18, height: 18 }} />
             </div>
-            <div
-              className="text-2xl font-[700] mb-0.5"
-              style={{ color: C.text, fontFamily: "var(--mono)", letterSpacing: '-0.02em' }}
-            >
-              {s.value}
-            </div>
-            <div
-              style={{
-                color: C.text2,
-                fontFamily: "var(--mono)",
-                fontSize: '0.65rem',
-                letterSpacing: '0.06em',
-                textTransform: 'uppercase' as const,
-                fontWeight: 400,
-              }}
-            >
-              {s.label}
-            </div>
+            <div className="text-2xl font-[700] mb-0.5" style={{ color: C.text, fontFamily: 'var(--mono)', letterSpacing: '-0.02em' }}>{s.value}</div>
+            <div className="text-[0.65rem] font-[500] uppercase tracking-widest" style={{ color: C.text3, fontFamily: 'var(--mono)' }}>{s.label}</div>
           </div>
         ))}
       </div>
 
-      {/* Tabs + New Quiz */}
+      {/* Tabs + CTA */}
       <div className="dash-fade-up flex flex-wrap items-end justify-between gap-4 mb-6" style={{ animationDelay: '0.05s' }}>
         <div className="flex" style={{ borderBottom: `1px solid ${C.border}` }}>
-          {tabs.map((tab) => (
+          {tabs.map(tab => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
               className="px-1 pb-3 mr-6 text-sm font-[500] transition-all duration-200 relative"
-              style={{
-                background: 'transparent',
-                color: activeTab === tab.key ? C.text : C.text3,
-                border: 'none',
-              }}
+              style={{ background: 'transparent', color: activeTab === tab.key ? C.text : C.text3, border: 'none' }}
             >
               {tab.label}
-              <span
-                className="ml-1.5"
-                style={{
-                  fontFamily: "var(--mono)",
-                  fontSize: '0.7rem',
-                  color: activeTab === tab.key ? C.red : C.text3,
-                }}
-              >
+              <span className="ml-1.5" style={{ fontFamily: 'var(--mono)', fontSize: '0.7rem', color: activeTab === tab.key ? C.red : C.text3 }}>
                 {tab.count}
               </span>
-              {/* Active indicator */}
               {activeTab === tab.key && (
-                <span
-                  className="absolute bottom-0 left-0 right-0"
-                  style={{ height: 2, background: C.red, borderRadius: 1 }}
-                />
+                <span className="absolute bottom-0 left-0 right-0" style={{ height: 2, background: C.red, borderRadius: 1 }} />
               )}
             </button>
           ))}
         </div>
         <button
-          onClick={() => navigate('/dashboard')}
-          className="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-[600] text-white transition-all duration-200 hover:opacity-90"
+          onClick={() => navigate('/home')}
+          className="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-[600] text-white transition-all duration-200"
           style={{ background: C.red, boxShadow: '0 4px 14px rgba(225,6,0,0.25)' }}
-          onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
+          onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
+          onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; }}
         >
           <Zap className="w-4 h-4" />
-          New Quiz
+          Browse Courses
         </button>
       </div>
 
-      {/* Quiz List */}
-      <div className="dash-fade-up space-y-3" style={{ animationDelay: '0.1s' }}>
-        {filteredQuizzes.length === 0 ? (
+      {/* Course Grid */}
+      <div className="dash-fade-up grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5" style={{ animationDelay: '0.1s' }}>
+        {filtered.length === 0 ? (
           <div
-            className="rounded-xl p-12 text-center relative overflow-hidden"
+            className="col-span-3 rounded-xl p-12 text-center"
             style={{ background: C.bg1, border: `1px solid ${C.border}` }}
           >
-            {/* Radial glow behind icon */}
-            <div
-              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
-              style={{
-                width: 200,
-                height: 200,
-                background: 'radial-gradient(circle, rgba(225,6,0,0.04) 0%, transparent 70%)',
-              }}
-            />
-            <div
-              className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 relative z-10"
-              style={{ background: C.bg2 }}
-            >
-              <FileText className="w-7 h-7" style={{ color: C.text3 }} />
+            <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: C.bg2 }}>
+              <BookOpen className="w-7 h-7" style={{ color: C.text3 }} />
             </div>
-            <h3 className="text-base font-[600] mb-2 relative z-10" style={{ color: C.text }}>No quizzes found</h3>
-            <p className="text-sm mb-6 relative z-10" style={{ color: C.text2 }}>
-              {activeTab === 'active' && "You don't have any active quizzes."}
-              {activeTab === 'completed' && "You haven't completed any quizzes yet."}
-              {activeTab === 'all' && 'Start by creating your first quiz.'}
-            </p>
+            <h3 className="text-base font-[600] mb-2" style={{ color: C.text }}>No courses found</h3>
+            <p className="text-sm mb-6" style={{ color: C.text2 }}>Head to the home feed to discover and enrol in courses.</p>
             <button
-              onClick={() => navigate('/dashboard')}
-              className="px-5 py-2 rounded-lg text-sm font-[600] text-white relative z-10"
-              style={{ background: C.red, boxShadow: '0 4px 14px rgba(225,6,0,0.25)' }}
+              onClick={() => navigate('/home')}
+              className="px-5 py-2 rounded-lg text-sm font-[600] text-white"
+              style={{ background: C.red }}
             >
-              Create Quiz
+              Browse Courses
             </button>
           </div>
         ) : (
-          filteredQuizzes.map((quiz) => (
-            <div
-              key={quiz.id}
-              className="rounded-xl p-5 flex items-center gap-5 transition-all duration-250"
-              style={{ background: C.bg1, border: `1px solid ${C.border}` }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = C.border2;
-                e.currentTarget.style.transform = 'translateY(-1px)';
-                e.currentTarget.style.boxShadow = isDark ? '0 4px 16px rgba(0,0,0,0.15)' : '0 4px 16px rgba(0,0,0,0.06)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = C.border;
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = 'none';
-              }}
-            >
+          filtered.map(course => {
+            const st = STATUS_CONFIG[course.status];
+            return (
               <div
-                className="w-24 h-16 rounded-lg flex items-center justify-center flex-shrink-0"
-                style={{ background: `linear-gradient(135deg, ${C.bg2}, ${C.bg3})` }}
+                key={course.id}
+                className="rounded-xl overflow-hidden flex flex-col transition-all duration-250 group"
+                style={{ background: C.bg1, border: `1px solid ${C.border}` }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = C.border2; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = isDark ? '0 8px 28px rgba(0,0,0,0.2)' : '0 8px 28px rgba(0,0,0,0.08)'; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
               >
-                <Play className="w-6 h-6" style={{ color: C.text3 }} />
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-3 mb-1.5">
-                  <h3 className="text-sm font-[600] truncate" style={{ color: C.text }}>{quiz.title}</h3>
-                  <span
-                    className="text-[0.68rem] font-[600] px-2.5 py-0.5 rounded-full flex-shrink-0"
-                    style={{
-                      fontFamily: "var(--mono)",
-                      letterSpacing: '0.06em',
-                      background:
-                        quiz.status === 'completed' ? 'rgba(34,197,94,0.1)' :
-                        quiz.status === 'in-progress' ? 'rgba(249,115,22,0.1)' : C.redDim,
-                      color:
-                        quiz.status === 'completed' ? '#22c55e' :
-                        quiz.status === 'in-progress' ? '#f97316' : C.red,
-                      border: `1px solid ${
-                        quiz.status === 'completed' ? 'rgba(34,197,94,0.2)' :
-                        quiz.status === 'in-progress' ? 'rgba(249,115,22,0.2)' : 'rgba(225,6,0,0.2)'
-                      }`,
-                    }}
+                {/* Thumbnail */}
+                <div className="relative overflow-hidden" style={{ aspectRatio: '16/9', background: C.bg2 }}>
+                  <YTThumbnail videoId={course.videoId} alt={course.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  {/* Category badge */}
+                  <div
+                    className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full text-[0.65rem] font-[700]"
+                    style={{ background: `${course.categoryColor}cc`, color: '#fff', backdropFilter: 'blur(4px)' }}
                   >
-                    {quiz.status === 'completed' ? 'COMPLETED' :
-                     quiz.status === 'in-progress' ? 'IN PROGRESS' : 'NOT STARTED'}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-4 text-xs mb-3" style={{ color: C.text3 }}>
-                  <span className="flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5" />
-                    {quiz.date}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5" />
-                    {quiz.duration}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <FileText className="w-3.5 h-3.5" />
-                    {quiz.questions} questions
-                  </span>
-                  {quiz.score && (
-                    <span className="flex items-center gap-1">
-                      <TrendingUp className="w-3.5 h-3.5" />
-                      Score: {quiz.score}%
-                    </span>
-                  )}
-                </div>
-
-                {/* Progress bar */}
-                {quiz.status === 'in-progress' && quiz.progress && (
-                  <div className="mb-3">
-                    <div className="flex items-center justify-between text-[0.65rem] mb-1" style={{ color: C.text3 }}>
-                      <span>Progress</span>
-                      <span>{quiz.progress}%</span>
-                    </div>
-                    <div className="h-1 rounded-full overflow-hidden" style={{ background: C.bg }}>
+                    {course.category}
+                  </div>
+                  {/* Status badge */}
+                  <div
+                    className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full text-[0.65rem] font-[700]"
+                    style={{ background: st.bg, color: st.color, border: `1px solid ${st.border}`, backdropFilter: 'blur(8px)' }}
+                  >
+                    {st.label}
+                  </div>
+                  {/* Progress bar overlay at bottom of thumbnail */}
+                  {course.progress > 0 && (
+                    <div className="absolute bottom-0 left-0 right-0 h-1" style={{ background: 'rgba(0,0,0,0.3)' }}>
                       <div
-                        className="h-full rounded-full transition-all"
-                        style={{
-                          width: `${quiz.progress}%`,
-                          background: `linear-gradient(90deg, ${C.red}, #ff6666)`,
-                        }}
+                        className="h-full transition-all"
+                        style={{ width: `${course.progress}%`, background: course.status === 'completed' ? '#22c55e' : C.red }}
                       />
                     </div>
-                  </div>
-                )}
-
-                <div className="flex items-center gap-2">
-                  {quiz.status === 'completed' ? (
-                    <>
-                      <button
-                        onClick={() => navigate(`/results/${quiz.id}`)}
-                        className="px-3 py-1.5 rounded-md text-xs font-[600] text-white transition-all duration-200 hover:opacity-90"
-                        style={{ background: C.red, boxShadow: '0 2px 8px rgba(225,6,0,0.2)' }}
-                        onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
-                      >
-                        View Results
-                      </button>
-                    </>
-                  ) : quiz.status === 'in-progress' ? (
-                    <>
-                      <button
-                        onClick={() => navigate(`/quiz/${quiz.id}`)}
-                        className="px-3 py-1.5 rounded-md text-xs font-[600] text-white transition-all duration-200 hover:opacity-90"
-                        style={{ background: C.red, boxShadow: '0 2px 8px rgba(225,6,0,0.2)' }}
-                        onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
-                      >
-                        Resume Quiz
-                      </button>
-                      <button
-                        className="px-3 py-1.5 rounded-md text-xs font-[500] transition-all duration-200 hover:opacity-80"
-                        style={{ color: C.text2, border: `1px solid ${C.border}` }}
-                        onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.border2; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.border; }}
-                      >
-                        Restart
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        onClick={() => navigate(`/quiz/${quiz.id}`)}
-                        className="px-3 py-1.5 rounded-md text-xs font-[600] text-white transition-all duration-200 hover:opacity-90"
-                        style={{ background: C.red, boxShadow: '0 2px 8px rgba(225,6,0,0.2)' }}
-                        onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
-                      >
-                        Start Quiz
-                      </button>
-                      <button
-                        className="px-3 py-1.5 rounded-md text-xs font-[500] transition-all duration-200 hover:opacity-80"
-                        style={{ color: C.text2, border: `1px solid ${C.border}` }}
-                        onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.border2; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.border; }}
-                      >
-                        Delete
-                      </button>
-                    </>
                   )}
                 </div>
+
+                {/* Card body */}
+                <div className="flex flex-col flex-1 p-4">
+                  {/* Channel */}
+                  <div className="flex items-center gap-2 mb-2">
+                    <div
+                      className="w-5 h-5 rounded-full flex items-center justify-center text-[0.5rem] font-[700] text-white flex-shrink-0"
+                      style={{ background: course.channelColor }}
+                    >
+                      {course.channelInitials[0]}
+                    </div>
+                    <span className="text-[0.72rem] font-[500] truncate" style={{ color: C.text3 }}>{course.channel}</span>
+                  </div>
+
+                  {/* Title */}
+                  <h3 className="text-[0.9rem] font-[600] leading-snug mb-3 flex-1" style={{ color: C.text }}>{course.title}</h3>
+
+                  {/* Meta row */}
+                  <div className="flex items-center gap-3 mb-3 text-[0.72rem]" style={{ color: C.text3 }}>
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      {course.duration}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <BookOpen className="w-3 h-3" />
+                      {course.quizzes} {course.quizzes === 1 ? 'lesson' : 'lessons'}
+                    </span>
+                    {course.score && (
+                      <span className="flex items-center gap-1 ml-auto font-[600]" style={{ color: '#22c55e' }}>
+                        <TrendingUp className="w-3 h-3" />
+                        {course.score}%
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Progress bar (for in-progress) */}
+                  {course.status === 'in-progress' && (
+                    <div className="mb-3">
+                      <div className="flex justify-between text-[0.65rem] mb-1" style={{ color: C.text3 }}>
+                        <span>Progress</span>
+                        <span>{course.progress}%</span>
+                      </div>
+                      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: C.bg3 }}>
+                        <div
+                          className="h-full rounded-full"
+                          style={{ width: `${course.progress}%`, background: `linear-gradient(90deg, ${C.red}, #ff6666)` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-2 pt-3" style={{ borderTop: `1px solid ${C.border}` }}>
+                    {course.status === 'completed' ? (
+                      <>
+                        <button
+                          onClick={() => navigate(`/results/${course.id}`)}
+                          className="flex-1 py-1.5 rounded-lg text-xs font-[600] text-white transition-all duration-200"
+                          style={{ background: C.red, boxShadow: '0 2px 8px rgba(225,6,0,0.2)' }}
+                          onMouseEnter={e => (e.currentTarget.style.opacity = '0.85')}
+                          onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+                        >
+                          View Results
+                        </button>
+                        <button
+                          onClick={() => navigate(`/quiz-setup/new`, { state: { youtubeUrl: `https://www.youtube.com/watch?v=${course.videoId}` } })}
+                          className="px-3 py-1.5 rounded-lg text-xs font-[500] transition-all duration-200"
+                          style={{ color: C.text2, border: `1px solid ${C.border}` }}
+                          onMouseEnter={e => { e.currentTarget.style.borderColor = C.border2; e.currentTarget.style.color = C.text; }}
+                          onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.text2; }}
+                        >
+                          Retake
+                        </button>
+                      </>
+                    ) : course.status === 'in-progress' ? (
+                      <>
+                        <button
+                          onClick={() => navigate(`/quiz/${course.id}`)}
+                          className="flex-1 py-1.5 rounded-lg text-xs font-[600] text-white transition-all duration-200"
+                          style={{ background: C.red, boxShadow: '0 2px 8px rgba(225,6,0,0.2)' }}
+                          onMouseEnter={e => (e.currentTarget.style.opacity = '0.85')}
+                          onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+                        >
+                          Continue
+                        </button>
+                        <span className="text-[0.68rem]" style={{ color: C.text3 }}>
+                          <Clock className="w-3 h-3 inline mr-1" />
+                          {course.lastActivity}
+                        </span>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => navigate(`/quiz/${course.id}`)}
+                        className="flex-1 py-1.5 rounded-lg text-xs font-[600] text-white transition-all duration-200"
+                        style={{ background: C.red, boxShadow: '0 2px 8px rgba(225,6,0,0.2)' }}
+                        onMouseEnter={e => (e.currentTarget.style.opacity = '0.85')}
+                        onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+                      >
+                        Start Course
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </DarkLayout>
