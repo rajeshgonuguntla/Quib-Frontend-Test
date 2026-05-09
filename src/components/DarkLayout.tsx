@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { LayoutDashboard, FileText, Settings as SettingsIcon, Search, LogOut, ChevronDown, Sun, Moon } from 'lucide-react';
 import { useTheme, getC } from './ThemeContext';
+import { clearToken } from '../auth';
 
 interface DarkLayoutProps {
   children: ReactNode;
@@ -200,7 +201,7 @@ export function DarkLayout({
                       Settings
                     </button>
                     <button
-                      onClick={() => { navigate('/'); setShowProfileMenu(false); }}
+                      onClick={() => { clearToken(); navigate('/signin'); setShowProfileMenu(false); }}
                       className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-2 cursor-pointer transition-colors"
                       style={{ color: C.red, background: 'transparent', borderTop: `1px solid ${C.border}` }}
                       onMouseEnter={(e) => (e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.04)')}

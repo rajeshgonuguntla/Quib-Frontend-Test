@@ -10,7 +10,7 @@ function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
 }
 
-function clearToken(): void {
+export function clearToken(): void {
   localStorage.removeItem(TOKEN_KEY);
 }
 
