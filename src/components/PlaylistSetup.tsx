@@ -111,7 +111,8 @@ export function PlaylistSetup() {
         const response = await axios.post('/api/quiz/generate-playlist', { playlistUrl });
         if (!isMounted) return;
 
-        if (!response.data.quizzes?.length) {
+        const quizzes = response.data.quizzes ?? [];
+        if (!quizzes.length) {
           setSetupError('No quizzes could be generated from this playlist.');
           setLoading(false);
           clearInterval(interval);
@@ -158,7 +159,8 @@ console.log('Received playlist quiz response:', response.data);
       sessionStorage.setItem('playlistCompleted', JSON.stringify([...completedQuizzes]));
       sessionStorage.setItem('generatedQuestions', JSON.stringify(questions));
       sessionStorage.setItem('generatedVideoMeta', JSON.stringify(meta));
-      navigate(`/quiz/playlist-${index}`);
+      const quizRouteId = quiz.quizId ?? `playlist-${index}`;
+      navigate(`/quiz/${quizRouteId}`, { state: { questions, videoMeta, youtubeUrl: videoUrl } });
     } catch {
       setSetupError(`Failed to load quiz for "${quiz.videoTitle}". Please try again.`);
     }

@@ -1,33 +1,51 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
+import axios from 'axios';
 import { DarkLayout } from './DarkLayout';
 import { Award, Download, Share2, Eye, Calendar, TrendingUp, ExternalLink, CheckCircle } from 'lucide-react';
 import { useTheme, getC } from './ThemeContext';
+
+type CertItem = {
+  id: string;
+  title: string;
+  issueDate: string;
+  score: number;
+  certificateId: string;
+  skills: string[];
+};
 
 export function MyCertificates() {
   const navigate = useNavigate();
   const { isDark } = useTheme();
   const C = getC(isDark);
   const [searchQuery, setSearchQuery] = useState('');
+  const [certificates, setCertificates] = useState<CertItem[]>([]);
 
-  const certificates = [
-    {
-      id: '1', title: 'Introduction to Machine Learning', issueDate: 'February 17, 2026', score: 92,
-      certificateId: 'QUIB-2026-ML-8472', skills: ['Machine Learning', 'Python', 'Data Science'],
-    },
-    {
-      id: '2', title: 'Python for Data Science', issueDate: 'January 22, 2026', score: 88,
-      certificateId: 'QUIB-2026-PY-6253', skills: ['Python', 'Data Analysis', 'NumPy', 'Pandas'],
-    },
-    {
-      id: '3', title: 'CSS Grid and Flexbox Mastery', issueDate: 'January 15, 2026', score: 95,
-      certificateId: 'QUIB-2026-CS-9381', skills: ['CSS', 'Web Design', 'Responsive Design'],
-    },
-    {
-      id: '4', title: 'JavaScript ES6+ Features', issueDate: 'December 28, 2025', score: 90,
-      certificateId: 'QUIB-2025-JS-7462', skills: ['JavaScript', 'ES6', 'Modern JavaScript'],
-    },
-  ];
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await axios.get('/api/certificates');
+        setCertificates((res.data ?? []).map((c: {
+          id: string;
+          title: string;
+          issuedAt?: string;
+          scorePercent: number;
+          certificateCode: string;
+          skills?: string[];
+        }) => ({
+          id: c.id,
+          title: c.title,
+          issueDate: c.issuedAt ? new Date(c.issuedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '',
+          score: c.scorePercent,
+          certificateId: c.certificateCode,
+          skills: c.skills ?? [],
+        })));
+      } catch {
+        setCertificates([]);
+      }
+    };
+    load();
+  }, []);
 
   const filteredCertificates = certificates.filter(
     (cert) =>

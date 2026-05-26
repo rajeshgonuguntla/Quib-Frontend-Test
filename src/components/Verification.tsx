@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router';
+import axios from 'axios';
 import { Button } from './Button';
 import { Card } from './Card';
 import { Input } from './Input';
@@ -9,21 +10,47 @@ export function Verification() {
   const { certId } = useParams();
   const navigate = useNavigate();
   const [searchId, setSearchId] = useState(certId || '');
-  const [verified, setVerified] = useState(!!certId);
+  const [verified, setVerified] = useState(false);
+  const [certificateData, setCertificateData] = useState({
+    id: '',
+    name: '',
+    course: '',
+    score: 0,
+    issueDate: '',
+    status: 'invalid' as 'valid' | 'invalid',
+  });
 
-  const certificateData = {
-    id: 'QUIB-2026-ML-8472',
-    name: 'Rajesh Gonuguntla',
-    course: 'Introduction to Machine Learning',
-    score: 92,
-    issueDate: 'February 17, 2026',
-    status: 'valid'
-  };
-
-  const handleSearch = () => {
-    if (searchId) {
+  const verify = async (code: string) => {
+    if (!code.trim()) return;
+    try {
+      const res = await axios.get(`/api/certificates/verify/${encodeURIComponent(code.trim())}`);
+      const data = res.data;
+      if (data.status === 'valid') {
+        setCertificateData({
+          id: data.id,
+          name: data.name,
+          course: data.course,
+          score: data.score,
+          issueDate: data.issueDate ? new Date(data.issueDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '',
+          status: 'valid',
+        });
+        setVerified(true);
+      } else {
+        setCertificateData((prev) => ({ ...prev, status: 'invalid' }));
+        setVerified(true);
+      }
+    } catch {
+      setCertificateData((prev) => ({ ...prev, status: 'invalid' }));
       setVerified(true);
     }
+  };
+
+  useEffect(() => {
+    if (certId) verify(certId);
+  }, [certId]);
+
+  const handleSearch = () => {
+    verify(searchId);
   };
 
   return (

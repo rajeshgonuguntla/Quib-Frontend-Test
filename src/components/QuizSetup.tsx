@@ -4,6 +4,7 @@ import axios from 'axios';
 import { DarkLayout } from './DarkLayout';
 import { Youtube, Clock, FileText, Play, CheckCircle, Award, ArrowRight, Share2, Link2, Copy, Check, AlertCircle } from 'lucide-react';
 import { useTheme, getC } from './ThemeContext';
+import { fetchQuizDetail, isUuid, mapApiQuestionsToFrontend } from '../api/quizApi';
 
 interface Question {
   id: number;
@@ -195,26 +196,52 @@ export function QuizSetup() {
       setProgress((prev) => (prev >= 90 ? 90 : prev + 10));
     }, 300);
 
-    const generateQuiz = async () => {
+    const loadOrGenerateQuiz = async () => {
       setSetupError(null);
-      if (!youtubeUrl) {
-        if (!isMounted) {
-          return;
-        }
-        setSetupError('YouTube URL is missing. Please go back and paste the video URL again.');
-        setLoading(false);
-        clearInterval(interval);
-        return;
-      }
 
       try {
-        const response = await axios.post('/api/quiz/generate', { youtubeUrl });
-        const parsedQuestions = extractQuestionsFromResponse(response.data);
-        const parsedMeta = extractMetaFromResponse(response.data, youtubeUrl);
-
-        if (!isMounted) {
+        if (id && isUuid(id)) {
+          const data = await fetchQuizDetail(id, true);
+          if (!isMounted) return;
+          const parsedQuestions = mapApiQuestionsToFrontend(data.questions ?? []);
+          const parsedMeta: QuizMeta = {
+            title: data.title ?? 'Generated Quiz',
+            channelName: data.channelName ?? 'Unknown Channel',
+            videoLength: data.durationLabel ?? '--:--',
+            youtubeUrl: data.youtubeUrl ?? youtubeUrl,
+          };
+          setQuestions(parsedQuestions);
+          setVideoMeta(parsedMeta);
+          sessionStorage.setItem('generatedQuestions', JSON.stringify(parsedQuestions));
+          sessionStorage.setItem('generatedVideoMeta', JSON.stringify(parsedMeta));
+          setProgress(100);
+          setLoading(false);
           return;
         }
+
+        if (!youtubeUrl) {
+          setSetupError('YouTube URL is missing. Please go back and paste the video URL again.');
+          setLoading(false);
+          clearInterval(interval);
+          return;
+        }
+
+        const response = await axios.post('/api/quiz/generate', {
+          youtubeUrl,
+          config: {
+            difficulty: location.state?.difficulty || 'medium',
+            questionCount: location.state?.questionCount || 10,
+            timedExam: location.state?.timedExam || false,
+            questionTypes: location.state?.questionTypes,
+          },
+        });
+
+        const parsedQuestions = response.data.questions?.length
+          ? mapApiQuestionsToFrontend(response.data.questions)
+          : extractQuestionsFromResponse(response.data);
+        const parsedMeta = extractMetaFromResponse(response.data, youtubeUrl);
+
+        if (!isMounted) return;
 
         if (parsedQuestions.length === 0) {
           setSetupError('Quiz was generated but no valid questions were found in the response.');
@@ -227,6 +254,12 @@ export function QuizSetup() {
         setVideoMeta(parsedMeta);
         sessionStorage.setItem('generatedQuestions', JSON.stringify(parsedQuestions));
         sessionStorage.setItem('generatedVideoMeta', JSON.stringify(parsedMeta));
+        if (response.data.quizId) {
+          sessionStorage.setItem('currentQuizId', response.data.quizId);
+          if (id === 'new') {
+            navigate(`/quiz-setup/${response.data.quizId}`, { replace: true, state: location.state });
+          }
+        }
         setProgress(100);
         setLoading(false);
       } catch (err) {
@@ -244,13 +277,13 @@ export function QuizSetup() {
       }
     };
 
-    generateQuiz();
+    loadOrGenerateQuiz();
 
     return () => {
       isMounted = false;
       clearInterval(interval);
     };
-  }, [youtubeUrl]);
+  }, [youtubeUrl, id]);
 
   useEffect(() => {
     if (youtubeUrl) {
@@ -489,7 +522,10 @@ export function QuizSetup() {
             Back to Dashboard
           </button>
           <button
-            onClick={() => navigate(`/quiz/${id}`)}
+            onClick={() => {
+              const quizId = (id && isUuid(id)) ? id : sessionStorage.getItem('currentQuizId') || id;
+              navigate(`/quiz/${quizId}`, { state: { questions, videoMeta, youtubeUrl } });
+            }}
             className="px-8 py-3 rounded-lg text-sm font-[600] cursor-pointer transition-all flex items-center gap-2"
             style={{
               background: C.red,

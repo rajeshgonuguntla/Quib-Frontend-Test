@@ -37,8 +37,13 @@ export function EducatorCourseBuilder() {
     setError(null);
 
     try {
-      await axios.post('/api/course/generate', { youtubeUrl: trimmed });
-      navigate('/course-details', { state: { youtubeUrl: trimmed } });
+      const res = await axios.post('/api/course/generate', { youtubeUrl: trimmed });
+      const courseId = res.data?.courseId;
+      if (courseId) {
+        navigate(`/course-details/${courseId}`, { state: { youtubeUrl: trimmed, courseId } });
+      } else {
+        navigate('/course-details', { state: { youtubeUrl: trimmed } });
+      }
     } catch (err) {
       setError('Unable to generate the course. Please try again.');
     } finally {

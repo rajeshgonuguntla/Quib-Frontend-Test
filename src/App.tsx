@@ -30,6 +30,7 @@ export default function App() {
           <Route path="/educators" element={<Educators />} />
           <Route path="/educator-course-builder" element={<EducatorCourseBuilder />} />
           <Route path="/course-details" element={<CourseDetails />} />
+          <Route path="/course-details/:courseId" element={<CourseDetails />} />
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/my-quizzes" element={<MyQuizzes />} />

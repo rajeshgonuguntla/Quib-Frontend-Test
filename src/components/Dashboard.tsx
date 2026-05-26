@@ -2,7 +2,8 @@ import { useNavigate, useLocation } from 'react-router';
 import { DarkLayout } from './DarkLayout';
 import { Youtube, Play, Clock, TrendingUp, Target, Flame, FileText, Award, Upload } from 'lucide-react';
 import { CubeLoader } from './CubeLoader';
-import { useState, useRef, ChangeEvent } from 'react';
+import { useState, useRef, ChangeEvent, useEffect } from 'react';
+import axios from 'axios';
 import { useTheme, getC } from './ThemeContext';
 
 export function Dashboard() {
@@ -56,18 +57,50 @@ export function Dashboard() {
     }, 800);
   };
 
-  const recentQuizzes = [
-    { id: '1', title: 'Introduction to Machine Learning', status: 'completed', score: 92, date: '2 days ago' },
-    { id: '2', title: 'React Hooks Complete Guide', status: 'in-progress', score: null, date: '1 week ago' },
-    { id: '3', title: 'Advanced TypeScript Patterns', status: 'generated', score: null, date: '2 weeks ago' },
-  ];
+  const [recentQuizzes, setRecentQuizzes] = useState<
+    { id: string; title: string; status: string; score: number | null; date: string }[]
+  >([]);
+  const [stats, setStats] = useState([
+    { label: 'Quizzes Taken', value: '0', icon: FileText, color: C.red },
+    { label: 'Avg Score', value: '0%', icon: Target, color: '#22c55e' },
+    { label: 'Quizzes Passed', value: '0', icon: Award, color: '#3b82f6' },
+    { label: 'Certificates', value: '0', icon: Flame, color: '#f97316' },
+  ]);
 
-  const stats = [
-    { label: 'Quizzes Taken', value: '12', icon: FileText, color: C.red },
-    { label: 'Avg Score', value: '87%', icon: Target, color: '#22c55e' },
-    { label: 'Quizzes Won', value: '8', icon: Award, color: '#3b82f6' },
-    { label: 'Day Streak', value: '5', icon: Flame, color: '#f97316' },
-  ];
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [quizzesRes, statsRes] = await Promise.all([
+          axios.get('/api/quizzes'),
+          axios.get('/api/users/me/stats'),
+        ]);
+        const quizzes = (quizzesRes.data ?? []).slice(0, 3).map((q: {
+          id: string;
+          title: string;
+          status: string;
+          latestScorePercent?: number;
+          createdAt?: string;
+        }) => ({
+          id: q.id,
+          title: q.title,
+          status: q.status === 'in_progress' ? 'in-progress' : q.status,
+          score: q.latestScorePercent ?? null,
+          date: q.createdAt ? new Date(q.createdAt).toLocaleDateString() : '',
+        }));
+        setRecentQuizzes(quizzes);
+        const s = statsRes.data;
+        setStats([
+          { label: 'Quizzes Taken', value: String(s.quizzesTaken ?? 0), icon: FileText, color: C.red },
+          { label: 'Avg Score', value: `${s.averageScorePercent ?? 0}%`, icon: Target, color: '#22c55e' },
+          { label: 'Quizzes Passed', value: String(s.quizzesPassed ?? 0), icon: Award, color: '#3b82f6' },
+          { label: 'Certificates', value: String(s.certificateCount ?? 0), icon: Flame, color: '#f97316' },
+        ]);
+      } catch {
+        // keep defaults
+      }
+    };
+    load();
+  }, [C.red]);
 
   return (
     <DarkLayout activeNav="dashboard" showSearch={true} sectionLabel="DASHBOARD">

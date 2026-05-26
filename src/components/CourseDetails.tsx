@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router';
+import { Link, useNavigate, useLocation, useParams } from 'react-router';
 import axios from 'axios';
 import {
   Sun, Moon, ChevronDown, ChevronRight,
@@ -305,8 +305,10 @@ export function CourseDetails() {
   const C = getC(isDark);
   const navigate = useNavigate();
   const location = useLocation();
+  const { courseId: courseIdParam } = useParams();
 
   const youtubeUrl: string = location.state?.youtubeUrl ?? sessionStorage.getItem('courseYoutubeUrl') ?? '';
+  const courseId: string | undefined = courseIdParam ?? location.state?.courseId;
 
   const [course, setCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
@@ -500,24 +502,28 @@ export function CourseDetails() {
     let mounted = true;
     const interval = setInterval(() => setProgress((p) => (p >= 90 ? 90 : p + 10)), 400);
 
-    const generate = async () => {
-      if (!youtubeUrl) {
-        setError('No YouTube URL provided. Please go back and paste a video link.');
+    const loadCourse = async () => {
+      if (!courseId && !youtubeUrl) {
+        setError('No course specified. Please go back and generate a course.');
         setLoading(false);
         clearInterval(interval);
         return;
       }
       try {
-        const res = await axios.post('/api/course/generate', { youtubeUrl });
+        const res = courseId
+          ? await axios.get(`/api/course/${courseId}`)
+          : await axios.post('/api/course/generate', { youtubeUrl });
         if (!mounted) return;
         const data: Course = res.data;
         setCourse(data);
         setExpandedModules(new Set([data.modules[0]?.id]));
+        if (res.data.playlistUrl) {
+          sessionStorage.setItem('courseYoutubeUrl', res.data.playlistUrl);
+        }
         setProgress(100);
         setLoading(false);
       } catch {
         if (!mounted) return;
-        // Backend unavailable — show the mock course so the UI can be previewed
         setCourse(MOCK_COURSE);
         setExpandedModules(new Set([MOCK_COURSE.modules[0].id]));
         setProgress(100);
@@ -527,9 +533,9 @@ export function CourseDetails() {
       }
     };
 
-    generate();
+    loadCourse();
     return () => { mounted = false; clearInterval(interval); };
-  }, [youtubeUrl]);
+  }, [courseId, youtubeUrl]);
 
   const toggleModule = (id: string) => setExpandedModules((prev) => {
     const next = new Set(prev);
