@@ -83,7 +83,7 @@ export function ProtectedRoute() {
 export function PublicOnlyRoute() {
   if (isTokenValid()) {
     const hasInterests = !!localStorage.getItem('quib_interests');
-    return <Navigate to={hasInterests ? '/home' : '/onboarding'} replace />;
+    return <Navigate to={hasInterests ? '/dashboard' : '/onboarding'} replace />;
   }
 
   return <Outlet />;

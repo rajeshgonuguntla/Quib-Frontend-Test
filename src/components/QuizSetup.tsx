@@ -4,6 +4,7 @@ import axios from 'axios';
 import { DarkLayout } from './DarkLayout';
 import { Youtube, Clock, FileText, Play, CheckCircle, Award, ArrowRight, Share2, Link2, Copy, Check, AlertCircle } from 'lucide-react';
 import { useTheme, getC } from './ThemeContext';
+import { fetchQuizDetail, isUuid, mapApiQuestionsToFrontend } from '../api/quizApi';
 
 interface Question {
   id: number;
@@ -195,26 +196,52 @@ export function QuizSetup() {
       setProgress((prev) => (prev >= 90 ? 90 : prev + 10));
     }, 300);
 
-    const generateQuiz = async () => {
+    const loadOrGenerateQuiz = async () => {
       setSetupError(null);
-      if (!youtubeUrl) {
-        if (!isMounted) {
-          return;
-        }
-        setSetupError('YouTube URL is missing. Please go back and paste the video URL again.');
-        setLoading(false);
-        clearInterval(interval);
-        return;
-      }
 
       try {
-        const response = await axios.post('/api/quiz/generate', { youtubeUrl });
-        const parsedQuestions = extractQuestionsFromResponse(response.data);
-        const parsedMeta = extractMetaFromResponse(response.data, youtubeUrl);
-
-        if (!isMounted) {
+        if (id && isUuid(id)) {
+          const data = await fetchQuizDetail(id, true);
+          if (!isMounted) return;
+          const parsedQuestions = mapApiQuestionsToFrontend(data.questions ?? []);
+          const parsedMeta: QuizMeta = {
+            title: data.title ?? 'Generated Quiz',
+            channelName: data.channelName ?? 'Unknown Channel',
+            videoLength: data.durationLabel ?? '--:--',
+            youtubeUrl: data.youtubeUrl ?? youtubeUrl,
+          };
+          setQuestions(parsedQuestions);
+          setVideoMeta(parsedMeta);
+          sessionStorage.setItem('generatedQuestions', JSON.stringify(parsedQuestions));
+          sessionStorage.setItem('generatedVideoMeta', JSON.stringify(parsedMeta));
+          setProgress(100);
+          setLoading(false);
           return;
         }
+
+        if (!youtubeUrl) {
+          setSetupError('YouTube URL is missing. Please go back and paste the video URL again.');
+          setLoading(false);
+          clearInterval(interval);
+          return;
+        }
+
+        const response = await axios.post('/api/quiz/generate', {
+          youtubeUrl,
+          config: {
+            difficulty: location.state?.difficulty || 'medium',
+            questionCount: location.state?.questionCount || 10,
+            timedExam: location.state?.timedExam || false,
+            questionTypes: location.state?.questionTypes,
+          },
+        });
+
+        const parsedQuestions = response.data.questions?.length
+          ? mapApiQuestionsToFrontend(response.data.questions)
+          : extractQuestionsFromResponse(response.data);
+        const parsedMeta = extractMetaFromResponse(response.data, youtubeUrl);
+
+        if (!isMounted) return;
 
         if (parsedQuestions.length === 0) {
           setSetupError('Quiz was generated but no valid questions were found in the response.');
@@ -227,6 +254,12 @@ export function QuizSetup() {
         setVideoMeta(parsedMeta);
         sessionStorage.setItem('generatedQuestions', JSON.stringify(parsedQuestions));
         sessionStorage.setItem('generatedVideoMeta', JSON.stringify(parsedMeta));
+        if (response.data.quizId) {
+          sessionStorage.setItem('currentQuizId', response.data.quizId);
+          if (id === 'new') {
+            navigate(`/quiz-setup/${response.data.quizId}`, { replace: true, state: location.state });
+          }
+        }
         setProgress(100);
         setLoading(false);
       } catch (err) {
@@ -244,13 +277,13 @@ export function QuizSetup() {
       }
     };
 
-    generateQuiz();
+    loadOrGenerateQuiz();
 
     return () => {
       isMounted = false;
       clearInterval(interval);
     };
-  }, [youtubeUrl]);
+  }, [youtubeUrl, id]);
 
   useEffect(() => {
     if (youtubeUrl) {
@@ -266,7 +299,7 @@ export function QuizSetup() {
 
   if (loading) {
     return (
-      <DarkLayout activeNav="my-quizzes" title="Preparing Your Quiz" subtitle="This usually takes 20–30 seconds">
+      <DarkLayout activeNav="dashboard" title="Preparing Your Quiz" subtitle="This usually takes 20–30 seconds">
         <div className="max-w-lg space-y-6">
           {/* Progress bar */}
           <div
@@ -318,7 +351,7 @@ export function QuizSetup() {
 
   if (setupError) {
     return (
-      <DarkLayout activeNav="my-quizzes" title="Something went wrong" subtitle="We couldn't generate your quiz">
+      <DarkLayout activeNav="dashboard" title="Something went wrong" subtitle="We couldn't generate your quiz">
         <div className="max-w-lg">
           <div
             className="rounded-xl p-6 flex flex-col gap-5"
@@ -329,7 +362,7 @@ export function QuizSetup() {
               <p className="text-sm leading-relaxed" style={{ color: C.text2 }}>{setupError}</p>
             </div>
             <button
-              onClick={() => navigate('/home')}
+              onClick={() => navigate('/dashboard')}
               className="self-start px-5 py-2.5 rounded-lg text-sm font-[500] cursor-pointer transition-colors"
               style={{ background: C.bg2, border: `1px solid ${C.border2}`, color: C.text2 }}
               onMouseEnter={(e) => { e.currentTarget.style.color = C.text; }}
@@ -344,7 +377,7 @@ export function QuizSetup() {
   }
 
   return (
-    <DarkLayout activeNav="my-quizzes" title="Quiz Ready!" subtitle="Review the details below and start when you're ready">
+    <DarkLayout activeNav="dashboard" title="Quiz Ready!" subtitle="Review the details below and start when you're ready">
       <div className="space-y-6 max-w-4xl">
         {/* Video Preview Card */}
         <div
@@ -476,7 +509,7 @@ export function QuizSetup() {
         {/* Actions */}
         <div className="flex items-center gap-4 pt-2">
           <button
-            onClick={() => navigate('/home')}
+            onClick={() => navigate('/dashboard')}
             className="px-6 py-3 rounded-lg text-sm font-[500] cursor-pointer transition-colors"
             style={{
               background: 'transparent',
@@ -489,7 +522,10 @@ export function QuizSetup() {
             Back to Dashboard
           </button>
           <button
-            onClick={() => navigate(`/quiz/${id}`)}
+            onClick={() => {
+              const quizId = (id && isUuid(id)) ? id : sessionStorage.getItem('currentQuizId') || id;
+              navigate(`/quiz/${quizId}`, { state: { questions, videoMeta, youtubeUrl } });
+            }}
             className="px-8 py-3 rounded-lg text-sm font-[600] cursor-pointer transition-all flex items-center gap-2"
             style={{
               background: C.red,

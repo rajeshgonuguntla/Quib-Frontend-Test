@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, ChangeEvent } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router';
 import { StepCard } from './StepCard';
-import { Sun, Moon } from 'lucide-react';
+import { Sun, Moon, Upload } from 'lucide-react';
 import { useTheme, getC } from './ThemeContext';
 import { CubeLoader } from './CubeLoader';
 
@@ -10,8 +10,27 @@ export function LandingPage() {
   const location = useLocation();
   const { isDark, toggleTheme } = useTheme();
   const C = getC(isDark);
+  const [youtubeUrl, setYoutubeUrl] = useState('');
   const [glowNode, setGlowNode] = useState<string>('01');
   const [isLoading, setIsLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const isPlaylistUrl = (url: string) => url.includes('list=');
+
+  const handleGenerate = () => {
+    if (!youtubeUrl.trim()) return;
+    if (isPlaylistUrl(youtubeUrl)) {
+      navigate('/signin', { state: { playlistUrl: youtubeUrl.trim() } });
+    } else {
+      navigate('/signin', { state: { youtubeUrl: youtubeUrl.trim() } });
+    }
+  };
+
+  const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) console.log('Uploaded file:', file.name);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
   useEffect(() => {
     const steps = ['01', '02', '03'];
@@ -150,10 +169,60 @@ export function LandingPage() {
         </h1>
 
         <p className="cert-fade-up" style={{ marginTop: 28, color: C.text2, fontSize: '1.05rem', maxWidth: 480, lineHeight: 1.75, fontWeight: 300, animationDelay: '0.2s' }}>
-          Discover top YouTube educators, enrol in their courses, and track your progress — all in one place.
+          Paste a YouTube link or explore top educators — courses, quizzes, and progress in one place.
         </p>
 
-        <div className="flex gap-3 mt-10 flex-wrap justify-center cert-fade-up" style={{ animationDelay: '0.3s' }}>
+        <form
+          className="cert-fade-up mt-10 flex w-full max-w-xl mx-auto"
+          style={{ animationDelay: '0.3s' }}
+          onSubmit={(e) => { e.preventDefault(); handleGenerate(); }}
+        >
+          <input
+            type="text"
+            value={youtubeUrl}
+            onChange={(e) => setYoutubeUrl(e.target.value)}
+            placeholder={isPlaylistUrl(youtubeUrl) ? 'youtube.com/playlist?list=...' : 'Paste a YouTube URL...'}
+            className="flex-1 px-5 py-3.5 rounded-l-lg text-[0.9rem] outline-none transition-all"
+            style={{
+              background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+              border: `1px solid ${C.border}`,
+              borderRight: 'none',
+              color: C.text,
+              fontFamily: 'var(--mono)',
+            }}
+          />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,.doc,.docx"
+            className="hidden"
+            onChange={handleFileUpload}
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="px-3.5 py-3.5 transition-all"
+            style={{
+              background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+              border: `1px solid ${C.border}`,
+              borderLeft: 'none',
+              borderRight: 'none',
+              color: C.text2,
+            }}
+            title="Upload PDF or Word document"
+          >
+            <Upload className="w-4.5 h-4.5" />
+          </button>
+          <button
+            type="submit"
+            className="px-6 py-3.5 rounded-r-lg text-[0.9rem] font-[600] text-white transition-all hover:opacity-90 cursor-pointer"
+            style={{ background: C.red, border: 'none' }}
+          >
+            Get started
+          </button>
+        </form>
+
+        <div className="flex gap-3 mt-5 flex-wrap justify-center cert-fade-up" style={{ animationDelay: '0.35s' }}>
           <a href="#how" className="no-underline px-7 py-3.5 rounded-lg text-[0.9rem] font-[400] transition-all hover:-translate-y-0.5" style={{ color: C.text2, border: `1px solid ${C.border}`, letterSpacing: '0.01em' }}>
             See how it works
           </a>

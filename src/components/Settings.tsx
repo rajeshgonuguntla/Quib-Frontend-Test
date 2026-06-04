@@ -1,17 +1,38 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { DarkLayout } from './DarkLayout';
 import { User } from 'lucide-react';
 import { useTheme, getC } from './ThemeContext';
+import { useUserProfile } from '../context/UserProfileContext';
+import { updateUserProfile } from '../api/userApi';
+import { UserAvatar } from './UserAvatar';
+import { getDisplayName } from '../utils/userDisplay';
+import type { UserProfile } from '../types/userProfile';
 
 export function Settings() {
   const { isDark } = useTheme();
   const C = getC(isDark);
+  const { profile, loading, setProfile } = useUserProfile();
   const [activeTab, setActiveTab] = useState('profile');
   const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    bio: '',
+  });
 
-  const tabs = [
-    { id: 'profile', label: 'Profile', icon: User },
-  ];
+  useEffect(() => {
+    if (!profile) return;
+    setForm({
+      firstName: profile.firstName ?? '',
+      lastName: profile.lastName ?? '',
+      email: profile.email ?? '',
+      bio: profile.bio ?? '',
+    });
+  }, [profile]);
+
+  const tabs = [{ id: 'profile', label: 'Profile', icon: User }];
 
   const inputStyle = (fieldName: string) => ({
     background: C.bg,
@@ -21,10 +42,40 @@ export function Settings() {
     transition: 'all 0.2s ease',
   });
 
+  const handleSave = async () => {
+    if (!profile) return;
+    setSaving(true);
+    try {
+      const payload: UserProfile = {
+        ...profile,
+        firstName: form.firstName.trim() || undefined,
+        lastName: form.lastName.trim() || undefined,
+        bio: form.bio.trim() || undefined,
+      };
+      const updated = await updateUserProfile(payload);
+      setProfile(updated);
+    } catch {
+      // keep form as-is on error
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    if (!profile) return;
+    setForm({
+      firstName: profile.firstName ?? '',
+      lastName: profile.lastName ?? '',
+      email: profile.email ?? '',
+      bio: profile.bio ?? '',
+    });
+  };
+
+  const displayName = getDisplayName(profile);
+
   return (
     <DarkLayout activeNav="settings" showSearch={false} sectionLabel="SETTINGS" title="Settings" subtitle="Manage your account and preferences">
       <div className="dash-fade-up grid lg:grid-cols-4 gap-8 max-w-5xl">
-        {/* Settings Sidebar */}
         <aside>
           <div
             className="rounded-xl p-2"
@@ -38,7 +89,7 @@ export function Settings() {
             <p
               className="px-4 pt-2 pb-2"
               style={{
-                fontFamily: "var(--mono)",
+                fontFamily: 'var(--mono)',
                 fontSize: '0.6rem',
                 letterSpacing: '0.12em',
                 color: C.text3,
@@ -58,7 +109,7 @@ export function Settings() {
                     style={{
                       background: isActive ? C.redDim : 'transparent',
                       color: isActive ? C.red : C.text2,
-                      border: isActive ? `1px solid rgba(225,6,0,0.15)` : '1px solid transparent',
+                      border: isActive ? '1px solid rgba(225,6,0,0.15)' : '1px solid transparent',
                     }}
                   >
                     {isActive && (
@@ -76,7 +127,6 @@ export function Settings() {
           </div>
         </aside>
 
-        {/* Content */}
         <div className="lg:col-span-3">
           {activeTab === 'profile' && (
             <div
@@ -86,7 +136,7 @@ export function Settings() {
               <p
                 className="mb-1"
                 style={{
-                  fontFamily: "var(--mono)",
+                  fontFamily: 'var(--mono)',
                   fontSize: '0.65rem',
                   color: C.text3,
                   letterSpacing: '0.1em',
@@ -98,7 +148,7 @@ export function Settings() {
               <h2
                 className="mb-6"
                 style={{
-                  fontFamily: "var(--serif)",
+                  fontFamily: 'var(--serif)',
                   fontWeight: 400,
                   fontSize: '1.3rem',
                   color: C.text,
@@ -108,46 +158,78 @@ export function Settings() {
                 Profile Information
               </h2>
 
-              <div className="space-y-6">
-                {/* Avatar */}
-                <div className="flex items-center gap-6 mb-8">
-                  <div
-                    className="w-20 h-20 rounded-full flex items-center justify-center text-2xl font-[700]"
-                    style={{
-                      background: C.redDim,
-                      color: C.red,
-                      border: `2px solid rgba(225,6,0,0.2)`,
-                      boxShadow: `0 0 0 4px ${C.redDim}, 0 0 20px rgba(225,6,0,0.1)`,
-                    }}
-                  >
-                    RG
+              {loading && !profile ? (
+                <p className="text-sm" style={{ color: C.text2 }}>
+                  Loading profile…
+                </p>
+              ) : (
+                <div className="space-y-6">
+                  <div className="flex items-center gap-6 mb-8">
+                    <UserAvatar profile={profile} size="lg" />
+                    <div>
+                      <div className="text-sm font-[600] mb-0.5" style={{ color: C.text }}>
+                        {displayName}
+                      </div>
+                      <div className="text-xs mb-3" style={{ color: C.text3 }}>
+                        {profile?.email ?? ''}
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="text-sm font-[600] mb-0.5" style={{ color: C.text }}>Rajesh Gonuguntla</div>
-                    <div className="text-xs mb-3" style={{ color: C.text3 }}>rajesh@example.com</div>
-                    <button
-                      className="px-4 py-2 rounded-lg text-sm font-[500] transition-all duration-200"
-                      style={{ color: C.text2, border: `1px solid ${C.border}` }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = C.bg2;
-                        e.currentTarget.style.borderColor = C.border2;
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = 'transparent';
-                        e.currentTarget.style.borderColor = C.border;
-                      }}
-                    >
-                      Upload Photo
-                    </button>
-                  </div>
-                </div>
 
-                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div>
+                      <label
+                        className="block mb-2"
+                        style={{
+                          fontFamily: 'var(--mono)',
+                          fontSize: '0.78rem',
+                          letterSpacing: '0.04em',
+                          textTransform: 'uppercase' as const,
+                          color: C.text2,
+                          fontWeight: 500,
+                        }}
+                      >
+                        First Name
+                      </label>
+                      <input
+                        value={form.firstName}
+                        onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))}
+                        className="w-full px-4 py-2.5 rounded-lg text-sm outline-none transition-all duration-200"
+                        style={inputStyle('firstName')}
+                        onFocus={() => setFocusedField('firstName')}
+                        onBlur={() => setFocusedField(null)}
+                      />
+                    </div>
+                    <div>
+                      <label
+                        className="block mb-2"
+                        style={{
+                          fontFamily: 'var(--mono)',
+                          fontSize: '0.78rem',
+                          letterSpacing: '0.04em',
+                          textTransform: 'uppercase' as const,
+                          color: C.text2,
+                          fontWeight: 500,
+                        }}
+                      >
+                        Last Name
+                      </label>
+                      <input
+                        value={form.lastName}
+                        onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))}
+                        className="w-full px-4 py-2.5 rounded-lg text-sm outline-none transition-all duration-200"
+                        style={inputStyle('lastName')}
+                        onFocus={() => setFocusedField('lastName')}
+                        onBlur={() => setFocusedField(null)}
+                      />
+                    </div>
+                  </div>
+
                   <div>
                     <label
                       className="block mb-2"
                       style={{
-                        fontFamily: "var(--mono)",
+                        fontFamily: 'var(--mono)',
                         fontSize: '0.78rem',
                         letterSpacing: '0.04em',
                         textTransform: 'uppercase' as const,
@@ -155,21 +237,22 @@ export function Settings() {
                         fontWeight: 500,
                       }}
                     >
-                      First Name
+                      Email Address
                     </label>
                     <input
-                      defaultValue="Rajesh"
-                      className="w-full px-4 py-2.5 rounded-lg text-sm outline-none transition-all duration-200"
-                      style={inputStyle('firstName')}
-                      onFocus={() => setFocusedField('firstName')}
-                      onBlur={() => setFocusedField(null)}
+                      type="email"
+                      value={form.email}
+                      readOnly
+                      className="w-full px-4 py-2.5 rounded-lg text-sm outline-none transition-all duration-200 opacity-70 cursor-not-allowed"
+                      style={inputStyle('email')}
                     />
                   </div>
+
                   <div>
                     <label
                       className="block mb-2"
                       style={{
-                        fontFamily: "var(--mono)",
+                        fontFamily: 'var(--mono)',
                         fontSize: '0.78rem',
                         letterSpacing: '0.04em',
                         textTransform: 'uppercase' as const,
@@ -177,97 +260,51 @@ export function Settings() {
                         fontWeight: 500,
                       }}
                     >
-                      Last Name
+                      Bio
                     </label>
                     <input
-                      defaultValue="Gonuguntla"
+                      value={form.bio}
+                      onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))}
                       className="w-full px-4 py-2.5 rounded-lg text-sm outline-none transition-all duration-200"
-                      style={inputStyle('lastName')}
-                      onFocus={() => setFocusedField('lastName')}
+                      style={inputStyle('bio')}
+                      onFocus={() => setFocusedField('bio')}
                       onBlur={() => setFocusedField(null)}
                     />
                   </div>
-                </div>
 
-                <div>
-                  <label
-                    className="block mb-2"
-                    style={{
-                      fontFamily: "var(--mono)",
-                      fontSize: '0.78rem',
-                      letterSpacing: '0.04em',
-                      textTransform: 'uppercase' as const,
-                      color: C.text2,
-                      fontWeight: 500,
-                    }}
-                  >
-                    Email Address
-                  </label>
-                  <input
-                    type="email"
-                    defaultValue="rajesh@example.com"
-                    className="w-full px-4 py-2.5 rounded-lg text-sm outline-none transition-all duration-200"
-                    style={inputStyle('email')}
-                    onFocus={() => setFocusedField('email')}
-                    onBlur={() => setFocusedField(null)}
-                  />
-                </div>
-
-                <div>
-                  <label
-                    className="block mb-2"
-                    style={{
-                      fontFamily: "var(--mono)",
-                      fontSize: '0.78rem',
-                      letterSpacing: '0.04em',
-                      textTransform: 'uppercase' as const,
-                      color: C.text2,
-                      fontWeight: 500,
-                    }}
-                  >
-                    Bio
-                  </label>
-                  <input
-                    defaultValue="Software developer passionate about machine learning"
-                    className="w-full px-4 py-2.5 rounded-lg text-sm outline-none transition-all duration-200"
-                    style={inputStyle('bio')}
-                    onFocus={() => setFocusedField('bio')}
-                    onBlur={() => setFocusedField(null)}
-                  />
-                </div>
-
-                {/* Gradient divider */}
-                <div className="pt-6">
-                  <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${C.border2}, transparent)`, marginBottom: 24 }} />
-                  <div className="flex justify-end gap-3">
-                    <button
-                      className="px-5 py-2 rounded-lg text-sm font-[500] transition-all duration-200"
-                      style={{ color: C.text2, border: `1px solid ${C.border}` }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = C.bg2;
-                        e.currentTarget.style.borderColor = C.border2;
+                  <div className="pt-6">
+                    <div
+                      style={{
+                        height: 1,
+                        background: `linear-gradient(90deg, transparent, ${C.border2}, transparent)`,
+                        marginBottom: 24,
                       }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = 'transparent';
-                        e.currentTarget.style.borderColor = C.border;
-                      }}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      className="px-5 py-2 rounded-lg text-sm font-[600] text-white transition-all duration-200 hover:opacity-90"
-                      style={{ background: C.red, boxShadow: '0 4px 14px rgba(225,6,0,0.2)' }}
-                      onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
-                    >
-                      Save Changes
-                    </button>
+                    />
+                    <div className="flex justify-end gap-3">
+                      <button
+                        type="button"
+                        onClick={handleCancel}
+                        disabled={saving}
+                        className="px-5 py-2 rounded-lg text-sm font-[500] transition-all duration-200"
+                        style={{ color: C.text2, border: `1px solid ${C.border}` }}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void handleSave()}
+                        disabled={saving || !profile}
+                        className="px-5 py-2 rounded-lg text-sm font-[600] text-white transition-all duration-200 hover:opacity-90 disabled:opacity-50"
+                        style={{ background: C.red, boxShadow: '0 4px 14px rgba(225,6,0,0.2)' }}
+                      >
+                        {saving ? 'Saving…' : 'Save Changes'}
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
-
         </div>
       </div>
     </DarkLayout>

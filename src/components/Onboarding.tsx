@@ -1,9 +1,11 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { useTheme, getC } from './ThemeContext';
 import { Check, ArrowRight, ArrowLeft } from 'lucide-react';
 import { ALL_CREATORS } from '../data/creators';
 import { YTThumbnail } from './YTThumbnail';
+import { fetchCreators, fetchInterests, saveOnboarding } from '../api/catalogApi';
+import type { CatalogInterest } from '../types/catalog';
 
 export const INTERESTS_KEY  = 'quib_interests';
 export const EDUCATORS_KEY  = 'quib_educators';
@@ -16,23 +18,10 @@ interface Interest {
   categories: string[];
 }
 
-const INTERESTS: Interest[] = [
-  { id: 'ai',           label: 'AI & Machine Learning', description: 'Neural networks, deep learning, LLMs',    color: '#6366f1', categories: ['AI / Machine Learning'] },
-  { id: 'programming',  label: 'Programming',           description: 'Python, JavaScript, algorithms',           color: '#22c55e', categories: ['Programming'] },
-  { id: 'math',         label: 'Mathematics',           description: 'Calculus, linear algebra, proofs',         color: '#3b82f6', categories: ['Mathematics'] },
-  { id: 'webdev',       label: 'Web Development',       description: 'React, CSS, backend APIs',                 color: '#06b6d4', categories: ['Web Development'] },
-  { id: 'datascience',  label: 'Data Science',          description: 'Statistics, visualisation, pandas',       color: '#8b5cf6', categories: ['AI / Machine Learning', 'Programming'] },
-  { id: 'physics',      label: 'Physics',               description: 'Mechanics, quantum, relativity',          color: '#f59e0b', categories: ['Mathematics'] },
-  { id: 'biology',      label: 'Biology',               description: 'Genetics, cells, evolution',              color: '#10b981', categories: ['Biology'] },
-  { id: 'chemistry',    label: 'Chemistry',             description: 'Organic, inorganic, reactions',           color: '#f97316', categories: ['Biology'] },
-  { id: 'cybersecurity',label: 'Cybersecurity',         description: 'Ethical hacking, cryptography',           color: '#ef4444', categories: ['Web Development', 'Programming'] },
-  { id: 'space',        label: 'Space & Astronomy',     description: 'Cosmology, planets, black holes',         color: '#a855f7', categories: ['Biology', 'Mathematics'] },
-  { id: 'history',      label: 'History',               description: 'World events, civilisations',             color: '#84cc16', categories: [] },
-  { id: 'economics',    label: 'Economics & Finance',   description: 'Markets, investing, micro/macro',         color: '#eab308', categories: [] },
-  { id: 'psychology',   label: 'Psychology',            description: 'Cognition, behaviour, neuroscience',      color: '#ec4899', categories: ['Biology'] },
-  { id: 'engineering',  label: 'Engineering',           description: 'Systems, circuits, mechanics',            color: '#64748b', categories: ['Mathematics', 'Programming'] },
-  { id: 'medicine',     label: 'Medicine & Health',     description: 'Anatomy, pharmacology, clinical',         color: '#14b8a6', categories: ['Biology'] },
-  { id: 'philosophy',   label: 'Philosophy',            description: 'Ethics, logic, epistemology',             color: '#f43f5e', categories: [] },
+const FALLBACK_INTERESTS: Interest[] = [
+  { id: 'ai', label: 'AI & Machine Learning', description: 'Neural networks, deep learning, LLMs', color: '#6366f1', categories: ['AI / Machine Learning'] },
+  { id: 'programming', label: 'Programming', description: 'Python, JavaScript, algorithms', color: '#22c55e', categories: ['Programming'] },
+  { id: 'webdev', label: 'Web Development', description: 'React, CSS, backend APIs', color: '#06b6d4', categories: ['Web Development'] },
 ];
 
 export function Onboarding() {
@@ -43,6 +32,56 @@ export function Onboarding() {
   const [step, setStep] = useState<'interests' | 'educators' | 'done'>('interests');
   const [selectedInterests, setSelectedInterests] = useState<Set<string>>(new Set());
   const [selectedEducators, setSelectedEducators] = useState<Set<string>>(new Set());
+  const [interests, setInterests] = useState<Interest[]>(FALLBACK_INTERESTS);
+  const [catalogCreators, setCatalogCreators] = useState<typeof ALL_CREATORS | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetchInterests()
+      .then((list: CatalogInterest[]) => {
+        if (list.length > 0) {
+          setInterests(
+            list.map((i) => ({
+              id: i.id,
+              label: i.label,
+              description: i.description,
+              color: i.color,
+              categories: i.categories ?? [],
+            })),
+          );
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (step !== 'educators') return;
+    fetchCreators()
+      .then((list) => {
+        if (list.length > 0) {
+          setCatalogCreators(
+            list.map((c) => ({
+              id: c.id,
+              name: c.name,
+              color: c.color,
+              tagline: c.tagline,
+              videoId: c.youtubeVideoId,
+              category: c.category,
+              bio: c.bio ?? '',
+              videoCount: c.videoCount,
+              courses: (c.courses ?? []).map((v) => ({
+                id: v.id,
+                title: v.title,
+                videoId: v.youtubeVideoId,
+                duration: v.durationLabel,
+                views: v.viewsLabel,
+              })),
+            })),
+          );
+        }
+      })
+      .catch(() => {});
+  }, [step]);
 
   const toggleInterest = (id: string) => {
     setSelectedInterests(prev => {
@@ -63,31 +102,49 @@ export function Onboarding() {
   // Collect all categories for selected interests
   const relevantCategories = useMemo(() => {
     const cats = new Set<string>();
-    INTERESTS.filter(i => selectedInterests.has(i.id)).forEach(i => i.categories.forEach(c => cats.add(c)));
+    interests.filter(i => selectedInterests.has(i.id)).forEach(i => i.categories.forEach(c => cats.add(c)));
     return cats;
   }, [selectedInterests]);
 
   // Educators that match selected interest categories
+  const creatorPool = catalogCreators ?? ALL_CREATORS;
+
   const relevantEducators = useMemo(() => {
-    if (relevantCategories.size === 0) return ALL_CREATORS;
-    return ALL_CREATORS.filter(c => relevantCategories.has(c.category));
-  }, [relevantCategories]);
+    if (relevantCategories.size === 0) return creatorPool;
+    return creatorPool.filter(c => relevantCategories.has(c.category));
+  }, [relevantCategories, creatorPool]);
 
   const handleInterestsContinue = () => {
     localStorage.setItem(INTERESTS_KEY, JSON.stringify([...selectedInterests]));
     setStep('educators');
   };
 
-  const handleEducatorsContinue = () => {
-    localStorage.setItem(EDUCATORS_KEY, JSON.stringify([...selectedEducators]));
+  const finishOnboarding = async (followedIds: string[]) => {
+    setSaving(true);
+    const interestIds = [...selectedInterests];
+    localStorage.setItem(INTERESTS_KEY, JSON.stringify(interestIds));
+    localStorage.setItem(EDUCATORS_KEY, JSON.stringify(followedIds));
+    try {
+      await saveOnboarding({
+        interestIds,
+        followedCreatorIds: followedIds,
+        completed: true,
+      });
+    } catch {
+      /* still allow local flow */
+    } finally {
+      setSaving(false);
+    }
     setStep('done');
-    setTimeout(() => navigate('/home'), 800);
+    setTimeout(() => navigate('/dashboard'), 800);
+  };
+
+  const handleEducatorsContinue = () => {
+    void finishOnboarding([...selectedEducators]);
   };
 
   const handleSkipEducators = () => {
-    localStorage.setItem(EDUCATORS_KEY, '[]');
-    setStep('done');
-    setTimeout(() => navigate('/home'), 800);
+    void finishOnboarding([]);
   };
 
   return (
@@ -158,7 +215,7 @@ export function Onboarding() {
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-10">
-              {INTERESTS.map((interest) => {
+              {interests.map((interest) => {
                 const isSelected = selectedInterests.has(interest.id);
                 return (
                   <button

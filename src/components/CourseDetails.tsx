@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router';
+import { Link, useNavigate, useLocation, useParams } from 'react-router';
 import axios from 'axios';
 import {
   Sun, Moon, ChevronDown, ChevronRight,
@@ -7,6 +7,7 @@ import {
   ArrowLeft, ArrowUpRight, BookOpen, Calendar, Layers, AlertCircle,
 } from 'lucide-react';
 import { useTheme, getC } from './ThemeContext';
+import { LessonStudyContent } from './LessonNotes';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -21,6 +22,20 @@ interface Lesson {
   title: string;
   duration: string;
   type: 'video' | 'reading';
+  videoId?: string;
+  videoUrl?: string;
+  summary?: string;
+  keyConcepts?: string[];
+  takeaway?: string;
+  notes?: string;
+}
+
+interface PlaylistVideo {
+  videoId: string;
+  videoUrl: string;
+  title: string;
+  duration: string;
+  playlistIndex: number;
 }
 
 interface Module {
@@ -37,9 +52,43 @@ interface Course {
   difficulty: string;
   date: string;
   modules: Module[];
+  playlistUrl?: string;
+  playlistVideos?: PlaylistVideo[];
   videoTitle?: string;
   channelName?: string;
   videoLength?: string;
+}
+
+const getYoutubeEmbedId = (videoId?: string, videoUrl?: string, fallbackUrl?: string): string => {
+  if (videoId?.trim()) {
+    return videoId.trim();
+  }
+  if (videoUrl) {
+    const matchWatch = videoUrl.match(/[?&]v=([^&]+)/);
+    const matchShort = videoUrl.match(/youtu\.be\/([^?&]+)/);
+    if (matchWatch?.[1]) return matchWatch[1];
+    if (matchShort?.[1]) return matchShort[1];
+  }
+  if (fallbackUrl) {
+    const matchWatch = fallbackUrl.match(/[?&]v=([^&]+)/);
+    const matchShort = fallbackUrl.match(/youtu\.be\/([^?&]+)/);
+    if (matchWatch?.[1]) return matchWatch[1];
+    if (matchShort?.[1]) return matchShort[1];
+  }
+  return '';
+};
+
+function getCourseGenerationError(err: unknown) {
+  if (axios.isAxiosError(err)) {
+    const data = err.response?.data as { message?: string; details?: string } | undefined;
+    return data?.message || data?.details || err.message || 'Unable to generate the course.';
+  }
+
+  if (err instanceof Error) {
+    return err.message;
+  }
+
+  return 'Unable to generate the course.';
 }
 
 // ─── Learning Mode ─────────────────────────────────────────────────────────────
@@ -62,12 +111,6 @@ function LearningMode({ course, youtubeUrl, onBack }: { course: Course; youtubeU
   const activeLesson = allLessons.find((l) => l.id === activeLessonId);
   const activeQuizModule = course.modules.find((m) => m.id === activeQuizModuleId);
   const navBg = isDark ? 'rgba(6,6,8,0.92)' : 'rgba(255,255,255,0.92)';
-
-  const getYoutubeEmbedId = (url: string) => {
-    const matchWatch = url.match(/[?&]v=([^&]+)/);
-    const matchShort = url.match(/youtu\.be\/([^?&]+)/);
-    return matchWatch?.[1] ?? matchShort?.[1] ?? '';
-  };
 
   const toggleModule = (id: string) => setExpandedModules((prev) => {
     const next = new Set(prev);
@@ -101,7 +144,9 @@ function LearningMode({ course, youtubeUrl, onBack }: { course: Course; youtubeU
   const completedCount = completedLessons.size;
   const totalLessons = allLessons.length;
   const progressPct = Math.round((completedCount / totalLessons) * 100);
-  const embedId = getYoutubeEmbedId(youtubeUrl);
+  const embedId = activeLesson
+    ? getYoutubeEmbedId(activeLesson.videoId, activeLesson.videoUrl, youtubeUrl)
+    : '';
 
   return (
     <div style={{ minHeight: '100vh', background: C.bg, color: C.text, fontFamily: 'var(--display)' }}>
@@ -206,19 +251,23 @@ function LearningMode({ course, youtubeUrl, onBack }: { course: Course; youtubeU
                 </span>
                 <span className="text-[0.75rem]" style={{ color: C.text3 }}>{activeLesson.duration}</span>
               </div>
-              {activeLesson.type === 'video' && embedId && (
+              {activeLesson.type === 'video' && embedId ? (
                 <div className="w-full rounded-2xl overflow-hidden mb-8"
                   style={{ border: `1px solid ${C.border}`, aspectRatio: '16/9', background: C.bg2 }}>
                   <iframe src={`https://www.youtube.com/embed/${embedId}`} title={activeLesson.title}
                     className="w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen style={{ border: 'none' }} />
                 </div>
-              )}
-              <div className="rounded-2xl p-6 mb-8" style={{ background: C.bg1, border: `1px solid ${C.border}` }}>
-                <p className="text-[0.875rem] leading-relaxed" style={{ color: C.text2, lineHeight: 1.8 }}>
-                  This lesson covers <strong style={{ color: C.text }}>{activeLesson.title}</strong> as part of the module on <em>{allLessons.find((l) => l.id === activeLessonId)?.moduleTitle}</em>. Follow along with the {activeLesson.type === 'video' ? 'video' : 'reading material'} and take note of the key concepts presented.
-                </p>
-              </div>
+              ) : activeLesson.type === 'video' ? (
+                <div className="w-full rounded-2xl p-6 mb-8 text-center text-sm" style={{ background: C.bg1, border: `1px solid ${C.border}`, color: C.text3 }}>
+                  Video player unavailable for this lesson.
+                </div>
+              ) : null}
+              <LessonStudyContent
+                lesson={activeLesson}
+                theme={C}
+                moduleTitle={allLessons.find((l) => l.id === activeLessonId)?.moduleTitle}
+              />
               <div className="flex items-center gap-3">
                 {completedLessons.has(activeLessonId) ? (
                   <div className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-[0.82rem] font-[500]"
@@ -305,8 +354,10 @@ export function CourseDetails() {
   const C = getC(isDark);
   const navigate = useNavigate();
   const location = useLocation();
+  const { courseId: courseIdParam } = useParams();
 
   const youtubeUrl: string = location.state?.youtubeUrl ?? sessionStorage.getItem('courseYoutubeUrl') ?? '';
+  const courseId: string | undefined = courseIdParam ?? location.state?.courseId;
 
   const [course, setCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
@@ -500,36 +551,38 @@ export function CourseDetails() {
     let mounted = true;
     const interval = setInterval(() => setProgress((p) => (p >= 90 ? 90 : p + 10)), 400);
 
-    const generate = async () => {
-      if (!youtubeUrl) {
-        setError('No YouTube URL provided. Please go back and paste a video link.');
+    const loadCourse = async () => {
+      if (!courseId && !youtubeUrl) {
+        setError('No course specified. Please go back and generate a course from a playlist URL.');
         setLoading(false);
         clearInterval(interval);
         return;
       }
       try {
-        const res = await axios.post('/api/course/generate', { youtubeUrl });
+        const res = courseId
+          ? await axios.get(`/api/course/${courseId}`)
+          : await axios.post('/api/course/generate', { youtubeUrl });
         if (!mounted) return;
         const data: Course = res.data;
         setCourse(data);
         setExpandedModules(new Set([data.modules[0]?.id]));
+        if (data.playlistUrl) {
+          sessionStorage.setItem('courseYoutubeUrl', data.playlistUrl);
+        }
         setProgress(100);
         setLoading(false);
-      } catch {
+      } catch (err) {
         if (!mounted) return;
-        // Backend unavailable — show the mock course so the UI can be previewed
-        setCourse(MOCK_COURSE);
-        setExpandedModules(new Set([MOCK_COURSE.modules[0].id]));
-        setProgress(100);
+        setError(getCourseGenerationError(err));
         setLoading(false);
       } finally {
         clearInterval(interval);
       }
     };
 
-    generate();
+    loadCourse();
     return () => { mounted = false; clearInterval(interval); };
-  }, [youtubeUrl]);
+  }, [courseId, youtubeUrl]);
 
   const toggleModule = (id: string) => setExpandedModules((prev) => {
     const next = new Set(prev);
@@ -614,6 +667,11 @@ export function CourseDetails() {
   }
 
   const totalLessons = course.modules.reduce((acc, m) => acc + m.lessons.length, 0);
+  const linkedVideoLessons = course.modules.reduce(
+    (acc, m) => acc + m.lessons.filter((l) => l.type === 'video' && (l.videoId || l.videoUrl)).length,
+    0,
+  );
+  const sourcePlaylistSize = course.playlistVideos?.length;
 
   // ── Course Overview ──
   return (
@@ -657,6 +715,13 @@ export function CourseDetails() {
               { icon: <BookOpen className="w-3.5 h-3.5" />, label: `Difficulty ${course.difficulty}` },
               { icon: <Calendar className="w-3.5 h-3.5" />, label: course.date },
               { icon: <Layers className="w-3.5 h-3.5" />, label: `${course.modules.length} Modules` },
+              { icon: <PlayCircle className="w-3.5 h-3.5" />, label: `${totalLessons} Lessons` },
+              ...(linkedVideoLessons > 0
+                ? [{ icon: <PlayCircle className="w-3.5 h-3.5" />, label: `${linkedVideoLessons} Video lessons` }]
+                : []),
+              ...(sourcePlaylistSize && sourcePlaylistSize > totalLessons
+                ? [{ icon: <PlayCircle className="w-3.5 h-3.5" />, label: `${sourcePlaylistSize} source videos` }]
+                : []),
             ].map((b) => (
               <div key={b.label} className="flex items-center gap-2 px-4 py-2 rounded-lg text-[0.78rem] font-[500]"
                 style={{ background: C.redDim, border: `1px solid ${isDark ? 'rgba(225,6,0,0.2)' : 'rgba(225,6,0,0.12)'}`, color: C.red }}>
@@ -757,7 +822,7 @@ export function CourseDetails() {
             Start Learning <ArrowUpRight className="w-4 h-4" />
           </button>
           <p className="text-[0.78rem] mt-3" style={{ color: C.text3 }}>
-            {totalLessons} lessons · {course.modules.length} module quizzes · Certificate on completion
+            {totalLessons} video lessons · {course.modules.length} module quizzes · Certificate on completion
           </p>
         </div>
       </div>

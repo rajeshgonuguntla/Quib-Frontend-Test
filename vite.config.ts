@@ -4,6 +4,8 @@
   import tailwindcss from '@tailwindcss/vite';
   import path from 'path';
 
+  const apiTarget = process.env.VITE_API_BASE_URL || 'http://localhost:8451';
+
   export default defineConfig({
     plugins: [react(), tailwindcss()],
     resolve: {
@@ -60,8 +62,7 @@
       open: true,
       proxy: {
         '/api': {
-         // target: 'http://localhost:8451',
-          target: 'https://quib-app-backend-944587700647.europe-west1.run.app',
+          target: apiTarget,
           changeOrigin: true,
           secure: false,
         },

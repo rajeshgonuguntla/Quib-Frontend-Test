@@ -1,26 +1,76 @@
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
+import axios from 'axios';
 import { Button } from './Button';
 import { Card } from './Card';
 import { Award, Download, Copy, Linkedin, CheckCircle, QrCode } from 'lucide-react';
+import { useUserProfile } from '../context/UserProfileContext';
+import { getCertificateRecipientName } from '../utils/userDisplay';
+
+type CertApi = {
+  id: string;
+  title: string;
+  recipientName?: string;
+  scorePercent: number;
+  certificateCode: string;
+  issuedAt?: string;
+};
 
 export function Certificate() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { profile } = useUserProfile();
+  const [cert, setCert] = useState<CertApi | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const certificateData = {
-    userName: 'Rajesh Gonuguntla',
-    courseTitle: 'Introduction to Machine Learning',
-    score: 92,
-    date: 'February 17, 2026',
-    certificateId: 'QUIB-2026-ML-8472',
-    verificationUrl: 'quib.ai/verify/QUIB-2026-ML-8472'
-  };
+  useEffect(() => {
+    if (!id) {
+      setLoading(false);
+      return;
+    }
+    const load = async () => {
+      try {
+        const res = await axios.get<CertApi[]>('/api/certificates');
+        const match = (res.data ?? []).find(
+          (c) => c.id === id || c.certificateCode === id,
+        );
+        setCert(match ?? null);
+      } catch {
+        setCert(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    void load();
+  }, [id]);
+
+  const certificateData = useMemo(() => {
+    const recipient =
+      cert?.recipientName?.trim() || getCertificateRecipientName(profile);
+    const issueDate = cert?.issuedAt
+      ? new Date(cert.issuedAt).toLocaleDateString('en-US', {
+          month: 'long',
+          day: 'numeric',
+          year: 'numeric',
+        })
+      : '';
+    const code = cert?.certificateCode ?? '';
+    return {
+      userName: recipient,
+      courseTitle: cert?.title ?? 'Course',
+      score: cert?.scorePercent ?? 0,
+      date: issueDate,
+      certificateId: code,
+      verificationUrl: code ? `quib.ai/verify/${code}` : '',
+    };
+  }, [cert, profile]);
 
   const handleDownload = () => {
     alert('Certificate downloaded!');
   };
 
   const handleCopyLink = () => {
+    if (!certificateData.verificationUrl) return;
     const url = `https://${certificateData.verificationUrl}`;
     
     // Try modern clipboard API first
@@ -81,9 +131,16 @@ export function Certificate() {
             <CheckCircle className="w-10 h-10 text-green-600" />
           </div>
           <h1 className="text-4xl font-[400] text-gray-900 mb-3" style={{ fontFamily: "var(--serif)", letterSpacing: '-0.01em' }}>Certificate Ready!</h1>
-          <p className="text-xl text-gray-600">Your achievement has been verified and is ready to share</p>
+          <p className="text-xl text-gray-600">
+            {loading
+              ? 'Loading certificate…'
+              : cert
+                ? 'Your achievement has been verified and is ready to share'
+                : 'Certificate not found'}
+          </p>
         </div>
 
+        {!loading && cert && (
         <div className="grid lg:grid-cols-3 gap-8 mb-12">
           {/* Certificate Preview */}
           <div className="lg:col-span-2">
@@ -197,8 +254,10 @@ export function Certificate() {
             </Card>
           </div>
         </div>
+        )}
 
         {/* Certificate Details */}
+        {!loading && cert && (
         <Card variant="standard" className="p-8">
           <h2 className="text-xl font-[400] text-gray-900 mb-6" style={{ fontFamily: "var(--serif)" }}>Certificate Details</h2>
           <div className="grid md:grid-cols-2 gap-6">
@@ -233,6 +292,7 @@ export function Certificate() {
             </div>
           </div>
         </Card>
+        )}
       </main>
     </div>
   );

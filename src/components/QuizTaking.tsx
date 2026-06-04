@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams, Link, useLocation } from 'react-router';
 import { Award, Clock, Flag, ChevronLeft, ChevronRight, CheckCircle, Sun, Moon } from 'lucide-react';
 import { useTheme, getC } from './ThemeContext';
+import { fetchQuizDetail, isUuid, submitQuizAttempt } from '../api/quizApi';
 
 interface Question {
   id: number;
@@ -68,38 +69,76 @@ export function QuizTaking() {
   const [answers, setAnswers] = useState<Record<number, string | string[]>>({});
   const [flagged, setFlagged] = useState<Set<number>>(new Set());
   const [showSubmitModal, setShowSubmitModal] = useState(false);
-  const [questions] = useState<Question[]>(() => location.state?.questions ?? readStoredQuestions());
+  const [questions, setQuestions] = useState<Question[]>(() => location.state?.questions ?? readStoredQuestions());
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  const [videoMeta] = useState<QuizMeta>(() =>
+  const [videoMeta, setVideoMeta] = useState<QuizMeta>(() =>
     location.state?.videoMeta ?? readStoredVideoMeta(youtubeUrl)
   );
 
-  // 90 seconds per question, minimum 5 minutes
   const initialTime = Math.max(questions.length * 90, 300);
   const [timeLeft, setTimeLeft] = useState(initialTime);
 
-useEffect(() => {
-    setIsLoading(true);
-    setError(null);
-    if (!youtubeUrl) {
-      setError('YouTube URL is missing. Please go back and paste the video URL again.');
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      setIsLoading(true);
+      setError(null);
+      if (id && isUuid(id)) {
+        try {
+          const data = await fetchQuizDetail(id, false);
+          if (!mounted) return;
+          const loaded = (data.questions ?? []).map((q: { sortOrder?: number; type?: string; question?: string; options?: string[] }, index: number) => ({
+            id: q.sortOrder ?? index,
+            type: q.type === 'true_false' ? 'trueFalse' as const : q.type === 'short_answer' ? 'shortAnswer' as const : 'mcq' as const,
+            question: q.question ?? '',
+            options: q.options,
+          }));
+          setQuestions(loaded);
+          setVideoMeta({
+            title: data.title ?? 'Generated Quiz',
+            channelName: data.channelName ?? '',
+            videoLength: data.durationLabel ?? '--:--',
+            youtubeUrl: data.youtubeUrl ?? youtubeUrl,
+          });
+        } catch {
+          if (mounted) setError('Failed to load quiz. Please try again from the dashboard.');
+        } finally {
+          if (mounted) setIsLoading(false);
+        }
+        return;
+      }
+      if (questions.length === 0) {
+        setError('Quiz data is missing. Please generate the quiz again from setup.');
+      }
       setIsLoading(false);
-      return;
+    };
+    load();
+    return () => { mounted = false; };
+  }, [id]);
+
+  const handleSubmit = useCallback(async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    const timeSpent = initialTime - timeLeft;
+    if (id && isUuid(id)) {
+      try {
+        const result = await submitQuizAttempt(id, answers, timeSpent);
+        navigate(`/results/${id}`, { state: { result, videoMeta, questions } });
+        return;
+      } catch {
+        setError('Failed to submit quiz. Please try again.');
+        setSubmitting(false);
+        return;
+      }
     }
+    navigate(`/results/${id}`, { state: { questions, answers, videoMeta } });
+  }, [submitting, id, answers, videoMeta, questions, navigate, initialTime, timeLeft]);
 
-    if (questions.length === 0) {
-      setError('Quiz data is missing. Please generate the quiz again from setup.');
-      setIsLoading(false);
-      return;
-    }
-
-    setIsLoading(false);
-  }, [youtubeUrl, questions]);
-
-
-useEffect(() => {
+  useEffect(() => {
+    if (isLoading || questions.length === 0) return;
     const timer = setInterval(() => {
       setTimeLeft((prev: number) => {
         if (prev <= 0) {
@@ -110,9 +149,8 @@ useEffect(() => {
         return prev - 1;
       });
     }, 1000);
-
     return () => clearInterval(timer);
-  }, []);
+  }, [isLoading, questions.length, handleSubmit]);
 
 
   const formatTime = (seconds: number) => {
@@ -133,11 +171,6 @@ useEffect(() => {
     setFlagged(newFlagged);
   };
 
-  const handleSubmit = () => {
-    navigate(`/results/${id}`, {
-      state: { questions, answers, videoMeta },
-    });
-  };
   const answeredCount = Object.keys(answers).length;
   const unansweredCount = questions.length - answeredCount;
 
@@ -147,7 +180,7 @@ useEffect(() => {
       <header className="px-8 py-4 sticky top-0 z-50" style={{ background: C.bg1, borderBottom: `1px solid ${C.border}` }}>
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-6">
-            <Link to="/home" className="flex items-center gap-1.5 no-underline" style={{ color: C.text }}>
+            <Link to="/dashboard" className="flex items-center gap-1.5 no-underline" style={{ color: C.text }}>
               <span className="text-[1.05rem] font-[700] tracking-tight">Quib</span>
             </Link>
             <div className="hidden md:block text-sm" style={{ color: C.text2 }}>
