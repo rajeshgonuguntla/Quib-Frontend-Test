@@ -4,6 +4,22 @@ import axios from 'axios';
 import { Sun, Moon, ArrowRight, Youtube } from 'lucide-react';
 import { useTheme, getC } from './ThemeContext';
 
+function getPlaylistValidationError(value: string) {
+  try {
+    const parsed = new URL(value);
+    const isYoutube = parsed.hostname.includes('youtube.com') || parsed.hostname.includes('youtu.be');
+    if (!isYoutube) {
+      return 'Please paste a valid YouTube playlist URL.';
+    }
+    if (!parsed.searchParams.get('list')) {
+      return "Only YouTube playlists are supported. Use a URL that contains a 'list' parameter.";
+    }
+    return null;
+  } catch {
+    return 'Please paste a valid YouTube playlist URL.';
+  }
+}
+
 const SUGGESTIONS = [
   { label: 'Machine Learning Basics', url: 'https://www.youtube.com/watch?v=ukzFI9rgwfU' },
   { label: 'Intro to React', url: 'https://www.youtube.com/watch?v=SqcY0GlETPk' },
@@ -35,6 +51,13 @@ export function EducatorCourseBuilder() {
 
     setLoading(true);
     setError(null);
+
+    const validationError = getPlaylistValidationError(trimmed);
+    if (validationError) {
+      setError(validationError);
+      setLoading(false);
+      return;
+    }
 
     try {
       const res = await axios.post('/api/course/generate', { youtubeUrl: trimmed });

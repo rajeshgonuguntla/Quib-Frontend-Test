@@ -67,7 +67,7 @@ export function MyCertificates() {
 
   return (
     <DarkLayout
-      activeNav="certificates"
+      activeNav="my-quizzes"
       title="My Certificates"
       subtitle="View, download, and share your earned certificates"
       searchPlaceholder="Search certificates by title or ID..."

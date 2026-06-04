@@ -4,20 +4,11 @@ import axios from 'axios';
 import { DarkLayout } from './DarkLayout';
 import { Youtube, Clock, Play, CheckCircle, AlertCircle, ArrowRight } from 'lucide-react';
 import { useTheme, getC } from './ThemeContext';
-
-interface BackendQuestion {
-  question?: string;
-  options?: string[];
-  correctAnswerIndex?: number;
-  explanation?: string;
-}
-
-interface BackendQuizObject {
-  title?: string;
-  questions?: BackendQuestion[];
-}
+import { fetchQuizDetail, isUuid, mapApiQuestionsToFrontend } from '../api/quizApi';
+import { parseRawQuizJson, questionsFromRawQuiz } from '../utils/quizParse';
 
 interface QuizResponse {
+  quizId?: string;
   caption: string;
   quiz: string;
   videoTitle: string;
@@ -37,39 +28,6 @@ interface PlaylistQuizResponse {
   quizzes: QuizResponse[];
 }
 
-const stripCodeFence = (value: string): string => {
-  const trimmed = value.trim();
-  const fenceMatch = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
-  return fenceMatch?.[1]?.trim() ?? trimmed;
-};
-
-const normalizeQuestions = (rawQuestions: BackendQuestion[]) => {
-  return rawQuestions
-    .map((q, index) => {
-      const options = Array.isArray(q.options) ? q.options : undefined;
-      const isTrueFalse =
-        Array.isArray(options) &&
-        options.length === 2 &&
-        options.every((o) => {
-          const n = o.trim().toLowerCase();
-          return n === 'true' || n === 'false';
-        });
-      const type = options?.length ? (isTrueFalse ? 'trueFalse' : 'mcq') : 'shortAnswer';
-      return {
-        id: index,
-        type,
-        question: q.question?.trim() ?? '',
-        options,
-        answer:
-          typeof q.correctAnswerIndex === 'number' && options?.[q.correctAnswerIndex]
-            ? options[q.correctAnswerIndex]
-            : undefined,
-        explanation: q.explanation?.trim(),
-      };
-    })
-    .filter((q) => q.question.length > 0);
-};
-
 export function PlaylistSetup() {
   const { isDark } = useTheme();
   const C = getC(isDark);
@@ -84,6 +42,7 @@ export function PlaylistSetup() {
   const [result, setResult] = useState<PlaylistQuizResponse | null>(null);
   const [currentQuizIndex, setCurrentQuizIndex] = useState(0);
   const [completedQuizzes, setCompletedQuizzes] = useState<Set<number>>(new Set());
+  const [startingQuiz, setStartingQuiz] = useState(false);
 
   const steps = [
     { label: 'Fetching playlist videos', completed: progress >= 33 },
@@ -118,7 +77,6 @@ export function PlaylistSetup() {
           clearInterval(interval);
           return;
         }
-console.log('Received playlist quiz response:', response.data);
         setResult(response.data);
         setProgress(100);
         setLoading(false);
@@ -142,27 +100,55 @@ console.log('Received playlist quiz response:', response.data);
     };
   }, [playlistUrl]);
 
-  const startQuiz = (quiz: QuizResponse, index: number) => {
+  const startQuiz = async (quiz: QuizResponse, index: number) => {
+    setSetupError(null);
+    setStartingQuiz(true);
+    const videoUrl = quiz.videoUrl || '';
+
     try {
-      const parsed = JSON.parse(stripCodeFence(quiz.quiz)) as BackendQuizObject;
-      const questions = normalizeQuestions(parsed.questions ?? []);
-      const videoUrl = quiz.videoUrl || '';
-      const meta = {
-        title: parsed.title?.trim() || quiz.videoTitle,
+      let questions = questionsFromRawQuiz(quiz.quiz);
+      let meta = {
+        title: parseRawQuizJson(quiz.quiz)?.title?.trim() || quiz.videoTitle,
         channelName: quiz.channelName,
         videoLength: quiz.videoLength,
         youtubeUrl: videoUrl,
       };
-      // Store playlist state so we can resume after quiz
+
+      const quizId = quiz.quizId ? String(quiz.quizId) : '';
+      if (quizId && isUuid(quizId)) {
+        try {
+          const data = await fetchQuizDetail(quizId, true);
+          const fromApi = mapApiQuestionsToFrontend(data.questions ?? []);
+          if (fromApi.length > 0) {
+            questions = fromApi;
+            meta = {
+              title: data.title ?? quiz.videoTitle,
+              channelName: data.channelName ?? quiz.channelName,
+              videoLength: data.durationLabel ?? quiz.videoLength,
+              youtubeUrl: data.youtubeUrl ?? videoUrl,
+            };
+          }
+        } catch {
+          // fall back to raw quiz JSON if API fails (e.g. expired token)
+        }
+      }
+
+      if (questions.length === 0) {
+        setSetupError(`Failed to load quiz for "${quiz.videoTitle}". Please sign in again or regenerate the playlist.`);
+        return;
+      }
+
       sessionStorage.setItem('playlistResult', JSON.stringify(result));
       sessionStorage.setItem('playlistCurrentIndex', String(index));
       sessionStorage.setItem('playlistCompleted', JSON.stringify([...completedQuizzes]));
       sessionStorage.setItem('generatedQuestions', JSON.stringify(questions));
       sessionStorage.setItem('generatedVideoMeta', JSON.stringify(meta));
-      const quizRouteId = quiz.quizId ?? `playlist-${index}`;
-      navigate(`/quiz/${quizRouteId}`, { state: { questions, videoMeta, youtubeUrl: videoUrl } });
+      const quizRouteId = quizId && isUuid(quizId) ? quizId : `playlist-${index}`;
+      navigate(`/quiz/${quizRouteId}`, { state: { questions, videoMeta: meta, youtubeUrl: videoUrl } });
     } catch {
       setSetupError(`Failed to load quiz for "${quiz.videoTitle}". Please try again.`);
+    } finally {
+      setStartingQuiz(false);
     }
   };
 
@@ -367,13 +353,14 @@ console.log('Received playlist quiz response:', response.data);
               Back to Dashboard
             </button>
             <button
-              onClick={() => startQuiz(currentQuiz!, currentQuizIndex)}
-              className="px-8 py-3 rounded-lg text-sm font-[600] cursor-pointer transition-all flex items-center gap-2"
+              onClick={() => void startQuiz(currentQuiz!, currentQuizIndex)}
+              disabled={startingQuiz}
+              className="px-8 py-3 rounded-lg text-sm font-[600] cursor-pointer transition-all flex items-center gap-2 disabled:opacity-60"
               style={{ background: C.red, border: 'none', color: '#fff', boxShadow: '0 0 20px rgba(225,6,0,0.3)' }}
               onMouseEnter={(e) => { e.currentTarget.style.boxShadow = '0 0 30px rgba(225,6,0,0.5)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.boxShadow = '0 0 20px rgba(225,6,0,0.3)'; }}
             >
-              Start Quiz
+              {startingQuiz ? 'Loading quiz…' : 'Start Quiz'}
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
