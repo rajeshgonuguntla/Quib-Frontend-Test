@@ -63,9 +63,11 @@ export function EducatorCourseBuilder() {
       const res = await axios.post('/api/course/generate', { youtubeUrl: trimmed });
       const courseId = res.data?.courseId;
       if (courseId) {
-        navigate(`/course-details/${courseId}`, { state: { youtubeUrl: trimmed, courseId } });
+        navigate(`/course-details/${courseId}`, {
+          state: { youtubeUrl: trimmed, courseId, from: '/educator-course-builder' },
+        });
       } else {
-        navigate('/course-details', { state: { youtubeUrl: trimmed } });
+        navigate('/course-details', { state: { youtubeUrl: trimmed, from: '/educator-course-builder' } });
       }
     } catch (err) {
       setError('Unable to generate the course. Please try again.');
@@ -155,7 +157,7 @@ export function EducatorCourseBuilder() {
               Build a Course from a YouTube Video
             </h1>
             <p style={{ fontSize: '1rem', color: C.text2, lineHeight: 1.6, maxWidth: 540, margin: '0 auto' }}>
-              Paste any YouTube video link below — Quib generates quizzes, summaries, and certificates in seconds.
+              Paste a YouTube playlist link below. Sign in first so you can publish the course for other learners to discover.
             </p>
           </div>
 

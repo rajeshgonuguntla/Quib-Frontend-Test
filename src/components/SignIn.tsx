@@ -7,9 +7,6 @@ import { Award, Mail, Lock, Chrome } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import GoogleLoginButton from './GoogleLoginButton';
 import { GoogleOAuthProvider } from '@react-oauth/google';
-import { setDevToken } from '../auth'; // DEV BYPASS - REMOVE BEFORE PUSH TO GITHUB
-
-
 export function SignIn() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -134,16 +131,6 @@ export function SignIn() {
             <GoogleOAuthProvider clientId="944587700647-v4d2dqg9io3q3qbgjoif32g21bcifg9s.apps.googleusercontent.com">
             <GoogleLoginButton />
         </GoogleOAuthProvider>
-
-            {/* DEV BYPASS - REMOVE BEFORE PUSH TO GITHUB */}
-            <button
-              onClick={() => { setDevToken(); navigate('/onboarding'); }}
-              className="w-full py-2.5 rounded-lg border-2 border-dashed text-sm font-semibold transition-all hover:opacity-80"
-              style={{ borderColor: '#f97316', color: '#f97316', background: 'rgba(249,115,22,0.06)' }}
-            >
-              ⚡ Dev Bypass (skip login)
-            </button>
-            {/* END DEV BYPASS */}
 
           </div>
 

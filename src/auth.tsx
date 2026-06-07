@@ -36,14 +36,6 @@ function parseJwtPayload(token: string): JwtPayload | null {
   }
 }
 
-// DEV BYPASS - REMOVE BEFORE PUSH TO GITHUB
-export function setDevToken(): void {
-  const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-  const payload = btoa(JSON.stringify({ exp: 4102444800, sub: 'dev-user' })).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-  localStorage.setItem(TOKEN_KEY, `${header}.${payload}.dev-signature`);
-}
-// END DEV BYPASS
-
 export function isTokenValid(): boolean {
   const token = getToken();
   if (!token) {

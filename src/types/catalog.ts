@@ -38,6 +38,19 @@ export interface CatalogCourseSummary {
   youtubeVideoId?: string;
   durationLabel?: string;
   moduleCount?: number;
+  playlistUrl?: string;
+  isPublished?: boolean;
+}
+
+export interface CourseSearchResult {
+  courseId: string;
+  title: string;
+  channelName?: string;
+  playlistUrl?: string;
+  youtubeVideoId?: string;
+  durationLabel?: string;
+  category?: string;
+  matchedOn?: 'creator' | 'playlist' | 'video' | 'title' | string;
 }
 
 export interface OnboardingState {
@@ -54,8 +67,17 @@ export interface EnrollmentSummary {
   category: string;
   categoryColor?: string;
   youtubeVideoId?: string;
-  status: string;
+  status: 'saved' | 'in-progress' | 'completed' | string;
   progress: number;
   score?: number | null;
+  lessonCount?: number;
   durationLabel?: string;
+}
+
+export interface EnrollmentStats {
+  total: number;
+  inProgress: number;
+  saved: number;
+  completed: number;
+  avgScore: number;
 }

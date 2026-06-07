@@ -3,9 +3,17 @@ import { Link, useNavigate, useLocation, useParams } from 'react-router';
 import axios from 'axios';
 import {
   Sun, Moon, ChevronDown, ChevronRight,
-  PlayCircle, FileText, CheckCircle,
-  ArrowLeft, ArrowUpRight, BookOpen, Calendar, Layers, AlertCircle,
+  PlayCircle, FileText, CheckCircle, CheckCircle2, Copy,
+  ArrowLeft, ArrowUpRight, BookOpen, Calendar, Layers, AlertCircle, Globe,
 } from 'lucide-react';
+import { publishCourse } from '../api/catalogApi';
+import {
+  completeLesson,
+  enrollCourse,
+  fetchCourseProgress,
+  submitModuleQuiz,
+} from '../api/courseApi';
+import { isTokenValid } from '../auth';
 import { useTheme, getC } from './ThemeContext';
 import { LessonStudyContent } from './LessonNotes';
 
@@ -93,7 +101,17 @@ function getCourseGenerationError(err: unknown) {
 
 // ─── Learning Mode ─────────────────────────────────────────────────────────────
 
-function LearningMode({ course, youtubeUrl, onBack }: { course: Course; youtubeUrl: string; onBack: () => void }) {
+function LearningMode({
+  course,
+  courseId,
+  youtubeUrl,
+  onBack,
+}: {
+  course: Course;
+  courseId: string;
+  youtubeUrl: string;
+  onBack: () => void;
+}) {
   const { isDark, toggleTheme } = useTheme();
   const C = getC(isDark);
 
@@ -107,6 +125,15 @@ function LearningMode({ course, youtubeUrl, onBack }: { course: Course; youtubeU
   const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set());
   const [quizAnswers, setQuizAnswers] = useState<Record<number, number>>({});
   const [quizSubmitted, setQuizSubmitted] = useState(false);
+  useEffect(() => {
+    let mounted = true;
+    fetchCourseProgress(courseId)
+      .then((ids) => {
+        if (mounted) setCompletedLessons(new Set(ids));
+      })
+      .catch(() => { /* progress unavailable until enrolled */ });
+    return () => { mounted = false; };
+  }, [courseId]);
 
   const activeLesson = allLessons.find((l) => l.id === activeLessonId);
   const activeQuizModule = course.modules.find((m) => m.id === activeQuizModuleId);
@@ -132,10 +159,29 @@ function LearningMode({ course, youtubeUrl, onBack }: { course: Course; youtubeU
     setQuizSubmitted(false);
   };
 
-  const markComplete = () => {
-    setCompletedLessons((prev) => new Set([...prev, activeLessonId]));
-    const idx = allLessons.findIndex((l) => l.id === activeLessonId);
-    if (idx < allLessons.length - 1) setActiveLessonId(allLessons[idx + 1].id);
+  const markComplete = async () => {
+    if (!activeLessonId || completedLessons.has(activeLessonId)) return;
+    try {
+      await completeLesson(courseId, activeLessonId);
+      setCompletedLessons((prev) => new Set([...prev, activeLessonId]));
+      const idx = allLessons.findIndex((l) => l.id === activeLessonId);
+      if (idx < allLessons.length - 1) setActiveLessonId(allLessons[idx + 1].id);
+    } catch {
+      /* keep local state unchanged on failure */
+    }
+  };
+
+  const handleQuizSubmit = async () => {
+    if (!activeQuizModule) return;
+    setQuizSubmitted(true);
+    try {
+      const payload = Object.fromEntries(
+        Object.entries(quizAnswers).map(([key, value]) => [key, value]),
+      );
+      await submitModuleQuiz(courseId, activeQuizModule.id, payload);
+    } catch {
+      /* results still shown locally */
+    }
   };
 
   const quizScore = activeQuizModule
@@ -317,7 +363,7 @@ function LearningMode({ course, youtubeUrl, onBack }: { course: Course; youtubeU
                 ))}
               </div>
               {!quizSubmitted ? (
-                <button onClick={() => setQuizSubmitted(true)}
+                <button onClick={handleQuizSubmit}
                   disabled={Object.keys(quizAnswers).length < activeQuizModule.quiz.length}
                   className="px-8 py-3 rounded-lg text-[0.875rem] font-[600] cursor-pointer transition-all"
                   style={{ background: Object.keys(quizAnswers).length === activeQuizModule.quiz.length ? C.red : C.bg2, color: Object.keys(quizAnswers).length === activeQuizModule.quiz.length ? '#fff' : C.text3, border: 'none', boxShadow: Object.keys(quizAnswers).length === activeQuizModule.quiz.length ? '0 4px 16px rgba(225,6,0,0.25)' : 'none' }}>
@@ -358,6 +404,19 @@ export function CourseDetails() {
 
   const youtubeUrl: string = location.state?.youtubeUrl ?? sessionStorage.getItem('courseYoutubeUrl') ?? '';
   const courseId: string | undefined = courseIdParam ?? location.state?.courseId;
+  const returnTo: string | undefined = location.state?.from;
+
+  const handleBack = () => {
+    if (returnTo) {
+      navigate(returnTo);
+      return;
+    }
+    if (window.history.length > 1) {
+      navigate(-1);
+      return;
+    }
+    navigate(isOwner ? '/educator-course-builder' : '/dashboard');
+  };
 
   const [course, setCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
@@ -365,6 +424,12 @@ export function CourseDetails() {
   const [error, setError] = useState<string | null>(null);
   const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
   const [learningMode, setLearningMode] = useState(false);
+  const [resolvedCourseId, setResolvedCourseId] = useState<string | undefined>(courseId);
+  const [isPublished, setIsPublished] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [publishError, setPublishError] = useState<string | null>(null);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   const navBg = isDark ? 'rgba(6,6,8,0.92)' : 'rgba(255,255,255,0.92)';
 
@@ -563,11 +628,24 @@ export function CourseDetails() {
           ? await axios.get(`/api/course/${courseId}`)
           : await axios.post('/api/course/generate', { youtubeUrl });
         if (!mounted) return;
-        const data: Course = res.data;
+        const data = res.data as Course & {
+          courseId?: string;
+          isPublished?: boolean;
+          isOwner?: boolean;
+        };
         setCourse(data);
+        setResolvedCourseId(data.courseId ?? courseId);
+        setIsPublished(!!data.isPublished);
+        setIsOwner(!!data.isOwner);
         setExpandedModules(new Set([data.modules[0]?.id]));
         if (data.playlistUrl) {
           sessionStorage.setItem('courseYoutubeUrl', data.playlistUrl);
+        }
+        if (data.courseId && !courseId) {
+          navigate(`/course-details/${data.courseId}`, {
+            replace: true,
+            state: { ...location.state, courseId: data.courseId },
+          });
         }
         setProgress(100);
         setLoading(false);
@@ -651,9 +729,9 @@ export function CourseDetails() {
               <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: C.red }} />
               <p className="text-sm leading-relaxed" style={{ color: C.text2 }}>{error ?? 'Something went wrong.'}</p>
             </div>
-            <button onClick={() => navigate('/educator-course-builder')} className="px-5 py-2.5 rounded-lg text-sm font-[500] cursor-pointer"
+            <button onClick={handleBack} className="px-5 py-2.5 rounded-lg text-sm font-[500] cursor-pointer"
               style={{ background: C.bg2, border: `1px solid ${C.border2}`, color: C.text2 }}>
-              ← Try another URL
+              ← Go back
             </button>
           </div>
         </div>
@@ -661,9 +739,34 @@ export function CourseDetails() {
     );
   }
 
+  const handleStartLearning = async () => {
+    if (!resolvedCourseId) return;
+    if (!isTokenValid()) {
+      navigate('/signin', { state: { returnTo: `/course-details/${resolvedCourseId}` } });
+      return;
+    }
+    try {
+      await enrollCourse(resolvedCourseId);
+      setLearningMode(true);
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response?.status === 401) {
+        navigate('/signin', { state: { returnTo: `/course-details/${resolvedCourseId}` } });
+        return;
+      }
+      setError('Unable to start learning. Please sign in and try again.');
+    }
+  };
+
   // ── Learning Mode ──
-  if (learningMode) {
-    return <LearningMode course={course} youtubeUrl={youtubeUrl} onBack={() => setLearningMode(false)} />;
+  if (learningMode && resolvedCourseId) {
+    return (
+      <LearningMode
+        course={course}
+        courseId={resolvedCourseId}
+        youtubeUrl={youtubeUrl}
+        onBack={() => setLearningMode(false)}
+      />
+    );
   }
 
   const totalLessons = course.modules.reduce((acc, m) => acc + m.lessons.length, 0);
@@ -673,13 +776,43 @@ export function CourseDetails() {
   );
   const sourcePlaylistSize = course.playlistVideos?.length;
 
+  const shareUrl = resolvedCourseId
+    ? `${window.location.origin}/course-details/${resolvedCourseId}`
+    : '';
+
+  const handlePublish = async () => {
+    if (!resolvedCourseId) return;
+    setPublishing(true);
+    setPublishError(null);
+    try {
+      const data = await publishCourse(resolvedCourseId);
+      setIsPublished(!!data.isPublished);
+      setIsOwner(!!data.isOwner);
+    } catch (err) {
+      setPublishError(getCourseGenerationError(err));
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const handleCopyLink = async () => {
+    if (!shareUrl) return;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopiedLink(true);
+      window.setTimeout(() => setCopiedLink(false), 2000);
+    } catch {
+      setPublishError('Unable to copy link.');
+    }
+  };
+
   // ── Course Overview ──
   return (
     <div style={{ minHeight: '100vh', background: C.bg, color: C.text, fontFamily: 'var(--display)' }}>
       <nav className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-between px-5 md:px-10"
         style={{ height: 56, background: navBg, backdropFilter: 'blur(20px)', borderBottom: `1px solid ${C.border}` }}>
         <div className="flex items-center gap-4">
-          <button onClick={() => navigate('/educator-course-builder')} className="flex items-center gap-1.5 cursor-pointer"
+          <button onClick={handleBack} className="flex items-center gap-1.5 cursor-pointer"
             style={{ background: 'none', border: 'none', color: C.text2, padding: 0 }}>
             <ArrowLeft className="w-4 h-4" />
             <span className="text-[0.82rem]">Back</span>
@@ -731,6 +864,63 @@ export function CourseDetails() {
           </div>
         </div>
 
+        {resolvedCourseId && !isOwner && !isPublished && (
+          <div
+            className="mb-8 rounded-2xl px-5 py-4 text-[0.8rem]"
+            style={{ background: C.bg1, border: `1px solid ${C.border}`, color: C.text2 }}
+          >
+            Sign in before generating a course to publish it to the catalog.
+          </div>
+        )}
+
+        {isOwner && (
+          <div
+            className="mb-8 rounded-2xl p-5"
+            style={{ background: C.bg1, border: `1px solid ${C.border}` }}
+          >
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <p className="mb-1 flex items-center gap-2 text-[0.9rem] font-[600]" style={{ color: C.text }}>
+                  <Globe className="w-4 h-4" style={{ color: C.red }} />
+                  {isPublished ? 'Published to catalog' : 'Ready to publish'}
+                </p>
+                <p className="text-[0.8rem]" style={{ color: C.text2 }}>
+                  {isPublished
+                    ? 'Other learners can find this course by creator name, playlist URL, or video title.'
+                    : 'Publish to make this course searchable for all signed-in learners.'}
+                </p>
+                {publishError && (
+                  <p className="mt-2 text-[0.78rem]" style={{ color: C.red }}>{publishError}</p>
+                )}
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {isOwner && !isPublished && (
+                  <button
+                    type="button"
+                    onClick={handlePublish}
+                    disabled={publishing}
+                    className="px-5 py-2.5 rounded-lg text-[0.82rem] font-[600] cursor-pointer disabled:opacity-60"
+                    style={{ background: C.red, color: '#fff', border: 'none' }}
+                  >
+                    {publishing ? 'Publishing…' : 'Publish course'}
+                  </button>
+                )}
+                {isPublished && shareUrl && (
+                  <button
+                    type="button"
+                    onClick={handleCopyLink}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-[0.82rem] font-[600] cursor-pointer"
+                    style={{ background: C.bg2, border: `1px solid ${C.border2}`, color: C.text2 }}
+                  >
+                    {copiedLink ? <CheckCircle2 className="w-4 h-4" style={{ color: '#22c55e' }} /> : <Copy className="w-4 h-4" />}
+                    {copiedLink ? 'Copied' : 'Copy course link'}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         <div style={{ height: 1, background: C.border, marginBottom: 40 }} />
 
         {/* Modules */}
@@ -738,7 +928,7 @@ export function CourseDetails() {
           <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(1.4rem, 2.5vw, 1.8rem)', fontWeight: 400, color: C.text }}>
             Course Modules
           </h2>
-          <button onClick={() => setLearningMode(true)}
+          <button onClick={handleStartLearning}
             className="flex items-center gap-2 px-6 py-2.5 rounded-lg text-[0.875rem] font-[600] transition-all cursor-pointer"
             style={{ background: C.red, color: '#fff', border: 'none', boxShadow: '0 4px 16px rgba(225,6,0,0.3)' }}
             onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.9')}
@@ -797,7 +987,7 @@ export function CourseDetails() {
                           <span className="text-[0.82rem] font-[500]" style={{ color: C.red }}>Module Quiz</span>
                           <span className="text-[0.72rem] ml-2" style={{ color: isDark ? 'rgba(225,6,0,0.6)' : 'rgba(225,6,0,0.5)' }}>· {mod.quiz.length} questions</span>
                         </div>
-                        <button onClick={() => setLearningMode(true)}
+                        <button onClick={handleStartLearning}
                           className="text-[0.72rem] font-[600] px-3 py-1.5 rounded-lg cursor-pointer"
                           style={{ background: C.red, color: '#fff', border: 'none' }}
                           onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.85')}
@@ -814,7 +1004,7 @@ export function CourseDetails() {
         </div>
 
         <div className="mt-10 text-center">
-          <button onClick={() => setLearningMode(true)}
+          <button onClick={handleStartLearning}
             className="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl text-[0.9rem] font-[600] cursor-pointer transition-all"
             style={{ background: C.red, color: '#fff', border: 'none', boxShadow: '0 6px 24px rgba(225,6,0,0.3)' }}
             onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.9')}

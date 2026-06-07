@@ -3,6 +3,8 @@ import type {
   CatalogCourseSummary,
   CatalogCreator,
   CatalogInterest,
+  CourseSearchResult,
+  EnrollmentStats,
   EnrollmentSummary,
   OnboardingState,
 } from '../types/catalog';
@@ -57,4 +59,23 @@ export async function fetchFollowedCreators(): Promise<CatalogCreator[]> {
 export async function fetchEnrollments(): Promise<EnrollmentSummary[]> {
   const res = await axios.get<EnrollmentSummary[]>('/api/users/me/enrollments');
   return res.data ?? [];
+}
+
+export async function fetchEnrollmentStats(): Promise<EnrollmentStats> {
+  const res = await axios.get<EnrollmentStats>('/api/users/me/enrollments/stats');
+  return res.data;
+}
+
+export async function searchCourses(query: string, limit = 20): Promise<CourseSearchResult[]> {
+  const trimmed = query.trim();
+  if (!trimmed) return [];
+  const res = await axios.get<CourseSearchResult[]>('/api/catalog/search', {
+    params: { q: trimmed, limit },
+  });
+  return res.data ?? [];
+}
+
+export async function publishCourse(courseId: string) {
+  const res = await axios.post(`/api/courses/${courseId}/publish`);
+  return res.data;
 }

@@ -1,15 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import {
   ArrowUpRight,
   Bell,
   BookMarked,
-  BookOpen,
   CheckCircle2,
   ChevronRight,
   Circle,
   Clock,
-  Flame,
   GraduationCap,
   HelpCircle,
   Home,
@@ -17,9 +15,7 @@ import {
   Search,
   Settings,
   Star,
-  Target,
   TrendingUp,
-  Trophy,
   Users,
 } from 'lucide-react';
 import axios from 'axios';
@@ -28,8 +24,11 @@ import { CREATORS } from '../data/creators';
 import {
   fetchCourses,
   fetchEnrollments,
+  fetchEnrollmentStats,
   fetchPopularCreators,
+  searchCourses,
 } from '../api/catalogApi';
+import type { CourseSearchResult, EnrollmentStats } from '../types/catalog';
 import { useUserProfile } from '../context/UserProfileContext';
 import { UserAvatar } from './UserAvatar';
 import { SidebarNavItem } from './SidebarNavItem';
@@ -118,6 +117,7 @@ type ProgressItem = {
   lessons: { done: number; total: number };
   image: string;
   kind?: 'course' | 'quiz';
+  status?: string;
 };
 
 export function Dashboard() {
@@ -146,25 +146,31 @@ export function Dashboard() {
       navigate('/quiz-setup/new', { state: { youtubeUrl: incomingVideoUrl }, replace: true });
     }
   }, [incomingPlaylistUrl, incomingVideoUrl, navigate]);
-  const [stats, setStats] = useState([
-    { label: 'Quizzes Taken', value: '0', unit: '', delta: 'Start your first quiz', up: null as boolean | null, icon: <BookOpen size={15} /> },
-    { label: 'Avg Score', value: '0', unit: '%', delta: 'Across completed quizzes', up: null, icon: <Target size={15} /> },
-    { label: 'Learning Streak', value: '0', unit: ' days', delta: 'Keep going', up: true, icon: <Flame size={15} /> },
-    { label: 'Certificates', value: '0', unit: '', delta: 'Earned on pass', up: true, icon: <Trophy size={15} /> },
-  ]);
   const [inProgress, setInProgress] = useState<ProgressItem[]>([]);
   const [curated, setCurated] = useState<CuratedCard[]>([]);
   const [trending, setTrending] = useState<TrendingItem[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<CourseSearchResult[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+  const [libraryStats, setLibraryStats] = useState<EnrollmentStats>({
+    total: 0,
+    inProgress: 0,
+    saved: 0,
+    completed: 0,
+    avgScore: 0,
+  });
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [quizzesRes, statsRes, popular, courses, enrollments] = await Promise.all([
-          axios.get('/api/quizzes'),
-          axios.get('/api/users/me/stats'),
+        const [quizzesRes, popular, courses, enrollments, enrollmentStats] = await Promise.all([
+          axios.get('/api/quizzes').catch(() => ({ data: [] })),
           fetchPopularCreators().catch(() => []),
           fetchCourses({ category: 'Web Development', limit: 4 }).catch(() => []),
           fetchEnrollments().catch(() => []),
+          fetchEnrollmentStats().catch(() => null),
         ]);
 
         const popularList =
@@ -190,41 +196,6 @@ export function Dashboard() {
         if (courses.length > 0) {
           setCurated(courses.map(courseToCuratedCard));
         }
-        const s = statsRes.data;
-        setStats([
-          {
-            label: 'Quizzes Taken',
-            value: String(s.quizzesTaken ?? 0),
-            unit: '',
-            delta: s.quizzesTaken ? 'Total quizzes started' : 'Start your first quiz',
-            up: (s.quizzesTaken ?? 0) > 0 ? true : null,
-            icon: <BookOpen size={15} />,
-          },
-          {
-            label: 'Avg Score',
-            value: String(s.averageScorePercent ?? 0),
-            unit: '%',
-            delta: 'Across completed quizzes',
-            up: (s.averageScorePercent ?? 0) >= 70 ? true : null,
-            icon: <Target size={15} />,
-          },
-          {
-            label: 'Quizzes Passed',
-            value: String(s.quizzesPassed ?? 0),
-            unit: '',
-            delta: `${s.certificateCount ?? 0} certificates`,
-            up: (s.quizzesPassed ?? 0) > 0 ? true : null,
-            icon: <Flame size={15} />,
-          },
-          {
-            label: 'Certificates',
-            value: String(s.certificateCount ?? 0),
-            unit: '',
-            delta: 'Earned on pass',
-            up: (s.certificateCount ?? 0) > 0 ? true : null,
-            icon: <Trophy size={15} />,
-          },
-        ]);
 
         const quizzes = (quizzesRes.data ?? []) as Array<{
           id: string;
@@ -234,7 +205,7 @@ export function Dashboard() {
           thumbnailUrl?: string;
         }>;
         const fromEnrollments: ProgressItem[] = (enrollments ?? [])
-          .filter((e: { status: string }) => e.status === 'in_progress' || e.status === 'active')
+          .filter((e: { status: string }) => e.status === 'in-progress' || e.status === 'saved')
           .slice(0, 3)
           .map((e: {
             courseId: string;
@@ -244,17 +215,24 @@ export function Dashboard() {
             progress: number;
             youtubeVideoId?: string;
             durationLabel?: string;
-          }) => ({
-            id: e.courseId,
-            title: e.title,
-            instructor: e.channel,
-            tag: e.category,
-            progress: e.progress,
-            timeLeft: e.durationLabel ?? '—',
-            lessons: { done: Math.round((e.progress / 100) * 10), total: 10 },
-            image: e.youtubeVideoId ? ytThumb(e.youtubeVideoId) : ytThumb('dQw4w9WgXcQ'),
-            kind: 'course' as const,
-          }));
+            lessonCount?: number;
+            status: string;
+          }) => {
+            const totalLessons = e.lessonCount && e.lessonCount > 0 ? e.lessonCount : 10;
+            const doneLessons = Math.round((e.progress / 100) * totalLessons);
+            return {
+              id: e.courseId,
+              title: e.title,
+              instructor: e.channel,
+              tag: e.category,
+              progress: e.progress,
+              timeLeft: e.durationLabel ?? '—',
+              lessons: { done: doneLessons, total: totalLessons },
+              image: e.youtubeVideoId ? ytThumb(e.youtubeVideoId) : ytThumb('dQw4w9WgXcQ'),
+              kind: 'course' as const,
+              status: e.status,
+            };
+          });
 
         const fromQuizzes: ProgressItem[] = quizzes
           .filter((q) => q.status === 'in_progress' || q.status === 'generated')
@@ -272,11 +250,43 @@ export function Dashboard() {
           }));
 
         setInProgress([...fromEnrollments, ...fromQuizzes].slice(0, 3));
+        if (enrollmentStats) {
+          setLibraryStats(enrollmentStats);
+        }
       } catch {
         /* keep defaults */
       }
     };
     void load();
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      setSearchLoading(false);
+      return;
+    }
+    setSearchLoading(true);
+    const timer = window.setTimeout(() => {
+      searchCourses(searchQuery, 12)
+        .then((results) => {
+          setSearchResults(results);
+          setSearchOpen(true);
+        })
+        .catch(() => setSearchResults([]))
+        .finally(() => setSearchLoading(false));
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setSearchOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const greeting = () => {
@@ -292,7 +302,7 @@ export function Dashboard() {
     navigate('/signin');
   };
 
-  const coursesInProgress = inProgress.length;
+  const coursesInProgress = libraryStats.inProgress + libraryStats.saved;
 
   return (
     <div className="min-h-screen text-white" style={{ background: T.bg, fontFamily: FONT }}>
@@ -328,9 +338,9 @@ export function Dashboard() {
 
           <NavGroup label="Library">
             {[
-              { id: 'progress', label: 'In Progress', icon: <Circle size={15} />, badge: String(coursesInProgress || '0'), path: '/my-quizzes' },
-              { id: 'saved', label: 'Saved', icon: <BookMarked size={15} />, path: '/my-quizzes' },
-              { id: 'completed', label: 'Completed', icon: <CheckCircle2 size={15} />, path: '/my-quizzes' },
+              { id: 'progress', label: 'In Progress', icon: <Circle size={15} />, badge: String(libraryStats.inProgress || '0'), path: '/my-quizzes' },
+              { id: 'saved', label: 'Saved', icon: <BookMarked size={15} />, badge: String(libraryStats.saved || '0'), path: '/my-quizzes' },
+              { id: 'completed', label: 'Completed', icon: <CheckCircle2 size={15} />, badge: String(libraryStats.completed || '0'), path: '/my-quizzes' },
             ].map((item) => (
               <SidebarNavItem
                 key={item.id}
@@ -397,20 +407,71 @@ export function Dashboard() {
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              className="flex h-8 items-center gap-2 rounded-lg px-3 text-[13px] transition-colors"
-              style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.t3 }}
-            >
-              <Search size={13} />
-              <span>Search courses…</span>
-              <span
-                className="ml-3 hidden items-center gap-0.5 rounded px-1.5 py-0.5 text-[11px] md:inline-flex"
-                style={{ background: 'rgba(255,255,255,0.05)', border: `1px solid ${T.border}`, color: T.t4 }}
+            <div ref={searchRef} className="relative">
+              <div
+                className="flex h-8 min-w-[220px] items-center gap-2 rounded-lg px-3 text-[13px] md:min-w-[280px]"
+                style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.t3 }}
               >
-                ⌘K
-              </span>
-            </button>
+                <Search size={13} />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => searchQuery.trim() && setSearchOpen(true)}
+                  placeholder="Search by creator, playlist, or video…"
+                  className="min-w-0 flex-1 bg-transparent text-[13px] outline-none"
+                  style={{ color: T.t1 }}
+                />
+              </div>
+              {searchOpen && searchQuery.trim() && (
+                <div
+                  className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 overflow-hidden rounded-xl shadow-2xl"
+                  style={{ background: T.surface, border: `1px solid ${T.border}` }}
+                >
+                  {searchLoading ? (
+                    <p className="px-4 py-3 text-[12px]" style={{ color: T.t3 }}>Searching…</p>
+                  ) : searchResults.length === 0 ? (
+                    <p className="px-4 py-3 text-[12px]" style={{ color: T.t3 }}>No published courses found.</p>
+                  ) : (
+                    <div className="max-h-80 overflow-y-auto py-1">
+                      {searchResults.map((result) => (
+                        <button
+                          key={result.courseId}
+                          type="button"
+                          onClick={() => {
+                            setSearchOpen(false);
+                            setSearchQuery('');
+                            navigate(`/course-details/${result.courseId}`, {
+                              state: { from: `${location.pathname}${location.search}` },
+                            });
+                          }}
+                          className="flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-white/[0.05]"
+                        >
+                          {result.youtubeVideoId ? (
+                            <img
+                              src={ytThumb(result.youtubeVideoId)}
+                              alt=""
+                              className="h-10 w-16 shrink-0 rounded object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-10 w-16 shrink-0 items-center justify-center rounded" style={{ background: T.accentBg }}>
+                              <BookMarked size={14} style={{ color: T.accent }} />
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-[13px] font-medium" style={{ color: T.t1 }}>{result.title}</p>
+                            <p className="truncate text-[11px]" style={{ color: T.t3 }}>
+                              {result.channelName ?? 'YouTube'}
+                              {result.matchedOn ? ` · matched ${result.matchedOn}` : ''}
+                            </p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
             <button
               type="button"
               className="relative flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-white/[0.05]"
@@ -443,7 +504,7 @@ export function Dashboard() {
                 Welcome back, {firstName}
               </h1>
               <p className="mt-2 text-sm" style={{ color: T.t2 }}>
-                You have <strong className="font-medium text-white">{coursesInProgress} courses</strong> in progress.
+                You have <strong className="font-medium text-white">{coursesInProgress} course{coursesInProgress === 1 ? '' : 's'}</strong> to continue.
                 Ready to continue?
               </p>
             </div>
@@ -455,32 +516,6 @@ export function Dashboard() {
             >
               Browse all <ArrowUpRight size={13} />
             </button>
-          </div>
-
-          <div className="mb-7 grid grid-cols-2 gap-3 lg:grid-cols-4">
-            {stats.map((s, i) => (
-              <div key={i} className="rounded-xl p-4" style={{ background: T.surface, border: `1px solid ${T.border}` }}>
-                <div className="mb-3 flex items-center justify-between">
-                  <span className="text-[11px] font-medium uppercase tracking-wider" style={{ color: T.t3 }}>
-                    {s.label}
-                  </span>
-                  <span style={{ color: T.accent }}>{s.icon}</span>
-                </div>
-                <div className="mb-1 flex items-baseline gap-1">
-                  <span className="text-white" style={{ fontSize: '1.6rem', fontWeight: 700, letterSpacing: '-0.04em', lineHeight: 1 }}>
-                    {s.value}
-                  </span>
-                  {s.unit && (
-                    <span className="text-sm font-medium" style={{ color: T.t2 }}>
-                      {s.unit}
-                    </span>
-                  )}
-                </div>
-                <p className="text-[12px]" style={{ color: s.up === true ? T.green : T.t3 }}>
-                  {s.delta}
-                </p>
-              </div>
-            ))}
           </div>
 
           <SectionHeader label="Continue learning" icon={<Clock size={14} />} action="View all" onAction={() => navigate('/my-quizzes')} />
@@ -496,7 +531,9 @@ export function Dashboard() {
                   item={item}
                   onOpen={() =>
                     item.kind === 'course'
-                      ? navigate(`/course-details/${item.id}`)
+                      ? navigate(`/course-details/${item.id}`, {
+                          state: { from: `${location.pathname}${location.search}` },
+                        })
                       : navigate(`/quiz/${item.id}`)
                   }
                 />
@@ -507,7 +544,17 @@ export function Dashboard() {
           <SectionHeader label="Curated for you" icon={<Star size={14} />} action="See all" onAction={() => navigate('/educators')} />
           <div className="mb-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
             {(curated.length > 0 ? curated : FALLBACK_CURATED).map((c) => (
-              <CourseCard key={String(c.id)} course={c} />
+              <CourseCard
+                key={String(c.id)}
+                course={c}
+                onOpen={() => {
+                  if (typeof c.id === 'string' && c.id.includes('-')) {
+                    navigate(`/course-details/${c.id}`, {
+                      state: { from: `${location.pathname}${location.search}` },
+                    });
+                  }
+                }}
+              />
             ))}
           </div>
 
@@ -638,10 +685,20 @@ function ProgressCard({ item, onOpen }: { item: ProgressItem; onOpen: () => void
   );
 }
 
-function CourseCard({ course }: { course: CuratedCard | (typeof FALLBACK_CURATED)[0] }) {
+function CourseCard({
+  course,
+  onOpen,
+}: {
+  course: CuratedCard | (typeof FALLBACK_CURATED)[0];
+  onOpen?: () => void;
+}) {
   const tag = tagColors[course.tag] ?? { color: T.t2, bg: 'rgba(255,255,255,0.06)' };
   return (
     <div
+      role={onOpen ? 'button' : undefined}
+      tabIndex={onOpen ? 0 : undefined}
+      onClick={onOpen}
+      onKeyDown={onOpen ? (e) => e.key === 'Enter' && onOpen() : undefined}
       className="group cursor-pointer overflow-hidden rounded-xl transition-all duration-200 hover:border-white/[0.13]"
       style={{ background: T.surface, border: `1px solid ${T.border}` }}
     >
