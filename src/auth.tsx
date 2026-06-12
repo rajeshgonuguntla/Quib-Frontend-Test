@@ -74,7 +74,8 @@ export function ProtectedRoute() {
 
 export function PublicOnlyRoute() {
   if (isTokenValid()) {
-    return <Navigate to="/dashboard" replace />;
+    const hasInterests = !!localStorage.getItem('quib_interests');
+    return <Navigate to={hasInterests ? '/dashboard' : '/onboarding'} replace />;
   }
 
   return <Outlet />;

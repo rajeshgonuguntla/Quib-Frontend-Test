@@ -3,6 +3,9 @@ import { Link, useNavigate } from 'react-router';
 import { LayoutDashboard, FileText, Settings as SettingsIcon, Search, LogOut, ChevronDown, Sun, Moon } from 'lucide-react';
 import { useTheme, getC } from './ThemeContext';
 import { clearToken } from '../auth';
+import { useUserProfile } from '../context/UserProfileContext';
+import { UserAvatar } from './UserAvatar';
+import { getDisplayName, getFirstName } from '../utils/userDisplay';
 
 interface DarkLayoutProps {
   children: ReactNode;
@@ -23,7 +26,10 @@ export function DarkLayout({
 }: DarkLayoutProps) {
   const navigate = useNavigate();
   const { isDark, toggleTheme } = useTheme();
+  const { profile, setProfile } = useUserProfile();
   const C = getC(isDark);
+  const displayName = getDisplayName(profile);
+  const shortName = getFirstName(profile);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
@@ -160,14 +166,9 @@ export function DarkLayout({
                   onMouseEnter={(e) => (e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)')}
                   onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                 >
-                  <div
-                    className="w-7 h-7 rounded-full flex items-center justify-center text-[0.65rem] font-[700]"
-                    style={{ background: C.redDim, color: C.red, border: '1px solid rgba(225,6,0,0.2)' }}
-                  >
-                    RG
-                  </div>
+                  <UserAvatar profile={profile} size="sm" />
                   <div className="text-left hidden xl:block">
-                    <div className="text-[0.8rem] font-[500]" style={{ color: C.text }}>Rajesh</div>
+                    <div className="text-[0.8rem] font-[500]" style={{ color: C.text }}>{shortName}</div>
                   </div>
                   <ChevronDown className="w-3.5 h-3.5" style={{ color: C.text3 }} />
                 </button>
@@ -187,8 +188,8 @@ export function DarkLayout({
                     }}
                   >
                     <div className="px-4 py-2.5" style={{ borderBottom: `1px solid ${C.border}` }}>
-                      <div className="text-sm font-[500]" style={{ color: C.text }}>Rajesh Gonuguntla</div>
-                      <div className="text-xs" style={{ color: C.text3 }}>Pro Member</div>
+                      <div className="text-sm font-[500]" style={{ color: C.text }}>{displayName}</div>
+                      <div className="text-xs truncate" style={{ color: C.text3 }}>{profile?.email ?? ''}</div>
                     </div>
                     <button
                       onClick={() => { navigate('/settings'); setShowProfileMenu(false); }}
@@ -201,7 +202,7 @@ export function DarkLayout({
                       Settings
                     </button>
                     <button
-                      onClick={() => { clearToken(); navigate('/signin'); setShowProfileMenu(false); }}
+                      onClick={() => { clearToken(); setProfile(null); navigate('/signin'); setShowProfileMenu(false); }}
                       className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-2 cursor-pointer transition-colors"
                       style={{ color: C.red, background: 'transparent', borderTop: `1px solid ${C.border}` }}
                       onMouseEnter={(e) => (e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.04)')}

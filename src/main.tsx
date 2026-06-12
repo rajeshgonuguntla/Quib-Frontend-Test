@@ -4,16 +4,16 @@
   import App from "./App.tsx";
   import "./index.css";
 
-  axios.defaults.baseURL = import.meta.env.PROD
-    ? 'https://quib-app-backend-944587700647.europe-west1.run.app'
-      : '';
+  axios.defaults.baseURL =
+    import.meta.env.VITE_API_BASE_URL ||
+    (import.meta.env.PROD ? 'https://quib-app-backend-944587700647.europe-west1.run.app' : '');
 
   axios.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
     const rawUrl = typeof config.url === 'string' ? config.url : '';
     const resolvedUrl = new URL(
       rawUrl,
-      config.baseURL ?? axios.defaults.baseURL ?? window.location.origin,
+      config.baseURL || axios.defaults.baseURL || window.location.origin,
     );
     const isGoogleAuthEndpoint = resolvedUrl.pathname.startsWith('/api/auth/google');
 

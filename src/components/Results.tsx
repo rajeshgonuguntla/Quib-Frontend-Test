@@ -38,6 +38,23 @@ export function Results() {
   const [copied, setCopied] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
 
+  const apiResult = location.state?.result as {
+    scorePercent?: number;
+    correctCount?: number;
+    totalCount?: number;
+    passed?: boolean;
+    questionReview?: Array<{
+      sortOrder: number;
+      type: string;
+      question: string;
+      userAnswer: string;
+      correctAnswer: string;
+      correct: boolean;
+      explanation?: string;
+    }>;
+    certificate?: { certificateCode?: string; id?: string };
+  } | undefined;
+
   const questions: Question[] =
     location.state?.questions ?? readStored<Question[]>('generatedQuestions', []);
   const answers: Record<number, string | string[]> = location.state?.answers ?? {};
@@ -53,27 +70,37 @@ export function Results() {
   const quizTitle = videoMeta.title || 'Generated Quiz';
   const shareUrl = `${window.location.origin}/quiz/${id}`;
 
-  const questionReview = questions.map((q, index) => {
-    const userAnswer = (answers[index] as string | undefined) ?? '';
-    const correctAnswer = q.answer ?? '';
-    const isCorrect =
-      correctAnswer.length > 0 &&
-      userAnswer.trim().toLowerCase() === correctAnswer.trim().toLowerCase();
-    return {
-      id: index,
-      question: q.question,
-      type: q.type,
-      userAnswer: userAnswer || 'Not answered',
-      correctAnswer,
-      isCorrect,
-      explanation: q.explanation ?? '',
-    };
-  });
+  const questionReview = apiResult?.questionReview?.length
+    ? apiResult.questionReview.map((q) => ({
+        id: q.sortOrder,
+        question: q.question,
+        type: q.type === 'true_false' ? 'trueFalse' as const : q.type === 'short_answer' ? 'shortAnswer' as const : 'mcq' as const,
+        userAnswer: q.userAnswer,
+        correctAnswer: q.correctAnswer,
+        isCorrect: q.correct,
+        explanation: q.explanation ?? '',
+      }))
+    : questions.map((q, index) => {
+        const userAnswer = (answers[index] as string | undefined) ?? '';
+        const correctAnswer = q.answer ?? '';
+        const isCorrect =
+          correctAnswer.length > 0 &&
+          userAnswer.trim().toLowerCase() === correctAnswer.trim().toLowerCase();
+        return {
+          id: index,
+          question: q.question,
+          type: q.type,
+          userAnswer: userAnswer || 'Not answered',
+          correctAnswer,
+          isCorrect,
+          explanation: q.explanation ?? '',
+        };
+      });
 
-  const totalQuestions = questions.length;
-  const correctAnswers = questionReview.filter((q) => q.isCorrect).length;
-  const score = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
-  const passed = score >= 70;
+  const totalQuestions = apiResult?.totalCount ?? questions.length;
+  const correctAnswers = apiResult?.correctCount ?? questionReview.filter((q) => q.isCorrect).length;
+  const score = apiResult?.scorePercent ?? (totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0);
+  const passed = apiResult?.passed ?? score >= 70;
   const shareText = `I scored ${score}% on "${quizTitle}" on Quib! Can you beat my score?`;
 
   const breakdown = (

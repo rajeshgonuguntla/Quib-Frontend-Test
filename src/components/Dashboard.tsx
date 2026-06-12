@@ -1,558 +1,850 @@
-import { useNavigate, useLocation } from 'react-router';
-import { DarkLayout } from './DarkLayout';
-import { Youtube, Play, Clock, TrendingUp, Target, Flame, FileText, Award, Upload } from 'lucide-react';
-import { CubeLoader } from './CubeLoader';
-import { useState, useRef, ChangeEvent } from 'react';
-import { useTheme, getC } from './ThemeContext';
+import { useEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router';
+import {
+  ArrowUpRight,
+  Bell,
+  BookMarked,
+  CheckCircle2,
+  ChevronRight,
+  Circle,
+  Clock,
+  GraduationCap,
+  HelpCircle,
+  Home,
+  Play,
+  Search,
+  Settings,
+  Star,
+  TrendingUp,
+  Users,
+} from 'lucide-react';
+import axios from 'axios';
+import { clearToken } from '../auth';
+import { CREATORS } from '../data/creators';
+import {
+  fetchCourses,
+  fetchEnrollments,
+  fetchEnrollmentStats,
+  fetchPopularCreators,
+  searchCourses,
+} from '../api/catalogApi';
+import type { CourseSearchResult, EnrollmentStats } from '../types/catalog';
+import { useUserProfile } from '../context/UserProfileContext';
+import { UserAvatar } from './UserAvatar';
+import { SidebarNavItem } from './SidebarNavItem';
+import { getFirstName } from '../utils/userDisplay';
+import { courseToCuratedCard, ytThumb } from '../utils/catalogMap';
+
+const T = {
+  bg: '#0C0C0C',
+  surface: '#141414',
+  border: 'rgba(255,255,255,0.07)',
+  borderMd: 'rgba(255,255,255,0.12)',
+  accent: '#6366F1',
+  accentBg: 'rgba(99,102,241,0.1)',
+  accentBd: 'rgba(99,102,241,0.22)',
+  accentLt: '#818CF8',
+  green: '#22C55E',
+  greenBg: 'rgba(34,197,94,0.08)',
+  amber: '#F59E0B',
+  t1: '#F4F4F5',
+  t2: '#A1A1AA',
+  t3: '#71717A',
+  t4: '#3F3F46',
+};
+const FONT = "'Inter', system-ui, -apple-system, sans-serif";
+
+const FALLBACK_CURATED = [
+  {
+    id: 1,
+    title: 'Web Development Masterclass',
+    instructor: 'Emma Johnson',
+    tag: 'Web Dev',
+    rating: '4.7',
+    students: '203k',
+    duration: '56h',
+    image: 'https://images.unsplash.com/photo-1593720213428-28a5b9e94613?w=600&q=80',
+  },
+  {
+    id: 2,
+    title: 'Neural Networks from Scratch',
+    instructor: 'Andrej Karpathy',
+    tag: 'AI & ML',
+    rating: '4.9',
+    students: '156k',
+    duration: '12h',
+    image: 'https://images.unsplash.com/photo-1617119895969-f4ea56f5538b?w=600&q=80',
+  },
+  {
+    id: 3,
+    title: 'The Essence of Linear Algebra',
+    instructor: '3Blue1Brown',
+    tag: 'Mathematics',
+    rating: '4.9',
+    students: '430k',
+    duration: '8h',
+    image: 'https://images.unsplash.com/photo-1773999088123-4468344c84ce?w=600&q=80',
+  },
+  {
+    id: 4,
+    title: 'TypeScript from Zero to Hero',
+    instructor: 'Matt Pocock',
+    tag: 'Programming',
+    rating: '4.8',
+    students: '98k',
+    duration: '22h',
+    image: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=600&q=80',
+  },
+];
+
+const tagColors: Record<string, { color: string; bg: string }> = {
+  'AI & ML': { color: '#818CF8', bg: 'rgba(129,140,248,0.1)' },
+  Programming: { color: '#34D399', bg: 'rgba(52,211,153,0.08)' },
+  Mathematics: { color: '#FB923C', bg: 'rgba(251,146,60,0.08)' },
+  'Web Dev': { color: '#38BDF8', bg: 'rgba(56,189,248,0.08)' },
+  Quiz: { color: '#818CF8', bg: 'rgba(129,140,248,0.1)' },
+};
+
+type CuratedCard = ReturnType<typeof courseToCuratedCard>;
+
+type ProgressItem = {
+  id: string;
+  title: string;
+  instructor: string;
+  tag: string;
+  progress: number;
+  timeLeft: string;
+  lessons: { done: number; total: number };
+  image: string;
+  kind?: 'course' | 'quiz';
+  status?: string;
+};
 
 export function Dashboard() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isDark } = useTheme();
-  const C = getC(isDark);
-  
-  // Handle redirect from sign-in with playlist or video URL
-  const incomingPlaylistUrl = location.state?.playlistUrl;
-  const incomingVideoUrl = location.state?.youtubeUrl;
-  
-  if (incomingPlaylistUrl) {
-    navigate('/playlist-setup/new', { state: { playlistUrl: incomingPlaylistUrl }, replace: true });
-    return null;
-  }
-  
-  const [youtubeUrl, setYoutubeUrl] = useState(incomingVideoUrl || '');
-  const [difficulty, setDifficulty] = useState('medium');
-  const [questionCount, setQuestionCount] = useState(10);
-  const [timedExam, setTimedExam] = useState(false);
-  const [questionTypes, setQuestionTypes] = useState({
-    mcq: true,
-    trueFalse: true,
-    shortAnswer: false,
-  });
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [urlFocused, setUrlFocused] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { profile, setProfile } = useUserProfile();
+  const firstName = getFirstName(profile);
 
-  const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      console.log('Uploaded file:', file.name, file.type, file.size);
-      // TODO: handle file processing
-    }
-    if (fileInputRef.current) fileInputRef.current.value = '';
+  const incomingPlaylistUrl = location.state?.playlistUrl as string | undefined;
+  const incomingVideoUrl = location.state?.youtubeUrl as string | undefined;
+
+  const isNavActive = (path: string, id: string) => {
+    if (id === 'dashboard') return location.pathname === '/dashboard' || location.pathname === '/home';
+    if (id === 'browse' || id === 'trending') return location.pathname.startsWith('/educators') || location.pathname.startsWith('/educator/');
+    if (id === 'progress' || id === 'saved' || id === 'completed') return location.pathname.startsWith('/my-quizzes');
+    if (id === 'settings' || id === 'help') return location.pathname.startsWith('/settings');
+    return location.pathname === path;
   };
 
-  const isPlaylistUrl = (url: string) => url.includes('list=');
-
-  const handleGenerate = () => {
-    if (!youtubeUrl) return;
-    if (isPlaylistUrl(youtubeUrl)) {
-      navigate('/playlist-setup/new', { state: { playlistUrl: youtubeUrl } });
+  useEffect(() => {
+    if (incomingPlaylistUrl) {
+      navigate('/playlist-setup/new', { state: { playlistUrl: incomingPlaylistUrl }, replace: true });
       return;
     }
-    setIsGenerating(true);
-    setTimeout(() => {
-      navigate('/quiz-setup/new', { state: { youtubeUrl, difficulty, questionCount, timedExam, questionTypes } });
-    }, 800);
+    if (incomingVideoUrl) {
+      navigate('/quiz-setup/new', { state: { youtubeUrl: incomingVideoUrl }, replace: true });
+    }
+  }, [incomingPlaylistUrl, incomingVideoUrl, navigate]);
+  const [inProgress, setInProgress] = useState<ProgressItem[]>([]);
+  const [curated, setCurated] = useState<CuratedCard[]>([]);
+  const [trending, setTrending] = useState<TrendingItem[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<CourseSearchResult[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+  const [libraryStats, setLibraryStats] = useState<EnrollmentStats>({
+    total: 0,
+    inProgress: 0,
+    saved: 0,
+    completed: 0,
+    avgScore: 0,
+  });
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [quizzesRes, popular, courses, enrollments, enrollmentStats] = await Promise.all([
+          axios.get('/api/quizzes').catch(() => ({ data: [] })),
+          fetchPopularCreators().catch(() => []),
+          fetchCourses({ category: 'Web Development', limit: 4 }).catch(() => []),
+          fetchEnrollments().catch(() => []),
+          fetchEnrollmentStats().catch(() => null),
+        ]);
+
+        const popularList =
+          popular.length > 0
+            ? popular
+            : CREATORS.map((c) => ({
+                id: c.id,
+                name: c.name,
+                tagline: c.tagline,
+                videoCount: c.videoCount,
+                youtubeVideoId: c.videoId,
+              }));
+        setTrending(
+          popularList.slice(0, 6).map((c) => ({
+            id: c.id,
+            name: c.name,
+            sub: c.tagline,
+            videos: `${c.videoCount}+`,
+            img: ytThumb('youtubeVideoId' in c && c.youtubeVideoId ? c.youtubeVideoId : (c as { videoId: string }).videoId),
+          })),
+        );
+
+        if (courses.length > 0) {
+          setCurated(courses.map(courseToCuratedCard));
+        }
+
+        const quizzes = (quizzesRes.data ?? []) as Array<{
+          id: string;
+          title: string;
+          status: string;
+          latestScorePercent?: number;
+          thumbnailUrl?: string;
+        }>;
+        const fromEnrollments: ProgressItem[] = (enrollments ?? [])
+          .filter((e: { status: string }) => e.status === 'in-progress' || e.status === 'saved')
+          .slice(0, 3)
+          .map((e: {
+            courseId: string;
+            title: string;
+            channel: string;
+            category: string;
+            progress: number;
+            youtubeVideoId?: string;
+            durationLabel?: string;
+            lessonCount?: number;
+            status: string;
+          }) => {
+            const totalLessons = e.lessonCount && e.lessonCount > 0 ? e.lessonCount : 10;
+            const doneLessons = Math.round((e.progress / 100) * totalLessons);
+            return {
+              id: e.courseId,
+              title: e.title,
+              instructor: e.channel,
+              tag: e.category,
+              progress: e.progress,
+              timeLeft: e.durationLabel ?? '—',
+              lessons: { done: doneLessons, total: totalLessons },
+              image: e.youtubeVideoId ? ytThumb(e.youtubeVideoId) : ytThumb('dQw4w9WgXcQ'),
+              kind: 'course' as const,
+              status: e.status,
+            };
+          });
+
+        const fromQuizzes: ProgressItem[] = quizzes
+          .filter((q) => q.status === 'in_progress' || q.status === 'generated')
+          .slice(0, 3)
+          .map((q, i) => ({
+            id: q.id,
+            title: q.title,
+            instructor: 'Your library',
+            tag: 'Quiz',
+            progress: q.latestScorePercent ?? (q.status === 'in_progress' ? 40 : 10),
+            timeLeft: '—',
+            lessons: { done: i + 1, total: 10 },
+            image: q.thumbnailUrl || ytThumb('dQw4w9WgXcQ'),
+            kind: 'quiz' as const,
+          }));
+
+        setInProgress([...fromEnrollments, ...fromQuizzes].slice(0, 3));
+        if (enrollmentStats) {
+          setLibraryStats(enrollmentStats);
+        }
+      } catch {
+        /* keep defaults */
+      }
+    };
+    void load();
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      setSearchLoading(false);
+      return;
+    }
+    setSearchLoading(true);
+    const timer = window.setTimeout(() => {
+      searchCourses(searchQuery, 12)
+        .then((results) => {
+          setSearchResults(results);
+          setSearchOpen(true);
+        })
+        .catch(() => setSearchResults([]))
+        .finally(() => setSearchLoading(false));
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setSearchOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const greeting = () => {
+    const h = new Date().getHours();
+    if (h < 12) return 'Good morning';
+    if (h < 17) return 'Good afternoon';
+    return 'Good evening';
   };
 
-  const recentQuizzes = [
-    { id: '1', title: 'Introduction to Machine Learning', status: 'completed', score: 92, date: '2 days ago' },
-    { id: '2', title: 'React Hooks Complete Guide', status: 'in-progress', score: null, date: '1 week ago' },
-    { id: '3', title: 'Advanced TypeScript Patterns', status: 'generated', score: null, date: '2 weeks ago' },
-  ];
+  const handleSignOut = () => {
+    clearToken();
+    setProfile(null);
+    navigate('/signin');
+  };
 
-  const stats = [
-    { label: 'Quizzes Taken', value: '12', icon: FileText, color: C.red },
-    { label: 'Avg Score', value: '87%', icon: Target, color: '#22c55e' },
-    { label: 'Quizzes Won', value: '8', icon: Award, color: '#3b82f6' },
-    { label: 'Day Streak', value: '5', icon: Flame, color: '#f97316' },
-  ];
+  const coursesInProgress = libraryStats.inProgress + libraryStats.saved;
 
   return (
-    <DarkLayout activeNav="dashboard" showSearch={true} sectionLabel="DASHBOARD">
-      {isGenerating && <CubeLoader />}
-
-      {/* Welcome Hero */}
-      <div
-        className="dash-fade-up rounded-xl px-8 py-5 mb-6 relative overflow-hidden"
-        style={{
-          background: 'transparent',
-          border: 'none',
-        }}
+    <div className="min-h-screen text-white" style={{ background: T.bg, fontFamily: FONT }}>
+      <aside
+        className="fixed inset-y-0 left-0 z-50 flex w-[240px] flex-col"
+        style={{ background: '#0A0A0A', borderRight: `1px solid ${T.border}` }}
       >
-        {/* Grid pattern background */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            backgroundImage: `linear-gradient(${isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)'} 1px, transparent 1px), linear-gradient(90deg, ${isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)'} 1px, transparent 1px)`,
-            backgroundSize: '60px 60px',
-            maskImage: 'radial-gradient(ellipse at center, black 30%, transparent 70%)',
-            WebkitMaskImage: 'radial-gradient(ellipse at center, black 30%, transparent 70%)',
-          }}
-        />
-        {/* Radial glow */}
-        <div
-          className="absolute top-0 right-0 pointer-events-none"
-          style={{
-            width: '60%',
-            height: '100%',
-            background: 'radial-gradient(ellipse at top right, rgba(225,6,0,0.04) 0%, transparent 60%)',
-          }}
-        />
-        <div className="relative z-10">
-          <p
-            className="mb-2"
-            style={{
-              fontFamily: "var(--mono)",
-              fontSize: '0.68rem',
-              color: C.red,
-              letterSpacing: '0.12em',
-              fontWeight: 500,
-            }}
-          >
-            WELCOME BACK
-          </p>
-          <h1
-            className="mb-0.5"
-            style={{
-              fontFamily: "var(--serif)",
-              fontWeight: 400,
-              fontSize: 'clamp(1.3rem, 2vw, 1.6rem)',
-              letterSpacing: '-0.01em',
-              color: C.text,
-            }}
-          >
-            Hello, Rajesh!
-          </h1>
-          <p className="text-xs" style={{ color: C.text2, fontWeight: 300, lineHeight: 1.6 }}>
-            Ready to learn something new today?
-          </p>
-        </div>
-      </div>
-
-      
-      {/* Generate Quiz Card */}
-      <div
-        className="dash-fade-up rounded-xl p-6 md:p-8 mb-8"
-        style={{
-          background: `linear-gradient(135deg, ${C.bg1}, ${isDark ? 'rgba(225,6,0,0.02)' : 'rgba(225,6,0,0.01)'})`,
-          border: `1px solid ${C.border}`,
-          animationDelay: '0.1s',
-        }}
-      >
-        <div className="flex items-start gap-4 mb-6">
-          <div
-            className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 relative group/logo cursor-pointer"
-            style={{ background: C.redDim }}
-            onMouseEnter={(e) => {
-              const expanded = e.currentTarget.querySelector('[data-logo-expanded]') as HTMLElement;
-              if (expanded) { expanded.style.opacity = '1'; expanded.style.transform = 'scale(1)'; expanded.style.pointerEvents = 'auto'; }
-            }}
-            onMouseLeave={(e) => {
-              const expanded = e.currentTarget.querySelector('[data-logo-expanded]') as HTMLElement;
-              if (expanded) { expanded.style.opacity = '0'; expanded.style.transform = 'scale(0.8)'; expanded.style.pointerEvents = 'none'; }
-            }}
-          >
-            <svg viewBox="250 250 300 300" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7">
-              <defs>
-                <linearGradient id="cTopG" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stopColor={isDark ? '#f0f0f0' : '#d0d0d0'} /><stop offset="100%" stopColor={isDark ? '#d0d0d0' : '#b0b0b0'} /></linearGradient>
-                <linearGradient id="cLeftG" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor={isDark ? '#b0b0b0' : '#909090'} /><stop offset="100%" stopColor={isDark ? '#909090' : '#707070'} /></linearGradient>
-                <linearGradient id="cRightG" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor={isDark ? '#c0c0c0' : '#a0a0a0'} /><stop offset="100%" stopColor={isDark ? '#a0a0a0' : '#808080'} /></linearGradient>
-                <linearGradient id="cBTop" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stopColor="#ff4d4d" /><stop offset="100%" stopColor="#ff2d2d" /></linearGradient>
-                <linearGradient id="cBLeft" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor="#cc0000" /><stop offset="100%" stopColor="#990000" /></linearGradient>
-                <linearGradient id="cBRight" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor="#ff1a1a" /><stop offset="100%" stopColor="#cc0000" /></linearGradient>
-              </defs>
-              <g opacity="0.5">
-                <g transform="translate(310,270)"><polygon points="0,30 50,5 100,30 50,55" fill="url(#cTopG)" /><polygon points="0,30 0,80 50,105 50,55" fill="url(#cLeftG)" /><polygon points="100,30 100,80 50,105 50,55" fill="url(#cRightG)" /></g>
-                <g transform="translate(390,270)"><polygon points="0,30 50,5 100,30 50,55" fill="url(#cTopG)" /><polygon points="0,30 0,80 50,105 50,55" fill="url(#cLeftG)" /><polygon points="100,30 100,80 50,105 50,55" fill="url(#cRightG)" /></g>
-              </g>
-              <g opacity="0.7">
-                <g transform="translate(270,320)"><polygon points="0,30 50,5 100,30 50,55" fill="url(#cTopG)" /><polygon points="0,30 0,80 50,105 50,55" fill="url(#cLeftG)" /><polygon points="100,30 100,80 50,105 50,55" fill="url(#cRightG)" /></g>
-                <g transform="translate(350,295)"><polygon points="0,30 50,5 100,30 50,55" fill="url(#cTopG)" /><polygon points="0,30 0,80 50,105 50,55" fill="url(#cLeftG)" /><polygon points="100,30 100,80 50,105 50,55" fill="url(#cRightG)" /></g>
-                <g transform="translate(430,320)"><polygon points="0,30 50,5 100,30 50,55" fill="url(#cTopG)" /><polygon points="0,30 0,80 50,105 50,55" fill="url(#cLeftG)" /><polygon points="100,30 100,80 50,105 50,55" fill="url(#cRightG)" /></g>
-              </g>
-              <g>
-                <g transform="translate(310,370)"><polygon points="0,30 50,5 100,30 50,55" fill="url(#cTopG)" /><polygon points="0,30 0,80 50,105 50,55" fill="url(#cLeftG)" /><polygon points="120,30 120,80 50,105 50,55" fill="url(#cRightG)" /></g>
-                <g transform="translate(350,345)"><polygon points="0,30 50,5 100,30 50,55" fill="url(#cBTop)" /><polygon points="0,30 0,80 50,105 50,55" fill="url(#cBLeft)" /><polygon points="100,30 100,80 50,105 50,55" fill="url(#cBRight)" /><polygon points="0,30 50,5 100,30 50,55" fill="#fff" opacity="0.2" /></g>
-                <g transform="translate(390,370)"><polygon points="0,30 50,5 100,30 50,55" fill="url(#cTopG)" /><polygon points="0,30 0,80 50,105 50,55" fill="url(#cLeftG)" /><polygon points="100,30 100,80 50,105 50,55" fill="url(#cRightG)" /></g>
-                <g transform="translate(350,395)"><polygon points="0,30 50,5 100,30 50,55" fill="url(#cTopG)" /><polygon points="0,30 0,80 50,105 50,55" fill="url(#cLeftG)" /><polygon points="100,30 100,80 50,105 50,55" fill="url(#cRightG)" /></g>
-              </g>
-              <circle cx="400" cy="400" r="100" fill="#ff2d2d" opacity="0.06" />
-            </svg>
-            {/* Expanded logo on hover */}
-            <div
-              data-logo-expanded
-              className="absolute top-0 left-0 z-50 rounded-xl flex items-center justify-center"
-              style={{
-                width: 200,
-                height: 200,
-                background: isDark ? C.bg1 : '#fff',
-                border: `1px solid ${C.border2}`,
-                boxShadow: isDark ? '0 12px 40px rgba(0,0,0,0.5)' : '0 12px 40px rgba(0,0,0,0.15)',
-                opacity: 0,
-                transform: 'scale(0.8)',
-                pointerEvents: 'none',
-                transition: 'opacity 0.2s ease, transform 0.2s ease',
-                transformOrigin: 'top left',
-              }}
-            >
-              <svg viewBox="250 250 300 300" xmlns="http://www.w3.org/2000/svg" className="w-40 h-40">
-                <defs>
-                  <linearGradient id="cTopGE" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stopColor={isDark ? '#f0f0f0' : '#d0d0d0'} /><stop offset="100%" stopColor={isDark ? '#d0d0d0' : '#b0b0b0'} /></linearGradient>
-                  <linearGradient id="cLeftGE" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor={isDark ? '#b0b0b0' : '#909090'} /><stop offset="100%" stopColor={isDark ? '#909090' : '#707070'} /></linearGradient>
-                  <linearGradient id="cRightGE" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor={isDark ? '#c0c0c0' : '#a0a0a0'} /><stop offset="100%" stopColor={isDark ? '#a0a0a0' : '#808080'} /></linearGradient>
-                  <linearGradient id="cBTopE" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stopColor="#ff4d4d" /><stop offset="100%" stopColor="#ff2d2d" /></linearGradient>
-                  <linearGradient id="cBLeftE" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor="#cc0000" /><stop offset="100%" stopColor="#990000" /></linearGradient>
-                  <linearGradient id="cBRightE" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor="#ff1a1a" /><stop offset="100%" stopColor="#cc0000" /></linearGradient>
-                </defs>
-                <g opacity="0.5">
-                  <g transform="translate(310,270)"><polygon points="0,30 50,5 100,30 50,55" fill="url(#cTopGE)" /><polygon points="0,30 0,80 50,105 50,55" fill="url(#cLeftGE)" /><polygon points="100,30 100,80 50,105 50,55" fill="url(#cRightGE)" /></g>
-                  <g transform="translate(390,270)"><polygon points="0,30 50,5 100,30 50,55" fill="url(#cTopGE)" /><polygon points="0,30 0,80 50,105 50,55" fill="url(#cLeftGE)" /><polygon points="100,30 100,80 50,105 50,55" fill="url(#cRightGE)" /></g>
-                </g>
-                <g opacity="0.7">
-                  <g transform="translate(270,320)"><polygon points="0,30 50,5 100,30 50,55" fill="url(#cTopGE)" /><polygon points="0,30 0,80 50,105 50,55" fill="url(#cLeftGE)" /><polygon points="100,30 100,80 50,105 50,55" fill="url(#cRightGE)" /></g>
-                  <g transform="translate(350,295)"><polygon points="0,30 50,5 100,30 50,55" fill="url(#cTopGE)" /><polygon points="0,30 0,80 50,105 50,55" fill="url(#cLeftGE)" /><polygon points="100,30 100,80 50,105 50,55" fill="url(#cRightGE)" /></g>
-                  <g transform="translate(430,320)"><polygon points="0,30 50,5 100,30 50,55" fill="url(#cTopGE)" /><polygon points="0,30 0,80 50,105 50,55" fill="url(#cLeftGE)" /><polygon points="100,30 100,80 50,105 50,55" fill="url(#cRightGE)" /></g>
-                </g>
-                <g>
-                  <g transform="translate(310,370)"><polygon points="0,30 50,5 100,30 50,55" fill="url(#cTopGE)" /><polygon points="0,30 0,80 50,105 50,55" fill="url(#cLeftGE)" /><polygon points="120,30 120,80 50,105 50,55" fill="url(#cRightGE)" /></g>
-                  <g transform="translate(350,345)"><polygon points="0,30 50,5 100,30 50,55" fill="url(#cBTopE)" /><polygon points="0,30 0,80 50,105 50,55" fill="url(#cBLeftE)" /><polygon points="100,30 100,80 50,105 50,55" fill="url(#cBRightE)" /><polygon points="0,30 50,5 100,30 50,55" fill="#fff" opacity="0.2" /></g>
-                  <g transform="translate(390,370)"><polygon points="0,30 50,5 100,30 50,55" fill="url(#cTopGE)" /><polygon points="0,30 0,80 50,105 50,55" fill="url(#cLeftGE)" /><polygon points="100,30 100,80 50,105 50,55" fill="url(#cRightGE)" /></g>
-                  <g transform="translate(350,395)"><polygon points="0,30 50,5 100,30 50,55" fill="url(#cTopGE)" /><polygon points="0,30 0,80 50,105 50,55" fill="url(#cLeftGE)" /><polygon points="100,30 100,80 50,105 50,55" fill="url(#cRightGE)" /></g>
-                </g>
-                <circle cx="400" cy="400" r="100" fill="#ff2d2d" opacity="0.06" />
-              </svg>
-            </div>
+        <div className="flex h-[57px] shrink-0 items-center gap-3 px-5" style={{ borderBottom: `1px solid ${T.border}` }}>
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg" style={{ background: T.accent }}>
+            <GraduationCap size={14} className="text-white" />
           </div>
           <div>
-            <p
-              className="mb-1"
-              style={{
-                fontFamily: "var(--mono)",
-                fontSize: '0.65rem',
-                color: C.text3,
-                letterSpacing: '0.1em',
-                fontWeight: 500,
-              }}
-            >
-              GENERATE
-            </p>
-            <h2
-              style={{
-                fontFamily: "var(--serif)",
-                fontWeight: 400,
-                fontSize: '1.5rem',
-                letterSpacing: '-0.01em',
-                color: C.text,
-                marginBottom: 4,
-              }}
-            >
-              Quiz from YouTube
-            </h2>
-            <p className="text-sm font-[300]" style={{ color: C.text2 }}>
-              Paste any video or playlist URL to create a custom assessment
-            </p>
+            <span className="text-sm font-semibold tracking-tight text-zinc-100">Quib</span>
+            <span className="-mt-0.5 block text-[10px] text-zinc-600">Learning Platform</span>
           </div>
         </div>
 
-        <div className="space-y-6">
-          <div className="flex gap-3">
-            <div className="flex-1 relative">
-              <Youtube
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors duration-200"
-                style={{ color: urlFocused ? C.red : C.text3 }}
+        <nav className="flex-1 overflow-y-auto px-3 py-4" style={{ scrollbarWidth: 'none' }}>
+          <NavGroup label="Menu">
+            {[
+              { id: 'dashboard', label: 'Dashboard', icon: <Home size={15} />, path: '/dashboard' },
+              { id: 'browse', label: 'Browse Courses', icon: <Search size={15} />, path: '/educators' },
+              { id: 'trending', label: 'Trending', icon: <TrendingUp size={15} />, path: '/educators' },
+            ].map((item) => (
+              <SidebarNavItem
+                key={item.id}
+                item={item}
+                active={isNavActive(item.path, item.id)}
+                onClick={() => navigate(item.path)}
               />
-              <input
-                type="text"
-                placeholder="https://youtube.com/watch?v=..."
-                value={youtubeUrl}
-                onChange={(e) => setYoutubeUrl(e.target.value)}
-                onFocus={() => setUrlFocused(true)}
-                onBlur={() => setUrlFocused(false)}
-                className="w-full pl-10 pr-4 py-2.5 rounded-lg outline-none text-sm transition-all duration-200"
-                style={{
-                  background: C.bg,
-                  border: `1px solid ${urlFocused ? C.border2 : C.border}`,
-                  color: C.text,
-                  fontFamily: "var(--mono)",
-                  letterSpacing: '0.01em',
-                  boxShadow: urlFocused ? '0 0 0 3px rgba(225,6,0,0.06)' : 'none',
-                }}
-                onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
+            ))}
+          </NavGroup>
+
+          <NavGroup label="Library">
+            {[
+              { id: 'progress', label: 'In Progress', icon: <Circle size={15} />, badge: String(libraryStats.inProgress || '0'), path: '/my-quizzes' },
+              { id: 'saved', label: 'Saved', icon: <BookMarked size={15} />, badge: String(libraryStats.saved || '0'), path: '/my-quizzes' },
+              { id: 'completed', label: 'Completed', icon: <CheckCircle2 size={15} />, badge: String(libraryStats.completed || '0'), path: '/my-quizzes' },
+            ].map((item) => (
+              <SidebarNavItem
+                key={item.id}
+                item={item}
+                active={isNavActive(item.path, item.id)}
+                onClick={() => navigate(item.path)}
               />
-            </div>
-            {/* Upload Document */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-              className="hidden"
-              onChange={handleFileUpload}
-            />
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="px-3 py-2.5 rounded-lg transition-all duration-200 flex-shrink-0"
-              style={{
-                background: C.bg,
-                border: `1px solid ${C.border}`,
-                color: C.text2,
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = C.border2;
-                e.currentTarget.style.color = C.red;
-                e.currentTarget.style.background = C.redDim;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = C.border;
-                e.currentTarget.style.color = C.text2;
-                e.currentTarget.style.background = C.bg;
-              }}
-              title="Upload PDF or Word document"
-            >
-              <Upload className="w-4 h-4" />
-            </button>
-            <button
-              onClick={handleGenerate}
-              disabled={!youtubeUrl}
-              className="px-6 py-2.5 rounded-lg text-sm font-[600] text-white transition-all duration-200 hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{
-                background: C.red,
-                boxShadow: youtubeUrl ? '0 4px 14px rgba(225,6,0,0.25)' : 'none',
-              }}
-              onMouseEnter={(e) => { if (youtubeUrl) e.currentTarget.style.transform = 'translateY(-1px)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
-            >
-              Generate
-            </button>
-          </div>
+            ))}
+          </NavGroup>
 
-          {/* Options Grid */}
-          <div>
-            {/* Gradient divider */}
-            <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${C.border2}, transparent)`, marginBottom: 24 }} />
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-[500] mb-3" style={{ color: C.text2 }}>Difficulty Level</label>
-                <div className="flex gap-2">
-                  {['easy', 'medium', 'hard'].map((level) => (
-                    <button
-                      key={level}
-                      onClick={() => setDifficulty(level)}
-                      className="flex-1 px-4 py-2 rounded-lg text-sm font-[500] transition-all duration-200"
-                      style={{
-                        background: difficulty === level ? C.red : C.bg,
-                        color: difficulty === level ? '#fff' : C.text2,
-                        border: `1px solid ${difficulty === level ? C.red : C.border}`,
-                        boxShadow: difficulty === level ? '0 0 12px rgba(225,6,0,0.2)' : 'none',
-                      }}
-                      onMouseEnter={(e) => { if (difficulty !== level) e.currentTarget.style.borderColor = C.border2; }}
-                      onMouseLeave={(e) => { if (difficulty !== level) e.currentTarget.style.borderColor = C.border; }}
-                    >
-                      {level.charAt(0).toUpperCase() + level.slice(1)}
-                    </button>
-                  ))}
-                </div>
-              </div>
+          <NavGroup label="Account">
+            {[
+              { id: 'settings', label: 'Settings', icon: <Settings size={15} />, path: '/settings' },
+              { id: 'help', label: 'Help & Support', icon: <HelpCircle size={15} />, path: '/settings' },
+            ].map((item) => (
+              <SidebarNavItem
+                key={item.id}
+                item={item}
+                active={isNavActive(item.path, item.id)}
+                onClick={() => navigate(item.path)}
+              />
+            ))}
+          </NavGroup>
+        </nav>
 
-              <div>
-                <label className="block text-sm font-[500] mb-3" style={{ color: C.text2 }}>
-                  Question Count: <span style={{ color: C.text }}>{questionCount}</span>
-                </label>
-                <input
-                  type="range"
-                  min="5"
-                  max="25"
-                  step="5"
-                  value={questionCount}
-                  onChange={(e) => setQuestionCount(Number(e.target.value))}
-                  className="w-full h-1.5 rounded-full appearance-none cursor-pointer"
-                  style={{ background: C.bg3, accentColor: C.red }}
-                />
-                <div className="flex justify-between text-xs mt-1" style={{ color: C.text3 }}>
-                  <span>5</span>
-                  <span>25</span>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-[500] mb-3" style={{ color: C.text2 }}>Question Types</label>
-                <div className="space-y-2.5">
-                  {[
-                    { key: 'mcq', label: 'Multiple Choice' },
-                    { key: 'trueFalse', label: 'True/False' },
-                    { key: 'shortAnswer', label: 'Short Answer' },
-                  ].map((type) => (
-                    <label key={type.key} className="flex items-center gap-2.5 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={questionTypes[type.key as keyof typeof questionTypes]}
-                        onChange={(e) =>
-                          setQuestionTypes({ ...questionTypes, [type.key]: e.target.checked })
-                        }
-                        className="rounded"
-                        style={{ accentColor: C.red }}
-                      />
-                      <span className="text-sm" style={{ color: C.text2 }}>{type.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-[500] mb-3" style={{ color: C.text2 }}>Time Limit</label>
-                <label className="flex items-center gap-2.5 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={timedExam}
-                    onChange={(e) => setTimedExam(e.target.checked)}
-                    className="rounded"
-                    style={{ accentColor: C.red }}
-                  />
-                  <span className="text-sm" style={{ color: C.text2 }}>Enable timed exam (30 minutes)</span>
-                </label>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Recent Quizzes */}
-      <div className="dash-fade-up" style={{ animationDelay: '0.15s' }}>
-        <div className="flex items-center justify-between mb-5">
-          <div>
-            <p
-              className="mb-1"
-              style={{
-                fontFamily: "var(--mono)",
-                fontSize: '0.65rem',
-                color: C.text3,
-                letterSpacing: '0.1em',
-                fontWeight: 500,
-              }}
-            >
-              RECENT ACTIVITY
-            </p>
-            <h2
-              style={{
-                fontFamily: "var(--serif)",
-                fontWeight: 400,
-                fontSize: '1.25rem',
-                color: C.text,
-                letterSpacing: '-0.01em',
-              }}
-            >
-              Recent Quizzes
-            </h2>
-          </div>
+        <div className="shrink-0 p-3" style={{ borderTop: `1px solid ${T.border}` }}>
           <button
-            className="text-sm font-[500] transition-all duration-200 hover:opacity-80"
-            style={{ color: C.red }}
-            onClick={() => navigate('/my-quizzes')}
+            type="button"
+            onClick={() => navigate('/settings')}
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-150 hover:bg-white/[0.06] active:scale-[0.98] active:bg-white/[0.08]"
           >
-            View all
+            <UserAvatar profile={profile} size="sm" />
+            <div className="min-w-0 flex-1 text-left">
+              <div className="mb-0.5 truncate text-sm font-medium leading-none text-zinc-200">{firstName}</div>
+              <div className="truncate text-[11px] text-zinc-600">{profile?.email ?? 'Pro Plan'}</div>
+            </div>
+            <ChevronRight size={13} className="shrink-0" style={{ color: T.t4 }} />
+          </button>
+          <button
+            type="button"
+            onClick={handleSignOut}
+            className="mt-2 w-full rounded-lg py-2 text-[12px] font-medium transition-all duration-150 hover:bg-white/[0.06] active:scale-[0.98] active:bg-white/[0.08]"
+            style={{ color: T.t3, border: `1px solid ${T.border}` }}
+          >
+            Sign out
           </button>
         </div>
+      </aside>
 
-        <div className="space-y-3">
-          {recentQuizzes.map((quiz) => (
-            <div
-              key={quiz.id}
-              className="rounded-xl p-5 flex items-center gap-5 transition-all duration-250 group cursor-pointer"
-              style={{ background: C.bg1, border: `1px solid ${C.border}` }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = C.border2;
-                e.currentTarget.style.transform = 'translateY(-1px)';
-                e.currentTarget.style.boxShadow = isDark ? '0 4px 16px rgba(0,0,0,0.15)' : '0 4px 16px rgba(0,0,0,0.06)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = C.border;
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = 'none';
-              }}
-            >
+      <div className="ml-[240px] flex min-h-screen flex-col">
+        <header
+          className="sticky top-0 z-40 flex h-[57px] shrink-0 items-center justify-between px-8"
+          style={{
+            background: 'rgba(12,12,12,0.92)',
+            borderBottom: `1px solid ${T.border}`,
+            backdropFilter: 'blur(16px)',
+          }}
+        >
+          <div className="flex items-center gap-1.5 text-[13px]">
+            <span style={{ color: T.t3 }}>Dashboard</span>
+            <ChevronRight size={12} style={{ color: T.t4 }} />
+            <span className="font-medium" style={{ color: T.t1 }}>
+              Overview
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div ref={searchRef} className="relative">
               <div
-                className="w-24 h-16 rounded-lg flex items-center justify-center flex-shrink-0"
-                style={{ background: `linear-gradient(135deg, ${C.bg2}, ${C.bg3})` }}
+                className="flex h-8 min-w-[220px] items-center gap-2 rounded-lg px-3 text-[13px] md:min-w-[280px]"
+                style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.t3 }}
               >
-                <Play className="w-6 h-6" style={{ color: C.text3 }} />
+                <Search size={13} />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => searchQuery.trim() && setSearchOpen(true)}
+                  placeholder="Search by creator, playlist, or video…"
+                  className="min-w-0 flex-1 bg-transparent text-[13px] outline-none"
+                  style={{ color: T.t1 }}
+                />
               </div>
-
-              <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-[600] truncate mb-1.5" style={{ color: C.text }}>{quiz.title}</h3>
-                <div className="flex items-center gap-4 text-xs" style={{ color: C.text3 }}>
-                  <span className="flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5" />
-                    {quiz.date}
-                  </span>
-                  {quiz.score && (
-                    <span className="flex items-center gap-1">
-                      <TrendingUp className="w-3.5 h-3.5" />
-                      Score: {quiz.score}%
-                    </span>
+              {searchOpen && searchQuery.trim() && (
+                <div
+                  className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 overflow-hidden rounded-xl shadow-2xl"
+                  style={{ background: T.surface, border: `1px solid ${T.border}` }}
+                >
+                  {searchLoading ? (
+                    <p className="px-4 py-3 text-[12px]" style={{ color: T.t3 }}>Searching…</p>
+                  ) : searchResults.length === 0 ? (
+                    <p className="px-4 py-3 text-[12px]" style={{ color: T.t3 }}>No published courses found.</p>
+                  ) : (
+                    <div className="max-h-80 overflow-y-auto py-1">
+                      {searchResults.map((result) => (
+                        <button
+                          key={result.courseId}
+                          type="button"
+                          onClick={() => {
+                            setSearchOpen(false);
+                            setSearchQuery('');
+                            navigate(`/course-details/${result.courseId}`, {
+                              state: { from: `${location.pathname}${location.search}` },
+                            });
+                          }}
+                          className="flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-white/[0.05]"
+                        >
+                          {result.youtubeVideoId ? (
+                            <img
+                              src={ytThumb(result.youtubeVideoId)}
+                              alt=""
+                              className="h-10 w-16 shrink-0 rounded object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-10 w-16 shrink-0 items-center justify-center rounded" style={{ background: T.accentBg }}>
+                              <BookMarked size={14} style={{ color: T.accent }} />
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-[13px] font-medium" style={{ color: T.t1 }}>{result.title}</p>
+                            <p className="truncate text-[11px]" style={{ color: T.t3 }}>
+                              {result.channelName ?? 'YouTube'}
+                              {result.matchedOn ? ` · matched ${result.matchedOn}` : ''}
+                            </p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
                   )}
                 </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <span
-                  className="text-[0.68rem] font-[600] px-2.5 py-0.5 rounded-full flex-shrink-0"
-                  style={{
-                    fontFamily: "var(--mono)",
-                    letterSpacing: '0.06em',
-                    background:
-                      quiz.status === 'completed' ? 'rgba(34,197,94,0.1)' :
-                      quiz.status === 'in-progress' ? 'rgba(249,115,22,0.1)' : C.redDim,
-                    color:
-                      quiz.status === 'completed' ? '#22c55e' :
-                      quiz.status === 'in-progress' ? '#f97316' : C.red,
-                    border: `1px solid ${
-                      quiz.status === 'completed' ? 'rgba(34,197,94,0.2)' :
-                      quiz.status === 'in-progress' ? 'rgba(249,115,22,0.2)' : 'rgba(225,6,0,0.2)'
-                    }`,
-                  }}
-                >
-                  {quiz.status === 'completed' ? 'COMPLETED' :
-                   quiz.status === 'in-progress' ? 'IN PROGRESS' : 'GENERATED'}
-                </span>
-                {quiz.status === 'completed' ? (
-                  <>
-                    <button
-                      onClick={() => navigate(`/results/${quiz.id}`)}
-                      className="px-3 py-1.5 rounded-md text-xs font-[600] transition-all duration-200 hover:opacity-90"
-                      style={{ background: C.red, color: '#fff', boxShadow: '0 2px 8px rgba(225,6,0,0.2)' }}
-                      onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
-                    >
-                      Results
-                    </button>
-                  </>
-                ) : quiz.status === 'in-progress' ? (
-                  <button
-                    onClick={() => navigate(`/quiz/${quiz.id}`)}
-                    className="px-3 py-1.5 rounded-md text-xs font-[600] transition-all duration-200 hover:opacity-90"
-                    style={{ background: C.red, color: '#fff', boxShadow: '0 2px 8px rgba(225,6,0,0.2)' }}
-                    onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
-                  >
-                    Resume
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => navigate(`/quiz/${quiz.id}`)}
-                    className="px-3 py-1.5 rounded-md text-xs font-[600] transition-all duration-200 hover:opacity-90"
-                    style={{ background: C.red, color: '#fff', boxShadow: '0 2px 8px rgba(225,6,0,0.2)' }}
-                    onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
-                  >
-                    Start
-                  </button>
-                )}
-              </div>
+              )}
             </div>
-          ))}
+            <button
+              type="button"
+              className="relative flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-white/[0.05]"
+              style={{ color: T.t3 }}
+            >
+              <Bell size={15} />
+              <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full" style={{ background: T.accent }} />
+            </button>
+            <button type="button" onClick={() => navigate('/settings')} className="cursor-pointer">
+              <UserAvatar profile={profile} size="md" />
+            </button>
+          </div>
+        </header>
+
+        <div className="mx-auto w-full max-w-[1360px] flex-1 px-8 pb-20 pt-8">
+          <div className="mb-7 flex items-end justify-between">
+            <div>
+              <p className="mb-1.5 text-[12px] font-medium uppercase tracking-widest" style={{ color: T.t3 }}>
+                {greeting()}
+              </p>
+              <h1
+                className="text-white"
+                style={{
+                  fontSize: 'clamp(1.65rem, 3vw, 2.25rem)',
+                  fontWeight: 700,
+                  letterSpacing: '-0.03em',
+                  lineHeight: 1.1,
+                }}
+              >
+                Welcome back, {firstName}
+              </h1>
+              <p className="mt-2 text-sm" style={{ color: T.t2 }}>
+                You have <strong className="font-medium text-white">{coursesInProgress} course{coursesInProgress === 1 ? '' : 's'}</strong> to continue.
+                Ready to continue?
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate('/educators')}
+              className="hidden items-center gap-1.5 rounded-lg px-4 py-2 text-[13px] transition-colors hover:bg-white/[0.06] md:flex"
+              style={{ border: `1px solid ${T.border}`, color: T.t2 }}
+            >
+              Browse all <ArrowUpRight size={13} />
+            </button>
+          </div>
+
+          <SectionHeader label="Continue learning" icon={<Clock size={14} />} action="View all" onAction={() => navigate('/my-quizzes')} />
+          {inProgress.length === 0 ? (
+            <p className="mb-8 text-[13px]" style={{ color: T.t4 }}>
+              No courses or quizzes in progress yet.
+            </p>
+          ) : (
+            <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3">
+              {inProgress.map((item) => (
+                <ProgressCard
+                  key={item.id}
+                  item={item}
+                  onOpen={() =>
+                    item.kind === 'course'
+                      ? navigate(`/course-details/${item.id}`, {
+                          state: { from: `${location.pathname}${location.search}` },
+                        })
+                      : navigate(`/quiz/${item.id}`)
+                  }
+                />
+              ))}
+            </div>
+          )}
+
+          <SectionHeader label="Curated for you" icon={<Star size={14} />} action="See all" onAction={() => navigate('/educators')} />
+          <div className="mb-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
+            {(curated.length > 0 ? curated : FALLBACK_CURATED).map((c) => (
+              <CourseCard
+                key={String(c.id)}
+                course={c}
+                onOpen={() => {
+                  if (typeof c.id === 'string' && c.id.includes('-')) {
+                    navigate(`/course-details/${c.id}`, {
+                      state: { from: `${location.pathname}${location.search}` },
+                    });
+                  }
+                }}
+              />
+            ))}
+          </div>
+
+          <div className="mt-2">
+            <TrendingPanel
+              layout="bottom"
+              items={trending}
+              onViewAll={() => navigate('/educators')}
+              onSelect={(id) => navigate(`/educator/${id}`)}
+            />
+          </div>
         </div>
       </div>
-    </DarkLayout>
+    </div>
+  );
+}
+
+function NavGroup({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="mb-5">
+      <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-widest" style={{ color: T.t4 }}>
+        {label}
+      </p>
+      <div className="flex flex-col gap-0.5">{children}</div>
+    </div>
+  );
+}
+
+function SectionHeader({
+  label,
+  icon,
+  accent,
+  action,
+  onAction,
+}: {
+  label?: string;
+  icon?: React.ReactNode;
+  accent?: string;
+  action?: string;
+  onAction?: () => void;
+}) {
+  const c = accent || T.t2;
+  return (
+    <div className="mb-3 flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        {icon && <span style={{ color: c }}>{icon}</span>}
+        <h2 className="font-semibold" style={{ fontSize: '0.875rem', letterSpacing: '-0.01em', color: T.t1 }}>
+          {label}
+        </h2>
+      </div>
+      {action && onAction && (
+        <button type="button" onClick={onAction} className="text-[12px] transition-colors hover:text-zinc-300" style={{ color: T.t4 }}>
+          {action} →
+        </button>
+      )}
+    </div>
+  );
+}
+
+function ProgressCard({ item, onOpen }: { item: ProgressItem; onOpen: () => void }) {
+  const tag = tagColors[item.tag] ?? { color: T.t2, bg: 'rgba(255,255,255,0.06)' };
+  return (
+    <div
+      className="group cursor-pointer overflow-hidden rounded-xl transition-all duration-200 hover:border-white/[0.13]"
+      style={{ background: T.surface, border: `1px solid ${T.border}` }}
+      onClick={onOpen}
+    >
+      <div className="relative aspect-video overflow-hidden">
+        <img
+          src={item.image}
+          alt={item.title}
+          className="h-full w-full object-cover opacity-70 transition-all duration-500 group-hover:scale-[1.03] group-hover:opacity-90"
+        />
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.05), rgba(0,0,0,0.6))' }} />
+        <div
+          className="absolute left-2.5 top-2.5 rounded px-2 py-0.5 text-[10px] font-medium"
+          style={{
+            background: 'rgba(0,0,0,0.7)',
+            backdropFilter: 'blur(6px)',
+            border: `1px solid ${T.border}`,
+            color: tag.color,
+          }}
+        >
+          {item.tag}
+        </div>
+        <div className="absolute bottom-0 left-0 right-0 h-[2px]" style={{ background: 'rgba(255,255,255,0.1)' }}>
+          <div className="h-full" style={{ width: `${item.progress}%`, background: T.accent }} />
+        </div>
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+          <div
+            className="flex h-10 w-10 items-center justify-center rounded-full"
+            style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.2)' }}
+          >
+            <Play size={14} className="ml-0.5 fill-white text-white" />
+          </div>
+        </div>
+      </div>
+      <div className="px-4 py-3.5">
+        <h3 className="mb-0.5 truncate text-[0.82rem] font-semibold tracking-tight" style={{ color: T.t1 }}>
+          {item.title}
+        </h3>
+        <p className="mb-3 text-[12px]" style={{ color: T.t3 }}>
+          {item.instructor}
+        </p>
+        <div className="mb-2">
+          <div className="mb-1.5 flex items-center justify-between">
+            <span className="text-[11px]" style={{ color: T.t3 }}>
+              {item.lessons.done} / {item.lessons.total} lessons
+            </span>
+            <span className="text-[11px] font-semibold" style={{ color: T.accentLt }}>
+              {item.progress}%
+            </span>
+          </div>
+          <div className="h-[3px] rounded-full" style={{ background: 'rgba(255,255,255,0.07)' }}>
+            <div className="h-full rounded-full" style={{ width: `${item.progress}%`, background: T.accent }} />
+          </div>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-[11px]" style={{ color: T.t4 }}>
+            {item.timeLeft} remaining
+          </span>
+          <span className="text-[11px] font-medium" style={{ color: T.accentLt }}>
+            Resume →
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CourseCard({
+  course,
+  onOpen,
+}: {
+  course: CuratedCard | (typeof FALLBACK_CURATED)[0];
+  onOpen?: () => void;
+}) {
+  const tag = tagColors[course.tag] ?? { color: T.t2, bg: 'rgba(255,255,255,0.06)' };
+  return (
+    <div
+      role={onOpen ? 'button' : undefined}
+      tabIndex={onOpen ? 0 : undefined}
+      onClick={onOpen}
+      onKeyDown={onOpen ? (e) => e.key === 'Enter' && onOpen() : undefined}
+      className="group cursor-pointer overflow-hidden rounded-xl transition-all duration-200 hover:border-white/[0.13]"
+      style={{ background: T.surface, border: `1px solid ${T.border}` }}
+    >
+      <div className="relative aspect-video overflow-hidden">
+        <img
+          src={course.image}
+          alt={course.title}
+          className="h-full w-full object-cover opacity-75 transition-all duration-500 group-hover:scale-[1.04] group-hover:opacity-95"
+        />
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.65))' }} />
+        <div
+          className="absolute right-2 top-2 flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium"
+          style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', border: `1px solid ${T.border}`, color: '#E4E4E7' }}
+        >
+          <Star size={9} className="fill-amber-400 text-amber-400" /> {course.rating}
+        </div>
+      </div>
+      <div className="p-3.5">
+        <span className="mb-2 inline-block rounded px-2 py-0.5 text-[10px] font-medium" style={{ color: tag.color, background: tag.bg }}>
+          {course.tag}
+        </span>
+        <h3 className="mb-1 line-clamp-2 text-[0.8rem] font-semibold leading-snug tracking-tight" style={{ color: T.t1 }}>
+          {course.title}
+        </h3>
+        <p className="mb-2.5 text-[11px]" style={{ color: T.t3 }}>
+          {course.instructor}
+        </p>
+        <div className="flex items-center gap-2 text-[11px]" style={{ color: T.t4 }}>
+          <Users size={10} /> {course.students}
+          <span>·</span>
+          <Clock size={10} /> {course.duration}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+type TrendingItem = {
+  id: string;
+  name: string;
+  sub: string;
+  videos: string;
+  img: string;
+};
+
+function formatVideoLabel(videos: string) {
+  return videos.toLowerCase().includes('video') ? videos : `${videos} videos`;
+}
+
+function TrendingPanel({
+  items,
+  onViewAll,
+  onSelect,
+  layout = 'sidebar',
+}: {
+  items: TrendingItem[];
+  onViewAll: () => void;
+  onSelect: (id: string) => void;
+  layout?: 'sidebar' | 'bottom';
+}) {
+  const isBottom = layout === 'bottom';
+  if (items.length === 0) {
+    return (
+      <div
+        className="rounded-2xl p-6 text-center text-[13px]"
+        style={{
+          background: 'linear-gradient(165deg, rgba(28,28,36,0.9) 0%, rgba(14,14,14,1) 100%)',
+          border: `1px solid ${T.border}`,
+          color: T.t4,
+        }}
+      >
+        No trending creators yet
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="flex flex-col overflow-hidden rounded-2xl"
+      style={{
+        background: 'linear-gradient(165deg, rgba(28,28,36,0.92) 0%, rgba(12,12,14,1) 55%, rgba(10,10,12,1) 100%)',
+        border: `1px solid ${T.border}`,
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)',
+      }}
+    >
+      <div className="flex items-center gap-2 px-4 pb-1 pt-4">
+        <TrendingUp size={16} strokeWidth={2.25} style={{ color: '#FB923C' }} />
+        <h2 className="text-[15px] font-semibold tracking-tight" style={{ color: T.t1 }}>
+          Trending Creators
+        </h2>
+      </div>
+
+      <div className="flex flex-col gap-0.5 px-2 py-2">
+        {items.map((creator, index) => (
+          <button
+            key={creator.id}
+            type="button"
+            onClick={() => onSelect(creator.id)}
+            className="group flex w-full items-start gap-3 rounded-xl px-3 py-3 text-left transition-colors hover:bg-white/[0.06]"
+          >
+            <div className="relative shrink-0">
+              <img
+                src={creator.img}
+                alt={creator.name}
+                className="h-11 w-11 rounded-full object-cover"
+                style={{ border: `1px solid ${T.borderMd}` }}
+              />
+              <span
+                className="absolute -bottom-0.5 -right-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-0.5 text-[10px] font-bold leading-none text-white"
+                style={{ background: '#4F6BFF', border: '2px solid #121218' }}
+              >
+                {index + 1}
+              </span>
+            </div>
+
+            <div className="min-w-0 flex-1 pt-0.5">
+              <p
+                className="truncate text-[13px] font-semibold tracking-tight transition-colors group-hover:text-[#A5B4FC]"
+                style={{ color: T.t1 }}
+              >
+                {creator.name}
+              </p>
+              <p className="mt-0.5 truncate text-[11px] leading-snug" style={{ color: T.t3 }}>
+                {creator.sub}
+              </p>
+              <span
+                className="mt-2 inline-block rounded-md px-2 py-0.5 text-[10px] font-medium"
+                style={{ background: 'rgba(255,255,255,0.06)', color: '#9CA3AF' }}
+              >
+                {formatVideoLabel(creator.videos)}
+              </span>
+            </div>
+          </button>
+        ))}
+      </div>
+
+      <div className={`px-4 pb-4 pt-1 ${isBottom ? 'flex justify-end' : ''}`}>
+        <button
+          type="button"
+          onClick={onViewAll}
+          className={`rounded-lg py-2 text-[12px] font-medium transition-colors hover:bg-white/[0.05] ${isBottom ? 'px-4' : 'w-full'}`}
+          style={{ color: T.t4 }}
+        >
+          View all creators →
+        </button>
+      </div>
+    </div>
   );
 }

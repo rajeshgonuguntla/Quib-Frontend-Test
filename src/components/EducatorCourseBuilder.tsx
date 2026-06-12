@@ -4,6 +4,22 @@ import axios from 'axios';
 import { Sun, Moon, ArrowRight, Youtube } from 'lucide-react';
 import { useTheme, getC } from './ThemeContext';
 
+function getPlaylistValidationError(value: string) {
+  try {
+    const parsed = new URL(value);
+    const isYoutube = parsed.hostname.includes('youtube.com') || parsed.hostname.includes('youtu.be');
+    if (!isYoutube) {
+      return 'Please paste a valid YouTube playlist URL.';
+    }
+    if (!parsed.searchParams.get('list')) {
+      return "Only YouTube playlists are supported. Use a URL that contains a 'list' parameter.";
+    }
+    return null;
+  } catch {
+    return 'Please paste a valid YouTube playlist URL.';
+  }
+}
+
 const SUGGESTIONS = [
   { label: 'Machine Learning Basics', url: 'https://www.youtube.com/watch?v=ukzFI9rgwfU' },
   { label: 'Intro to React', url: 'https://www.youtube.com/watch?v=SqcY0GlETPk' },
@@ -36,9 +52,23 @@ export function EducatorCourseBuilder() {
     setLoading(true);
     setError(null);
 
+    const validationError = getPlaylistValidationError(trimmed);
+    if (validationError) {
+      setError(validationError);
+      setLoading(false);
+      return;
+    }
+
     try {
-      await axios.post('/api/course/generate', { youtubeUrl: trimmed });
-      navigate('/course-details', { state: { youtubeUrl: trimmed } });
+      const res = await axios.post('/api/course/generate', { youtubeUrl: trimmed });
+      const courseId = res.data?.courseId;
+      if (courseId) {
+        navigate(`/course-details/${courseId}`, {
+          state: { youtubeUrl: trimmed, courseId, from: '/educator-course-builder' },
+        });
+      } else {
+        navigate('/course-details', { state: { youtubeUrl: trimmed, from: '/educator-course-builder' } });
+      }
     } catch (err) {
       setError('Unable to generate the course. Please try again.');
     } finally {
@@ -127,7 +157,7 @@ export function EducatorCourseBuilder() {
               Build a Course from a YouTube Video
             </h1>
             <p style={{ fontSize: '1rem', color: C.text2, lineHeight: 1.6, maxWidth: 540, margin: '0 auto' }}>
-              Paste any YouTube video link below — Quib generates quizzes, summaries, and certificates in seconds.
+              Paste a YouTube playlist link below. Sign in first so you can publish the course for other learners to discover.
             </p>
           </div>
 

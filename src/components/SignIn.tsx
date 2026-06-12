@@ -7,8 +7,6 @@ import { Award, Mail, Lock, Chrome } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import GoogleLoginButton from './GoogleLoginButton';
 import { GoogleOAuthProvider } from '@react-oauth/google';
-
-
 export function SignIn() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -18,13 +16,13 @@ export function SignIn() {
 
   const handleAuth = () => {
     // Mock authentication
-    const returnTo = location.state?.returnTo || '/dashboard';
+    const returnTo = location.state?.returnTo || '/onboarding';
     navigate(returnTo, { state: { ...location.state, fromSignup: true } });
   };
 
   const handleGoogleAuth = () => {
     // Mock Google auth
-    const returnTo = location.state?.returnTo || '/dashboard';
+    const returnTo = location.state?.returnTo || '/onboarding';
     navigate(returnTo, { state: { ...location.state, fromSignup: true } });
   };
 

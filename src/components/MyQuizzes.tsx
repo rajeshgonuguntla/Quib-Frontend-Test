@@ -1,25 +1,59 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
+import axios from 'axios';
 import { DarkLayout } from './DarkLayout';
 import { FileText, Play, Clock, TrendingUp, Calendar, CheckCircle2, AlertCircle, Zap } from 'lucide-react';
 import { useTheme, getC } from './ThemeContext';
+
+type QuizListItem = {
+  id: string;
+  title: string;
+  status: string;
+  score: number | null;
+  date: string;
+  duration: string;
+  questions: number;
+  progress?: number;
+};
 
 export function MyQuizzes() {
   const navigate = useNavigate();
   const { isDark } = useTheme();
   const C = getC(isDark);
   const [activeTab, setActiveTab] = useState<'all' | 'active' | 'completed'>('all');
+  const [allQuizzes, setAllQuizzes] = useState<QuizListItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const allQuizzes = [
-    { id: '1', title: 'Introduction to Machine Learning', status: 'completed', score: 92, date: '2 days ago', duration: '45 min', questions: 20, progress: undefined as number | undefined },
-    { id: '2', title: 'React Hooks Complete Guide', status: 'in-progress', score: null, date: '1 week ago', duration: '30 min', questions: 15, progress: 60 },
-    { id: '3', title: 'Advanced TypeScript Patterns', status: 'generated', score: null, date: '2 weeks ago', duration: '25 min', questions: 10, progress: undefined },
-    { id: '4', title: 'Python for Data Science', status: 'completed', score: 88, date: '3 weeks ago', duration: '50 min', questions: 25, progress: undefined },
-    { id: '5', title: 'Node.js Backend Development', status: 'in-progress', score: null, date: '1 month ago', duration: '40 min', questions: 20, progress: 35 },
-    { id: '6', title: 'CSS Grid and Flexbox Mastery', status: 'completed', score: 95, date: '1 month ago', duration: '35 min', questions: 18, progress: undefined },
-    { id: '7', title: 'JavaScript ES6+ Features', status: 'completed', score: 90, date: '2 months ago', duration: '30 min', questions: 15, progress: undefined },
-    { id: '8', title: 'Docker Container Fundamentals', status: 'generated', score: null, date: '2 months ago', duration: '45 min', questions: 22, progress: undefined },
-  ];
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await axios.get('/api/quizzes');
+        const mapped: QuizListItem[] = (res.data ?? []).map((q: {
+          id: string;
+          title: string;
+          status: string;
+          latestScorePercent?: number;
+          questionCount?: number;
+          durationLabel?: string;
+          createdAt?: string;
+        }) => ({
+          id: q.id,
+          title: q.title,
+          status: q.status === 'in_progress' ? 'in-progress' : q.status,
+          score: q.latestScorePercent ?? null,
+          date: q.createdAt ? new Date(q.createdAt).toLocaleDateString() : '',
+          duration: q.durationLabel ?? '--',
+          questions: q.questionCount ?? 0,
+        }));
+        setAllQuizzes(mapped);
+      } catch {
+        setAllQuizzes([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
 
   const filteredQuizzes = allQuizzes.filter((quiz) => {
     if (activeTab === 'active') return quiz.status === 'in-progress' || quiz.status === 'generated';
@@ -44,6 +78,14 @@ export function MyQuizzes() {
     { key: 'active' as const, label: 'Active', count: stats.active },
     { key: 'completed' as const, label: 'Completed', count: stats.completed },
   ];
+
+  if (loading) {
+    return (
+      <DarkLayout activeNav="my-quizzes" showSearch={false} sectionLabel="LIBRARY" title="My Quizzes" subtitle="Loading your quizzes...">
+        <p className="text-sm" style={{ color: C.text2 }}>Loading...</p>
+      </DarkLayout>
+    );
+  }
 
   return (
     <DarkLayout activeNav="my-quizzes" showSearch={false} sectionLabel="LIBRARY" title="My Quizzes" subtitle="Manage and track all your quizzes in one place">
