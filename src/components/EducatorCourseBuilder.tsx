@@ -21,10 +21,10 @@ function getPlaylistValidationError(value: string) {
 }
 
 const SUGGESTIONS = [
-  { label: 'Machine Learning Basics', url: 'https://www.youtube.com/watch?v=ukzFI9rgwfU' },
-  { label: 'Intro to React', url: 'https://www.youtube.com/watch?v=SqcY0GlETPk' },
-  { label: 'Python for Beginners', url: 'https://www.youtube.com/watch?v=_uQrJ0TkZlc' },
-  { label: 'History of Ancient Rome', url: 'https://www.youtube.com/watch?v=OP4SjTJRQes' },
+  { label: 'Machine Learning Basics', url: 'https://www.youtube.com/playlist?list=PLZHQObOWTQDMKfJlCQxkxPjVEJJ-u-9ID' },
+  { label: 'Intro to React', url: 'https://www.youtube.com/playlist?list=PL4cUxeDkcDQF0uY28wHcE6Y0t5dYU0tqK' },
+  { label: 'Python for Beginners', url: 'https://www.youtube.com/playlist?list=PLWKjhKtq5AxlNXeZrgP6G_jIik_rN_zwB' },
+  { label: 'History of Ancient Rome', url: 'https://www.youtube.com/playlist?list=PL3wmano9JNSqH0dE8P9NW-6XqFZ9i1Q4v' },
 ];
 
 export function EducatorCourseBuilder() {
@@ -70,7 +70,12 @@ export function EducatorCourseBuilder() {
         navigate('/course-details', { state: { youtubeUrl: trimmed, from: '/educator-course-builder' } });
       }
     } catch (err) {
-      setError('Unable to generate the course. Please try again.');
+      if (axios.isAxiosError(err)) {
+        const data = err.response?.data as { message?: string; details?: string } | undefined;
+        setError(data?.message || data?.details || err.message || 'Unable to generate the course. Please try again.');
+      } else {
+        setError('Unable to generate the course. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
