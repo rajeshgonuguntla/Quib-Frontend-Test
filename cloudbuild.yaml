@@ -3,18 +3,18 @@ steps:
     entrypoint: bash
     args:
       - -c
-      - docker pull ${_AR_HOSTNAME}/${_AR_PROJECT_ID}/${_AR_REPOSITORY}/${REPO_NAME}/${_SERVICE_NAME}:latest || exit 0
+      - docker pull ${_AR_HOSTNAME}/${_AR_PROJECT_ID}/${_AR_REPOSITORY}/${_IMAGE_REPO}/${_SERVICE_NAME}:latest || exit 0
     id: Pull
 
   - name: gcr.io/cloud-builders/docker
     args:
       - build
       - --cache-from
-      - ${_AR_HOSTNAME}/${_AR_PROJECT_ID}/${_AR_REPOSITORY}/${REPO_NAME}/${_SERVICE_NAME}:latest
+      - ${_AR_HOSTNAME}/${_AR_PROJECT_ID}/${_AR_REPOSITORY}/${_IMAGE_REPO}/${_SERVICE_NAME}:latest
       - -t
-      - ${_AR_HOSTNAME}/${_AR_PROJECT_ID}/${_AR_REPOSITORY}/${REPO_NAME}/${_SERVICE_NAME}:$COMMIT_SHA
+      - ${_AR_HOSTNAME}/${_AR_PROJECT_ID}/${_AR_REPOSITORY}/${_IMAGE_REPO}/${_SERVICE_NAME}:$COMMIT_SHA
       - -t
-      - ${_AR_HOSTNAME}/${_AR_PROJECT_ID}/${_AR_REPOSITORY}/${REPO_NAME}/${_SERVICE_NAME}:latest
+      - ${_AR_HOSTNAME}/${_AR_PROJECT_ID}/${_AR_REPOSITORY}/${_IMAGE_REPO}/${_SERVICE_NAME}:latest
       - .
       - -f
       - Dockerfile
@@ -24,7 +24,7 @@ steps:
     args:
       - push
       - --all-tags
-      - ${_AR_HOSTNAME}/${_AR_PROJECT_ID}/${_AR_REPOSITORY}/${REPO_NAME}/${_SERVICE_NAME}
+      - ${_AR_HOSTNAME}/${_AR_PROJECT_ID}/${_AR_REPOSITORY}/${_IMAGE_REPO}/${_SERVICE_NAME}
     id: Push
 
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
@@ -34,13 +34,13 @@ steps:
       - services
       - update
       - ${_SERVICE_NAME}
-      - --image=${_AR_HOSTNAME}/${_AR_PROJECT_ID}/${_AR_REPOSITORY}/${REPO_NAME}/${_SERVICE_NAME}:$COMMIT_SHA
+      - --image=${_AR_HOSTNAME}/${_AR_PROJECT_ID}/${_AR_REPOSITORY}/${_IMAGE_REPO}/${_SERVICE_NAME}:$COMMIT_SHA
       - --region=${_DEPLOY_REGION}
       - --quiet
     id: Deploy
 
 images:
-  - ${_AR_HOSTNAME}/${_AR_PROJECT_ID}/${_AR_REPOSITORY}/${REPO_NAME}/${_SERVICE_NAME}:$COMMIT_SHA
+  - ${_AR_HOSTNAME}/${_AR_PROJECT_ID}/${_AR_REPOSITORY}/${_IMAGE_REPO}/${_SERVICE_NAME}:$COMMIT_SHA
 
 options:
   logging: CLOUD_LOGGING_ONLY
@@ -52,4 +52,5 @@ substitutions:
   _AR_REPOSITORY: cloud-run-source-deploy
   _DEPLOY_REGION: europe-west1
   _SERVICE_NAME: quibapp
-  _TRIGGER_ID: 8e1ad315-98ee-49aa-8eff-a4dab54f5e4f
+  _IMAGE_REPO: rajeshgonuguntla-quib-frontend-test
+  _TRIGGER_ID: ec7bf7b3-9d1c-4ffd-b77b-a60bf3d01a05
