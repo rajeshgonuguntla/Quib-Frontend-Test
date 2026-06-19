@@ -7,6 +7,7 @@ import { CubeLoader } from './CubeLoader';
 import { LandingNav } from './landing/LandingNav';
 import { PlatformSection } from './landing/PlatformSection';
 import { BentoGrid } from './landing/BentoGrid';
+import { FeaturesSection } from './landing/FeaturesSection';
 
 const TICKER = [
   'Top educators', 'Structured courses', 'Progress tracking', 'AI quizzes',
@@ -233,34 +234,7 @@ export function LandingPage() {
 
       <BentoGrid />
 
-      {/* Features bento */}
-      <section id="features" className="border-t border-[var(--landing-border)] px-5 py-24 md:px-8">
-        <div className="mx-auto max-w-6xl">
-          <h2 className="text-3xl font-semibold tracking-tight md:text-4xl">Built for comprehension</h2>
-          <p className="landing-mono-label mt-3 max-w-md">Every feature designed so learners actually understand — not just skim.</p>
-          <div className="mt-12 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              { tag: 'AI', title: 'Context-aware quizzes', desc: 'Questions that test understanding, not random sentences.' },
-              { tag: 'Levels', title: 'Difficulty control', desc: 'Easy, medium, or hard — tuned to your audience.' },
-              { tag: 'Global', title: 'Any language', desc: 'Works with educators teaching in dozens of languages.' },
-              { tag: 'Share', title: 'LinkedIn certificates', desc: 'Share completions with one click.' },
-            ].map((f, i) => (
-              <motion.div
-                key={f.tag}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.08 }}
-                viewport={{ once: true }}
-                className="landing-bento-card p-6"
-              >
-                <p className="landing-mono-label">{f.tag}</p>
-                <h3 className="mt-3 text-sm font-semibold text-[var(--landing-fg)]">{f.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-[var(--landing-muted)]">{f.desc}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <FeaturesSection />
 
       {/* CTA */}
       <section className="relative border-t border-[var(--landing-border)] px-5 py-32 text-center md:px-8">

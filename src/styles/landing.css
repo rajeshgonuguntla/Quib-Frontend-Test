@@ -117,3 +117,52 @@
   border-color: rgba(225, 6, 0, 0.25);
   box-shadow: 0 0 80px rgba(225, 6, 0, 0.06);
 }
+
+/* Features section */
+.landing-features-section {
+  --feature-accent: #e10600;
+}
+
+.landing-features-grid {
+  background-image:
+    linear-gradient(to right, var(--landing-border) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--landing-border) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 50%, black 0%, transparent 75%);
+}
+
+.landing-feature-card {
+  position: relative;
+  transition: z-index 0s;
+}
+
+.landing-feature-card.is-active {
+  z-index: 2;
+}
+
+.landing-feature-beam {
+  overflow: hidden;
+  border-radius: 13px;
+}
+
+.landing-feature-beam::before {
+  content: '';
+  position: absolute;
+  inset: -100%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    var(--feature-accent, #e10600) 60deg,
+    transparent 120deg
+  );
+  animation: landingBeamSpin 2.8s linear infinite;
+}
+
+@keyframes landingBeamSpin {
+  to { transform: rotate(360deg); }
+}
+
+.landing-comprehension-meter {
+  min-width: 180px;
+  backdrop-filter: blur(8px);
+}
