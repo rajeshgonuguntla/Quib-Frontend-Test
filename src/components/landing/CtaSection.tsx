@@ -11,6 +11,7 @@ import { useRef, useState, useEffect, type MouseEvent } from 'react';
 import { ArrowRight, BookOpen, GraduationCap, Play, Sparkles } from 'lucide-react';
 import { LandingThumb } from './LandingThumb';
 import { LANDING_CTA_TOPICS } from './landingThumbnails';
+import { useTheme } from '../ThemeContext';
 
 const MODES = [
   { label: 'learn', line: 'Paste a YouTube video or playlist URL', hint: 'Sign in · Generate a quiz · Save your progress' },
@@ -160,6 +161,7 @@ function ImpossibleRings({ inView }: { inView: boolean }) {
 }
 
 export function CtaSection() {
+  const { isDark } = useTheme();
   const sectionRef = useRef(null);
   const inView = useInView(sectionRef, { once: true, margin: '-80px' });
   const [modeIndex, setModeIndex] = useState(0);
@@ -174,10 +176,11 @@ export function CtaSection() {
   const btnX = useSpring(useTransform(mouseX, [-0.5, 0.5], [-8, 8]), { stiffness: 150, damping: 15 });
   const btnY = useSpring(useTransform(mouseY, [-0.5, 0.5], [-6, 6]), { stiffness: 150, damping: 15 });
 
+  const glowStrength = isDark ? 0.12 : 0.18;
   const voidBg = useTransform(
     [mouseX, mouseY],
     ([x, y]) =>
-      `radial-gradient(900px circle at ${50 + (x as number) * 30}% ${50 + (y as number) * 30}%, rgba(225,6,0,0.12) 0%, transparent 50%)`,
+      `radial-gradient(900px circle at ${50 + (x as number) * 30}% ${50 + (y as number) * 30}%, rgba(225,6,0,${glowStrength}) 0%, transparent 50%)`,
   );
 
   const mode = MODES[modeIndex];

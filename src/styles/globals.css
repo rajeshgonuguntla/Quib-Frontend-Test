@@ -43,6 +43,10 @@
   --sidebar-accent-foreground: #0a0a0a;
   --sidebar-border: rgba(0, 0, 0, 0.08);
   --sidebar-ring: rgba(0, 0, 0, 0.12);
+  --thumb-shell-from: #e8ebf2;
+  --thumb-shell-to: #d4dae6;
+  --accent-glow: rgba(225, 6, 0, 0.14);
+  --portal-ring: rgba(0, 0, 0, 0.1);
 }
 
 .dark {
@@ -81,6 +85,10 @@
   --sidebar-accent-foreground: #ededed;
   --sidebar-border: rgba(255, 255, 255, 0.08);
   --sidebar-ring: rgba(255, 255, 255, 0.12);
+  --thumb-shell-from: #0a0a0a;
+  --thumb-shell-to: #171717;
+  --accent-glow: rgba(225, 6, 0, 0.1);
+  --portal-ring: rgba(255, 255, 255, 0.08);
 }
 
 @theme inline {

@@ -8,6 +8,7 @@ import {
 } from 'framer-motion';
 import { useRef, useState, useEffect, type MouseEvent } from 'react';
 import { Box, Layers, Sparkles } from 'lucide-react';
+import { useTheme } from '../ThemeContext';
 
 const WORKFLOW_STEPS = [
   { label: 'extract()', ms: 420, width: 1 },
@@ -29,6 +30,7 @@ const DOT_GRID = Array.from({ length: 64 }, (_, i) => ({
 }));
 
 function BrandingCard({ inView }: { inView: boolean }) {
+  const { isDark } = useTheme();
   const cardRef = useRef<HTMLDivElement>(null);
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
@@ -41,7 +43,7 @@ function BrandingCard({ inView }: { inView: boolean }) {
   const glowBg = useTransform(
     [glowX, glowY],
     ([x, y]) =>
-      `radial-gradient(600px circle at ${x} ${y}, rgba(225, 6, 0, 0.12) 0%, transparent 60%)`,
+      `radial-gradient(600px circle at ${x} ${y}, rgba(225, 6, 0, ${isDark ? 0.12 : 0.2}) 0%, transparent 60%)`,
   );
 
   const handleMove = (e: MouseEvent) => {
@@ -83,7 +85,7 @@ function BrandingCard({ inView }: { inView: boolean }) {
               animate={
                 inView
                   ? {
-                      opacity: [0.12, 0.55, 0.12],
+                      opacity: [0.12, isDark ? 0.55 : 0.75, 0.12],
                       scale: [0.7, 1, 0.7],
                     }
                   : {}

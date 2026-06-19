@@ -27,7 +27,7 @@ export function LandingThumb({
     <div className={`landing-mock-thumb group/thumb relative overflow-hidden bg-[var(--landing-bg)] ${className}`}>
       <Illustration className="h-full w-full object-cover transition-transform duration-500 group-hover/thumb:scale-[1.03]" />
 
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-black/5 to-transparent" />
+      <div className="landing-mock-thumb-vignette pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-black/5 to-transparent" />
 
       {label && (
         <span className="pointer-events-none absolute bottom-2 left-2 right-8 truncate font-mono text-[8px] font-medium uppercase tracking-wider text-white/75 opacity-0 transition-opacity group-hover/thumb:opacity-100">

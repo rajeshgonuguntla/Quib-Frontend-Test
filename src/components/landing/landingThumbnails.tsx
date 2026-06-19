@@ -11,8 +11,8 @@ function ThumbShell({ children, className, ...props }: SvgProps) {
     <svg viewBox="0 0 320 180" fill="none" xmlns="http://www.w3.org/2000/svg" className={className} {...props}>
       <defs>
         <linearGradient id={bgId} x1="0" y1="0" x2="320" y2="180" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#0a0a0a" />
-          <stop offset="1" stopColor="#171717" />
+          <stop stopColor="var(--thumb-shell-from, #0a0a0a)" />
+          <stop offset="1" stopColor="var(--thumb-shell-to, #171717)" />
         </linearGradient>
         <filter id={glowId} x="-20%" y="-20%" width="140%" height="140%">
           <feGaussianBlur stdDeviation="8" result="blur" />

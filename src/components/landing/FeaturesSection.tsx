@@ -8,6 +8,7 @@ import {
 } from 'framer-motion';
 import { useRef, useState, useEffect, type MouseEvent, type CSSProperties } from 'react';
 import { Brain, Layers, Linkedin, SlidersHorizontal } from 'lucide-react';
+import { useTheme } from '../ThemeContext';
 
 const FEATURES = [
   {
@@ -24,7 +25,7 @@ const FEATURES = [
     title: 'Difficulty control',
     desc: 'Easy, medium, or hard — tuned to your audience.',
     icon: SlidersHorizontal,
-    accent: '#ededed',
+    accent: 'levels',
   },
   {
     id: 'modules',
@@ -259,6 +260,11 @@ const VISUALS = {
   share: CertificateVisual,
 } as const;
 
+function resolveAccent(accent: string, isDark: boolean): string {
+  if (accent === 'levels') return isDark ? '#ededed' : '#404040';
+  return accent;
+}
+
 function FeatureCard({
   feature,
   index,
@@ -266,6 +272,7 @@ function FeatureCard({
   onHover,
   onLeave,
   inView,
+  isDark,
 }: {
   feature: (typeof FEATURES)[number];
   index: number;
@@ -273,9 +280,12 @@ function FeatureCard({
   onHover: () => void;
   onLeave: () => void;
   inView: boolean;
+  isDark: boolean;
 }) {
   const Visual = VISUALS[feature.id];
   const Icon = feature.icon;
+  const accent = resolveAccent(feature.accent, isDark);
+  const inactiveOpacity = isDark ? 0.45 : 0.58;
   const cardRef = useRef<HTMLDivElement>(null);
   const mx = useMotionValue(0);
   const my = useMotionValue(0);
@@ -302,7 +312,7 @@ function FeatureCard({
       animate={
         inView
           ? {
-              opacity: active ? 1 : 0.45,
+              opacity: active ? 1 : inactiveOpacity,
               y: 0,
               filter: 'blur(0px)',
               scale: active ? 1.02 : 0.98,
@@ -324,7 +334,7 @@ function FeatureCard({
         rotateY: active ? rotateY : 0,
         transformStyle: 'preserve-3d',
         perspective: 800,
-        '--feature-accent': feature.accent,
+        '--feature-accent': accent,
       } as CSSProperties}
     >
       <div className={`landing-feature-beam pointer-events-none absolute -inset-px rounded-[13px] transition-opacity duration-500 ${active ? 'opacity-100' : 'opacity-0'}`} />
@@ -333,7 +343,7 @@ function FeatureCard({
         <div
           className={`pointer-events-none absolute inset-0 transition-opacity duration-500 ${active ? 'opacity-100' : 'opacity-0'}`}
           style={{
-            background: `radial-gradient(400px circle at 50% 0%, ${feature.accent}18 0%, transparent 65%)`,
+            background: `radial-gradient(400px circle at 50% 0%, ${accent}18 0%, transparent 65%)`,
           }}
         />
 
@@ -343,7 +353,7 @@ function FeatureCard({
             animate={active ? { rotate: [0, 8, 0], scale: [1, 1.1, 1] } : {}}
             transition={{ duration: 2, repeat: Infinity }}
           >
-            <Icon size={14} style={{ color: active ? feature.accent : 'var(--landing-muted)' }} />
+            <Icon size={14} style={{ color: active ? accent : 'var(--landing-muted)' }} />
           </motion.div>
         </div>
 
@@ -363,7 +373,7 @@ function FeatureCard({
         {/* Index marker */}
         <motion.span
           className="absolute bottom-3 right-4 font-mono text-[10px] tabular-nums text-[var(--landing-muted)]"
-          animate={{ opacity: active ? 0.9 : 0.25, color: active ? feature.accent : undefined }}
+          animate={{ opacity: active ? 0.9 : 0.25, color: active ? accent : undefined }}
         >
           0{index + 1}
         </motion.span>
@@ -373,6 +383,7 @@ function FeatureCard({
 }
 
 export function FeaturesSection() {
+  const { isDark } = useTheme();
   const sectionRef = useRef(null);
   const inView = useInView(sectionRef, { once: true, margin: '-100px' });
   const [activeIndex, setActiveIndex] = useState(0);
@@ -382,10 +393,11 @@ export function FeaturesSection() {
   const mouseY = useMotionValue(0);
   const spotX = useSpring(mouseX, { stiffness: 80, damping: 20 });
   const spotY = useSpring(mouseY, { stiffness: 80, damping: 20 });
+  const glowStrength = isDark ? 0.06 : 0.12;
   const spotlightBg = useTransform(
     [spotX, spotY],
     ([x, y]) =>
-      `radial-gradient(700px circle at ${x}px ${y}px, rgba(225,6,0,0.06) 0%, transparent 55%)`,
+      `radial-gradient(700px circle at ${x}px ${y}px, rgba(225,6,0,${glowStrength}) 0%, transparent 55%)`,
   );
 
   useEffect(() => {
@@ -532,6 +544,7 @@ export function FeaturesSection() {
               index={i}
               active={activeIndex === i}
               inView={inView}
+              isDark={isDark}
               onHover={() => { setIsHovering(true); setActiveIndex(i); }}
               onLeave={() => setIsHovering(false)}
             />
