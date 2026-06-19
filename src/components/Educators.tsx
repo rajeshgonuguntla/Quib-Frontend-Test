@@ -165,7 +165,7 @@ export function Educators() {
 
           <div className="flex items-center justify-center gap-3">
             <button
-              onClick={() => navigate('/educator-course-builder')}
+              onClick={() => navigate('/educator-studio')}
               className="px-7 py-3 rounded-lg text-[0.875rem] font-[600] transition-all"
               style={{
                 background: C.red,
@@ -413,7 +413,7 @@ export function Educators() {
             Join hundreds of educators already using Quib to turn YouTube videos into courses their students actually engage with.
           </p>
           <button
-            onClick={() => navigate('/educator-course-builder')}
+            onClick={() => navigate('/educator-studio')}
             className="inline-flex items-center gap-2 px-8 py-3.5 rounded-lg text-[0.9rem] font-[600] transition-all"
             style={{
               background: C.red,

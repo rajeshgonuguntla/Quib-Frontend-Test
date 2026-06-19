@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { GoogleLogin, type CredentialResponse } from '@react-oauth/google';
 import axios from 'axios';
 import { useLocation, useNavigate } from 'react-router';
@@ -9,12 +10,17 @@ function GoogleLoginButton() {
   const navigate = useNavigate();
   const location = useLocation();
   const { refreshProfile } = useUserProfile();
+  const [isSigningIn, setIsSigningIn] = useState(false);
+  const [signInError, setSignInError] = useState<string | null>(null);
 
   const handleSuccess = async (credentialResponse: CredentialResponse) => {
     if (!credentialResponse.credential) {
-      console.error('Login Failed: missing Google credential');
+      setSignInError('Login failed — missing Google credential.');
       return;
     }
+
+    setIsSigningIn(true);
+    setSignInError(null);
 
     try {
       const res = await axios.post('/api/auth/google', {
@@ -42,12 +48,35 @@ function GoogleLoginButton() {
       navigate(destination, { state: location.state });
     } catch (error) {
       console.error('Login Failed', error);
+      setSignInError('Sign-in failed. Please try again.');
+      setIsSigningIn(false);
     }
   };
 
   return (
-    <div>
-      <GoogleLogin onSuccess={handleSuccess} onError={() => console.log('Login Failed')} />
+    <div className="relative">
+      {isSigningIn && (
+        <div
+          className="fixed inset-0 z-[200] flex flex-col items-center justify-center gap-4"
+          style={{ background: 'rgba(8,8,11,0.85)', backdropFilter: 'blur(8px)' }}
+        >
+          <div
+            className="w-10 h-10 rounded-full border-2 border-t-transparent animate-spin"
+            style={{ borderColor: 'rgba(225,6,0,0.35)', borderTopColor: '#e10600' }}
+          />
+          <p className="text-sm font-medium text-white/80">Signing you in…</p>
+          <p className="text-xs text-white/45">Loading your profile</p>
+        </div>
+      )}
+      <div style={{ opacity: isSigningIn ? 0.5 : 1, pointerEvents: isSigningIn ? 'none' : 'auto' }}>
+        <GoogleLogin
+          onSuccess={handleSuccess}
+          onError={() => setSignInError('Google sign-in was cancelled or failed.')}
+        />
+      </div>
+      {signInError && (
+        <p className="mt-2 text-sm text-center" style={{ color: '#e10600' }}>{signInError}</p>
+      )}
     </div>
   );
 }

@@ -12,4 +12,5 @@ export interface UserProfile {
   defaultTimedExam?: boolean;
   defaultQuestionTypes?: Record<string, boolean>;
   theme?: string;
+  role?: 'learner' | 'educator' | 'admin' | string;
 }

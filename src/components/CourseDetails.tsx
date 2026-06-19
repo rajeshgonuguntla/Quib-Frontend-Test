@@ -14,7 +14,9 @@ import {
   submitModuleQuiz,
 } from '../api/courseApi';
 import { isTokenValid } from '../auth';
+import { useUserProfile } from '../context/UserProfileContext';
 import { useTheme, getC } from './ThemeContext';
+import { CourseGenerationLoader } from './CourseGenerationLoader';
 import { LessonStudyContent } from './LessonNotes';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -401,8 +403,10 @@ export function CourseDetails() {
   const navigate = useNavigate();
   const location = useLocation();
   const { courseId: courseIdParam } = useParams();
+  const { profile, refreshProfile } = useUserProfile();
 
   const youtubeUrl: string = location.state?.youtubeUrl ?? sessionStorage.getItem('courseYoutubeUrl') ?? '';
+  const videoUrls: string[] | undefined = location.state?.videoUrls;
   const courseId: string | undefined = courseIdParam ?? location.state?.courseId;
   const returnTo: string | undefined = location.state?.from;
 
@@ -415,12 +419,11 @@ export function CourseDetails() {
       navigate(-1);
       return;
     }
-    navigate(isOwner ? '/educator-course-builder' : '/dashboard');
+    navigate(isOwner ? (returnTo || '/educator-studio') : '/dashboard');
   };
 
   const [course, setCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
-  const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
   const [learningMode, setLearningMode] = useState(false);
@@ -431,13 +434,10 @@ export function CourseDetails() {
   const [publishError, setPublishError] = useState<string | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
 
-  const navBg = isDark ? 'rgba(6,6,8,0.92)' : 'rgba(255,255,255,0.92)';
+  const isEducator = profile?.role === 'educator' || profile?.role === 'admin';
+  const canPublish = isOwner && isEducator;
 
-  const steps = [
-    { label: 'Fetching transcript', done: progress >= 33 },
-    { label: 'Analysing content', done: progress >= 66 },
-    { label: 'Generating course structure', done: progress >= 100 },
-  ];
+  const navBg = isDark ? 'rgba(6,6,8,0.92)' : 'rgba(255,255,255,0.92)';
 
   useEffect(() => {
     if (youtubeUrl) sessionStorage.setItem('courseYoutubeUrl', youtubeUrl);
@@ -614,19 +614,19 @@ export function CourseDetails() {
 
   useEffect(() => {
     let mounted = true;
-    const interval = setInterval(() => setProgress((p) => (p >= 90 ? 90 : p + 10)), 400);
 
     const loadCourse = async () => {
-      if (!courseId && !youtubeUrl) {
-        setError('No course specified. Please go back and generate a course from a playlist URL.');
+      if (!courseId && !youtubeUrl && (!videoUrls || videoUrls.length === 0)) {
+        setError('No course specified. Select videos in Studio or paste a playlist URL.');
         setLoading(false);
-        clearInterval(interval);
         return;
       }
       try {
         const res = courseId
           ? await axios.get(`/api/course/${courseId}`)
-          : await axios.post('/api/course/generate', { youtubeUrl });
+          : videoUrls && videoUrls.length > 0
+            ? await axios.post('/api/course/generate-from-videos', { videoUrls })
+            : await axios.post('/api/course/generate', { youtubeUrl });
         if (!mounted) return;
         const data = res.data as Course & {
           courseId?: string;
@@ -642,25 +642,23 @@ export function CourseDetails() {
           sessionStorage.setItem('courseYoutubeUrl', data.playlistUrl);
         }
         if (data.courseId && !courseId) {
+          void refreshProfile();
           navigate(`/course-details/${data.courseId}`, {
             replace: true,
             state: { ...location.state, courseId: data.courseId },
           });
         }
-        setProgress(100);
         setLoading(false);
       } catch (err) {
         if (!mounted) return;
         setError(getCourseGenerationError(err));
         setLoading(false);
-      } finally {
-        clearInterval(interval);
       }
     };
 
     loadCourse();
-    return () => { mounted = false; clearInterval(interval); };
-  }, [courseId, youtubeUrl]);
+    return () => { mounted = false; };
+  }, [courseId, youtubeUrl, videoUrls]);
 
   const toggleModule = (id: string) => setExpandedModules((prev) => {
     const next = new Set(prev);
@@ -681,35 +679,7 @@ export function CourseDetails() {
           </button>
         </nav>
         <div className="flex-1 flex flex-col items-center justify-center px-6" style={{ paddingTop: 56 }}>
-          <div className="w-full max-w-md space-y-6">
-            <div className="text-center mb-8">
-              <h2 style={{ fontFamily: 'var(--serif)', fontSize: '1.6rem', fontWeight: 400, color: C.text, marginBottom: 8 }}>Building Your Course</h2>
-              <p className="text-[0.85rem]" style={{ color: C.text2 }}>This usually takes 20–40 seconds</p>
-            </div>
-            <div className="rounded-xl p-6" style={{ background: C.bg1, border: `1px solid ${C.border}` }}>
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-[500]" style={{ color: C.text2 }}>Generating course…</span>
-                <span className="text-sm font-[600] tabular-nums" style={{ color: C.text }}>{progress}%</span>
-              </div>
-              <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: C.bg2 }}>
-                <div className="h-full rounded-full transition-all duration-300" style={{ width: `${progress}%`, background: C.red }} />
-              </div>
-            </div>
-            <div className="space-y-3">
-              {steps.map((step, idx) => (
-                <div key={idx} className="flex items-center gap-3 p-4 rounded-xl"
-                  style={{ background: C.bg1, border: `1px solid ${C.border}` }}>
-                  <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-300"
-                    style={{ background: step.done ? 'rgba(34,197,94,0.15)' : C.bg2, border: `1px solid ${step.done ? 'rgba(34,197,94,0.4)' : C.border}` }}>
-                    {step.done
-                      ? <CheckCircle className="w-3.5 h-3.5" style={{ color: '#22c55e' }} />
-                      : <div className="w-2 h-2 rounded-full" style={{ background: C.text3 }} />}
-                  </div>
-                  <span className="text-sm" style={{ color: step.done ? C.text : C.text3 }}>{step.label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+          <CourseGenerationLoader />
         </div>
       </div>
     );
@@ -864,16 +834,16 @@ export function CourseDetails() {
           </div>
         </div>
 
-        {resolvedCourseId && !isOwner && !isPublished && (
+        {isOwner && !isEducator && !isPublished && (
           <div
             className="mb-8 rounded-2xl px-5 py-4 text-[0.8rem]"
             style={{ background: C.bg1, border: `1px solid ${C.border}`, color: C.text2 }}
           >
-            Sign in before generating a course to publish it to the catalog.
+            Course created. Educator accounts can publish courses to the catalog after generation.
           </div>
         )}
 
-        {isOwner && (
+        {(canPublish || (isOwner && isPublished)) && (
           <div
             className="mb-8 rounded-2xl p-5"
             style={{ background: C.bg1, border: `1px solid ${C.border}` }}
@@ -894,7 +864,7 @@ export function CourseDetails() {
                 )}
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                {isOwner && !isPublished && (
+                {canPublish && !isPublished && (
                   <button
                     type="button"
                     onClick={handlePublish}

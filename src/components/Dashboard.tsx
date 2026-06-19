@@ -131,8 +131,12 @@ export function Dashboard() {
 
   const isNavActive = (path: string, id: string) => {
     if (id === 'dashboard') return location.pathname === '/dashboard' || location.pathname === '/home';
-    if (id === 'browse' || id === 'trending') return location.pathname.startsWith('/educators') || location.pathname.startsWith('/educator/');
-    if (id === 'progress' || id === 'saved' || id === 'completed') return location.pathname.startsWith('/my-quizzes');
+    if (id === 'browse') return location.pathname.startsWith('/browse-courses');
+    if (id === 'studio') return location.pathname.startsWith('/educator-studio');
+    if (id === 'trending') return location.pathname.startsWith('/educators') || location.pathname.startsWith('/educator/');
+    if (id === 'progress') return location.pathname.startsWith('/my-courses') && !location.search.includes('filter=completed');
+    if (id === 'completed') return location.pathname.startsWith('/my-courses') && location.search.includes('filter=completed');
+    if (id === 'saved') return location.pathname.startsWith('/my-quizzes');
     if (id === 'settings' || id === 'help') return location.pathname.startsWith('/settings');
     return location.pathname === path;
   };
@@ -324,7 +328,8 @@ export function Dashboard() {
           <NavGroup label="Menu">
             {[
               { id: 'dashboard', label: 'Dashboard', icon: <Home size={15} />, path: '/dashboard' },
-              { id: 'browse', label: 'Browse Courses', icon: <Search size={15} />, path: '/educators' },
+              { id: 'browse', label: 'Browse Courses', icon: <Search size={15} />, path: '/browse-courses' },
+              { id: 'studio', label: 'Educator Studio', icon: <GraduationCap size={15} />, path: '/educator-studio' },
               { id: 'trending', label: 'Trending', icon: <TrendingUp size={15} />, path: '/educators' },
             ].map((item) => (
               <SidebarNavItem
@@ -338,9 +343,9 @@ export function Dashboard() {
 
           <NavGroup label="Library">
             {[
-              { id: 'progress', label: 'In Progress', icon: <Circle size={15} />, badge: String(libraryStats.inProgress || '0'), path: '/my-quizzes' },
+              { id: 'progress', label: 'In Progress', icon: <Circle size={15} />, badge: String(libraryStats.inProgress || '0'), path: '/my-courses' },
               { id: 'saved', label: 'Saved', icon: <BookMarked size={15} />, badge: String(libraryStats.saved || '0'), path: '/my-quizzes' },
-              { id: 'completed', label: 'Completed', icon: <CheckCircle2 size={15} />, badge: String(libraryStats.completed || '0'), path: '/my-quizzes' },
+              { id: 'completed', label: 'Completed', icon: <CheckCircle2 size={15} />, badge: String(libraryStats.completed || '0'), path: '/my-courses?filter=completed' },
             ].map((item) => (
               <SidebarNavItem
                 key={item.id}
@@ -541,7 +546,7 @@ export function Dashboard() {
             </div>
           )}
 
-          <SectionHeader label="Curated for you" icon={<Star size={14} />} action="See all" onAction={() => navigate('/educators')} />
+          <SectionHeader label="Curated for you" icon={<Star size={14} />} action="See all" onAction={() => navigate('/browse-courses')} />
           <div className="mb-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
             {(curated.length > 0 ? curated : FALLBACK_CURATED).map((c) => (
               <CourseCard
