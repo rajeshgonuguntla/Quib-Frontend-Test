@@ -1,20 +1,49 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+
+const THEME_STORAGE_KEY = 'quib_theme';
 
 interface ThemeContextValue {
   isDark: boolean;
   toggleTheme: () => void;
+  setDark: (dark: boolean) => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue>({
   isDark: false,
   toggleTheme: () => {},
+  setDark: () => {},
 });
 
+function readStoredTheme(): boolean {
+  try {
+    const stored = localStorage.getItem(THEME_STORAGE_KEY);
+    if (stored === 'light') return false;
+    if (stored === 'dark') return true;
+  } catch {
+    // ignore
+  }
+  return true;
+}
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [isDark, setIsDark] = useState(true);
+  const [isDark, setIsDark] = useState(readStoredTheme);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.dataset.theme = isDark ? 'dark' : 'light';
+    root.classList.toggle('dark', isDark);
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, isDark ? 'dark' : 'light');
+    } catch {
+      // ignore
+    }
+  }, [isDark]);
+
+  const setDark = (dark: boolean) => setIsDark(dark);
   const toggleTheme = () => setIsDark((prev) => !prev);
+
   return (
-    <ThemeContext.Provider value={{ isDark, toggleTheme }}>
+    <ThemeContext.Provider value={{ isDark, toggleTheme, setDark }}>
       {children}
     </ThemeContext.Provider>
   );

@@ -1,30 +1,15 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router';
-import { Button } from './Button';
-import { Input } from './Input';
-import { Card } from './Card';
-import { Award, Mail, Lock, Chrome } from 'lucide-react';
-import { ImageWithFallback } from './figma/ImageWithFallback';
 import GoogleLoginButton from './GoogleLoginButton';
-import { GoogleOAuthProvider } from '@react-oauth/google';
+import { useTheme, getC } from './ThemeContext';
+import { ThemeToggle } from './ThemeToggle';
+import { ImageWithFallback } from './figma/ImageWithFallback';
 export function SignIn() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-
-  const handleAuth = () => {
-    // Mock authentication
-    const returnTo = location.state?.returnTo || '/onboarding';
-    navigate(returnTo, { state: { ...location.state, fromSignup: true } });
-  };
-
-  const handleGoogleAuth = () => {
-    // Mock Google auth
-    const returnTo = location.state?.returnTo || '/onboarding';
-    navigate(returnTo, { state: { ...location.state, fromSignup: true } });
-  };
+  const { isDark } = useTheme();
+  const C = getC(isDark);
+  const [isSignUp] = useState(false);
 
   return (
     <div className="min-h-screen flex" style={{ fontFamily: "var(--display)" }}>
@@ -84,7 +69,10 @@ export function SignIn() {
       </div>
 
       {/* Right Side - Form */}
-      <div className="flex-1 flex items-center justify-center p-8 bg-white">
+      <div className="flex-1 flex items-center justify-center p-8 relative" style={{ background: isDark ? C.bg : '#ffffff', color: C.text }}>
+        <div className="absolute top-6 right-6">
+          <ThemeToggle size="sm" />
+        </div>
         <div className="w-full max-w-md">
           <div className="mb-8">
             {/* Quib Cube Logo */}
@@ -115,12 +103,12 @@ export function SignIn() {
                 </g>
                 <circle cx="400" cy="400" r="100" fill="#ff2d2d" opacity="0.06" />
               </svg>
-              <span className="text-2xl font-[700] text-gray-900" style={{ fontFamily: "var(--display)" }}>Quib</span>
+              <span className="text-2xl font-[700]" style={{ fontFamily: "var(--display)", color: C.text }}>Quib</span>
             </div>
-            <h1 className="text-3xl font-[400] text-gray-900 mb-2" style={{ fontFamily: "var(--serif)", letterSpacing: '-0.01em' }}>
+            <h1 className="text-3xl font-[400] mb-2" style={{ fontFamily: "var(--serif)", letterSpacing: '-0.01em', color: C.text }}>
               {isSignUp ? 'Create your account' : 'Welcome back'}
             </h1>
-            <p className="text-gray-600">
+            <p style={{ color: C.text2 }}>
               {isSignUp 
                 ? 'Start earning verified credentials today' 
                 : 'Sign in to continue your learning journey'}
@@ -128,10 +116,7 @@ export function SignIn() {
           </div>
 
           <div className="space-y-4 mb-8">
-            <GoogleOAuthProvider clientId="944587700647-v4d2dqg9io3q3qbgjoif32g21bcifg9s.apps.googleusercontent.com">
             <GoogleLoginButton />
-        </GoogleOAuthProvider>
-
           </div>
 
           <div className="space-y-4 mb-6">
@@ -148,8 +133,8 @@ export function SignIn() {
 
           
 
-          <div className="mt-8 pt-8 border-t border-gray-100">
-            <p className="text-xs text-gray-500 text-center leading-relaxed">
+          <div className="mt-8 pt-8" style={{ borderTop: `1px solid ${C.border}` }}>
+            <p className="text-xs text-center leading-relaxed" style={{ color: C.text3 }}>
               By continuing, you agree to Quib's Terms of Service and Privacy Policy. 
               Your certificates are stored securely and your learning data is private.
             </p>

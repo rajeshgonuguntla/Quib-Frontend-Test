@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router';
 import axios from 'axios';
-import { DarkLayout } from './DarkLayout';
+import { ShellPage } from '../shell/ShellPage';
 import { Youtube, Clock, FileText, Play, CheckCircle, Award, ArrowRight, Share2, Link2, Copy, Check, AlertCircle } from 'lucide-react';
 import { useTheme, getC } from './ThemeContext';
 import { fetchQuizDetail, isUuid, mapApiQuestionsToFrontend } from '../api/quizApi';
@@ -299,7 +299,7 @@ export function QuizSetup() {
 
   if (loading) {
     return (
-      <DarkLayout activeNav="dashboard" title="Preparing Your Quiz" subtitle="This usually takes 20–30 seconds">
+      <ShellPage title="Preparing Your Quiz" description="This usually takes 20–30 seconds">
         <div className="max-w-lg space-y-6">
           {/* Progress bar */}
           <div
@@ -345,13 +345,13 @@ export function QuizSetup() {
             ))}
           </div>
         </div>
-      </DarkLayout>
+      </ShellPage>
     );
   }
 
   if (setupError) {
     return (
-      <DarkLayout activeNav="dashboard" title="Something went wrong" subtitle="We couldn't generate your quiz">
+      <ShellPage title="Something went wrong" description="We couldn't generate your quiz">
         <div className="max-w-lg">
           <div
             className="rounded-xl p-6 flex flex-col gap-5"
@@ -372,12 +372,12 @@ export function QuizSetup() {
             </button>
           </div>
         </div>
-      </DarkLayout>
+      </ShellPage>
     );
   }
 
   return (
-    <DarkLayout activeNav="dashboard" title="Quiz Ready!" subtitle="Review the details below and start when you're ready">
+    <ShellPage title="Quiz Ready!" description="Review the details below and start when you're ready">
       <div className="space-y-6 max-w-4xl">
         {/* Video Preview Card */}
         <div
@@ -541,6 +541,6 @@ export function QuizSetup() {
           </button>
         </div>
       </div>
-    </DarkLayout>
+    </ShellPage>
   );
 }

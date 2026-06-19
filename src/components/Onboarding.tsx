@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { useTheme, getC } from './ThemeContext';
+import { ThemeToggle } from './ThemeToggle';
 import { Check, ArrowRight } from 'lucide-react';
 import { fetchInterests, saveOnboarding } from '../api/catalogApi';
 import type { CatalogInterest } from '../types/catalog';
@@ -83,6 +84,9 @@ export function Onboarding() {
       className="min-h-screen flex flex-col items-center justify-start py-12 px-4"
       style={{ background: C.bg, color: C.text, fontFamily: 'var(--display)' }}
     >
+      <div className="fixed top-5 right-5 z-20">
+        <ThemeToggle size="sm" />
+      </div>
       <div
         className="fixed inset-0 pointer-events-none"
         style={{ background: 'radial-gradient(ellipse 80% 50% at 50% -10%, rgba(225,6,0,0.07) 0%, transparent 60%)' }}

@@ -1,20 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
-import { ArrowLeft, CheckCircle2, Circle } from 'lucide-react';
+import { CheckCircle2, Circle } from 'lucide-react';
 import { fetchEnrollments } from '../api/catalogApi';
 import type { EnrollmentSummary } from '../types/catalog';
 import { ytThumb } from '../utils/catalogMap';
-
-const T = {
-  bg: '#0C0C0C',
-  surface: '#141414',
-  border: 'rgba(255,255,255,0.07)',
-  accent: '#6366F1',
-  green: '#22C55E',
-  t1: '#F4F4F5',
-  t2: '#A1A1AA',
-  t3: '#71717A',
-};
+import { PageHeader } from '../shell/PageHeader';
+import { StaggerChildren, StaggerItem } from '../shell/motion';
+import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
+import { Card } from './ui/card';
+import { Skeleton } from './ui/skeleton';
 
 type Filter = 'in_progress' | 'completed';
 
@@ -39,96 +33,73 @@ export function MyCourses() {
     return enrollments.filter((e) => e.status !== 'completed' && (e.progress ?? 0) < 100);
   }, [enrollments, filter]);
 
-  const setFilter = (next: Filter) => {
-    setSearchParams({ filter: next });
-  };
-
   return (
-    <div style={{ minHeight: '100vh', background: T.bg, color: T.t1, fontFamily: "'Inter', system-ui, sans-serif" }}>
-      <header
-        className="sticky top-0 z-50 flex items-center gap-4 px-6 py-4"
-        style={{ background: 'rgba(12,12,12,0.92)', borderBottom: `1px solid ${T.border}`, backdropFilter: 'blur(12px)' }}
-      >
-        <button
-          type="button"
-          onClick={() => navigate('/dashboard')}
-          className="flex items-center gap-2 text-sm"
-          style={{ color: T.t2, background: 'none', border: 'none', cursor: 'pointer' }}
-        >
-          <ArrowLeft size={16} />
-          Dashboard
-        </button>
-        <h1 className="text-lg font-semibold flex-1">My Courses</h1>
-      </header>
+    <div>
+      <PageHeader
+        label="Library"
+        title="My courses"
+        description={filter === 'completed' ? 'Courses you have finished.' : 'Pick up where you left off.'}
+      />
 
-      <main className="max-w-4xl mx-auto px-6 py-8">
-        <div className="flex gap-2 mb-8">
-          {([
-            { id: 'in_progress' as const, label: 'In Progress', icon: Circle },
-            { id: 'completed' as const, label: 'Completed', icon: CheckCircle2 },
-          ]).map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setFilter(id)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium"
-              style={{
-                background: filter === id ? 'rgba(99,102,241,0.15)' : T.surface,
-                border: `1px solid ${filter === id ? 'rgba(99,102,241,0.35)' : T.border}`,
-                color: filter === id ? T.t1 : T.t2,
-                cursor: 'pointer',
-              }}
-            >
-              <Icon size={14} />
-              {label}
-            </button>
+      <Tabs value={filter} onValueChange={(v) => setSearchParams({ filter: v })} className="mb-8">
+        <TabsList>
+          <TabsTrigger value="in_progress" className="gap-1.5">
+            <Circle size={14} /> In progress
+          </TabsTrigger>
+          <TabsTrigger value="completed" className="gap-1.5">
+            <CheckCircle2 size={14} /> Completed
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
+
+      {loading ? (
+        <div className="space-y-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i} className="flex gap-4 p-4">
+              <Skeleton className="aspect-video w-28 shrink-0 rounded-md" />
+              <div className="flex-1 space-y-2 py-1">
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-3 w-1/2" />
+                <Skeleton className="h-px w-full" />
+              </div>
+            </Card>
           ))}
         </div>
-
-        {loading ? (
-          <p className="text-sm" style={{ color: T.t3 }}>Loading…</p>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-sm" style={{ color: T.t2 }}>
-              {filter === 'completed' ? 'No completed courses yet.' : 'No courses in progress.'}
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {filtered.map((e) => {
-              const thumb = e.youtubeVideoId ? ytThumb(e.youtubeVideoId) : undefined;
-              const pct = Math.round(e.progress ?? 0);
-              return (
-                <button
-                  key={e.courseId}
-                  type="button"
+      ) : filtered.length === 0 ? (
+        <Card className="py-16 text-center text-sm text-muted-foreground">
+          {filter === 'completed' ? 'No completed courses yet.' : 'No courses in progress.'}
+        </Card>
+      ) : (
+        <StaggerChildren className="space-y-2">
+          {filtered.map((e) => {
+            const thumb = e.youtubeVideoId ? ytThumb(e.youtubeVideoId) : undefined;
+            const pct = Math.round(e.progress ?? 0);
+            return (
+              <StaggerItem key={e.courseId}>
+                <Card
+                  className="flex cursor-pointer gap-4 p-4 transition-colors hover:border-border/80"
                   onClick={() => navigate(`/course-details/${e.courseId}`)}
-                  className="w-full flex gap-4 p-4 rounded-2xl text-left"
-                  style={{ background: T.surface, border: `1px solid ${T.border}`, cursor: 'pointer' }}
                 >
-                  <div
-                    className="w-28 flex-shrink-0 rounded-lg overflow-hidden aspect-video"
-                    style={{ background: '#1a1a1a' }}
-                  >
-                    {thumb && <img src={thumb} alt="" className="w-full h-full object-cover" />}
+                  <div className="aspect-video w-28 shrink-0 overflow-hidden rounded-md bg-muted">
+                    {thumb && <img src={thumb} alt="" className="h-full w-full object-cover" />}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <h2 className="text-sm font-semibold truncate">{e.title}</h2>
-                    <p className="text-xs mt-1" style={{ color: T.t3 }}>
+                  <div className="min-w-0 flex-1">
+                    <h2 className="truncate text-sm font-medium">{e.title}</h2>
+                    <p className="mt-1 text-xs text-muted-foreground">
                       {e.channel || e.category} · {filter === 'completed' ? 'Completed' : `${pct}% complete`}
                     </p>
                     {filter !== 'completed' && (
-                      <div className="mt-2 h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
-                        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: T.accent }} />
+                      <div className="mt-3 h-px overflow-hidden rounded-full bg-muted">
+                        <div className="h-full bg-[var(--brand)]" style={{ width: `${pct}%` }} />
                       </div>
                     )}
                   </div>
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </main>
+                </Card>
+              </StaggerItem>
+            );
+          })}
+        </StaggerChildren>
+      )}
     </div>
   );
 }

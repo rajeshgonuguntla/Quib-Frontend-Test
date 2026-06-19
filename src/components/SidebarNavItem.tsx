@@ -1,13 +1,5 @@
 import { useState, type ReactNode } from 'react';
-
-const T = {
-  accentBg: 'rgba(99,102,241,0.1)',
-  accentBd: 'rgba(99,102,241,0.22)',
-  accentLt: '#818CF8',
-  t3: '#71717A',
-  t4: '#3F3F46',
-  border: 'rgba(255,255,255,0.07)',
-};
+import type { ShellTheme } from '../utils/shellTheme';
 
 export type SidebarNavItemData = {
   id: string;
@@ -20,9 +12,10 @@ type SidebarNavItemProps = {
   item: SidebarNavItemData;
   active: boolean;
   onClick: () => void;
+  theme: ShellTheme;
 };
 
-export function SidebarNavItem({ item, active, onClick }: SidebarNavItemProps) {
+export function SidebarNavItem({ item, active, onClick, theme }: SidebarNavItemProps) {
   const [hovered, setHovered] = useState(false);
   const [pressed, setPressed] = useState(false);
 
@@ -30,21 +23,21 @@ export function SidebarNavItem({ item, active, onClick }: SidebarNavItemProps) {
   const showPress = pressed;
 
   const background = active
-    ? T.accentBg
+    ? theme.accentBg
     : showPress
-      ? 'rgba(255,255,255,0.09)'
+      ? theme.hoverStrong
       : showHover
-        ? 'rgba(255,255,255,0.06)'
+        ? theme.hover
         : 'transparent';
 
   const border = active
-    ? `1px solid ${T.accentBd}`
+    ? `1px solid ${theme.accentBd}`
     : showHover || showPress
-      ? '1px solid rgba(255,255,255,0.08)'
+      ? `1px solid ${theme.border}`
       : '1px solid transparent';
 
-  const textColor = active ? T.accentLt : showHover || showPress ? '#E4E4E7' : T.t3;
-  const iconColor = active ? T.accentLt : showHover || showPress ? '#D4D4D8' : T.t4;
+  const textColor = active ? theme.t1 : showHover || showPress ? theme.t1 : theme.t3;
+  const iconColor = active ? theme.accent : showHover || showPress ? theme.t2 : theme.t4;
 
   return (
     <button
@@ -57,13 +50,12 @@ export function SidebarNavItem({ item, active, onClick }: SidebarNavItemProps) {
       }}
       onMouseDown={() => setPressed(true)}
       onMouseUp={() => setPressed(false)}
-      className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-[13px] transition-all duration-150 ease-out"
+      className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm transition-colors duration-150"
       style={{
         background,
         border,
         color: textColor,
         fontWeight: active ? 500 : 400,
-        transform: showPress ? 'scale(0.98)' : 'scale(1)',
       }}
     >
       <span className="transition-colors duration-150" style={{ color: iconColor }}>
@@ -72,11 +64,11 @@ export function SidebarNavItem({ item, active, onClick }: SidebarNavItemProps) {
       <span className="flex-1">{item.label}</span>
       {item.badge && (
         <span
-          className="rounded-full px-1.5 py-0.5 text-[10px] font-medium transition-colors duration-150"
+          className="rounded-md px-1.5 py-0.5 text-[10px] font-medium tabular-nums"
           style={{
-            background: active ? T.accentBg : showHover ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.05)',
-            color: active ? T.accentLt : showHover ? '#D4D4D8' : T.t4,
-            border: `1px solid ${active ? T.accentBd : T.border}`,
+            background: active ? theme.hoverStrong : theme.hover,
+            color: theme.t3,
+            border: `1px solid ${theme.border}`,
           }}
         >
           {item.badge}

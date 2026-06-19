@@ -3,11 +3,18 @@ import { Link, useNavigate } from 'react-router';
 import { Sun, Moon, ArrowRight } from 'lucide-react';
 import { useTheme, getC } from './ThemeContext';
 import { CubeMorphBackground } from './CubeMorphBackground';
+import { goToEducatorStudio, scrollToSection } from '../utils/navigation';
 
 export function Educators() {
   const { isDark, toggleTheme } = useTheme();
   const C = getC(isDark);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (window.location.hash === '#how-it-works') {
+      scrollToSection('how-it-works');
+    }
+  }, []);
 
   // Scroll reveal
   const revealRefs = useRef<(HTMLElement | null)[]>([]);
@@ -165,7 +172,7 @@ export function Educators() {
 
           <div className="flex items-center justify-center gap-3">
             <button
-              onClick={() => navigate('/educator-studio')}
+              onClick={() => goToEducatorStudio(navigate)}
               className="px-7 py-3 rounded-lg text-[0.875rem] font-[600] transition-all"
               style={{
                 background: C.red,
@@ -179,6 +186,7 @@ export function Educators() {
               Build Your Course
             </button>
             <button
+              onClick={() => scrollToSection('how-it-works')}
               className="px-6 py-3 rounded-lg text-[0.875rem] font-[500] transition-all"
               style={{
                 background: 'transparent',
@@ -218,7 +226,7 @@ export function Educators() {
       </section>
 
       {/* ═══ HOW IT WORKS ═══ */}
-      <section ref={addRef} className="cert-reveal py-24">
+      <section ref={addRef} id="how-it-works" className="cert-reveal py-24">
         <div className="max-w-5xl mx-auto px-6">
           <p
             style={{
@@ -413,7 +421,7 @@ export function Educators() {
             Join hundreds of educators already using Quib to turn YouTube videos into courses their students actually engage with.
           </p>
           <button
-            onClick={() => navigate('/educator-studio')}
+            onClick={() => goToEducatorStudio(navigate)}
             className="inline-flex items-center gap-2 px-8 py-3.5 rounded-lg text-[0.9rem] font-[600] transition-all"
             style={{
               background: C.red,
@@ -444,23 +452,23 @@ export function Educators() {
               <ul className="space-y-2 text-[0.82rem] list-none p-0">
                 <li><Link to="/" className="no-underline transition-opacity hover:opacity-80" style={{ color: C.text2 }}>Features</Link></li>
                 <li><Link to="/educators" className="no-underline transition-opacity hover:opacity-80" style={{ color: C.text2 }}>For Educators</Link></li>
-                <li><a href="#" className="no-underline transition-opacity hover:opacity-80" style={{ color: C.text2 }}>Pricing</a></li>
+                <li><Link to="/signin" className="no-underline transition-opacity hover:opacity-80" style={{ color: C.text2 }}>Get Started</Link></li>
               </ul>
             </div>
             <div>
               <h4 className="font-[600] mb-3 text-[0.82rem]" style={{ color: C.text }}>Company</h4>
               <ul className="space-y-2 text-[0.82rem] list-none p-0">
-                <li><a href="#" className="no-underline transition-opacity hover:opacity-80" style={{ color: C.text2 }}>About</a></li>
-                <li><a href="#" className="no-underline transition-opacity hover:opacity-80" style={{ color: C.text2 }}>Blog</a></li>
-                <li><a href="#" className="no-underline transition-opacity hover:opacity-80" style={{ color: C.text2 }}>Careers</a></li>
+                <li><Link to="/educators#how-it-works" className="no-underline transition-opacity hover:opacity-80" style={{ color: C.text2 }}>How It Works</Link></li>
+                <li><Link to="/" className="no-underline transition-opacity hover:opacity-80" style={{ color: C.text2 }}>Platform</Link></li>
+                <li><a href="mailto:support@quibb.ai" className="no-underline transition-opacity hover:opacity-80" style={{ color: C.text2 }}>Contact</a></li>
               </ul>
             </div>
             <div>
               <h4 className="font-[600] mb-3 text-[0.82rem]" style={{ color: C.text }}>Legal</h4>
               <ul className="space-y-2 text-[0.82rem] list-none p-0">
-                <li><a href="#" className="no-underline transition-opacity hover:opacity-80" style={{ color: C.text2 }}>Privacy</a></li>
-                <li><a href="#" className="no-underline transition-opacity hover:opacity-80" style={{ color: C.text2 }}>Terms</a></li>
-                <li><a href="#" className="no-underline transition-opacity hover:opacity-80" style={{ color: C.text2 }}>Contact</a></li>
+                <li><a href="mailto:support@quibb.ai?subject=Privacy" className="no-underline transition-opacity hover:opacity-80" style={{ color: C.text2 }}>Privacy</a></li>
+                <li><a href="mailto:support@quibb.ai?subject=Terms" className="no-underline transition-opacity hover:opacity-80" style={{ color: C.text2 }}>Terms</a></li>
+                <li><a href="mailto:support@quibb.ai" className="no-underline transition-opacity hover:opacity-80" style={{ color: C.text2 }}>Support</a></li>
               </ul>
             </div>
           </div>

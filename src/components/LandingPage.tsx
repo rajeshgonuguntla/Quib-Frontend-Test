@@ -510,7 +510,7 @@ export function LandingPage() {
             Try for free
           </Link>
           <Link to="/educators" className="no-underline px-7 py-3.5 rounded-lg text-[0.9rem] font-[400] transition-all hover:-translate-y-0.5" style={{ color: C.text2, border: `1px solid ${C.border}` }}>
-            View documentation
+            For educators
           </Link>
         </div>
         <p className="mt-5" style={{ fontSize: '0.72rem', color: C.text3, fontFamily: "var(--mono)", letterSpacing: '0.06em' }}>
@@ -529,16 +529,45 @@ export function LandingPage() {
           </p>
         </div>
         {[
-          { title: 'PRODUCT', links: ['Features', 'API Docs', 'Changelog'] },
-          { title: 'COMPANY', links: ['About', 'Blog', 'Careers', 'Contact'] },
-          { title: 'LEGAL', links: ['Privacy', 'Terms', 'Cookies'] },
+          {
+            title: 'PRODUCT',
+            links: [
+              { label: 'Features', href: '/#features' },
+              { label: 'For Educators', href: '/educators' },
+              { label: 'Get Started', href: '/signin' },
+            ],
+          },
+          {
+            title: 'COMPANY',
+            links: [
+              { label: 'How It Works', href: '/#how' },
+              { label: 'Educator Studio', href: '/educators#how-it-works' },
+              { label: 'Contact', href: 'mailto:support@quibb.ai' },
+            ],
+          },
+          {
+            title: 'LEGAL',
+            links: [
+              { label: 'Privacy', href: 'mailto:support@quibb.ai?subject=Privacy' },
+              { label: 'Terms', href: 'mailto:support@quibb.ai?subject=Terms' },
+              { label: 'Support', href: 'mailto:support@quibb.ai' },
+            ],
+          },
         ].map((col) => (
           <div key={col.title}>
             <h4 className="mb-4" style={{ fontFamily: "var(--mono)", fontSize: '0.65rem', letterSpacing: '0.12em', color: C.text3 }}>{col.title}</h4>
             <ul className="list-none flex flex-col gap-2.5">
               {col.links.map((link) => (
-                <li key={link}>
-                  <a href="#" className="text-[0.85rem] font-[300] no-underline transition-opacity hover:opacity-100" style={{ color: C.text2, opacity: 0.75 }}>{link}</a>
+                <li key={link.label}>
+                  {link.href.startsWith('/') ? (
+                    <Link to={link.href} className="text-[0.85rem] font-[300] no-underline transition-opacity hover:opacity-100" style={{ color: C.text2, opacity: 0.75 }}>
+                      {link.label}
+                    </Link>
+                  ) : (
+                    <a href={link.href} className="text-[0.85rem] font-[300] no-underline transition-opacity hover:opacity-100" style={{ color: C.text2, opacity: 0.75 }}>
+                      {link.label}
+                    </a>
+                  )}
                 </li>
               ))}
             </ul>
