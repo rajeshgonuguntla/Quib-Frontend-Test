@@ -166,3 +166,47 @@
   min-width: 180px;
   backdrop-filter: blur(8px);
 }
+
+/* CTA — impossible portal section */
+.landing-cta-section {
+  background: var(--landing-bg);
+}
+
+.landing-cta-stars {
+  background-image: radial-gradient(1px 1px at 20px 30px, rgba(255,255,255,0.15), transparent),
+    radial-gradient(1px 1px at 80px 120px, rgba(255,255,255,0.1), transparent),
+    radial-gradient(1px 1px at 160px 60px, rgba(225,6,0,0.2), transparent),
+    radial-gradient(1px 1px at 240px 180px, rgba(255,255,255,0.08), transparent);
+  background-size: 280px 220px;
+  animation: landingStarsDrift 60s linear infinite;
+}
+
+@keyframes landingStarsDrift {
+  to { background-position: 280px 220px; }
+}
+
+.landing-cta-grid {
+  background-image:
+    linear-gradient(to right, var(--landing-border) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--landing-border) 1px, transparent 1px);
+  background-size: 80px 80px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 50%, black 0%, transparent 70%);
+  transform: perspective(800px) rotateX(60deg) scale(1.2);
+  transform-origin: center center;
+}
+
+.landing-cta-portal {
+  width: 0;
+  height: 0;
+  transform-style: preserve-3d;
+}
+
+.landing-cta-window {
+  will-change: transform;
+}
+
+.landing-mock-thumb svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}

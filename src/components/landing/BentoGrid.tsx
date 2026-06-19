@@ -159,7 +159,7 @@ function WorkflowCard({ inView }: { inView: boolean }) {
       <div>
         <h3 className="text-lg font-semibold tracking-tight text-[var(--landing-fg)]">Workflows</h3>
         <p className="mt-2 max-w-sm font-mono text-xs leading-relaxed text-[var(--landing-muted)]">
-          From YouTube URL to structured course — pause, resume, pick up exactly where you left off.
+                From YouTube URL to structured course — modules, lessons, and quizzes generated for you.
         </p>
       </div>
 
@@ -272,7 +272,7 @@ function StudioCard({ inView }: { inView: boolean }) {
           className="mt-2 font-mono text-xs leading-relaxed text-[var(--landing-muted)]"
           animate={{ opacity: hovered ? 1 : 0.7 }}
         >
-          {hovered ? 'Hover to explore the stack →' : 'The safest way to turn your YouTube channel into courses.'}
+          {hovered ? 'Hover to explore the stack →' : 'Turn your YouTube channel into structured courses.'}
         </motion.p>
       </div>
 

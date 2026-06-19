@@ -7,14 +7,14 @@ import {
   AnimatePresence,
 } from 'framer-motion';
 import { useRef, useState, useEffect, type MouseEvent, type CSSProperties } from 'react';
-import { Brain, Globe2, Linkedin, SlidersHorizontal } from 'lucide-react';
+import { Brain, Layers, Linkedin, SlidersHorizontal } from 'lucide-react';
 
 const FEATURES = [
   {
     id: 'ai',
     tag: 'AI',
-    title: 'Context-aware quizzes',
-    desc: 'Questions that test understanding, not random sentences.',
+    title: 'AI-generated quizzes',
+    desc: 'Quizzes built from the video you paste — not generic filler.',
     icon: Brain,
     accent: '#e10600',
   },
@@ -27,24 +27,24 @@ const FEATURES = [
     accent: '#ededed',
   },
   {
-    id: 'global',
-    tag: 'Global',
-    title: 'Any language',
-    desc: 'Works with educators teaching in dozens of languages.',
-    icon: Globe2,
+    id: 'modules',
+    tag: 'Modules',
+    title: 'Structured courses',
+    desc: 'Videos become modules and lessons you can follow in order.',
+    icon: Layers,
     accent: '#60a5fa',
   },
   {
     id: 'share',
     tag: 'Share',
-    title: 'LinkedIn certificates',
-    desc: 'Share completions with one click.',
+    title: 'Certificates',
+    desc: 'Earn a certificate when you pass — download or share your result.',
     icon: Linkedin,
     accent: '#0a66c2',
   },
 ] as const;
 
-const LANGUAGES = ['EN', 'ES', 'FR', 'DE', 'HI', '日本', '한국', 'PT', 'AR', '中文'];
+const MODULES = ['Intro', 'Core ideas', 'Practice', 'Review'];
 
 function AiQuizVisual({ active }: { active: boolean }) {
   const question = 'What causes gradient descent to converge?';
@@ -158,53 +158,50 @@ function DifficultyVisual({ active }: { active: boolean }) {
   );
 }
 
-function LanguageVisual({ active }: { active: boolean }) {
-  const [orbitHighlight, setOrbitHighlight] = useState(0);
+function ModulesVisual({ active }: { active: boolean }) {
+  const [done, setDone] = useState(0);
 
   useEffect(() => {
     if (!active) return;
-    const t = setInterval(() => setOrbitHighlight((h) => (h + 1) % 8), 600);
+    const t = setInterval(() => setDone((d) => (d + 1) % (MODULES.length + 1)), 1200);
     return () => clearInterval(t);
   }, [active]);
 
   return (
-    <div className="relative h-28 overflow-hidden rounded-md border border-[var(--landing-border)] bg-[var(--landing-bg)]">
-      <div className="absolute inset-0 flex items-center justify-center">
+    <div className="flex h-28 flex-col justify-center gap-2 rounded-md border border-[var(--landing-border)] bg-[var(--landing-bg)] p-3">
+      {MODULES.map((mod, i) => (
         <motion.div
-          className="relative size-16 rounded-full border border-[var(--landing-border)]"
-          animate={active ? { rotate: 360 } : {}}
-          transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+          key={mod}
+          className="flex items-center gap-2 rounded px-2 py-1"
+          animate={
+            active
+              ? {
+                  backgroundColor: i < done ? 'rgba(96,165,250,0.12)' : 'transparent',
+                  opacity: i <= done ? 1 : 0.45,
+                }
+              : { opacity: 0.45 }
+          }
+          transition={{ duration: 0.35 }}
         >
-          {LANGUAGES.slice(0, 8).map((lang, i) => {
-            const angle = (i / 8) * 360;
-            return (
-              <motion.span
-                key={lang}
-                className="absolute left-1/2 top-0 -translate-x-1/2 font-mono text-[8px]"
-                style={{
-                  transformOrigin: '50% 32px',
-                  transform: `rotate(${angle}deg) translateY(-28px)`,
-                  color: active && orbitHighlight === i ? '#60a5fa' : 'var(--landing-muted)',
-                }}
-              >
-                {lang}
-              </motion.span>
-            );
-          })}
-        </motion.div>
-        <Globe2 size={20} className="relative z-10 text-[var(--landing-muted)]" />
-      </div>
-      <motion.div
-        className="absolute inset-x-0 bottom-0 flex gap-4 overflow-hidden border-t border-[var(--landing-border)] py-1.5"
-        animate={active ? { x: [0, -120] } : {}}
-        transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
-      >
-        {[...LANGUAGES, ...LANGUAGES].map((lang, i) => (
-          <span key={i} className="shrink-0 font-mono text-[8px] text-[var(--landing-muted)]">
-            {lang}
+          <span
+            className="flex size-4 shrink-0 items-center justify-center rounded-full border font-mono text-[8px]"
+            style={{
+              borderColor: i < done ? '#60a5fa' : 'var(--landing-border)',
+              color: i < done ? '#60a5fa' : 'var(--landing-muted)',
+            }}
+          >
+            {i < done ? '✓' : i + 1}
           </span>
-        ))}
-      </motion.div>
+          <span className="font-mono text-[9px] text-[var(--landing-muted)]">{mod}</span>
+          <motion.div
+            className="ml-auto h-1 w-10 rounded-full bg-[var(--landing-border)]"
+            animate={active && i === done - 1 ? { width: ['0%', '100%'] } : {}}
+            transition={{ duration: 1, ease: 'easeInOut' }}
+          >
+            <div className="h-full rounded-full bg-[#60a5fa]" style={{ width: i < done ? '100%' : '0%' }} />
+          </motion.div>
+        </motion.div>
+      ))}
     </div>
   );
 }
@@ -258,7 +255,7 @@ function CertificateVisual({ active }: { active: boolean }) {
 const VISUALS = {
   ai: AiQuizVisual,
   levels: DifficultyVisual,
-  global: LanguageVisual,
+  modules: ModulesVisual,
   share: CertificateVisual,
 } as const;
 

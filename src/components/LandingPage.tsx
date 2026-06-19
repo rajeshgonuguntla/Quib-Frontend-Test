@@ -1,17 +1,23 @@
 import { useState, useEffect, useRef, type ChangeEvent, type FormEvent } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router';
 import { motion } from 'framer-motion';
-import { ArrowRight, BookOpen, GraduationCap, Play, Upload } from 'lucide-react';
+import { ArrowRight, BookOpen, GraduationCap, Upload } from 'lucide-react';
 import { useTheme } from './ThemeContext';
 import { CubeLoader } from './CubeLoader';
 import { LandingNav } from './landing/LandingNav';
 import { PlatformSection } from './landing/PlatformSection';
 import { BentoGrid } from './landing/BentoGrid';
 import { FeaturesSection } from './landing/FeaturesSection';
+import { CtaSection } from './landing/CtaSection';
+import { LandingThumb } from './landing/LandingThumb';
+import {
+  LANDING_COURSE_THUMBNAILS,
+  LANDING_STUDIO_TOPICS,
+} from './landing/landingThumbnails';
 
 const TICKER = [
-  'Top educators', 'Structured courses', 'Progress tracking', 'AI quizzes',
-  'Certificates', 'Educator Studio', 'YouTube native', 'Learn at your pace',
+  'YouTube videos', 'AI quizzes', 'Structured courses', 'Progress tracking',
+  'Certificates', 'Educator Studio', 'Google sign-in', 'Browse courses',
 ];
 
 function LearnMock() {
@@ -22,18 +28,23 @@ function LearnMock() {
         <span className="font-mono text-xs text-[var(--landing-muted)]">Browse courses</span>
       </div>
       <div className="grid grid-cols-2 gap-2">
-        {['Linear Algebra', 'Web Dev', 'Machine Learning', 'TypeScript'].map((title, i) => (
+        {LANDING_COURSE_THUMBNAILS.map((course, i) => (
           <motion.div
-            key={title}
+            key={course.title}
             initial={{ opacity: 0, y: 8 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.08 }}
             viewport={{ once: true }}
             className="rounded-md border border-[var(--landing-border)] p-3"
           >
-            <div className="mb-2 aspect-video rounded bg-[var(--landing-bg)]" />
-            <p className="truncate text-xs font-medium text-[var(--landing-fg)]">{title}</p>
-            <p className="text-[10px] text-[var(--landing-muted)]">12 modules</p>
+            <LandingThumb
+              topic={course.topic}
+              label={course.title}
+              className="mb-2 aspect-video rounded"
+              duration={`${8 + i * 3}:${String(12 + i * 7).padStart(2, '0')}`}
+            />
+            <p className="truncate text-xs font-medium text-[var(--landing-fg)]">{course.title}</p>
+            <p className="text-[10px] text-[var(--landing-muted)]">{course.modules} modules</p>
           </motion.div>
         ))}
       </div>
@@ -49,13 +60,18 @@ function CreateMock() {
         <span className="font-mono text-xs text-[var(--landing-muted)]">Educator Studio</span>
       </div>
       <div className="grid grid-cols-3 gap-2">
-        {Array.from({ length: 6 }).map((_, i) => (
+        {LANDING_STUDIO_TOPICS.map((topic, i) => (
           <motion.div
-            key={i}
+            key={topic}
             whileHover={{ scale: 1.02 }}
-            className="aspect-video rounded border border-[var(--landing-border)] bg-[var(--landing-bg)] flex items-center justify-center"
+            className="aspect-video overflow-hidden rounded border border-[var(--landing-border)]"
           >
-            <Play size={12} className="text-[var(--landing-muted)]" />
+            <LandingThumb
+              topic={topic}
+              className="h-full w-full"
+              selected={i < 3}
+              duration={`${4 + i}:${String(10 + i * 11).padStart(2, '0')}`}
+            />
           </motion.div>
         ))}
       </div>
@@ -73,31 +89,41 @@ function CreateMock() {
 function TeachMock() {
   return (
     <div className="p-4 md:p-6 font-mono text-xs">
-      <div className="mb-3 flex gap-1.5 border-b border-[var(--landing-border)] pb-3">
-        <span className="size-2 rounded-full bg-red-500/80" />
-        <span className="size-2 rounded-full bg-yellow-500/80" />
-        <span className="size-2 rounded-full bg-green-500/80" />
-        <span className="ml-1 text-[var(--landing-muted)]">course.json</span>
+      <div className="mb-3 flex gap-3 border-b border-[var(--landing-border)] pb-3">
+        <LandingThumb
+          topic="neural-networks"
+          label="Neural Networks"
+          className="h-16 w-28 shrink-0 rounded-md"
+          showPlay={false}
+        />
+        <div className="min-w-0 flex-1">
+          <div className="mb-2 flex gap-1.5">
+            <span className="size-2 rounded-full bg-red-500/80" />
+            <span className="size-2 rounded-full bg-yellow-500/80" />
+            <span className="size-2 rounded-full bg-green-500/80" />
+            <span className="ml-1 text-[var(--landing-muted)]">course.json</span>
+          </div>
+          {[
+            '{',
+            '  "title": "Neural Networks",',
+            '  "modules": 8,',
+            '  "quizzes": 24,',
+            '  "published": true',
+            '}',
+          ].map((line, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, x: -4 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.05 }}
+              viewport={{ once: true }}
+              className="leading-relaxed text-[var(--landing-muted)]"
+            >
+              {line}
+            </motion.div>
+          ))}
+        </div>
       </div>
-      {[
-        '{',
-        '  "title": "Neural Networks",',
-        '  "modules": 8,',
-        '  "quizzes": 24,',
-        '  "published": true',
-        '}',
-      ].map((line, i) => (
-        <motion.div
-          key={i}
-          initial={{ opacity: 0, x: -4 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          transition={{ delay: i * 0.05 }}
-          viewport={{ once: true }}
-          className="leading-relaxed text-[var(--landing-muted)]"
-        >
-          {line}
-        </motion.div>
-      ))}
     </div>
   );
 }
@@ -208,7 +234,7 @@ export function LandingPage() {
         id="learn"
         title="Learn"
         description="Browse structured courses from top YouTube educators. Track progress, take quizzes, earn certificates."
-        stat="Thousands of learners use Quib to turn video into real comprehension."
+        stat="Turn YouTube lessons into courses you can follow, quiz, and complete."
         features={['Course catalog', 'Progress tracking', 'AI quizzes', 'Certificates']}
         mock={<LearnMock />}
       />
@@ -217,8 +243,8 @@ export function LandingPage() {
         id="create"
         title="Create"
         description="Connect your YouTube channel or paste any URL. Build courses from one video or an entire playlist."
-        stat="Educators publish structured courses in minutes, not weeks."
-        features={['YouTube OAuth', 'Multi-video picker', 'URL paste', 'One-click publish']}
+        stat="Connect your channel or paste a URL — then generate and publish a course."
+        features={['YouTube OAuth', 'Channel video picker', 'URL paste', 'Publish to catalog']}
         mock={<CreateMock />}
         reverse
       />
@@ -228,7 +254,7 @@ export function LandingPage() {
         title="Teach"
         description="Publish to the Quib catalog. Your audience gets modules, assessments, and timestamp-linked lessons."
         stat="Your content. Structured. Searchable. Shareable."
-        features={['Public catalog', 'Module breakdown', 'Quiz generation', 'Analytics']}
+        features={['Public catalog', 'Module breakdown', 'Quiz generation']}
         mock={<TeachMock />}
       />
 
@@ -236,27 +262,7 @@ export function LandingPage() {
 
       <FeaturesSection />
 
-      {/* CTA */}
-      <section className="relative border-t border-[var(--landing-border)] px-5 py-32 text-center md:px-8">
-        <div className="landing-glow pointer-events-none absolute inset-0" />
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="relative"
-        >
-          <h2 className="text-3xl font-semibold tracking-tight md:text-5xl">Start building with Quib</h2>
-          <p className="mx-auto mt-4 max-w-md text-[var(--landing-muted)]">For learners and educators. Free to try today.</p>
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Link to="/signin" className="rounded-md bg-[var(--landing-fg)] px-6 py-3 text-sm font-medium text-[var(--landing-bg)] no-underline transition-opacity hover:opacity-90">
-              Get started
-            </Link>
-            <Link to="/educators" className="rounded-md border border-[var(--landing-border)] px-6 py-3 text-sm text-[var(--landing-fg)] no-underline transition-colors hover:border-[var(--landing-muted)]">
-              For educators
-            </Link>
-          </div>
-        </motion.div>
-      </section>
+      <CtaSection />
 
       {/* Footer */}
       <footer className="border-t border-[var(--landing-border)] px-5 py-12 md:px-8">
