@@ -1,0 +1,96 @@
+/* Vercel-inspired landing page styles */
+
+.landing-page {
+  --landing-bg: #000000;
+  --landing-fg: #ededed;
+  --landing-muted: #888888;
+  --landing-border: rgba(255, 255, 255, 0.1);
+  --landing-card: #0a0a0a;
+  background: var(--landing-bg);
+  color: var(--landing-fg);
+}
+
+.landing-page.light {
+  --landing-bg: #ffffff;
+  --landing-fg: #171717;
+  --landing-muted: #737373;
+  --landing-border: rgba(0, 0, 0, 0.1);
+  --landing-card: #fafafa;
+}
+
+.landing-grid-bg {
+  background-image:
+    linear-gradient(to right, var(--landing-border) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--landing-border) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(ellipse 70% 50% at 50% 0%, black 10%, transparent 70%);
+}
+
+.landing-bento-card {
+  border: 1px solid var(--landing-border);
+  border-radius: 12px;
+  background: var(--landing-card);
+  overflow: hidden;
+  transition: border-color 0.3s ease;
+}
+
+.landing-bento-card:hover {
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.landing-page.light .landing-bento-card:hover {
+  border-color: rgba(0, 0, 0, 0.18);
+}
+
+.landing-mono-label {
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--landing-muted);
+}
+
+.landing-feature-item {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--landing-fg);
+  opacity: 0.85;
+}
+
+.landing-glow {
+  background: radial-gradient(ellipse 60% 50% at 50% 50%, rgba(225, 6, 0, 0.08) 0%, transparent 70%);
+}
+
+.landing-pattern-dots {
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.landing-page.light .landing-pattern-dots {
+  background-image: radial-gradient(circle, rgba(0, 0, 0, 0.06) 1px, transparent 1px);
+}
+
+@keyframes landingTicker {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.landing-ticker {
+  animation: landingTicker 40s linear infinite;
+}
+
+.landing-ticker:hover {
+  animation-play-state: paused;
+}
+
+@keyframes landingPulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+.landing-pulse-dot {
+  animation: landingPulse 3s ease-in-out infinite;
+}
