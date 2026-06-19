@@ -1,5 +1,5 @@
-import { motion, useInView } from 'framer-motion';
-import { useRef, type ReactNode } from 'react';
+import { motion, useInView, useMotionValue, useSpring } from 'framer-motion';
+import { useRef, type ReactNode, type MouseEvent } from 'react';
 
 type PlatformSectionProps = {
   id: string;
@@ -14,6 +14,23 @@ type PlatformSectionProps = {
 export function PlatformSection({ id, title, description, stat, features, mock, reverse }: PlatformSectionProps) {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: '-80px' });
+  const mockRef = useRef<HTMLDivElement>(null);
+  const tiltX = useMotionValue(0);
+  const tiltY = useMotionValue(0);
+  const springTiltX = useSpring(tiltX, { stiffness: 200, damping: 25 });
+  const springTiltY = useSpring(tiltY, { stiffness: 200, damping: 25 });
+
+  const handleMockMove = (e: MouseEvent) => {
+    const rect = mockRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    tiltX.set(((e.clientY - rect.top) / rect.height - 0.5) * -8);
+    tiltY.set(((e.clientX - rect.left) / rect.width - 0.5) * 8);
+  };
+
+  const handleMockLeave = () => {
+    tiltX.set(0);
+    tiltY.set(0);
+  };
 
   return (
     <section id={id} ref={ref} className="border-t border-[var(--landing-border)] px-5 py-24 md:px-8 md:py-32">
@@ -33,9 +50,20 @@ export function PlatformSection({ id, title, description, stat, features, mock, 
           animate={inView ? { opacity: 1, scale: 1 } : {}}
           transition={{ duration: 0.7, delay: 0.1, ease: [0.25, 0.1, 0.25, 1] }}
           className={`relative lg:col-span-6 ${reverse ? 'lg:order-2' : ''}`}
+          style={{ perspective: 1200 }}
         >
           <div className="landing-glow pointer-events-none absolute inset-0 -z-10" />
-          <div className="landing-bento-card shadow-2xl">{mock}</div>
+          <motion.div
+            ref={mockRef}
+            onMouseMove={handleMockMove}
+            onMouseLeave={handleMockLeave}
+            style={{ rotateX: springTiltX, rotateY: springTiltY, transformStyle: 'preserve-3d' }}
+            whileHover={{ scale: 1.01 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            className="landing-bento-card shadow-2xl"
+          >
+            {mock}
+          </motion.div>
         </motion.div>
 
         <motion.div
