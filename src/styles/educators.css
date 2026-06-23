@@ -1,0 +1,87 @@
+/* Educators page — impossible UI layers (CubeMorphBackground stays separate) */
+
+.educators-hero-portal {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.educators-hero-float {
+  will-change: transform;
+}
+
+.educators-pipeline-card {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: border-color 0.35s ease, box-shadow 0.35s ease, transform 0.35s ease;
+}
+
+.educators-pipeline-card.is-active {
+  z-index: 2;
+}
+
+.educators-pipeline-beam {
+  overflow: hidden;
+  border-radius: 17px;
+}
+
+.educators-pipeline-beam::before {
+  content: '';
+  position: absolute;
+  inset: -100%;
+  background: conic-gradient(from 0deg, transparent 0deg, rgba(225, 6, 0, 0.85) 70deg, transparent 140deg);
+  animation: educatorsBeamSpin 3s linear infinite;
+}
+
+@keyframes educatorsBeamSpin {
+  to { transform: rotate(360deg); }
+}
+
+.educators-cap-card {
+  overflow: hidden;
+  transition: transform 0.4s cubic-bezier(0.25, 0.1, 0.25, 1), border-color 0.3s ease;
+}
+
+.educators-cap-card:hover {
+  transform: translateY(-3px);
+}
+
+.educators-flow-path {
+  stroke-dasharray: 8 6;
+  animation: educatorsFlowDash 1.2s linear infinite;
+}
+
+@keyframes educatorsFlowDash {
+  to { stroke-dashoffset: -28; }
+}
+
+/* Light mode — match landing depth & contrast */
+.educators-page.light .educators-hero-portal .rounded-full {
+  border-color: var(--portal-ring) !important;
+}
+
+.educators-page.light .educators-hero-portal svg {
+  opacity: 0.55;
+}
+
+.educators-page.light .educators-hero-float > div {
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+}
+
+.educators-page.light .educators-pipeline-card.is-active > div {
+  box-shadow: 0 20px 60px rgba(225, 6, 0, 0.12), 0 8px 24px rgba(0, 0, 0, 0.08) !important;
+}
+
+.educators-page.light .educators-cap-card {
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.06);
+}
+
+.educators-page.light .educators-cap-card:hover {
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(225, 6, 0, 0.06);
+  border-color: rgba(225, 6, 0, 0.2) !important;
+}
+
+.educators-page.light .educators-flow-path {
+  stroke: rgba(225, 6, 0, 0.4);
+}

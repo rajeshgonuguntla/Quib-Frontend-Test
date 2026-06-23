@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import axios from 'axios';
-import { DarkLayout } from './DarkLayout';
+import { ShellPage } from '../shell/ShellPage';
 import { Youtube, Clock, Play, CheckCircle, AlertCircle, ArrowRight } from 'lucide-react';
 import { useTheme, getC } from './ThemeContext';
 import { fetchQuizDetail, isUuid, mapApiQuestionsToFrontend } from '../api/quizApi';
@@ -180,7 +180,7 @@ export function PlaylistSetup() {
 
   if (loading) {
     return (
-      <DarkLayout activeNav="dashboard" title="Generating Playlist Quizzes" subtitle="This may take a few minutes depending on playlist size">
+      <ShellPage title="Generating Playlist Quizzes" description="This may take a few minutes depending on playlist size">
         <div className="max-w-lg space-y-6">
           <div
             className="rounded-xl p-6"
@@ -224,13 +224,13 @@ export function PlaylistSetup() {
             ))}
           </div>
         </div>
-      </DarkLayout>
+      </ShellPage>
     );
   }
 
   if (setupError) {
     return (
-      <DarkLayout activeNav="dashboard" title="Something went wrong" subtitle="We couldn't generate your playlist quizzes">
+      <ShellPage title="Something went wrong" description="We couldn't generate your playlist quizzes">
         <div className="max-w-lg">
           <div
             className="rounded-xl p-6 flex flex-col gap-5"
@@ -251,7 +251,7 @@ export function PlaylistSetup() {
             </button>
           </div>
         </div>
-      </DarkLayout>
+      </ShellPage>
     );
   }
 
@@ -264,7 +264,7 @@ export function PlaylistSetup() {
 
   if (allCompleted) {
     return (
-      <DarkLayout activeNav="dashboard" title="Playlist Complete!" subtitle={`You completed all ${totalQuizzes} quizzes`}>
+      <ShellPage title="Playlist Complete!" description={`You completed all ${totalQuizzes} quizzes`}>
         <div className="max-w-2xl space-y-6">
           <div className="rounded-xl p-6" style={{ background: C.bg1, border: `1px solid ${C.border}` }}>
             <div className="flex items-center gap-4 mb-5">
@@ -293,15 +293,14 @@ export function PlaylistSetup() {
             Back to Dashboard
           </button>
         </div>
-      </DarkLayout>
+      </ShellPage>
     );
   }
 
   return (
-    <DarkLayout
-      activeNav="dashboard"
+    <ShellPage
       title={`Video ${currentQuizIndex + 1} of ${totalQuizzes}`}
-      subtitle="Watch the video, then start the quiz"
+      description="Watch the video, then start the quiz"
     >
       <div className="flex gap-6 max-w-6xl">
         {/* Main content */}
@@ -414,6 +413,6 @@ export function PlaylistSetup() {
           </div>
         </aside>
       </div>
-    </DarkLayout>
+    </ShellPage>
   );
 }

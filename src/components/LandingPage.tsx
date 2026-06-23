@@ -1,17 +1,138 @@
-import { useState, useEffect, useRef, ChangeEvent } from 'react';
+import { useState, useEffect, useRef, type ChangeEvent, type FormEvent } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router';
-import { StepCard } from './StepCard';
-import { Sun, Moon, Upload } from 'lucide-react';
-import { useTheme, getC } from './ThemeContext';
+import { motion } from 'framer-motion';
+import { ArrowRight, BookOpen, GraduationCap, Upload } from 'lucide-react';
+import { useTheme } from './ThemeContext';
 import { CubeLoader } from './CubeLoader';
+import { LandingNav } from './landing/LandingNav';
+import { PlatformSection } from './landing/PlatformSection';
+import { BentoGrid } from './landing/BentoGrid';
+import { FeaturesSection } from './landing/FeaturesSection';
+import { CtaSection } from './landing/CtaSection';
+import { LandingThumb } from './landing/LandingThumb';
+import {
+  LANDING_COURSE_THUMBNAILS,
+  LANDING_STUDIO_TOPICS,
+} from './landing/landingThumbnails';
+
+const TICKER = [
+  'YouTube videos', 'AI quizzes', 'Structured courses', 'Progress tracking',
+  'Certificates', 'Educator Studio', 'Google sign-in', 'Browse courses',
+];
+
+function LearnMock() {
+  return (
+    <div className="p-4 md:p-6">
+      <div className="mb-3 flex items-center gap-2 border-b border-[var(--landing-border)] pb-3">
+        <BookOpen size={14} className="text-[var(--landing-muted)]" />
+        <span className="font-mono text-xs text-[var(--landing-muted)]">Browse courses</span>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        {LANDING_COURSE_THUMBNAILS.map((course, i) => (
+          <motion.div
+            key={course.title}
+            initial={{ opacity: 0, y: 8 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.08 }}
+            viewport={{ once: true }}
+            className="rounded-md border border-[var(--landing-border)] p-3"
+          >
+            <LandingThumb
+              topic={course.topic}
+              label={course.title}
+              className="mb-2 aspect-video rounded"
+              duration={`${8 + i * 3}:${String(12 + i * 7).padStart(2, '0')}`}
+            />
+            <p className="truncate text-xs font-medium text-[var(--landing-fg)]">{course.title}</p>
+            <p className="text-[10px] text-[var(--landing-muted)]">{course.modules} modules</p>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CreateMock() {
+  return (
+    <div className="p-4 md:p-6">
+      <div className="mb-3 flex items-center gap-2 border-b border-[var(--landing-border)] pb-3">
+        <GraduationCap size={14} className="text-[var(--landing-muted)]" />
+        <span className="font-mono text-xs text-[var(--landing-muted)]">Educator Studio</span>
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        {LANDING_STUDIO_TOPICS.map((topic, i) => (
+          <motion.div
+            key={topic}
+            whileHover={{ scale: 1.02 }}
+            className="aspect-video overflow-hidden rounded border border-[var(--landing-border)]"
+          >
+            <LandingThumb
+              topic={topic}
+              className="h-full w-full"
+              selected={i < 3}
+              duration={`${4 + i}:${String(10 + i * 11).padStart(2, '0')}`}
+            />
+          </motion.div>
+        ))}
+      </div>
+      <motion.div
+        animate={{ opacity: [0.5, 1, 0.5] }}
+        transition={{ duration: 2, repeat: Infinity }}
+        className="mt-3 rounded-md border border-[var(--brand,#e10600)] bg-[rgba(225,6,0,0.08)] px-3 py-2 text-center font-mono text-[10px] text-[var(--landing-fg)]"
+      >
+        3 videos selected · Build course
+      </motion.div>
+    </div>
+  );
+}
+
+function TeachMock() {
+  return (
+    <div className="p-4 md:p-6 font-mono text-xs">
+      <div className="mb-3 flex gap-3 border-b border-[var(--landing-border)] pb-3">
+        <LandingThumb
+          topic="neural-networks"
+          label="Neural Networks"
+          className="h-16 w-28 shrink-0 rounded-md"
+          showPlay={false}
+        />
+        <div className="min-w-0 flex-1">
+          <div className="mb-2 flex gap-1.5">
+            <span className="size-2 rounded-full bg-red-500/80" />
+            <span className="size-2 rounded-full bg-yellow-500/80" />
+            <span className="size-2 rounded-full bg-green-500/80" />
+            <span className="ml-1 text-[var(--landing-muted)]">course.json</span>
+          </div>
+          {[
+            '{',
+            '  "title": "Neural Networks",',
+            '  "modules": 8,',
+            '  "quizzes": 24,',
+            '  "published": true',
+            '}',
+          ].map((line, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, x: -4 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.05 }}
+              viewport={{ once: true }}
+              className="leading-relaxed text-[var(--landing-muted)]"
+            >
+              {line}
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function LandingPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isDark, toggleTheme } = useTheme();
-  const C = getC(isDark);
+  const { isDark } = useTheme();
   const [youtubeUrl, setYoutubeUrl] = useState('');
-  const [glowNode, setGlowNode] = useState<string>('01');
   const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -26,547 +147,152 @@ export function LandingPage() {
     }
   };
 
-  const handleFileUpload = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) console.log('Uploaded file:', file.name);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-
   useEffect(() => {
-    const steps = ['01', '02', '03'];
-    let index = 0;
-    setGlowNode(steps[0]);
-    const interval = setInterval(() => {
-      index = (index + 1) % steps.length;
-      setGlowNode(steps[index]);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    // Check if coming from signup
     if (location.state?.fromSignup) {
       setIsLoading(true);
-      const timer = setTimeout(() => {
-        setIsLoading(false);
-      }, 3000); // Show loader for 3 seconds
+      const timer = setTimeout(() => setIsLoading(false), 3000);
       return () => clearTimeout(timer);
     }
   }, [location.state]);
 
-  const revealRefs = useRef<(HTMLElement | null)[]>([]);
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((e) => { if (e.isIntersecting) e.target.classList.add('cert-in'); });
-      },
-      { threshold: 0.08 }
-    );
-    revealRefs.current.forEach((el) => el && observer.observe(el));
-    return () => observer.disconnect();
-  }, []);
-
-  const addRevealRef = (el: HTMLElement | null) => {
-    if (el && !revealRefs.current.includes(el)) revealRefs.current.push(el);
-  };
-
-
-  const tickerItems = [
-    'Top educators', 'Structured courses', 'Progress tracking', 'Timestamp links',
-    'Difficulty levels', 'Export to PDF', 'Share on LinkedIn', 'Score tracking',
-    'Any language', 'AI-powered', 'Earn certificates', 'Learn at your pace',
-  ];
-
-  const navBg = isDark ? 'rgba(6,6,8,0.88)' : 'rgba(255,255,255,0.85)';
-
-  if (isLoading) {
-    return <CubeLoader />;
-  }
+  if (isLoading) return <CubeLoader />;
 
   return (
-    <div style={{ background: C.bg, color: C.text, fontFamily: "var(--display)", overflowX: 'hidden' }}>
-      {/* Grain overlay */}
-      <div
-        style={{
-          position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 9999, opacity: 0.022,
-          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23g)' opacity='1'/%3E%3C/svg%3E")`,
-        }}
-      />
+    <div className={`landing-page min-h-screen overflow-x-hidden ${isDark ? '' : 'light'}`}>
+      <div className="landing-grid-bg pointer-events-none fixed inset-0" />
+      <LandingNav isDark={isDark} />
 
-      {/* NAV */}
-      <nav
-        className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-between px-5 md:px-10"
-        style={{ height: 60, background: navBg, backdropFilter: 'blur(20px)', borderBottom: `1px solid ${C.border}` }}
-      >
-        <a href="#" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="flex items-center gap-1.5 no-underline cursor-pointer" style={{ color: C.text }}>
-          <span className="text-[1.05rem] font-[700] tracking-tight">Quib</span>
-        </a>
-
-        <ul className="hidden md:flex gap-7 list-none absolute left-1/2 -translate-x-1/2">
-          {[
-            { label: 'Features', href: '#features' },
-            { label: 'How it works', href: '#how' },
-          ].map((l) => (
-            <li key={l.label}>
-              {l.href.startsWith('/') ? (
-                <Link to={l.href} className="text-[0.875rem] font-[400] no-underline transition-opacity hover:opacity-100" style={{ color: C.text2, letterSpacing: '0.01em', opacity: 0.8 }}>
-                  {l.label}
-                </Link>
-              ) : (
-                <a href={l.href} className="text-[0.875rem] font-[400] no-underline transition-opacity hover:opacity-100" style={{ color: C.text2, letterSpacing: '0.01em', opacity: 0.8 }}>
-                  {l.label}
-                </a>
-              )}
-            </li>
-          ))}
-        </ul>
-
-        <div className="flex items-center gap-3">
-          <Link to="/educators" className="text-[0.875rem] font-[400] no-underline transition-opacity hover:opacity-100 hidden md:inline" style={{ color: C.text2, letterSpacing: '0.01em', opacity: 0.8 }}>
-            For Educators
-          </Link>
-          <button
-            onClick={toggleTheme}
-            className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
-            style={{ background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)', border: `1px solid ${C.border}`, color: C.text2, cursor: 'pointer' }}
-            title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-          >
-            {isDark ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
-          </button>
-          <Link to="/signin" className="hidden md:inline text-[0.82rem] font-[400] no-underline transition-opacity hover:opacity-80" style={{ color: C.text2 }}>
-            Sign in
-          </Link>
-          <Link to="/signin" className="text-[0.82rem] font-[600] no-underline px-[18px] py-2 rounded-md transition-all hover:opacity-90 hover:-translate-y-px" style={{ background: C.text, color: C.bg, letterSpacing: '0.01em' }}>
-            Get started free
-          </Link>
-        </div>
-      </nav>
-
-      {/* HERO */}
-      <section className="min-h-screen flex flex-col items-center justify-center text-center relative overflow-hidden" style={{ padding: '100px 24px 60px' }}>
-        <div className="absolute pointer-events-none" style={{ top: '35%', left: '50%', transform: 'translate(-50%,-50%)', width: 800, height: 500, background: `radial-gradient(ellipse at center, rgba(225,6,0,0.06) 0%, transparent 65%)` }} />
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            backgroundImage: isDark
-              ? `linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)`
-              : `linear-gradient(rgba(0,0,0,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px)`,
-            backgroundSize: '80px 80px',
-            maskImage: 'radial-gradient(ellipse 80% 60% at 50% 50%, black 20%, transparent 100%)',
-            WebkitMaskImage: 'radial-gradient(ellipse 80% 60% at 50% 50%, black 20%, transparent 100%)',
-          }}
-        />
-
-        <div className="inline-flex items-center gap-2 rounded-full px-3.5 py-1 mb-9 cert-fade-up" style={{ border: `1px solid ${C.border2}`, fontFamily: "var(--mono)", fontSize: '0.7rem', color: C.text2, letterSpacing: '0.06em', animationDelay: '0s' }}>
-          <span>Powered by AI &nbsp;·&nbsp; Free to try</span>
-        </div>
-
-        <h1 className="cert-fade-up" style={{ fontSize: 'clamp(2.8rem, 6.5vw, 5.5rem)', fontWeight: 400, lineHeight: 1.1, letterSpacing: '-0.02em', maxWidth: 800, animationDelay: '0.1s', fontFamily: "var(--serif)" }}>
-          Learn from the best
-          <span className="block" style={{ color: 'transparent', WebkitTextStroke: isDark ? '1px rgba(255,255,255,0.18)' : '1px rgba(0,0,0,0.18)' }}>
-            <em style={{ fontStyle: 'normal', color: C.red, WebkitTextStroke: '0' }}>educators</em> on YouTube
-          </span>
-        </h1>
-
-        <p className="cert-fade-up" style={{ marginTop: 28, color: C.text2, fontSize: '1.05rem', maxWidth: 480, lineHeight: 1.75, fontWeight: 300, animationDelay: '0.2s' }}>
-          Paste a YouTube link or explore top educators — courses, quizzes, and progress in one place.
-        </p>
-
-        <form
-          className="cert-fade-up mt-10 flex w-full max-w-xl mx-auto"
-          style={{ animationDelay: '0.3s' }}
-          onSubmit={(e) => { e.preventDefault(); handleGenerate(); }}
+      {/* Hero — Vercel-style minimal */}
+      <section className="relative flex min-h-screen flex-col items-center justify-center px-5 pt-14 text-center md:px-8">
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, ease: [0.25, 0.1, 0.25, 1] }}
+          className="relative z-10 max-w-3xl"
         >
-          <input
-            type="text"
-            value={youtubeUrl}
-            onChange={(e) => setYoutubeUrl(e.target.value)}
-            placeholder={isPlaylistUrl(youtubeUrl) ? 'youtube.com/playlist?list=...' : 'Paste a YouTube URL...'}
-            className="flex-1 px-5 py-3.5 rounded-l-lg text-[0.9rem] outline-none transition-all"
-            style={{
-              background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
-              border: `1px solid ${C.border}`,
-              borderRight: 'none',
-              color: C.text,
-              fontFamily: 'var(--mono)',
-            }}
-          />
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".pdf,.doc,.docx"
-            className="hidden"
-            onChange={handleFileUpload}
-          />
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="px-3.5 py-3.5 transition-all"
-            style={{
-              background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
-              border: `1px solid ${C.border}`,
-              borderLeft: 'none',
-              borderRight: 'none',
-              color: C.text2,
-            }}
-            title="Upload PDF or Word document"
+          <p className="landing-mono-label mb-6">Learning infrastructure</p>
+          <h1 className="text-4xl font-semibold leading-[1.08] tracking-tight text-[var(--landing-fg)] md:text-6xl lg:text-7xl">
+            Learn from the best educators on YouTube
+          </h1>
+          <p className="mx-auto mt-6 max-w-lg text-base leading-relaxed text-[var(--landing-muted)] md:text-lg">
+            Paste a link. Get structured courses, quizzes, and progress — built for learners and creators.
+          </p>
+
+          <motion.form
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.6 }}
+            onSubmit={(e: FormEvent) => { e.preventDefault(); handleGenerate(); }}
+            className="mx-auto mt-10 flex w-full max-w-xl overflow-hidden rounded-lg border border-[var(--landing-border)] bg-[var(--landing-card)]"
           >
-            <Upload className="w-4.5 h-4.5" />
-          </button>
-          <button
-            type="submit"
-            className="px-6 py-3.5 rounded-r-lg text-[0.9rem] font-[600] text-white transition-all hover:opacity-90 cursor-pointer"
-            style={{ background: C.red, border: 'none' }}
+            <input
+              type="text"
+              value={youtubeUrl}
+              onChange={(e) => setYoutubeUrl(e.target.value)}
+              placeholder="Paste a YouTube URL…"
+              className="min-w-0 flex-1 bg-transparent px-4 py-3 font-mono text-sm text-[var(--landing-fg)] outline-none placeholder:text-[var(--landing-muted)]"
+            />
+            <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={(e: ChangeEvent<HTMLInputElement>) => { e.target.value = ''; }} />
+            <button type="button" onClick={() => fileInputRef.current?.click()} className="border-l border-[var(--landing-border)] px-3 text-[var(--landing-muted)] transition-colors hover:text-[var(--landing-fg)]">
+              <Upload size={16} />
+            </button>
+            <button type="submit" className="flex items-center gap-1.5 border-l border-[var(--landing-border)] bg-[var(--landing-fg)] px-5 py-3 text-sm font-medium text-[var(--landing-bg)] transition-opacity hover:opacity-90">
+              Start <ArrowRight size={14} />
+            </button>
+          </motion.form>
+
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+            className="landing-mono-label mt-4"
           >
-            Get started
-          </button>
-        </form>
+            Free to try · No credit card
+          </motion.p>
+        </motion.div>
 
-        <div className="flex gap-3 mt-5 flex-wrap justify-center cert-fade-up" style={{ animationDelay: '0.35s' }}>
-          <a href="#how" className="no-underline px-7 py-3.5 rounded-lg text-[0.9rem] font-[400] transition-all hover:-translate-y-0.5" style={{ color: C.text2, border: `1px solid ${C.border}`, letterSpacing: '0.01em' }}>
-            See how it works
-          </a>
-        </div>
-
-        <p className="cert-fade-up" style={{ marginTop: 16, fontSize: '0.75rem', color: C.text3, fontFamily: "var(--mono)", letterSpacing: '0.04em', animationDelay: '0.4s' }}>
-          No credit card required · Free tier available
-        </p>
-
-        <div className="mt-20 w-full overflow-hidden cert-fade-up" style={{ borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}`, padding: '13px 0', animationDelay: '0.5s' }}>
-          <div className="flex w-max cert-ticker">
-            {[...tickerItems, ...tickerItems].map((item, i) => (
-              <span key={i} className="inline-flex items-center gap-2 px-7 whitespace-nowrap" style={{ fontFamily: "var(--mono)", fontSize: '0.7rem', color: C.text3, letterSpacing: '0.06em' }}>
-                <span style={{ color: C.red }}>·</span>
+        {/* Ticker */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6 }}
+          className="absolute bottom-0 left-0 right-0 overflow-hidden border-t border-[var(--landing-border)] py-3"
+        >
+          <div className="landing-ticker flex w-max">
+            {[...TICKER, ...TICKER].map((item, i) => (
+              <span key={i} className="landing-mono-label inline-flex items-center gap-2 px-8 whitespace-nowrap">
+                <span className="text-[var(--brand,#e10600)]">·</span>
                 {item}
               </span>
             ))}
           </div>
-        </div>
+        </motion.div>
       </section>
 
-      {/* HOW IT WORKS */}
-      <section ref={addRevealRef} id="how" className="cert-reveal max-w-[1100px] mx-auto px-5 md:px-10 py-[120px]">
-        <div>
-          <p className="mb-4" style={{ fontFamily: "var(--mono)", fontSize: '0.68rem', color: C.red, letterSpacing: '0.12em' }}>HOW IT WORKS</p>
-          <h2 style={{ fontSize: 'clamp(1.9rem, 3.5vw, 2.9rem)', fontWeight: 400, letterSpacing: '-0.01em', lineHeight: 1.1, fontFamily: "var(--serif)" }}>
-            From YouTube to course<br />in three steps
-          </h2>
-          <p className="mt-4" style={{ color: C.text2, fontSize: '0.975rem', fontWeight: 300, maxWidth: 480, lineHeight: 1.75 }}>
-            No setup. No friction. Find an educator, enrol, and start learning right away.
-          </p>
-        </div>
+      {/* Platform blocks — like Vercel Agents / Apps / Platforms */}
+      <PlatformSection
+        id="learn"
+        title="Learn"
+        description="Browse structured courses from top YouTube educators. Track progress, take quizzes, earn certificates."
+        stat="Turn YouTube lessons into courses you can follow, quiz, and complete."
+        features={['Course catalog', 'Progress tracking', 'AI quizzes', 'Certificates']}
+        mock={<LearnMock />}
+      />
 
-        <div className="mt-[60px] grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-0 relative py-[60px]">
-          <StepCard step="01" label="DISCOVER" title="Find an educator" desc="Browse top YouTube educators across any subject you want to learn." glowing={glowNode === '01'}>
-            <div className="w-full">
-              <div className="flex items-center gap-2 rounded-md p-2.5 mb-3" style={{ background: C.bg, border: `1px solid ${C.border2}` }}>
-                <span className="text-base opacity-60 grayscale">🔗</span>
-                <span className="flex-1" style={{ fontFamily: "var(--mono)", fontSize: '0.7rem', color: C.text3 }}>youtube.com/watch?v=...</span>
-                <span className="w-0.5 h-3 cert-blink-cursor" style={{ background: C.red }} />
-              </div>
-              <button className="w-full py-2 rounded-md border-none cursor-pointer text-white transition-all hover:opacity-90 hover:-translate-y-px" style={{ background: C.red, fontFamily: "var(--mono)", fontSize: '0.7rem', fontWeight: 600, letterSpacing: '0.05em' }}>
-                ENROL NOW →
-              </button>
-            </div>
-          </StepCard>
+      <PlatformSection
+        id="create"
+        title="Create"
+        description="Connect your YouTube channel or paste any URL. Build courses from one video or an entire playlist."
+        stat="Connect your channel or paste a URL — then generate and publish a course."
+        features={['YouTube OAuth', 'Channel video picker', 'URL paste', 'Publish to catalog']}
+        mock={<CreateMock />}
+        reverse
+      />
 
-          <StepCard step="02" label="LEARN" title="Follow the curriculum" desc="Structured lessons, key concepts, and progress tracking." glowing={glowNode === '02'}>
-            <div className="w-full">
-              {['Extract transcript', 'Map key concepts', 'Build your course'].map((item, i) => (
-                <div key={item} className="flex items-center gap-2.5 rounded-md p-2 mb-1.5" style={{ background: i === 2 ? C.redDim : C.bg, fontFamily: "var(--mono)", fontSize: '0.7rem', color: i < 2 ? C.text2 : C.text, ...(i === 2 ? { border: `1px solid rgba(225,6,0,0.2)` } : {}) }}>
-                  {i < 2 ? <span style={{ color: C.red, fontSize: '0.8rem', flexShrink: 0 }}>✓</span> : <span className="cert-spinner" />}
-                  <span>{item}</span>
-                </div>
-              ))}
-              <div className="flex items-center gap-2.5 rounded-md p-2 mb-1.5" style={{ background: C.redDim, fontFamily: "var(--mono)", fontSize: '0.7rem', color: C.text, border: `1px solid rgba(225,6,0,0.2)` }}>
-                <span className="cert-spinner" />
-                <span>Finalizing...</span>
-              </div>
-              <div className="mt-2 h-[3px] rounded-sm overflow-hidden" style={{ background: C.bg2 }}>
-                <div className="h-full rounded-sm cert-fill-bar" style={{ width: '75%', background: `linear-gradient(90deg, ${C.red}, #ff6666)` }} />
-              </div>
-            </div>
-          </StepCard>
+      <PlatformSection
+        id="teach"
+        title="Teach"
+        description="Publish to the Quib catalog. Your audience gets modules, assessments, and timestamp-linked lessons."
+        stat="Your content. Structured. Searchable. Shareable."
+        features={['Public catalog', 'Module breakdown', 'Quiz generation']}
+        mock={<TeachMock />}
+      />
 
-          <StepCard step="03" label="ASSESS" title="Test & earn" desc="Complete assessments, earn certificates, and share your progress." glowing={glowNode === '03'}>
-            <div className="w-full">
-              <div className="rounded-md p-2.5 mb-2.5 text-left" style={{ background: C.bg, fontSize: '0.75rem', color: C.text2, lineHeight: 1.4 }}>
-                What is the primary function of mitochondria?
-              </div>
-              <div className="flex flex-col gap-1">
-                {[
-                  { letter: 'A', text: 'Store DNA', correct: false },
-                  { letter: 'B', text: 'Produce energy', correct: true },
-                  { letter: 'C', text: 'Synthesize proteins', correct: false },
-                ].map((opt) => (
-                  <div key={opt.letter} className="flex items-center gap-2 rounded-[5px] px-2 py-1.5 text-[0.7rem]" style={{ background: opt.correct ? C.redDim : C.bg, border: `1px solid ${opt.correct ? C.red : C.border}`, color: opt.correct ? C.text : C.text3 }}>
-                    <span className="w-[18px] h-[18px] rounded-[3px] flex items-center justify-center flex-shrink-0 text-[0.65rem]" style={{ fontFamily: "var(--mono)", background: opt.correct ? C.red : C.bg1, border: `1px solid ${opt.correct ? C.red : C.border}`, color: opt.correct ? '#fff' : 'inherit' }}>
-                      {opt.letter}
-                    </span>
-                    <span>{opt.text}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-2.5 inline-flex items-center gap-1.5 rounded-full px-3 py-1" style={{ background: C.redDim, border: `1px solid rgba(225,6,0,0.3)`, fontFamily: "var(--mono)", fontSize: '0.7rem', color: C.red, fontWeight: 600 }}>
-                ✓ 8/10 CORRECT
-              </div>
-            </div>
-          </StepCard>
-        </div>
-      </section>
+      <BentoGrid />
 
-      {/* FEATURES */}
-      <section ref={addRevealRef} id="features" className="cert-reveal max-w-[1100px] mx-auto px-5 md:px-10 py-[120px]">
-        <div>
-          <p className="mb-4" style={{ fontFamily: "var(--mono)", fontSize: '0.68rem', color: C.red, letterSpacing: '0.12em' }}>FEATURES</p>
-          <h2 style={{ fontSize: 'clamp(1.9rem, 3.5vw, 2.9rem)', fontWeight: 400, letterSpacing: '-0.01em', lineHeight: 1.1, fontFamily: "var(--serif)" }}>
-            Built for real<br />comprehension
-          </h2>
-          <p className="mt-4" style={{ color: C.text2, fontSize: '0.975rem', fontWeight: 300, maxWidth: 480, lineHeight: 1.75 }}>
-            Every feature designed to help learners actually understand content — not just skim it.
-          </p>
-        </div>
+      <FeaturesSection />
 
-        <div className="mt-16 grid grid-cols-1 md:grid-cols-2 rounded-2xl overflow-hidden" style={{ gap: 1, background: C.border, border: `1px solid ${C.border}` }}>
-          <div className="md:col-span-2 p-10 transition-colors" style={{ background: C.bg1, borderBottom: `1px solid ${C.border}` }} onMouseEnter={(e) => (e.currentTarget.style.background = C.bg2)} onMouseLeave={(e) => (e.currentTarget.style.background = C.bg1)}>
-            <p style={{ fontFamily: "var(--mono)", fontSize: '0.65rem', color: C.text3, letterSpacing: '0.1em', marginBottom: 14 }}>AI-POWERED</p>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 600, letterSpacing: '-0.02em', marginBottom: 10 }}>Context-aware question generation</h3>
-            <p style={{ color: C.text2, fontSize: '0.875rem', fontWeight: 300, lineHeight: 1.7 }}>
-              Quib doesn't extract random sentences. It understands the subject and builds questions that test deep comprehension.
-            </p>
-            <div className="mt-6 rounded-[10px] p-[18px_20px] max-w-[500px]" style={{ background: C.bg, border: `1px solid ${C.border}` }}>
-              <p style={{ fontSize: '0.875rem', fontWeight: 500, marginBottom: 14, lineHeight: 1.5 }}>What is the primary function of mitochondria in a cell?</p>
-              <div className="flex flex-col gap-1.5">
-                {[
-                  { key: 'A', text: 'To store genetic information', correct: false },
-                  { key: 'B', text: 'To produce energy (ATP)', correct: true },
-                  { key: 'C', text: 'To synthesize proteins', correct: false },
-                  { key: 'D', text: 'To transport oxygen', correct: false },
-                ].map((opt) => (
-                  <div key={opt.key} className="flex items-center gap-2.5 rounded-md px-3 py-[9px] text-[0.8rem]" style={{ background: opt.correct ? C.redDim : C.bg1, border: `1px solid ${opt.correct ? 'rgba(225,6,0,0.3)' : C.border}`, color: opt.correct ? C.text : C.text2 }}>
-                    <span className="w-5 h-5 rounded flex items-center justify-center flex-shrink-0 text-[0.65rem]" style={{ fontFamily: "var(--mono)", background: opt.correct ? C.redDim : C.bg, border: `1px solid ${opt.correct ? C.red : C.border}`, color: opt.correct ? C.red : 'inherit' }}>
-                      {opt.key}
-                    </span>
-                    {opt.text}
-                  </div>
-                ))}
-              </div>
-            </div>
+      <CtaSection />
+
+      {/* Footer */}
+      <footer className="border-t border-[var(--landing-border)] px-5 py-12 md:px-8">
+        <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-8 md:flex-row">
+          <div>
+            <span className="text-sm font-semibold text-[var(--landing-fg)]">Quib</span>
+            <p className="mt-2 max-w-xs text-sm text-[var(--landing-muted)]">Learn from top YouTube educators with AI-powered courses.</p>
           </div>
-
-          {[
-            { tag: 'DIFFICULTY CONTROL', title: 'Set the challenge level', desc: 'Easy, Medium, or Hard. The model adjusts question depth and complexity accordingly.' },
-            { tag: 'MULTILINGUAL', title: 'Works in any language', desc: 'Learn from educators in English, Spanish, French, German, Japanese, and dozens more.' },
-            { tag: 'SHARE RESULTS', title: 'LinkedIn-ready certificates', desc: 'Share your course completions and achievements directly to LinkedIn with a single click.' },
-            { tag: 'ANALYTICS', title: 'Track learner progress', desc: 'See which questions tripped learners up and how scores improve over time.' },
-          ].map((f) => (
-            <div key={f.tag} className="p-10 transition-colors cursor-default" style={{ background: C.bg1 }} onMouseEnter={(e) => (e.currentTarget.style.background = C.bg2)} onMouseLeave={(e) => (e.currentTarget.style.background = C.bg1)}>
-              <p style={{ fontFamily: "var(--mono)", fontSize: '0.65rem', color: C.text3, letterSpacing: '0.1em', marginBottom: 14 }}>{f.tag}</p>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 600, letterSpacing: '-0.02em', marginBottom: 10 }}>{f.title}</h3>
-              <p style={{ color: C.text2, fontSize: '0.875rem', fontWeight: 300, lineHeight: 1.7 }}>{f.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* DEEP DIVE */}
-      <section ref={addRevealRef} className="cert-reveal max-w-[1100px] mx-auto px-5 md:px-10 py-[120px]">
-        <div>
-          <p className="mb-4" style={{ fontFamily: "var(--mono)", fontSize: '0.68rem', color: C.red, letterSpacing: '0.12em' }}>DEEP DIVE</p>
-          <h2 style={{ fontSize: 'clamp(1.9rem, 3.5vw, 2.9rem)', fontWeight: 400, letterSpacing: '-0.01em', lineHeight: 1.1, fontFamily: "var(--serif)" }}>Under the hood</h2>
-        </div>
-        <div className="mt-16">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-[60px] items-start py-16" style={{ borderBottom: `1px solid ${C.border}` }}>
-            <div>
-              <p style={{ fontFamily: "var(--mono)", fontSize: '0.68rem', color: C.red, letterSpacing: '0.12em' }}>INSTANT TRANSCRIPTION</p>
-              <h3 className="my-3" style={{ fontSize: '1.5rem', fontWeight: 400, letterSpacing: '-0.01em', lineHeight: 1.2, fontFamily: "var(--serif)" }}>Full transcript in seconds, not minutes</h3>
-              <p className="mb-6" style={{ color: C.text2, fontSize: '0.9rem', fontWeight: 300, lineHeight: 1.75 }}>
-                Quib extracts and analyzes the complete transcript — whether it's a 5-minute tutorial or a 3-hour lecture — and identifies the most meaningful content to test on.
-              </p>
-              <ul className="flex flex-col gap-2.5 list-none">
-                {['Speaker-labelled transcript with timestamps', 'Works with auto-generated and manual captions', 'Chapters detected automatically', 'Downloadable as plain text or JSON'].map((b) => (
-                  <li key={b} className="flex items-start gap-2.5 text-[0.875rem] font-[300]" style={{ color: C.text2 }}>
-                    <span className="w-1 h-1 rounded-full mt-[9px] flex-shrink-0" style={{ background: C.red }} />{b}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="rounded-[14px] overflow-hidden" style={{ background: C.bg1, border: `1px solid ${C.border}` }}>
-              <div className="flex items-center gap-1.5 px-3.5 py-2.5" style={{ background: C.bg2, borderBottom: `1px solid ${C.border}` }}>
-                <span className="w-[9px] h-[9px] rounded-full" style={{ background: '#ff5f57' }} />
-                <span className="w-[9px] h-[9px] rounded-full" style={{ background: '#febc2e' }} />
-                <span className="w-[9px] h-[9px] rounded-full" style={{ background: '#28c840' }} />
-                <span className="ml-1.5" style={{ fontFamily: "var(--mono)", fontSize: '0.68rem', color: C.text3 }}>transcript.txt</span>
-              </div>
-              <div className="p-5">
-                {[
-                  { who: 'Speaker 1', say: 'The cell membrane is selectively permeable, allowing certain molecules to pass while blocking others.', ts: '02:14' },
-                  { who: 'Speaker 1', say: 'This property is essential for maintaining homeostasis within the cell environment.', ts: '02:22' },
-                  { who: 'Speaker 2', say: 'So osmosis is water moving across this membrane from low to high solute concentration?', ts: '02:38' },
-                  { who: 'Speaker 1', say: 'Exactly. That process is passive — it requires no energy input from the cell itself.', ts: '02:51' },
-                ].map((line, i) => (
-                  <div key={i} className="flex gap-2.5 py-2.5 text-[0.82rem]" style={{ borderBottom: i < 3 ? `1px solid ${C.border}` : 'none' }}>
-                    <span className="flex-shrink-0 pt-0.5 min-w-[72px]" style={{ fontFamily: "var(--mono)", fontSize: '0.68rem', color: C.red }}>{line.who}</span>
-                    <span className="font-[300] leading-[1.55]" style={{ color: C.text2 }}>{line.say}</span>
-                    <span className="flex-shrink-0 pt-0.5 ml-auto" style={{ fontFamily: "var(--mono)", fontSize: '0.65rem', color: C.text3 }}>{line.ts}</span>
-                  </div>
+          <div className="flex gap-12">
+            {[
+              { title: 'Product', links: [{ l: 'Features', h: '#features' }, { l: 'Educators', h: '/educators' }, { l: 'Sign in', h: '/signin' }] },
+              { title: 'Company', links: [{ l: 'How it works', h: '#learn' }, { l: 'Support', h: 'mailto:support@quibb.ai' }] },
+            ].map((col) => (
+              <div key={col.title}>
+                <p className="landing-mono-label mb-3">{col.title}</p>
+                {col.links.map((link) => (
+                  link.h.startsWith('/') ? (
+                    <Link key={link.l} to={link.h} className="block py-1 text-sm text-[var(--landing-muted)] no-underline hover:text-[var(--landing-fg)]">{link.l}</Link>
+                  ) : link.h.startsWith('#') ? (
+                    <a key={link.l} href={link.h} className="block py-1 text-sm text-[var(--landing-muted)] no-underline hover:text-[var(--landing-fg)]">{link.l}</a>
+                  ) : (
+                    <a key={link.l} href={link.h} className="block py-1 text-sm text-[var(--landing-muted)] no-underline hover:text-[var(--landing-fg)]">{link.l}</a>
+                  )
                 ))}
               </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-[60px] items-start py-16">
-            <div>
-              <p style={{ fontFamily: "var(--mono)", fontSize: '0.68rem', color: C.red, letterSpacing: '0.12em' }}>DEVELOPER API</p>
-              <h3 className="my-3" style={{ fontSize: '1.5rem', fontWeight: 400, letterSpacing: '-0.01em', lineHeight: 1.2, fontFamily: "var(--serif)" }}>Embed courses into your platform</h3>
-              <p className="mb-6" style={{ color: C.text2, fontSize: '0.9rem', fontWeight: 300, lineHeight: 1.75 }}>
-                Use the Quib API to add course generation directly to your learning platform, browser extension, or app. Structured course data with a single POST request.
-              </p>
-              <ul className="flex flex-col gap-2.5 list-none">
-                {['RESTful JSON API with full documentation', 'Webhook support for async generation', 'Customizable question count and types', 'SDKs for JavaScript, Python, and more'].map((b) => (
-                  <li key={b} className="flex items-start gap-2.5 text-[0.875rem] font-[300]" style={{ color: C.text2 }}>
-                    <span className="w-1 h-1 rounded-full mt-[9px] flex-shrink-0" style={{ background: C.red }} />{b}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="rounded-[14px] overflow-hidden" style={{ background: C.bg1, border: `1px solid ${C.border}` }}>
-              <div className="flex items-center gap-1.5 px-3.5 py-2.5" style={{ background: C.bg2, borderBottom: `1px solid ${C.border}` }}>
-                <span className="w-[9px] h-[9px] rounded-full" style={{ background: '#ff5f57' }} />
-                <span className="w-[9px] h-[9px] rounded-full" style={{ background: '#febc2e' }} />
-                <span className="w-[9px] h-[9px] rounded-full" style={{ background: '#28c840' }} />
-                <span className="ml-1.5" style={{ fontFamily: "var(--mono)", fontSize: '0.68rem', color: C.text3 }}>Quib API</span>
-              </div>
-              <div className="p-5">
-                <div className="rounded-lg p-4" style={{ background: C.bg, border: `1px solid ${C.border}`, fontFamily: "var(--mono)", fontSize: '0.78rem', lineHeight: 1.85 }}>
-                  {[
-                    { n: '1', parts: [{ t: 'curl', c: C.red }, { t: ' -X POST \\', c: '#e8c96a' }] },
-                    { n: '2', parts: [{ t: '  https://api.quib.ai/v1/quiz \\', c: C.text }] },
-                    { n: '3', parts: [{ t: '  -H ', c: '#e8c96a' }, { t: '"Authorization: Bearer <key>" \\', c: C.text3 }] },
-                    { n: '4', parts: [{ t: '  -d ', c: '#e8c96a' }, { t: "'{", c: C.text3 }] },
-                    { n: '5', parts: [{ t: '    "url"', c: '#a78bfa' }, { t: ': ', c: C.text }, { t: '"youtube.com/watch?v=...",', c: C.text3 }] },
-                    { n: '6', parts: [{ t: '    "questions"', c: '#a78bfa' }, { t: ': ', c: C.text }, { t: '10', c: C.red }, { t: ',', c: C.text }] },
-                    { n: '7', parts: [{ t: '    "difficulty"', c: '#a78bfa' }, { t: ': ', c: C.text }, { t: '"medium"', c: C.text3 }] },
-                    { n: '8', parts: [{ t: "  '}'", c: C.text3 }] },
-                  ].map((line) => (
-                    <div key={line.n} className="flex gap-3.5">
-                      <span className="select-none min-w-[14px]" style={{ color: C.text3 }}>{line.n}</span>
-                      <span>{line.parts.map((p, i) => <span key={i} style={{ color: p.c }}>{p.t}</span>)}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
-      </section>
-
-      {/* TESTIMONIALS */}
-      <section ref={addRevealRef} className="cert-reveal max-w-[1100px] mx-auto px-5 md:px-10 py-[120px]" style={{ borderTop: `1px solid ${C.border}` }}>
-        <div>
-          <p className="mb-4" style={{ fontFamily: "var(--mono)", fontSize: '0.68rem', color: C.red, letterSpacing: '0.12em' }}>TESTIMONIALS</p>
-          <h2 style={{ fontSize: 'clamp(1.9rem, 3.5vw, 2.9rem)', fontWeight: 400, letterSpacing: '-0.01em', lineHeight: 1.1, fontFamily: "var(--serif)" }}>
-            Trusted by learners<br />&amp; educators
-          </h2>
-          <p className="mt-4" style={{ color: C.text2, fontSize: '0.975rem', fontWeight: 300, maxWidth: 400, lineHeight: 1.75 }}>
-            Thousands of students and teachers use Quib every week to get more out of video content.
-          </p>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-16">
-          {[
-            { quote: '"I assigned a 45-minute lecture and my students could finally track their own progress. They said it was the most engaged they\'d been with video content all semester."', initials: 'SK', name: 'Sarah K.', role: 'High School Biology Teacher' },
-            { quote: '"I learn from YouTube coding tutorials every day. The structured courses and progress tracking keep me accountable — the timestamp links are a game-changer."', initials: 'MR', name: 'Marcus R.', role: 'Self-taught Developer' },
-            { quote: '"We integrated Quib\'s API into our edtech platform in a weekend. Clean docs, fast responses, and the course quality is genuinely impressive."', initials: 'AL', name: 'Ana L.', role: 'CTO, EduStart Platform' },
-          ].map((t) => (
-            <div key={t.initials} className="flex flex-col p-8 rounded-[14px] transition-all" style={{ background: C.bg1, border: `1px solid ${C.border}` }} onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.border2; e.currentTarget.style.background = C.bg2; }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = C.bg1; }}>
-              <div className="text-[0.68rem] tracking-[3px] mb-4" style={{ color: C.red }}>★★★★★</div>
-              <p className="flex-1 mb-6 text-[0.875rem] font-[300] leading-[1.75]" style={{ color: C.text2 }}>{t.quote}</p>
-              <div className="flex items-center gap-3">
-                <div className="w-[34px] h-[34px] rounded-full flex items-center justify-center text-[0.75rem] font-[700] flex-shrink-0" style={{ background: C.redDim, border: `1px solid rgba(225,6,0,0.2)`, color: C.red }}>
-                  {t.initials}
-                </div>
-                <div>
-                  <div className="text-[0.875rem] font-[600]">{t.name}</div>
-                  <div className="text-[0.78rem] mt-px" style={{ color: C.text3 }}>{t.role}</div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section ref={addRevealRef} className="cert-reveal py-[140px] px-5 md:px-10 text-center relative overflow-hidden">
-        <div className="absolute pointer-events-none" style={{ bottom: -100, left: '50%', transform: 'translateX(-50%)', width: 700, height: 400, background: `radial-gradient(ellipse at center, rgba(225,6,0,0.07) 0%, transparent 65%)` }} />
-        <p className="mb-4" style={{ fontFamily: "var(--mono)", fontSize: '0.68rem', color: C.red, letterSpacing: '0.12em' }}>GET STARTED</p>
-        <h2 className="mx-auto mb-5" style={{ fontSize: 'clamp(2.2rem, 5vw, 3.8rem)', fontWeight: 400, letterSpacing: '-0.02em', lineHeight: 1.05, maxWidth: 700, fontFamily: "var(--serif)" }}>
-          Start learning more<br />from every video
-        </h2>
-        <p className="mx-auto mb-12" style={{ color: C.text2, fontSize: '0.975rem', fontWeight: 300, maxWidth: 380, lineHeight: 1.75 }}>
-          No sign-up needed. Start learning from top YouTube educators today.
-        </p>
-        <div className="flex gap-3 justify-center flex-wrap">
-          <Link to="/signin" className="no-underline px-8 py-3.5 rounded-lg text-[0.9rem] font-[600] text-white transition-all hover:opacity-90 hover:-translate-y-0.5" style={{ background: C.red }}>
-            Try for free
-          </Link>
-          <Link to="/educators" className="no-underline px-7 py-3.5 rounded-lg text-[0.9rem] font-[400] transition-all hover:-translate-y-0.5" style={{ color: C.text2, border: `1px solid ${C.border}` }}>
-            View documentation
-          </Link>
-        </div>
-        <p className="mt-5" style={{ fontSize: '0.72rem', color: C.text3, fontFamily: "var(--mono)", letterSpacing: '0.06em' }}>
-          Free tier · No credit card required
-        </p>
-      </section>
-
-      {/* FOOTER */}
-      <footer className="max-w-[1100px] mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 md:gap-12 px-5 md:px-10 py-12" style={{ borderTop: `1px solid ${C.border}` }}>
-        <div>
-          <Link to="/" className="flex items-center gap-1.5 no-underline mb-2.5" style={{ color: C.text, fontSize: '1rem' }}>
-            <span className="font-[700] tracking-tight">Quib</span>
-          </Link>
-          <p className="text-[0.82rem] font-[300] leading-[1.65] max-w-[240px]" style={{ color: C.text3 }}>
-            Learn from top YouTube educators with AI-powered courses. Built for students and curious minds.
-          </p>
-        </div>
-        {[
-          { title: 'PRODUCT', links: ['Features', 'API Docs', 'Changelog'] },
-          { title: 'COMPANY', links: ['About', 'Blog', 'Careers', 'Contact'] },
-          { title: 'LEGAL', links: ['Privacy', 'Terms', 'Cookies'] },
-        ].map((col) => (
-          <div key={col.title}>
-            <h4 className="mb-4" style={{ fontFamily: "var(--mono)", fontSize: '0.65rem', letterSpacing: '0.12em', color: C.text3 }}>{col.title}</h4>
-            <ul className="list-none flex flex-col gap-2.5">
-              {col.links.map((link) => (
-                <li key={link}>
-                  <a href="#" className="text-[0.85rem] font-[300] no-underline transition-opacity hover:opacity-100" style={{ color: C.text2, opacity: 0.75 }}>{link}</a>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
+        <p className="mx-auto mt-10 max-w-6xl text-xs text-[var(--landing-muted)]">© 2026 Quib. All rights reserved.</p>
       </footer>
-      <div className="flex flex-col sm:flex-row justify-between items-center gap-1.5 max-w-[1100px] mx-auto px-5 md:px-10 py-5" style={{ borderTop: `1px solid ${C.border}` }}>
-        <p className="text-[0.78rem] font-[300]" style={{ color: C.text3 }}>© 2026 Quib AI. All rights reserved.</p>
-        <span style={{ fontFamily: "var(--mono)", fontSize: '0.68rem', color: C.text3 }}>// built for learning</span>
-      </div>
-
-      <style>{`
-        @keyframes certFadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .cert-fade-up { animation: certFadeUp 0.7s ease both; }
-        .cert-reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.7s ease, transform 0.7s ease; }
-        .cert-reveal.cert-in { opacity: 1; transform: translateY(0); }
-        @keyframes certBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-        .cert-blink { animation: certBlink 2s ease-in-out infinite; }
-        @keyframes certBlinkCursor { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
-        .cert-blink-cursor { animation: certBlinkCursor 0.9s step-end infinite; }
-        @keyframes certTicker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-        .cert-ticker { animation: certTicker 32s linear infinite; }
-        .cert-ticker:hover { animation-play-state: paused; }
-        @keyframes certSpin { to { transform: rotate(360deg); } }
-        .cert-spinner { width: 10px; height: 10px; border: 2px solid rgba(0,0,0,0.12); border-top-color: #E10600; border-radius: 50%; animation: certSpin 0.8s linear infinite; flex-shrink: 0; }
-        @keyframes certFillBar { 0%, 100% { width: 75%; } 50% { width: 85%; } }
-        .cert-fill-bar { animation: certFillBar 2s ease-in-out infinite; }
-      `}</style>
     </div>
   );
 }

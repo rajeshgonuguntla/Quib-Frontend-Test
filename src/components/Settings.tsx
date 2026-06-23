@@ -1,26 +1,40 @@
-import { useEffect, useState } from 'react';
-import { DarkLayout } from './DarkLayout';
-import { User } from 'lucide-react';
-import { useTheme, getC } from './ThemeContext';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router';
+import { HelpCircle, Moon, Sun, User } from 'lucide-react';
+import { useTheme } from './ThemeContext';
 import { useUserProfile } from '../context/UserProfileContext';
 import { updateUserProfile } from '../api/userApi';
 import { UserAvatar } from './UserAvatar';
 import { getDisplayName } from '../utils/userDisplay';
 import type { UserProfile } from '../types/userProfile';
+import { PageHeader } from '../shell/PageHeader';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Button } from './ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 
 export function Settings() {
-  const { isDark } = useTheme();
-  const C = getC(isDark);
+  const navigate = useNavigate();
+  const { isDark, setDark } = useTheme();
   const { profile, loading, setProfile } = useUserProfile();
+  const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState('profile');
-  const [focusedField, setFocusedField] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
     email: '',
     bio: '',
   });
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab === 'help' || tab === 'appearance') {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (!profile) return;
@@ -32,15 +46,20 @@ export function Settings() {
     });
   }, [profile]);
 
-  const tabs = [{ id: 'profile', label: 'Profile', icon: User }];
+  const tabs = [
+    { id: 'profile', label: 'Profile', icon: User },
+    { id: 'appearance', label: 'Appearance', icon: Sun },
+    { id: 'help', label: 'Help', icon: HelpCircle },
+  ];
 
-  const inputStyle = (fieldName: string) => ({
-    background: C.bg,
-    border: `1px solid ${focusedField === fieldName ? C.border2 : C.border}`,
-    color: C.text,
-    boxShadow: focusedField === fieldName ? '0 0 0 3px rgba(225,6,0,0.06)' : 'none',
-    transition: 'all 0.2s ease',
-  });
+  const isDirty = useMemo(() => {
+    if (!profile) return false;
+    return (
+      (form.firstName.trim() || '') !== (profile.firstName ?? '')
+      || (form.lastName.trim() || '') !== (profile.lastName ?? '')
+      || (form.bio.trim() || '') !== (profile.bio ?? '')
+    );
+  }, [form, profile]);
 
   const handleSave = async () => {
     if (!profile) return;
@@ -54,14 +73,19 @@ export function Settings() {
       };
       const updated = await updateUserProfile(payload);
       setProfile(updated);
+      setStatusMessage('Profile saved.');
     } catch {
-      // keep form as-is on error
+      setStatusMessage('Could not save profile. Please try again.');
     } finally {
       setSaving(false);
     }
   };
 
   const handleCancel = () => {
+    if (!isDirty) {
+      navigate('/dashboard');
+      return;
+    }
     if (!profile) return;
     setForm({
       firstName: profile.firstName ?? '',
@@ -69,244 +93,108 @@ export function Settings() {
       email: profile.email ?? '',
       bio: profile.bio ?? '',
     });
+    setStatusMessage('Changes discarded.');
   };
 
   const displayName = getDisplayName(profile);
 
   return (
-    <DarkLayout activeNav="settings" showSearch={false} sectionLabel="SETTINGS" title="Settings" subtitle="Manage your account and preferences">
-      <div className="dash-fade-up grid lg:grid-cols-4 gap-8 max-w-5xl">
-        <aside>
-          <div
-            className="rounded-xl p-2"
-            style={{
-              background: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)',
-              border: `1px solid ${C.border}`,
-              backdropFilter: 'blur(8px)',
-              WebkitBackdropFilter: 'blur(8px)',
-            }}
-          >
-            <p
-              className="px-4 pt-2 pb-2"
-              style={{
-                fontFamily: 'var(--mono)',
-                fontSize: '0.6rem',
-                letterSpacing: '0.12em',
-                color: C.text3,
-                fontWeight: 500,
-              }}
-            >
-              MENU
-            </p>
-            <nav className="space-y-1">
-              {tabs.map((tab) => {
-                const isActive = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className="w-full relative flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-[500] transition-all duration-200 cursor-pointer"
-                    style={{
-                      background: isActive ? C.redDim : 'transparent',
-                      color: isActive ? C.red : C.text2,
-                      border: isActive ? '1px solid rgba(225,6,0,0.15)' : '1px solid transparent',
-                    }}
-                  >
-                    {isActive && (
-                      <span
-                        className="absolute left-0 top-1/2 -translate-y-1/2 rounded-r-sm"
-                        style={{ width: 3, height: 16, background: C.red, borderRadius: 2 }}
-                      />
-                    )}
-                    <tab.icon className="w-[18px] h-[18px]" />
-                    {tab.label}
-                  </button>
-                );
-              })}
-            </nav>
-          </div>
-        </aside>
+    <div>
+      <PageHeader label="Account" title="Settings" description="Manage your account and preferences." />
 
-        <div className="lg:col-span-3">
-          {activeTab === 'profile' && (
-            <div
-              className="dash-fade-up rounded-xl p-6 md:p-8"
-              style={{ background: C.bg1, border: `1px solid ${C.border}` }}
-            >
-              <p
-                className="mb-1"
-                style={{
-                  fontFamily: 'var(--mono)',
-                  fontSize: '0.65rem',
-                  color: C.text3,
-                  letterSpacing: '0.1em',
-                  fontWeight: 500,
-                }}
-              >
-                ACCOUNT
-              </p>
-              <h2
-                className="mb-6"
-                style={{
-                  fontFamily: 'var(--serif)',
-                  fontWeight: 400,
-                  fontSize: '1.3rem',
-                  color: C.text,
-                  letterSpacing: '-0.01em',
-                }}
-              >
-                Profile Information
-              </h2>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="max-w-3xl">
+        <TabsList className="mb-6">
+          {tabs.map((tab) => (
+            <TabsTrigger key={tab.id} value={tab.id} className="gap-1.5">
+              <tab.icon size={14} />
+              {tab.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
 
+        <TabsContent value="profile">
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-serif-display text-lg font-normal">Profile</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
               {loading && !profile ? (
-                <p className="text-sm" style={{ color: C.text2 }}>
-                  Loading profile…
-                </p>
+                <p className="text-sm text-muted-foreground">Loading profile…</p>
               ) : (
-                <div className="space-y-6">
-                  <div className="flex items-center gap-6 mb-8">
+                <>
+                  <div className="flex items-center gap-4">
                     <UserAvatar profile={profile} size="lg" />
                     <div>
-                      <div className="text-sm font-[600] mb-0.5" style={{ color: C.text }}>
-                        {displayName}
-                      </div>
-                      <div className="text-xs mb-3" style={{ color: C.text3 }}>
-                        {profile?.email ?? ''}
-                      </div>
+                      <p className="text-sm font-medium">{displayName}</p>
+                      <p className="text-xs text-muted-foreground">{profile?.email ?? ''}</p>
                     </div>
                   </div>
-
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div>
-                      <label
-                        className="block mb-2"
-                        style={{
-                          fontFamily: 'var(--mono)',
-                          fontSize: '0.78rem',
-                          letterSpacing: '0.04em',
-                          textTransform: 'uppercase' as const,
-                          color: C.text2,
-                          fontWeight: 500,
-                        }}
-                      >
-                        First Name
-                      </label>
-                      <input
-                        value={form.firstName}
-                        onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))}
-                        className="w-full px-4 py-2.5 rounded-lg text-sm outline-none transition-all duration-200"
-                        style={inputStyle('firstName')}
-                        onFocus={() => setFocusedField('firstName')}
-                        onBlur={() => setFocusedField(null)}
-                      />
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="firstName">First name</Label>
+                      <Input id="firstName" value={form.firstName} onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))} />
                     </div>
-                    <div>
-                      <label
-                        className="block mb-2"
-                        style={{
-                          fontFamily: 'var(--mono)',
-                          fontSize: '0.78rem',
-                          letterSpacing: '0.04em',
-                          textTransform: 'uppercase' as const,
-                          color: C.text2,
-                          fontWeight: 500,
-                        }}
-                      >
-                        Last Name
-                      </label>
-                      <input
-                        value={form.lastName}
-                        onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))}
-                        className="w-full px-4 py-2.5 rounded-lg text-sm outline-none transition-all duration-200"
-                        style={inputStyle('lastName')}
-                        onFocus={() => setFocusedField('lastName')}
-                        onBlur={() => setFocusedField(null)}
-                      />
+                    <div className="space-y-2">
+                      <Label htmlFor="lastName">Last name</Label>
+                      <Input id="lastName" value={form.lastName} onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))} />
                     </div>
                   </div>
-
-                  <div>
-                    <label
-                      className="block mb-2"
-                      style={{
-                        fontFamily: 'var(--mono)',
-                        fontSize: '0.78rem',
-                        letterSpacing: '0.04em',
-                        textTransform: 'uppercase' as const,
-                        color: C.text2,
-                        fontWeight: 500,
-                      }}
-                    >
-                      Email Address
-                    </label>
-                    <input
-                      type="email"
-                      value={form.email}
-                      readOnly
-                      className="w-full px-4 py-2.5 rounded-lg text-sm outline-none transition-all duration-200 opacity-70 cursor-not-allowed"
-                      style={inputStyle('email')}
-                    />
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input id="email" type="email" value={form.email} readOnly className="opacity-60" />
                   </div>
-
-                  <div>
-                    <label
-                      className="block mb-2"
-                      style={{
-                        fontFamily: 'var(--mono)',
-                        fontSize: '0.78rem',
-                        letterSpacing: '0.04em',
-                        textTransform: 'uppercase' as const,
-                        color: C.text2,
-                        fontWeight: 500,
-                      }}
-                    >
-                      Bio
-                    </label>
-                    <input
-                      value={form.bio}
-                      onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))}
-                      className="w-full px-4 py-2.5 rounded-lg text-sm outline-none transition-all duration-200"
-                      style={inputStyle('bio')}
-                      onFocus={() => setFocusedField('bio')}
-                      onBlur={() => setFocusedField(null)}
-                    />
+                  <div className="space-y-2">
+                    <Label htmlFor="bio">Bio</Label>
+                    <Input id="bio" value={form.bio} onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))} />
                   </div>
-
-                  <div className="pt-6">
-                    <div
-                      style={{
-                        height: 1,
-                        background: `linear-gradient(90deg, transparent, ${C.border2}, transparent)`,
-                        marginBottom: 24,
-                      }}
-                    />
-                    <div className="flex justify-end gap-3">
-                      <button
-                        type="button"
-                        onClick={handleCancel}
-                        disabled={saving}
-                        className="px-5 py-2 rounded-lg text-sm font-[500] transition-all duration-200"
-                        style={{ color: C.text2, border: `1px solid ${C.border}` }}
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => void handleSave()}
-                        disabled={saving || !profile}
-                        className="px-5 py-2 rounded-lg text-sm font-[600] text-white transition-all duration-200 hover:opacity-90 disabled:opacity-50"
-                        style={{ background: C.red, boxShadow: '0 4px 14px rgba(225,6,0,0.2)' }}
-                      >
-                        {saving ? 'Saving…' : 'Save Changes'}
-                      </button>
-                    </div>
+                  <div className="flex flex-col gap-2 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-end">
+                    {statusMessage && <p className="text-xs text-muted-foreground sm:mr-auto">{statusMessage}</p>}
+                    <Button type="button" variant="outline" onClick={handleCancel} disabled={saving}>
+                      {isDirty ? 'Discard changes' : 'Back to dashboard'}
+                    </Button>
+                    <Button type="button" onClick={() => void handleSave()} disabled={saving || !profile || !isDirty}>
+                      {saving ? 'Saving…' : 'Save changes'}
+                    </Button>
                   </div>
-                </div>
+                </>
               )}
-            </div>
-          )}
-        </div>
-      </div>
-    </DarkLayout>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="appearance">
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-serif-display text-lg font-normal">Theme</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="mb-4 text-sm text-muted-foreground">Choose light or dark mode. Saved on this device.</p>
+              <div className="flex gap-2">
+                <Button variant={!isDark ? 'default' : 'outline'} onClick={() => setDark(false)} className="gap-2">
+                  <Sun size={16} /> Light
+                </Button>
+                <Button variant={isDark ? 'default' : 'outline'} onClick={() => setDark(true)} className="gap-2">
+                  <Moon size={16} /> Dark
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="help">
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-serif-display text-lg font-normal">Help & support</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              <p className="text-muted-foreground">Need help with courses, Studio, or your account?</p>
+              <a href="mailto:support@quibb.ai" className="block text-foreground underline-offset-4 hover:underline">support@quibb.ai</a>
+              <a href="/educators#how-it-works" className="block text-muted-foreground hover:text-foreground">How Educator Studio works</a>
+              <a href="/browse-courses" className="block text-muted-foreground hover:text-foreground">Browse courses</a>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }

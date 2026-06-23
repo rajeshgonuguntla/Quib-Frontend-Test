@@ -231,7 +231,7 @@ export function CubeMorphBackground({ isDark }: Props) {
         transform: 'translate(-50%, -50%)',
         width: 'min(800px, 100vw)',
         height: 'min(800px, 100vw)',
-        opacity: isDark ? 0.07 : 0.12,
+        opacity: isDark ? 0.07 : 0.16,
         pointerEvents: 'none',
         zIndex: 0,
       }}

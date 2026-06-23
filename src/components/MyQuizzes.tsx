@@ -1,9 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import axios from 'axios';
-import { DarkLayout } from './DarkLayout';
-import { FileText, Play, Clock, TrendingUp, Calendar, CheckCircle2, AlertCircle, Zap } from 'lucide-react';
-import { useTheme, getC } from './ThemeContext';
+import { FileText, Play, Clock, Calendar, CheckCircle2, AlertCircle, Zap } from 'lucide-react';
+import { PageHeader } from '../shell/PageHeader';
+import { StaggerChildren, StaggerItem } from '../shell/motion';
+import { Card, CardContent } from './ui/card';
+import { Badge } from './ui/badge';
+import { Button } from './ui/button';
+import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
+import { Skeleton } from './ui/skeleton';
 
 type QuizListItem = {
   id: string;
@@ -18,8 +23,6 @@ type QuizListItem = {
 
 export function MyQuizzes() {
   const navigate = useNavigate();
-  const { isDark } = useTheme();
-  const C = getC(isDark);
   const [activeTab, setActiveTab] = useState<'all' | 'active' | 'completed'>('all');
   const [allQuizzes, setAllQuizzes] = useState<QuizListItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,320 +71,104 @@ export function MyQuizzes() {
   };
 
   const statCards = [
-    { label: 'Total Quizzes', value: stats.total, icon: FileText, color: C.red },
-    { label: 'Active Quizzes', value: stats.active, icon: AlertCircle, color: '#f97316' },
-    { label: 'Completed', value: stats.completed, icon: CheckCircle2, color: '#22c55e' },
-  ];
-
-  const tabs = [
-    { key: 'all' as const, label: 'All Quizzes', count: allQuizzes.length },
-    { key: 'active' as const, label: 'Active', count: stats.active },
-    { key: 'completed' as const, label: 'Completed', count: stats.completed },
+    { label: 'Total', value: stats.total, icon: FileText },
+    { label: 'Active', value: stats.active, icon: AlertCircle },
+    { label: 'Completed', value: stats.completed, icon: CheckCircle2 },
   ];
 
   if (loading) {
     return (
-      <DarkLayout activeNav="my-quizzes" showSearch={false} sectionLabel="LIBRARY" title="My Quizzes" subtitle="Loading your quizzes...">
-        <p className="text-sm" style={{ color: C.text2 }}>Loading...</p>
-      </DarkLayout>
+      <div>
+        <PageHeader label="Library" title="Saved quizzes" description="Loading…" />
+        <div className="space-y-2">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-24 w-full rounded-lg" />
+          ))}
+        </div>
+      </div>
     );
   }
 
   return (
-    <DarkLayout activeNav="my-quizzes" showSearch={false} sectionLabel="LIBRARY" title="My Quizzes" subtitle="Manage and track all your quizzes in one place">
-      {/* Stats Cards */}
-      <div className="dash-fade-up grid grid-cols-3 gap-4 mb-8">
+    <div>
+      <PageHeader
+        label="Library"
+        title="Saved quizzes"
+        description="Manage and track all your quizzes."
+        actions={
+          <Button size="sm" onClick={() => navigate('/dashboard')}>
+            <Zap size={14} /> New quiz
+          </Button>
+        }
+      />
+
+      <div className="mb-8 grid grid-cols-3 gap-3">
         {statCards.map((s) => (
-          <div
-            key={s.label}
-            className="rounded-xl p-5 relative overflow-hidden transition-all duration-300 cursor-default"
-            style={{
-              background: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)',
-              border: `1px solid ${C.border}`,
-              backdropFilter: 'blur(12px)',
-              WebkitBackdropFilter: 'blur(12px)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = isDark ? '0 8px 24px rgba(0,0,0,0.2)' : '0 8px 24px rgba(0,0,0,0.08)';
-              e.currentTarget.style.borderColor = C.border2;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = 'none';
-              e.currentTarget.style.borderColor = C.border;
-            }}
-          >
-            {/* Accent line at top */}
-            <div
-              className="absolute top-0 left-0 right-0"
-              style={{
-                height: 1,
-                background: `linear-gradient(90deg, transparent, ${s.color}40, transparent)`,
-              }}
-            />
-            <div className="mb-4">
-              <div
-                className="w-10 h-10 rounded-lg flex items-center justify-center"
-                style={{ background: `${s.color}15`, boxShadow: `0 0 12px ${s.color}15` }}
-              >
-                <s.icon className="w-5 h-5" style={{ color: s.color }} />
+          <Card key={s.label}>
+            <CardContent className="flex items-center gap-3 p-4">
+              <div className="flex size-9 items-center justify-center rounded-md bg-muted">
+                <s.icon size={16} className="text-muted-foreground" />
               </div>
-            </div>
-            <div
-              className="text-2xl font-[700] mb-0.5"
-              style={{ color: C.text, fontFamily: "var(--mono)", letterSpacing: '-0.02em' }}
-            >
-              {s.value}
-            </div>
-            <div
-              style={{
-                color: C.text2,
-                fontFamily: "var(--mono)",
-                fontSize: '0.65rem',
-                letterSpacing: '0.06em',
-                textTransform: 'uppercase' as const,
-                fontWeight: 400,
-              }}
-            >
-              {s.label}
-            </div>
-          </div>
+              <div>
+                <p className="text-xl font-medium tabular-nums">{s.value}</p>
+                <p className="text-label text-muted-foreground">{s.label}</p>
+              </div>
+            </CardContent>
+          </Card>
         ))}
       </div>
 
-      {/* Tabs + New Quiz */}
-      <div className="dash-fade-up flex flex-wrap items-end justify-between gap-4 mb-6" style={{ animationDelay: '0.05s' }}>
-        <div className="flex" style={{ borderBottom: `1px solid ${C.border}` }}>
-          {tabs.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className="px-1 pb-3 mr-6 text-sm font-[500] transition-all duration-200 relative"
-              style={{
-                background: 'transparent',
-                color: activeTab === tab.key ? C.text : C.text3,
-                border: 'none',
-              }}
-            >
-              {tab.label}
-              <span
-                className="ml-1.5"
-                style={{
-                  fontFamily: "var(--mono)",
-                  fontSize: '0.7rem',
-                  color: activeTab === tab.key ? C.red : C.text3,
-                }}
-              >
-                {tab.count}
-              </span>
-              {/* Active indicator */}
-              {activeTab === tab.key && (
-                <span
-                  className="absolute bottom-0 left-0 right-0"
-                  style={{ height: 2, background: C.red, borderRadius: 1 }}
-                />
-              )}
-            </button>
-          ))}
-        </div>
-        <button
-          onClick={() => navigate('/dashboard')}
-          className="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-[600] text-white transition-all duration-200 hover:opacity-90"
-          style={{ background: C.red, boxShadow: '0 4px 14px rgba(225,6,0,0.25)' }}
-          onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
-        >
-          <Zap className="w-4 h-4" />
-          New Quiz
-        </button>
-      </div>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="mb-6">
+        <TabsList>
+          <TabsTrigger value="all">All ({allQuizzes.length})</TabsTrigger>
+          <TabsTrigger value="active">Active ({stats.active})</TabsTrigger>
+          <TabsTrigger value="completed">Completed ({stats.completed})</TabsTrigger>
+        </TabsList>
+      </Tabs>
 
-      {/* Quiz List */}
-      <div className="dash-fade-up space-y-3" style={{ animationDelay: '0.1s' }}>
-        {filteredQuizzes.length === 0 ? (
-          <div
-            className="rounded-xl p-12 text-center relative overflow-hidden"
-            style={{ background: C.bg1, border: `1px solid ${C.border}` }}
-          >
-            {/* Radial glow behind icon */}
-            <div
-              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
-              style={{
-                width: 200,
-                height: 200,
-                background: 'radial-gradient(circle, rgba(225,6,0,0.04) 0%, transparent 70%)',
-              }}
-            />
-            <div
-              className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 relative z-10"
-              style={{ background: C.bg2 }}
-            >
-              <FileText className="w-7 h-7" style={{ color: C.text3 }} />
-            </div>
-            <h3 className="text-base font-[600] mb-2 relative z-10" style={{ color: C.text }}>No quizzes found</h3>
-            <p className="text-sm mb-6 relative z-10" style={{ color: C.text2 }}>
-              {activeTab === 'active' && "You don't have any active quizzes."}
-              {activeTab === 'completed' && "You haven't completed any quizzes yet."}
-              {activeTab === 'all' && 'Start by creating your first quiz.'}
-            </p>
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="px-5 py-2 rounded-lg text-sm font-[600] text-white relative z-10"
-              style={{ background: C.red, boxShadow: '0 4px 14px rgba(225,6,0,0.25)' }}
-            >
-              Create Quiz
-            </button>
-          </div>
-        ) : (
-          filteredQuizzes.map((quiz) => (
-            <div
-              key={quiz.id}
-              className="rounded-xl p-5 flex items-center gap-5 transition-all duration-250"
-              style={{ background: C.bg1, border: `1px solid ${C.border}` }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = C.border2;
-                e.currentTarget.style.transform = 'translateY(-1px)';
-                e.currentTarget.style.boxShadow = isDark ? '0 4px 16px rgba(0,0,0,0.15)' : '0 4px 16px rgba(0,0,0,0.06)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = C.border;
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = 'none';
-              }}
-            >
-              <div
-                className="w-24 h-16 rounded-lg flex items-center justify-center flex-shrink-0"
-                style={{ background: `linear-gradient(135deg, ${C.bg2}, ${C.bg3})` }}
-              >
-                <Play className="w-6 h-6" style={{ color: C.text3 }} />
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-3 mb-1.5">
-                  <h3 className="text-sm font-[600] truncate" style={{ color: C.text }}>{quiz.title}</h3>
-                  <span
-                    className="text-[0.68rem] font-[600] px-2.5 py-0.5 rounded-full flex-shrink-0"
-                    style={{
-                      fontFamily: "var(--mono)",
-                      letterSpacing: '0.06em',
-                      background:
-                        quiz.status === 'completed' ? 'rgba(34,197,94,0.1)' :
-                        quiz.status === 'in-progress' ? 'rgba(249,115,22,0.1)' : C.redDim,
-                      color:
-                        quiz.status === 'completed' ? '#22c55e' :
-                        quiz.status === 'in-progress' ? '#f97316' : C.red,
-                      border: `1px solid ${
-                        quiz.status === 'completed' ? 'rgba(34,197,94,0.2)' :
-                        quiz.status === 'in-progress' ? 'rgba(249,115,22,0.2)' : 'rgba(225,6,0,0.2)'
-                      }`,
-                    }}
-                  >
-                    {quiz.status === 'completed' ? 'COMPLETED' :
-                     quiz.status === 'in-progress' ? 'IN PROGRESS' : 'NOT STARTED'}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-4 text-xs mb-3" style={{ color: C.text3 }}>
-                  <span className="flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5" />
-                    {quiz.date}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5" />
-                    {quiz.duration}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <FileText className="w-3.5 h-3.5" />
-                    {quiz.questions} questions
-                  </span>
-                  {quiz.score && (
-                    <span className="flex items-center gap-1">
-                      <TrendingUp className="w-3.5 h-3.5" />
-                      Score: {quiz.score}%
-                    </span>
-                  )}
-                </div>
-
-                {/* Progress bar */}
-                {quiz.status === 'in-progress' && quiz.progress && (
-                  <div className="mb-3">
-                    <div className="flex items-center justify-between text-[0.65rem] mb-1" style={{ color: C.text3 }}>
-                      <span>Progress</span>
-                      <span>{quiz.progress}%</span>
+      {filteredQuizzes.length === 0 ? (
+        <Card className="py-16 text-center">
+          <CardContent>
+            <FileText className="mx-auto mb-3 size-8 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">No quizzes found.</p>
+            <Button className="mt-4" size="sm" onClick={() => navigate('/dashboard')}>Create quiz</Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <StaggerChildren className="space-y-2">
+          {filteredQuizzes.map((quiz) => (
+            <StaggerItem key={quiz.id}>
+              <Card className="transition-colors hover:border-border/80">
+                <CardContent className="flex gap-4 p-4">
+                  <div className="flex size-16 shrink-0 items-center justify-center rounded-md bg-muted">
+                    <Play size={20} className="text-muted-foreground" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-1 flex items-start justify-between gap-2">
+                      <h3 className="truncate text-sm font-medium">{quiz.title}</h3>
+                      <Badge variant="muted">{quiz.status.replace('-', ' ')}</Badge>
                     </div>
-                    <div className="h-1 rounded-full overflow-hidden" style={{ background: C.bg }}>
-                      <div
-                        className="h-full rounded-full transition-all"
-                        style={{
-                          width: `${quiz.progress}%`,
-                          background: `linear-gradient(90deg, ${C.red}, #ff6666)`,
-                        }}
-                      />
+                    <div className="mb-3 flex flex-wrap gap-3 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1"><Calendar size={12} />{quiz.date}</span>
+                      <span className="flex items-center gap-1"><Clock size={12} />{quiz.duration}</span>
+                      <span className="flex items-center gap-1"><FileText size={12} />{quiz.questions} questions</span>
+                    </div>
+                    <div className="flex gap-2">
+                      {quiz.status === 'completed' ? (
+                        <Button size="sm" variant="default" onClick={() => navigate(`/results/${quiz.id}`)}>View results</Button>
+                      ) : (
+                        <Button size="sm" onClick={() => navigate(`/quiz/${quiz.id}`)}>
+                          {quiz.status === 'in-progress' ? 'Resume' : 'Start'}
+                        </Button>
+                      )}
                     </div>
                   </div>
-                )}
-
-                <div className="flex items-center gap-2">
-                  {quiz.status === 'completed' ? (
-                    <>
-                      <button
-                        onClick={() => navigate(`/results/${quiz.id}`)}
-                        className="px-3 py-1.5 rounded-md text-xs font-[600] text-white transition-all duration-200 hover:opacity-90"
-                        style={{ background: C.red, boxShadow: '0 2px 8px rgba(225,6,0,0.2)' }}
-                        onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
-                      >
-                        View Results
-                      </button>
-                    </>
-                  ) : quiz.status === 'in-progress' ? (
-                    <>
-                      <button
-                        onClick={() => navigate(`/quiz/${quiz.id}`)}
-                        className="px-3 py-1.5 rounded-md text-xs font-[600] text-white transition-all duration-200 hover:opacity-90"
-                        style={{ background: C.red, boxShadow: '0 2px 8px rgba(225,6,0,0.2)' }}
-                        onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
-                      >
-                        Resume Quiz
-                      </button>
-                      <button
-                        className="px-3 py-1.5 rounded-md text-xs font-[500] transition-all duration-200 hover:opacity-80"
-                        style={{ color: C.text2, border: `1px solid ${C.border}` }}
-                        onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.border2; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.border; }}
-                      >
-                        Restart
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        onClick={() => navigate(`/quiz/${quiz.id}`)}
-                        className="px-3 py-1.5 rounded-md text-xs font-[600] text-white transition-all duration-200 hover:opacity-90"
-                        style={{ background: C.red, boxShadow: '0 2px 8px rgba(225,6,0,0.2)' }}
-                        onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
-                      >
-                        Start Quiz
-                      </button>
-                      <button
-                        className="px-3 py-1.5 rounded-md text-xs font-[500] transition-all duration-200 hover:opacity-80"
-                        style={{ color: C.text2, border: `1px solid ${C.border}` }}
-                        onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.border2; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.border; }}
-                      >
-                        Delete
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-    </DarkLayout>
+                </CardContent>
+              </Card>
+            </StaggerItem>
+          ))}
+        </StaggerChildren>
+      )}
+    </div>
   );
 }
