@@ -17,6 +17,7 @@ import { isTokenValid } from '../auth';
 import { useUserProfile } from '../context/UserProfileContext';
 import { useTheme, getC } from './ThemeContext';
 import { CourseGenerationLoader } from './CourseGenerationLoader';
+import { LessonStudyContent } from './LessonNotes';
 import type { CourseGenerationOptions } from '../types/courseGeneration';
 import { isModuleQuizPassing } from '../types/courseGeneration';
 
@@ -122,8 +123,11 @@ function LearningMode({
     m.lessons.map((l) => ({ ...l, moduleId: m.id, moduleTitle: m.title }))
   );
 
-  const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set([course.modules[0]?.id]));
-  const [activeLessonId, setActiveLessonId] = useState<string>(allLessons[0]?.id ?? '');
+  const firstLessonId = allLessons[0]?.id ?? '';
+  const [expandedModules, setExpandedModules] = useState<Set<string>>(
+    () => new Set(course.modules[0]?.id ? [course.modules[0].id] : []),
+  );
+  const [activeLessonId, setActiveLessonId] = useState<string>(firstLessonId);
   const [activeQuizModuleId, setActiveQuizModuleId] = useState<string | null>(null);
   const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set());
   const [quizAnswers, setQuizAnswers] = useState<Record<number, number>>({});
@@ -274,7 +278,7 @@ function LearningMode({
                         <span className="text-sm flex-shrink-0">📝</span>
                         <div className="min-w-0 flex-1">
                           <p className="text-[0.78rem] font-[500]" style={{ color: activeQuizModuleId === mod.id ? C.red : C.text2 }}>Module Quiz</p>
-                          <p className="text-[0.66rem] mt-0.5" style={{ color: C.text3 }}>{mod.quiz.length} questions</p>
+                          <p className="text-[0.66rem] mt-0.5" style={{ color: C.text3 }}>{mod.quiz?.length ?? 0} questions</p>
                         </div>
                       </button>
                     </div>
@@ -392,6 +396,29 @@ function LearningMode({
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {!activeLesson && !activeQuizModuleId && (
+            <div className="max-w-3xl mx-auto px-6 py-10 text-center md:text-left">
+              <p className="text-[0.9rem] mb-4" style={{ color: C.text2 }}>
+                {allLessons.length === 0
+                  ? 'This course has no lessons yet.'
+                  : 'Select a lesson from the course outline to begin.'}
+              </p>
+              <div className="md:hidden space-y-2">
+                {allLessons.map((lesson) => (
+                  <button
+                    key={lesson.id}
+                    type="button"
+                    onClick={() => openLesson(lesson.id)}
+                    className="w-full text-left px-4 py-3 rounded-xl text-[0.85rem]"
+                    style={{ background: C.bg1, border: `1px solid ${C.border}`, color: C.text, cursor: 'pointer' }}
+                  >
+                    {lesson.title}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </main>
