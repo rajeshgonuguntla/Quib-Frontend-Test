@@ -23,6 +23,7 @@ import { CourseEditor } from './components/CourseEditor';
 import { EducatorProfile } from './components/EducatorProfile';
 import { CourseDetails } from './components/CourseDetails';
 import { BrowseCourses } from './components/BrowseCourses';
+import { Creators } from './components/Creators';
 import { MyCourses } from './components/MyCourses';
 import { ProtectedRoute, PublicOnlyRoute } from './auth';
 import { AppShell } from './shell/AppShell';
@@ -54,6 +55,7 @@ export default function App() {
                 <Route element={<AppShell />}>
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/browse-courses" element={<BrowseCourses />} />
+                  <Route path="/creators" element={<Creators />} />
                   <Route path="/my-courses" element={<MyCourses />} />
                   <Route path="/educator-studio" element={<EducatorStudio />} />
                   <Route path="/educator-courses" element={<EducatorMyCourses />} />

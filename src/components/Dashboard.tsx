@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { ArrowUpRight, Clock, Star, TrendingUp, Users } from 'lucide-react';
 import axios from 'axios';
-import { CREATORS } from '../data/creators';
 import { fetchCourses, fetchEnrollments, fetchPopularCreators } from '../api/catalogApi';
 import { useUserProfile } from '../context/UserProfileContext';
 import { getFirstName } from '../utils/userDisplay';
@@ -114,16 +113,7 @@ export function Dashboard() {
           fetchEnrollments().catch(() => []),
         ]);
 
-        const popularList =
-          popular.length > 0
-            ? popular
-            : CREATORS.map((c) => ({
-                id: c.id,
-                name: c.name,
-                tagline: c.tagline,
-                videoCount: c.videoCount,
-                youtubeVideoId: c.videoId,
-              }));
+        const popularList = popular;
 
         setTrending(
           popularList.slice(0, 6).map((c) => ({
@@ -263,7 +253,7 @@ export function Dashboard() {
       </StaggerItem>
 
       <StaggerItem>
-        <TrendingPanel theme={T} items={trending} onViewAll={() => navigate('/educators')} onSelect={(id) => navigate(`/educator/${id}`)} />
+        <TrendingPanel theme={T} items={trending} onViewAll={() => navigate('/creators')} onSelect={(id) => navigate(`/educator/${id}`)} />
       </StaggerItem>
     </StaggerChildren>
   );

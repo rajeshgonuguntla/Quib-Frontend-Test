@@ -46,8 +46,8 @@ export function EducatorProfile() {
       <div className="min-h-screen flex items-center justify-center" style={{ background: C.bg, color: C.text }}>
         <div className="text-center">
           <p className="text-lg font-[600] mb-4">Educator not found.</p>
-          <button onClick={() => navigate('/dashboard')} className="text-sm" style={{ color: C.red }}>
-            ← Back to Dashboard
+          <button onClick={() => navigate('/creators')} className="text-sm" style={{ color: C.red }}>
+            ← Back to Creators
           </button>
         </div>
       </div>
@@ -67,7 +67,7 @@ export function EducatorProfile() {
         }}
       >
         <button
-          onClick={() => navigate('/dashboard')}
+          onClick={() => navigate('/creators')}
           className="absolute top-6 left-6 flex items-center gap-2 text-[0.82rem] font-[500] px-3 py-1.5 rounded-lg transition-all z-10"
           style={{ color: C.text2, background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)' }}
           onMouseEnter={(e) => { e.currentTarget.style.color = C.text; }}
