@@ -1,4 +1,9 @@
 import axios from 'axios';
+import type {
+  CourseGenerationOptions,
+  CourseUpdatePayload,
+  OwnedCourseSummary,
+} from '../types/courseGeneration';
 
 export interface YoutubeConnectionStatus {
   connected: boolean;
@@ -38,7 +43,20 @@ export async function disconnectYoutubeChannel(): Promise<void> {
   await axios.delete('/api/educator/youtube/disconnect');
 }
 
-export async function generateCourseFromVideos(videoUrls: string[]) {
-  const { data } = await axios.post('/api/course/generate-from-videos', { videoUrls });
+export async function generateCourseFromVideos(
+  videoUrls: string[],
+  options?: CourseGenerationOptions,
+) {
+  const { data } = await axios.post('/api/course/generate-from-videos', { videoUrls, options });
+  return data;
+}
+
+export async function fetchOwnedCourses(): Promise<OwnedCourseSummary[]> {
+  const { data } = await axios.get<OwnedCourseSummary[]>('/api/educator/courses');
+  return data ?? [];
+}
+
+export async function updateCourse(courseId: string, payload: CourseUpdatePayload) {
+  const { data } = await axios.put(`/api/courses/${courseId}`, payload);
   return data;
 }

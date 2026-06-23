@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTheme, getC } from './ThemeContext';
+import SplashCursor from './effects/SplashCursor';
 import {
   COURSE_GENERATION_MESSAGES,
   COURSE_GEN_ESTIMATE_MAX_SEC,
@@ -38,7 +39,22 @@ export function CourseGenerationLoader({
   const message = COURSE_GENERATION_MESSAGES[messageIndex];
 
   return (
-    <div className="w-full max-w-md space-y-6">
+    <>
+      <SplashCursor
+        SIM_RESOLUTION={128}
+        DYE_RESOLUTION={1024}
+        DENSITY_DISSIPATION={3.2}
+        VELOCITY_DISSIPATION={2}
+        SPLAT_RADIUS={0.22}
+        SPLAT_FORCE={5500}
+        CURL={4}
+        SHADING
+        RAINBOW_MODE
+        COLOR_UPDATE_SPEED={12}
+        TRANSPARENT
+        BACK_COLOR={{ r: 0.02, g: 0, b: 0 }}
+      />
+      <div className="relative z-[60] w-full max-w-md space-y-6">
       <div className="text-center mb-8">
         <h2 style={{ fontFamily: 'var(--serif)', fontSize: '1.6rem', fontWeight: 400, color: C.text, marginBottom: 8 }}>
           {title}
@@ -75,5 +91,6 @@ export function CourseGenerationLoader({
         </p>
       </div>
     </div>
+    </>
   );
 }

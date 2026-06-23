@@ -79,3 +79,12 @@ export async function publishCourse(courseId: string) {
   const res = await axios.post(`/api/courses/${courseId}/publish`);
   return res.data;
 }
+
+export async function unpublishCourse(courseId: string) {
+  const res = await axios.post(`/api/courses/${courseId}/unpublish`);
+  return res.data;
+}
+
+export async function deleteCourse(courseId: string) {
+  await axios.delete(`/api/courses/${courseId}`);
+}

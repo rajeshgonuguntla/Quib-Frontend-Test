@@ -22,6 +22,9 @@ import {
 } from '../api/educatorApi';
 import { useUserProfile } from '../context/UserProfileContext';
 import { courseGenStateFromYoutubeUrl, getYoutubeUrlValidationError } from '../utils/youtubeUrl';
+import type { CourseGenerationOptions } from '../types/courseGeneration';
+import { DEFAULT_GENERATION_OPTIONS } from '../types/courseGeneration';
+import { GenerationOptionsPanel } from './GenerationOptionsPanel';
 import { PageHeader } from '../shell/PageHeader';
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
 import { Card, CardContent } from './ui/card';
@@ -47,6 +50,7 @@ export function EducatorStudio() {
 
   const [pasteUrl, setPasteUrl] = useState('');
   const [pasteError, setPasteError] = useState<string | null>(null);
+  const [generationOptions, setGenerationOptions] = useState<CourseGenerationOptions>({ ...DEFAULT_GENERATION_OPTIONS });
 
   const setTab = (tab: StudioTab) => {
     setSearchParams(tab === 'url' ? { tab: 'url' } : {});
@@ -133,7 +137,7 @@ export function EducatorStudio() {
   const handleBuildFromSelection = () => {
     if (selectedVideos.length === 0) return;
     navigate('/course-details', {
-      state: { videoUrls: selectedVideos.map((v) => v.watchUrl), from: '/educator-studio' },
+      state: { videoUrls: selectedVideos.map((v) => v.watchUrl), from: '/educator-studio', generationOptions },
     });
   };
 
@@ -149,7 +153,7 @@ export function EducatorStudio() {
       setPasteError('Invalid YouTube URL');
       return;
     }
-    navigate('/course-details', { state });
+    navigate('/course-details', { state: { ...state, generationOptions } });
   };
 
   const handleDisconnect = async () => {
@@ -166,6 +170,8 @@ export function EducatorStudio() {
         title="Studio"
         description="Build courses from your YouTube channel or any public video URL."
       />
+
+      <GenerationOptionsPanel value={generationOptions} onChange={setGenerationOptions} />
 
       <Tabs value={activeTab} onValueChange={(v) => setTab(v as StudioTab)} className="mb-6">
         <TabsList>

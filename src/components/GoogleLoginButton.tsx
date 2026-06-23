@@ -6,7 +6,13 @@ import { useUserProfile } from '../context/UserProfileContext';
 import { fetchOnboarding } from '../api/catalogApi';
 import { INTERESTS_KEY, EDUCATORS_KEY } from './Onboarding';
 
-function GoogleLoginButton() {
+type GoogleLoginButtonProps = {
+  theme?: 'outline' | 'filled_blue' | 'filled_black';
+  size?: 'large' | 'medium' | 'small';
+  width?: string | number;
+};
+
+function GoogleLoginButton({ theme = 'outline', size = 'large', width }: GoogleLoginButtonProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { refreshProfile } = useUserProfile();
@@ -72,6 +78,11 @@ function GoogleLoginButton() {
         <GoogleLogin
           onSuccess={handleSuccess}
           onError={() => setSignInError('Google sign-in was cancelled or failed.')}
+          theme={theme}
+          size={size}
+          width={width}
+          text="continue_with"
+          shape="pill"
         />
       </div>
       {signInError && (

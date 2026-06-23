@@ -1,146 +1,93 @@
-import { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router';
+import { Link } from 'react-router';
+import { motion } from 'framer-motion';
+import { ArrowLeft } from 'lucide-react';
 import GoogleLoginButton from './GoogleLoginButton';
-import { useTheme, getC } from './ThemeContext';
+import { useTheme } from './ThemeContext';
 import { ThemeToggle } from './ThemeToggle';
-import { ImageWithFallback } from './figma/ImageWithFallback';
+import ClickSpark from './effects/ClickSpark';
+import '../styles/signin.css';
+
+const FEATURES = [
+  { value: 'AI', label: 'Quizzes' },
+  { value: '70%', label: 'To pass' },
+  { value: '∞', label: 'Videos' },
+] as const;
+
 export function SignIn() {
-  const navigate = useNavigate();
-  const location = useLocation();
   const { isDark } = useTheme();
-  const C = getC(isDark);
-  const [isSignUp] = useState(false);
 
   return (
-    <div className="min-h-screen flex" style={{ fontFamily: "var(--display)" }}>
-      {/* Left Side - Brand Visual */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[#E10600] via-red-700 to-red-900 p-12 items-center justify-center relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <ImageWithFallback 
-            src="https://images.unsplash.com/photo-1763652387673-71b75ee71a24?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBhYnN0cmFjdCUyMGdyYWRpZW50JTIwcGF0dGVybnxlbnwxfHx8fDE3NzEyOTUxNzN8MA&ixlib=rb-4.1.0&q=80&w=1080"
-            alt="Pattern"
-            className="w-full h-full object-cover"
-          />
-        </div>
-        <div className="relative z-10 max-w-md text-white">
-          <div className="flex items-center gap-3 mb-12">
-            <span className="text-4xl font-[700]" style={{ fontFamily: "var(--display)" }}>Quib</span>
-          </div>
-          <h2 className="text-4xl font-[400] mb-6" style={{ fontFamily: "var(--serif)", letterSpacing: '-0.01em', lineHeight: 1.1 }}>Transform your YouTube learning</h2>
-          <p className="text-xl text-white/90 mb-8">
-            Join thousands of learners testing their knowledge from YouTube content
-          </p>
-          <div className="space-y-4">
-            <div className="flex items-start gap-3">
-              <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
+    <div className={`signin-page${isDark ? '' : ' light'}`}>
+      <div className="signin-grid" aria-hidden />
+      <div className="signin-vignette" aria-hidden />
+      <div className="signin-orb signin-orb--red" aria-hidden />
+      <div className="signin-orb signin-orb--violet" aria-hidden />
+
+      <header className="signin-topbar">
+        <Link to="/" className="signin-brand">
+          <svg viewBox="0 0 24 24" fill="currentColor" className="signin-brand-mark" aria-hidden>
+            <path d="M12 2L2 22h20L12 2z" />
+          </svg>
+          <span className="signin-brand-name">Quib</span>
+        </Link>
+        <ThemeToggle size="sm" />
+      </header>
+
+      <ClickSpark
+        className="signin-shell"
+        sparkColor={isDark ? '#ffb4a8' : '#e10600'}
+        sparkSize={12}
+        sparkRadius={22}
+        sparkCount={10}
+        duration={480}
+        extraScale={1.15}
+      >
+        <motion.div
+          className="signin-card-wrap"
+          initial={{ opacity: 0, y: 28, scale: 0.96 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <div className="signin-card">
+            <div className="signin-card-inner">
+              <h1 className="signin-title">
+                <span className="signin-title-gradient">Learn. Prove.</span>
+                <br />
+                Level up.
+              </h1>
+
+              <p className="signin-subtitle">
+                Sign in with Google to turn any YouTube lesson into quizzes, courses, and verified credentials.
+              </p>
+
+              <div className="signin-google-wrap">
+                <GoogleLoginButton theme={isDark ? 'filled_black' : 'outline'} size="large" width="100%" />
               </div>
-              <div>
-                <div className="font-semibold mb-1">AI-Generated Quizzes</div>
-                <div className="text-white/80 text-sm">Custom assessments from any YouTube video</div>
+
+              <div className="signin-divider">Why Quib</div>
+
+              <div className="signin-features">
+                {FEATURES.map((item) => (
+                  <div key={item.label} className="signin-feature">
+                    <span className="signin-feature-value">{item.value}</span>
+                    <span className="signin-feature-label">{item.label}</span>
+                  </div>
+                ))}
               </div>
+
+              <p className="signin-legal">
+                By continuing, you agree to Quib&apos;s Terms of Service and Privacy Policy. Certificates and learning
+                data stay private to your account.
+              </p>
             </div>
-            <div className="flex items-start gap-3">
-              <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div>
-                <div className="font-semibold mb-1">Verified Certificates</div>
-                <div className="text-white/80 text-sm">Professional credentials with verification IDs</div>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div>
-                <div className="font-semibold mb-1">LinkedIn Integration</div>
-                <div className="text-white/80 text-sm">Share your achievements instantly</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Right Side - Form */}
-      <div className="flex-1 flex items-center justify-center p-8 relative" style={{ background: isDark ? C.bg : '#ffffff', color: C.text }}>
-        <div className="absolute top-6 right-6">
-          <ThemeToggle size="sm" />
-        </div>
-        <div className="w-full max-w-md">
-          <div className="mb-8">
-            {/* Quib Cube Logo */}
-            <div className="flex items-center gap-3 mb-6 cursor-pointer" onClick={() => navigate('/')}>
-              <svg viewBox="250 250 300 300" xmlns="http://www.w3.org/2000/svg" className="w-10 h-10">
-                <defs>
-                  <linearGradient id="siTopG" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stopColor="#d0d0d0" /><stop offset="100%" stopColor="#b0b0b0" /></linearGradient>
-                  <linearGradient id="siLeftG" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor="#909090" /><stop offset="100%" stopColor="#707070" /></linearGradient>
-                  <linearGradient id="siRightG" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor="#a0a0a0" /><stop offset="100%" stopColor="#808080" /></linearGradient>
-                  <linearGradient id="siBTop" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stopColor="#ff4d4d" /><stop offset="100%" stopColor="#ff2d2d" /></linearGradient>
-                  <linearGradient id="siBLeft" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor="#cc0000" /><stop offset="100%" stopColor="#990000" /></linearGradient>
-                  <linearGradient id="siBRight" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor="#ff1a1a" /><stop offset="100%" stopColor="#cc0000" /></linearGradient>
-                </defs>
-                <g opacity="0.5">
-                  <g transform="translate(310,270)"><polygon points="0,30 50,5 100,30 50,55" fill="url(#siTopG)" /><polygon points="0,30 0,80 50,105 50,55" fill="url(#siLeftG)" /><polygon points="100,30 100,80 50,105 50,55" fill="url(#siRightG)" /></g>
-                  <g transform="translate(390,270)"><polygon points="0,30 50,5 100,30 50,55" fill="url(#siTopG)" /><polygon points="0,30 0,80 50,105 50,55" fill="url(#siLeftG)" /><polygon points="100,30 100,80 50,105 50,55" fill="url(#siRightG)" /></g>
-                </g>
-                <g opacity="0.7">
-                  <g transform="translate(270,320)"><polygon points="0,30 50,5 100,30 50,55" fill="url(#siTopG)" /><polygon points="0,30 0,80 50,105 50,55" fill="url(#siLeftG)" /><polygon points="100,30 100,80 50,105 50,55" fill="url(#siRightG)" /></g>
-                  <g transform="translate(350,295)"><polygon points="0,30 50,5 100,30 50,55" fill="url(#siTopG)" /><polygon points="0,30 0,80 50,105 50,55" fill="url(#siLeftG)" /><polygon points="100,30 100,80 50,105 50,55" fill="url(#siRightG)" /></g>
-                  <g transform="translate(430,320)"><polygon points="0,30 50,5 100,30 50,55" fill="url(#siTopG)" /><polygon points="0,30 0,80 50,105 50,55" fill="url(#siLeftG)" /><polygon points="100,30 100,80 50,105 50,55" fill="url(#siRightG)" /></g>
-                </g>
-                <g>
-                  <g transform="translate(310,370)"><polygon points="0,30 50,5 100,30 50,55" fill="url(#siTopG)" /><polygon points="0,30 0,80 50,105 50,55" fill="url(#siLeftG)" /><polygon points="120,30 120,80 50,105 50,55" fill="url(#siRightG)" /></g>
-                  <g transform="translate(350,345)"><polygon points="0,30 50,5 100,30 50,55" fill="url(#siBTop)" /><polygon points="0,30 0,80 50,105 50,55" fill="url(#siBLeft)" /><polygon points="100,30 100,80 50,105 50,55" fill="url(#siBRight)" /><polygon points="0,30 50,5 100,30 50,55" fill="#fff" opacity="0.2" /></g>
-                  <g transform="translate(390,370)"><polygon points="0,30 50,5 100,30 50,55" fill="url(#siTopG)" /><polygon points="0,30 0,80 50,105 50,55" fill="url(#siLeftG)" /><polygon points="100,30 100,80 50,105 50,55" fill="url(#siRightG)" /></g>
-                  <g transform="translate(350,395)"><polygon points="0,30 50,5 100,30 50,55" fill="url(#siTopG)" /><polygon points="0,30 0,80 50,105 50,55" fill="url(#siLeftG)" /><polygon points="100,30 100,80 50,105 50,55" fill="url(#siRightG)" /></g>
-                </g>
-                <circle cx="400" cy="400" r="100" fill="#ff2d2d" opacity="0.06" />
-              </svg>
-              <span className="text-2xl font-[700]" style={{ fontFamily: "var(--display)", color: C.text }}>Quib</span>
-            </div>
-            <h1 className="text-3xl font-[400] mb-2" style={{ fontFamily: "var(--serif)", letterSpacing: '-0.01em', color: C.text }}>
-              {isSignUp ? 'Create your account' : 'Welcome back'}
-            </h1>
-            <p style={{ color: C.text2 }}>
-              {isSignUp 
-                ? 'Start earning verified credentials today' 
-                : 'Sign in to continue your learning journey'}
-            </p>
           </div>
 
-          <div className="space-y-4 mb-8">
-            <GoogleLoginButton />
-          </div>
-
-          <div className="space-y-4 mb-6">
-            
-
-            
-
-            {!isSignUp && (
-              null
-            )}
-          </div>
-
-          
-
-          
-
-          <div className="mt-8 pt-8" style={{ borderTop: `1px solid ${C.border}` }}>
-            <p className="text-xs text-center leading-relaxed" style={{ color: C.text3 }}>
-              By continuing, you agree to Quib's Terms of Service and Privacy Policy. 
-              Your certificates are stored securely and your learning data is private.
-            </p>
-          </div>
-        </div>
-      </div>
+          <Link to="/" className="signin-back">
+            <ArrowLeft size={14} strokeWidth={2} />
+            Back to home
+          </Link>
+        </motion.div>
+      </ClickSpark>
     </div>
   );
 }
