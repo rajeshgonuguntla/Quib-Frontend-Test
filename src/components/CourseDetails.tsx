@@ -4,9 +4,9 @@ import axios from 'axios';
 import {
   Sun, Moon, ChevronDown, ChevronRight,
   PlayCircle, FileText, CheckCircle, CheckCircle2, Copy,
-  ArrowLeft, ArrowUpRight, BookOpen, Calendar, Layers, AlertCircle, Globe,
+  ArrowLeft, ArrowUpRight, BookOpen, Calendar, Layers, AlertCircle, Globe, Pencil,
 } from 'lucide-react';
-import { publishCourse } from '../api/catalogApi';
+import { publishCourse, unpublishCourse, deleteCourse } from '../api/catalogApi';
 import {
   completeLesson,
   enrollCourse,
@@ -18,6 +18,8 @@ import { useUserProfile } from '../context/UserProfileContext';
 import { useTheme, getC } from './ThemeContext';
 import { CourseGenerationLoader } from './CourseGenerationLoader';
 import { LessonStudyContent } from './LessonNotes';
+import type { CourseGenerationOptions } from '../types/courseGeneration';
+import { isModuleQuizPassing } from '../types/courseGeneration';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -121,8 +123,11 @@ function LearningMode({
     m.lessons.map((l) => ({ ...l, moduleId: m.id, moduleTitle: m.title }))
   );
 
-  const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set([course.modules[0]?.id]));
-  const [activeLessonId, setActiveLessonId] = useState<string>(allLessons[0]?.id ?? '');
+  const firstLessonId = allLessons[0]?.id ?? '';
+  const [expandedModules, setExpandedModules] = useState<Set<string>>(
+    () => new Set(course.modules[0]?.id ? [course.modules[0].id] : []),
+  );
+  const [activeLessonId, setActiveLessonId] = useState<string>(firstLessonId);
   const [activeQuizModuleId, setActiveQuizModuleId] = useState<string | null>(null);
   const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set());
   const [quizAnswers, setQuizAnswers] = useState<Record<number, number>>({});
@@ -189,6 +194,8 @@ function LearningMode({
   const quizScore = activeQuizModule
     ? activeQuizModule.quiz.filter((q, i) => quizAnswers[i] === q.answer).length
     : 0;
+  const quizTotal = activeQuizModule?.quiz.length ?? 0;
+  const quizPassed = isModuleQuizPassing(quizScore, quizTotal);
   const completedCount = completedLessons.size;
   const totalLessons = allLessons.length;
   const progressPct = Math.round((completedCount / totalLessons) * 100);
@@ -271,7 +278,7 @@ function LearningMode({
                         <span className="text-sm flex-shrink-0">📝</span>
                         <div className="min-w-0 flex-1">
                           <p className="text-[0.78rem] font-[500]" style={{ color: activeQuizModuleId === mod.id ? C.red : C.text2 }}>Module Quiz</p>
-                          <p className="text-[0.66rem] mt-0.5" style={{ color: C.text3 }}>{mod.quiz.length} questions</p>
+                          <p className="text-[0.66rem] mt-0.5" style={{ color: C.text3 }}>{mod.quiz?.length ?? 0} questions</p>
                         </div>
                       </button>
                     </div>
@@ -372,21 +379,46 @@ function LearningMode({
                   Submit Quiz
                 </button>
               ) : (
-                <div className="rounded-2xl p-6" style={{ background: quizScore >= 2 ? 'rgba(34,197,94,0.08)' : 'rgba(225,6,0,0.06)', border: `1px solid ${quizScore >= 2 ? 'rgba(34,197,94,0.25)' : 'rgba(225,6,0,0.2)'}` }}>
+                <div className="rounded-2xl p-6" style={{ background: quizPassed ? 'rgba(34,197,94,0.08)' : 'rgba(225,6,0,0.06)', border: `1px solid ${quizPassed ? 'rgba(34,197,94,0.25)' : 'rgba(225,6,0,0.2)'}` }}>
                   <div className="flex items-center gap-4">
                     <div className="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0"
-                      style={{ background: quizScore >= 2 ? 'rgba(34,197,94,0.15)' : C.redDim, border: `1px solid ${quizScore >= 2 ? 'rgba(34,197,94,0.3)' : 'rgba(225,6,0,0.2)'}` }}>
-                      <span style={{ fontFamily: 'var(--serif)', fontSize: '1.1rem', color: quizScore >= 2 ? '#22c55e' : C.red }}>{quizScore}/{activeQuizModule.quiz.length}</span>
+                      style={{ background: quizPassed ? 'rgba(34,197,94,0.15)' : C.redDim, border: `1px solid ${quizPassed ? 'rgba(34,197,94,0.3)' : 'rgba(225,6,0,0.2)'}` }}>
+                      <span style={{ fontFamily: 'var(--serif)', fontSize: '1.1rem', color: quizPassed ? '#22c55e' : C.red }}>{quizScore}/{quizTotal}</span>
                     </div>
                     <div>
-                      <p className="font-[600] text-[0.95rem]" style={{ color: C.text }}>{quizScore >= 2 ? 'Great work!' : 'Keep going'}</p>
+                      <p className="font-[600] text-[0.95rem]" style={{ color: C.text }}>{quizPassed ? 'Great work!' : 'Keep going'}</p>
                       <p className="text-[0.8rem] mt-0.5" style={{ color: C.text2 }}>
-                        {quizScore >= 2 ? 'You passed this module. Move on to the next one.' : `You got ${quizScore} of ${activeQuizModule.quiz.length} correct. Review the topics and try again.`}
+                        {quizPassed
+                          ? 'You passed this module. Move on to the next one.'
+                          : `You got ${quizScore} of ${quizTotal} correct (${Math.round((quizScore / Math.max(quizTotal, 1)) * 100)}%). You need 70% to pass.`}
                       </p>
                     </div>
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {!activeLesson && !activeQuizModuleId && (
+            <div className="max-w-3xl mx-auto px-6 py-10 text-center md:text-left">
+              <p className="text-[0.9rem] mb-4" style={{ color: C.text2 }}>
+                {allLessons.length === 0
+                  ? 'This course has no lessons yet.'
+                  : 'Select a lesson from the course outline to begin.'}
+              </p>
+              <div className="md:hidden space-y-2">
+                {allLessons.map((lesson) => (
+                  <button
+                    key={lesson.id}
+                    type="button"
+                    onClick={() => openLesson(lesson.id)}
+                    className="w-full text-left px-4 py-3 rounded-xl text-[0.85rem]"
+                    style={{ background: C.bg1, border: `1px solid ${C.border}`, color: C.text, cursor: 'pointer' }}
+                  >
+                    {lesson.title}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </main>
@@ -407,6 +439,7 @@ export function CourseDetails() {
 
   const youtubeUrl: string = location.state?.youtubeUrl ?? sessionStorage.getItem('courseYoutubeUrl') ?? '';
   const videoUrls: string[] | undefined = location.state?.videoUrls;
+  const generationOptions: CourseGenerationOptions | undefined = location.state?.generationOptions;
   const courseId: string | undefined = courseIdParam ?? location.state?.courseId;
   const returnTo: string | undefined = location.state?.from;
 
@@ -625,8 +658,8 @@ export function CourseDetails() {
         const res = courseId
           ? await axios.get(`/api/course/${courseId}`)
           : videoUrls && videoUrls.length > 0
-            ? await axios.post('/api/course/generate-from-videos', { videoUrls })
-            : await axios.post('/api/course/generate', { youtubeUrl });
+            ? await axios.post('/api/course/generate-from-videos', { videoUrls, options: generationOptions })
+            : await axios.post('/api/course/generate', { youtubeUrl, options: generationOptions });
         if (!mounted) return;
         const data = res.data as Course & {
           courseId?: string;
@@ -658,7 +691,37 @@ export function CourseDetails() {
 
     loadCourse();
     return () => { mounted = false; };
-  }, [courseId, youtubeUrl, videoUrls]);
+  }, [courseId, youtubeUrl, videoUrls, generationOptions]);
+
+  const handleUnpublish = async () => {
+    if (!resolvedCourseId) return;
+    if (!window.confirm('Unpublish this course? It will be hidden from Browse.')) return;
+    setPublishing(true);
+    setPublishError(null);
+    try {
+      const data = await unpublishCourse(resolvedCourseId);
+      setIsPublished(!!data.isPublished);
+    } catch (err) {
+      setPublishError(getCourseGenerationError(err));
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!resolvedCourseId) return;
+    if (!window.confirm('Delete this course permanently?')) return;
+    setPublishing(true);
+    setPublishError(null);
+    try {
+      await deleteCourse(resolvedCourseId);
+      navigate('/educator-courses');
+    } catch (err) {
+      setPublishError(getCourseGenerationError(err));
+    } finally {
+      setPublishing(false);
+    }
+  };
 
   const toggleModule = (id: string) => setExpandedModules((prev) => {
     const next = new Set(prev);
@@ -840,6 +903,39 @@ export function CourseDetails() {
             style={{ background: C.bg1, border: `1px solid ${C.border}`, color: C.text2 }}
           >
             Course created. Educator accounts can publish courses to the catalog after generation.
+          </div>
+        )}
+
+        {isOwner && isEducator && (
+          <div className="mb-6 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => resolvedCourseId && navigate(`/educator-courses/${resolvedCourseId}/edit`)}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-[0.82rem] font-[600] cursor-pointer"
+              style={{ background: C.bg2, border: `1px solid ${C.border2}`, color: C.text2 }}
+            >
+              <Pencil className="w-4 h-4" /> Edit course
+            </button>
+            {isPublished && (
+              <button
+                type="button"
+                onClick={() => void handleUnpublish()}
+                disabled={publishing}
+                className="px-4 py-2 rounded-lg text-[0.82rem] font-[600] cursor-pointer disabled:opacity-60"
+                style={{ background: C.bg2, border: `1px solid ${C.border2}`, color: C.text2 }}
+              >
+                Unpublish
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => void handleDelete()}
+              disabled={publishing}
+              className="px-4 py-2 rounded-lg text-[0.82rem] font-[600] cursor-pointer disabled:opacity-60"
+              style={{ background: 'rgba(225,6,0,0.08)', border: '1px solid rgba(225,6,0,0.2)', color: C.red }}
+            >
+              Delete
+            </button>
           </div>
         )}
 
