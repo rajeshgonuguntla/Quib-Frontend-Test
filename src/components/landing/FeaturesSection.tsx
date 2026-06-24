@@ -68,14 +68,7 @@ function AiQuizVisual({ active }: { active: boolean }) {
 
   return (
     <div className="relative h-28 overflow-hidden rounded-md border border-[var(--landing-border)] bg-[var(--landing-bg)] p-3 font-mono text-[9px]">
-      <div className="mb-2 flex items-center gap-1.5">
-        <motion.span
-          className="size-1.5 rounded-full bg-[var(--brand,#e10600)]"
-          animate={active ? { opacity: [0.3, 1, 0.3] } : { opacity: 0.3 }}
-          transition={{ duration: 1.2, repeat: Infinity }}
-        />
-        <span className="text-[var(--landing-muted)]">generating quiz…</span>
-      </div>
+      <div className="mb-2 font-mono text-[9px] text-[var(--landing-muted)]">generating quiz…</div>
       <p className="leading-relaxed text-[var(--landing-fg)]">
         {question.slice(0, len)}
         {active && len < question.length && (
@@ -237,18 +230,6 @@ function CertificateVisual({ active }: { active: boolean }) {
           )}
         </AnimatePresence>
       </motion.div>
-
-      {active && (
-        <motion.div
-          className="pointer-events-none absolute inset-0"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: [0, 0.4, 0] }}
-          transition={{ duration: 2, repeat: Infinity }}
-          style={{
-            background: 'radial-gradient(circle at 70% 30%, rgba(10,102,194,0.2) 0%, transparent 50%)',
-          }}
-        />
-      )}
     </div>
   );
 }
@@ -389,28 +370,11 @@ export function FeaturesSection() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isHovering, setIsHovering] = useState(false);
 
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
-  const spotX = useSpring(mouseX, { stiffness: 80, damping: 20 });
-  const spotY = useSpring(mouseY, { stiffness: 80, damping: 20 });
-  const glowStrength = isDark ? 0.06 : 0.12;
-  const spotlightBg = useTransform(
-    [spotX, spotY],
-    ([x, y]) =>
-      `radial-gradient(700px circle at ${x}px ${y}px, rgba(225,6,0,${glowStrength}) 0%, transparent 55%)`,
-  );
-
   useEffect(() => {
     if (!inView || isHovering) return;
     const t = setInterval(() => setActiveIndex((i) => (i + 1) % FEATURES.length), 3200);
     return () => clearInterval(t);
   }, [inView, isHovering]);
-
-  const handleSectionMove = (e: MouseEvent) => {
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    mouseX.set(e.clientX - rect.left);
-    mouseY.set(e.clientY - rect.top);
-  };
 
   const words = ['Built', 'for', 'comprehension'];
 
@@ -418,15 +382,8 @@ export function FeaturesSection() {
     <section
       id="features"
       ref={sectionRef}
-      onMouseMove={handleSectionMove}
       className="landing-features-section relative overflow-hidden border-t border-[var(--landing-border)] px-5 py-24 md:px-8 md:py-32"
     >
-      {/* Cursor spotlight */}
-      <motion.div
-        className="pointer-events-none absolute inset-0 z-0"
-        style={{ background: spotlightBg }}
-      />
-
       {/* Floating grid lines */}
       <div className="landing-features-grid pointer-events-none absolute inset-0 opacity-40" />
 
@@ -462,79 +419,10 @@ export function FeaturesSection() {
               Every feature designed so learners actually understand — not just skim.
             </motion.p>
           </div>
-
-          {/* Live comprehension meter */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={inView ? { opacity: 1, scale: 1 } : {}}
-            transition={{ delay: 0.5 }}
-            className="landing-comprehension-meter shrink-0 rounded-xl border border-[var(--landing-border)] bg-[var(--landing-card)] p-4"
-          >
-            <p className="landing-mono-label mb-2">Comprehension index</p>
-            <div className="flex items-end gap-1">
-              {Array.from({ length: 12 }).map((_, i) => (
-                <motion.div
-                  key={i}
-                  className="w-1.5 rounded-full bg-[var(--brand,#e10600)]"
-                  initial={{ height: 4 }}
-                  animate={
-                    inView
-                      ? {
-                          height: i <= activeIndex * 3 + 2 ? [4, 8 + (i % 4) * 6, 4] : 4,
-                          opacity: i <= activeIndex * 3 + 2 ? 1 : 0.15,
-                        }
-                      : {}
-                  }
-                  transition={{
-                    height: { duration: 1.2, repeat: Infinity, delay: i * 0.05 },
-                    opacity: { duration: 0.3 },
-                  }}
-                />
-              ))}
-            </div>
-            <motion.p
-              key={activeIndex}
-              initial={{ opacity: 0, y: 4 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mt-2 font-mono text-[10px] text-[var(--landing-muted)]"
-            >
-              Active: {FEATURES[activeIndex].tag} · {String((activeIndex + 1) * 25).padStart(2, '0')}%
-            </motion.p>
-          </motion.div>
-        </div>
-
-        {/* Progress rail */}
-        <div className="relative mt-12 hidden h-px w-full bg-[var(--landing-border)] md:block">
-          <motion.div
-            className="absolute inset-y-0 left-0 h-px bg-[var(--brand,#e10600)]"
-            animate={{ width: `${((activeIndex + 1) / FEATURES.length) * 100}%` }}
-            transition={{ type: 'spring', stiffness: 120, damping: 20 }}
-          />
-          {FEATURES.map((f, i) => (
-            <button
-              key={f.id}
-              type="button"
-              onMouseEnter={() => { setIsHovering(true); setActiveIndex(i); }}
-              onMouseLeave={() => setIsHovering(false)}
-              onClick={() => setActiveIndex(i)}
-              className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2"
-              style={{ left: `${((i + 0.5) / FEATURES.length) * 100}%` }}
-              aria-label={`Focus ${f.title}`}
-            >
-              <motion.span
-                className="block size-2 rounded-full border border-[var(--landing-border)] bg-[var(--landing-bg)]"
-                animate={{
-                  scale: activeIndex === i ? 1.4 : 1,
-                  backgroundColor: activeIndex === i ? '#e10600' : 'var(--landing-bg)',
-                  borderColor: activeIndex === i ? '#e10600' : 'var(--landing-border)',
-                }}
-              />
-            </button>
-          ))}
         </div>
 
         <div
-          className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
+          className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
           style={{ perspective: 1200 }}
         >
           {FEATURES.map((f, i) => (

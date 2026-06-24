@@ -1,4 +1,5 @@
 import { Navigate, Outlet, useLocation } from 'react-router';
+import { CREATOR_HOME_PATH, getSignInIntent } from './utils/signInIntent';
 
 const TOKEN_KEY = 'token';
 
@@ -74,6 +75,9 @@ export function ProtectedRoute() {
 
 export function PublicOnlyRoute() {
   if (isTokenValid()) {
+    if (getSignInIntent() === 'creator') {
+      return <Navigate to={CREATOR_HOME_PATH} replace />;
+    }
     const hasInterests = !!localStorage.getItem('quib_interests');
     return <Navigate to={hasInterests ? '/dashboard' : '/onboarding'} replace />;
   }

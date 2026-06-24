@@ -9,6 +9,7 @@ import { getShellTheme } from '../utils/shellTheme';
 import { useTheme } from '../components/ThemeContext';
 import { ScrollArea } from '../components/ui/scroll-area';
 import { NAV_GROUPS, isNavItemActive, type NavItem } from './navConfig';
+import { clearSignInIntent, filterNavGroups, isEducatorExperience } from '../utils/signInIntent';
 import { useShell } from './ShellContext';
 
 type AppSidebarProps = {
@@ -65,9 +66,11 @@ export function AppSidebar({ pathname, search, onNavigate }: AppSidebarProps) {
   const navigate = useNavigate();
   const { profile, setProfile } = useUserProfile();
   const firstName = getFirstName(profile);
+  const navGroups = filterNavGroups(NAV_GROUPS, isEducatorExperience());
 
   const handleSignOut = () => {
     clearToken();
+    clearSignInIntent();
     setProfile(null);
     navigate('/signin');
     onNavigate?.();
@@ -86,7 +89,7 @@ export function AppSidebar({ pathname, search, onNavigate }: AppSidebarProps) {
       </div>
 
       <ScrollArea className="flex-1 px-2 py-4">
-        {NAV_GROUPS.map((group) => (
+        {navGroups.map((group) => (
           <NavGroupBlock
             key={group.label}
             label={group.label}

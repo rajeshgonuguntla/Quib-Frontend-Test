@@ -8,7 +8,7 @@ import {
 } from 'framer-motion';
 import { Link } from 'react-router';
 import { useRef, useState, useEffect, type MouseEvent } from 'react';
-import { ArrowRight, BookOpen, GraduationCap, Play, Sparkles } from 'lucide-react';
+import { BookOpen, GraduationCap, Play, Sparkles } from 'lucide-react';
 import { LandingThumb } from './LandingThumb';
 import { LANDING_CTA_TOPICS } from './landingThumbnails';
 import { useTheme } from '../ThemeContext';
@@ -99,67 +99,6 @@ function FloatingWindow({
   );
 }
 
-function ImpossibleRings({ inView }: { inView: boolean }) {
-  return (
-    <div className="landing-cta-portal pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-      {[320, 420, 520, 620].map((size, i) => (
-        <motion.div
-          key={size}
-          className="absolute left-1/2 top-1/2 rounded-full border border-[var(--landing-border)]"
-          style={{
-            width: size,
-            height: size,
-            marginLeft: -size / 2,
-            marginTop: -size / 2,
-            transformStyle: 'preserve-3d',
-          }}
-          initial={{ opacity: 0, scale: 0.8, rotateX: 70, rotateZ: 0 }}
-          animate={
-            inView
-              ? {
-                  opacity: 0.15 + (3 - i) * 0.08,
-                  scale: 1,
-                  rotateX: 65 + i * 5,
-                  rotateZ: i % 2 === 0 ? 360 : -360,
-                }
-              : {}
-          }
-          transition={{
-            rotateZ: { duration: 30 + i * 10, repeat: Infinity, ease: 'linear' },
-            opacity: { duration: 0.8, delay: i * 0.1 },
-            scale: { duration: 0.8, delay: i * 0.1 },
-          }}
-        />
-      ))}
-      {/* Impossible triangle connectors */}
-      <svg className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" width="400" height="400" viewBox="0 0 400 400">
-        <motion.path
-          d="M200 40 L360 320 L40 320 Z"
-          fill="none"
-          stroke="rgba(225,6,0,0.15)"
-          strokeWidth="1"
-          strokeDasharray="8 6"
-          initial={{ pathLength: 0, opacity: 0 }}
-          animate={inView ? { pathLength: 1, opacity: 1 } : {}}
-          transition={{ duration: 2, ease: 'easeInOut' }}
-        />
-        {[ [200, 40], [360, 320], [40, 320] ].map(([cx, cy], i) => (
-          <motion.circle
-            key={i}
-            cx={cx}
-            cy={cy}
-            r="4"
-            fill="#e10600"
-            initial={{ opacity: 0, scale: 0 }}
-            animate={inView ? { opacity: [0.4, 1, 0.4], scale: [0.8, 1.2, 0.8] } : {}}
-            transition={{ duration: 2, repeat: Infinity, delay: i * 0.6 }}
-          />
-        ))}
-      </svg>
-    </div>
-  );
-}
-
 export function CtaSection() {
   const { isDark } = useTheme();
   const sectionRef = useRef(null);
@@ -228,8 +167,6 @@ export function CtaSection() {
       <motion.div className="pointer-events-none absolute inset-0" style={{ background: voidBg }} />
       <div className="landing-cta-stars pointer-events-none absolute inset-0" />
       <div className="landing-cta-grid pointer-events-none absolute inset-0 opacity-30" />
-
-      <ImpossibleRings inView={inView} />
 
       {FLOATING_WINDOWS.map((win) => (
         <FloatingWindow key={win.id} win={win} inView={inView} mouseX={mouseX} mouseY={mouseY} focused={focused} />
@@ -349,16 +286,6 @@ export function CtaSection() {
           transition={{ delay: 0.7 }}
           className="relative mt-10 flex flex-wrap items-center justify-center gap-4"
         >
-          {/* Pulse rings behind primary button */}
-          {[0, 1, 2].map((i) => (
-            <motion.span
-              key={i}
-              className="pointer-events-none absolute left-1/2 top-1/2 size-32 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[var(--brand,#e10600)]"
-              animate={inView ? { scale: [1, 2.2], opacity: [0.35, 0] } : {}}
-              transition={{ duration: 2.5, repeat: Infinity, delay: i * 0.8, ease: 'easeOut' }}
-            />
-          ))}
-
           <motion.div style={{ x: btnX, y: btnY }}>
             <Link
               to="/signin"
@@ -370,12 +297,12 @@ export function CtaSection() {
                 transition={{ duration: 2.5, repeat: Infinity, repeatDelay: 1 }}
               />
               Get started
-              <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
             </Link>
           </motion.div>
 
           <Link
-            to="/educators"
+            to="/signin"
+            state={{ signInIntent: 'creator' }}
             className="rounded-md border border-[var(--landing-border)] bg-[var(--landing-card)]/50 px-7 py-3.5 text-sm text-[var(--landing-fg)] no-underline backdrop-blur-sm transition-colors hover:border-[var(--brand,#e10600)] hover:text-[var(--landing-fg)]"
           >
             For educators

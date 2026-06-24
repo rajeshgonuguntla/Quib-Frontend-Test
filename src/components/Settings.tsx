@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
-import { HelpCircle, Moon, Sun, User } from 'lucide-react';
-import { useTheme } from './ThemeContext';
+import { HelpCircle, User } from 'lucide-react';
 import { useUserProfile } from '../context/UserProfileContext';
 import { updateUserProfile } from '../api/userApi';
 import { UserAvatar } from './UserAvatar';
@@ -16,7 +15,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 
 export function Settings() {
   const navigate = useNavigate();
-  const { isDark, setDark } = useTheme();
   const { profile, loading, setProfile } = useUserProfile();
   const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState('profile');
@@ -31,7 +29,7 @@ export function Settings() {
 
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab === 'help' || tab === 'appearance') {
+    if (tab === 'help') {
       setActiveTab(tab);
     }
   }, [searchParams]);
@@ -48,7 +46,6 @@ export function Settings() {
 
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User },
-    { id: 'appearance', label: 'Appearance', icon: Sun },
     { id: 'help', label: 'Help', icon: HelpCircle },
   ];
 
@@ -112,7 +109,7 @@ export function Settings() {
           ))}
         </TabsList>
 
-        <TabsContent value="profile">
+        <TabsContent value="profile" className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="font-serif-display text-lg font-normal">Profile</CardTitle>
@@ -160,28 +157,7 @@ export function Settings() {
               )}
             </CardContent>
           </Card>
-        </TabsContent>
 
-        <TabsContent value="appearance">
-          <Card>
-            <CardHeader>
-              <CardTitle className="font-serif-display text-lg font-normal">Theme</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="mb-4 text-sm text-muted-foreground">Choose light or dark mode. Saved on this device.</p>
-              <div className="flex gap-2">
-                <Button variant={!isDark ? 'default' : 'outline'} onClick={() => setDark(false)} className="gap-2">
-                  <Sun size={16} /> Light
-                </Button>
-                <Button variant={isDark ? 'default' : 'outline'} onClick={() => setDark(true)} className="gap-2">
-                  <Moon size={16} /> Dark
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="help">
           <Card>
             <CardHeader>
               <CardTitle className="font-serif-display text-lg font-normal">Help & support</CardTitle>
@@ -189,7 +165,17 @@ export function Settings() {
             <CardContent className="space-y-3 text-sm">
               <p className="text-muted-foreground">Need help with courses, Studio, or your account?</p>
               <a href="mailto:support@quibb.ai" className="block text-foreground underline-offset-4 hover:underline">support@quibb.ai</a>
-              <a href="/educators#how-it-works" className="block text-muted-foreground hover:text-foreground">How Educator Studio works</a>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="help">
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-serif-display text-lg font-normal">Help</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              <a href="/#create" className="block text-muted-foreground hover:text-foreground">How Educator Studio works</a>
               <a href="/browse-courses" className="block text-muted-foreground hover:text-foreground">Browse courses</a>
             </CardContent>
           </Card>

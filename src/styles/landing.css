@@ -141,19 +141,6 @@
   background-image: radial-gradient(circle, rgba(0, 0, 0, 0.06) 1px, transparent 1px);
 }
 
-@keyframes landingTicker {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
-}
-
-.landing-ticker {
-  animation: landingTicker 40s linear infinite;
-}
-
-.landing-ticker:hover {
-  animation-play-state: paused;
-}
-
 @keyframes landingPulse {
   0%, 100% { opacity: 0.4; }
   50% { opacity: 0.8; }
@@ -232,7 +219,7 @@
   backdrop-filter: blur(8px);
 }
 
-/* CTA — impossible portal section */
+/* CTA section */
 .landing-cta-section {
   background: var(--landing-bg);
 }
@@ -258,12 +245,6 @@
   mask-image: radial-gradient(ellipse 70% 60% at 50% 50%, black 0%, transparent 70%);
   transform: perspective(800px) rotateX(60deg) scale(1.2);
   transform-origin: center center;
-}
-
-.landing-cta-portal {
-  width: 0;
-  height: 0;
-  transform-style: preserve-3d;
 }
 
 .landing-cta-window {

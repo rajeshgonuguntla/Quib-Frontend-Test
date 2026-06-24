@@ -44,11 +44,19 @@ export function creatorToCategoryCard(c: {
 }
 
 export function courseToCuratedCard(c: CatalogCourseSummary) {
+  const instructor =
+    c.educatorChannelTitle
+    ?? c.ownerDisplayName
+    ?? c.channelName
+    ?? 'Educator';
+  const instructorAvatar = c.educatorChannelThumbnail ?? c.ownerAvatarUrl;
   return {
     id: c.courseId,
     title: c.title,
-    instructor: c.channelName ?? 'YouTube',
+    instructor,
+    instructorAvatar,
     tag: c.category,
+    language: c.contentLanguage,
     rating: '4.8',
     students: '—',
     duration: c.durationLabel ?? '—',

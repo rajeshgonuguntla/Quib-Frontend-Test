@@ -130,16 +130,29 @@ function LearningMode({
   const [activeLessonId, setActiveLessonId] = useState<string>(firstLessonId);
   const [activeQuizModuleId, setActiveQuizModuleId] = useState<string | null>(null);
   const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set());
+  const [passedModules, setPassedModules] = useState<Set<string>>(new Set());
+  const [progressPercent, setProgressPercent] = useState(0);
+  const [progressMeta, setProgressMeta] = useState({ totalLessons: 0, totalQuizModules: 0 });
   const [quizAnswers, setQuizAnswers] = useState<Record<number, number>>({});
   const [quizSubmitted, setQuizSubmitted] = useState(false);
+
+  const reloadProgress = async () => {
+    try {
+      const progress = await fetchCourseProgress(courseId);
+      setCompletedLessons(new Set(progress.completedLessonIds));
+      setPassedModules(new Set(progress.passedModuleIds));
+      setProgressPercent(progress.progressPercent);
+      setProgressMeta({
+        totalLessons: progress.totalLessons,
+        totalQuizModules: progress.totalQuizModules,
+      });
+    } catch {
+      /* progress unavailable until enrolled */
+    }
+  };
+
   useEffect(() => {
-    let mounted = true;
-    fetchCourseProgress(courseId)
-      .then((ids) => {
-        if (mounted) setCompletedLessons(new Set(ids));
-      })
-      .catch(() => { /* progress unavailable until enrolled */ });
-    return () => { mounted = false; };
+    void reloadProgress();
   }, [courseId]);
 
   const activeLesson = allLessons.find((l) => l.id === activeLessonId);
@@ -170,7 +183,7 @@ function LearningMode({
     if (!activeLessonId || completedLessons.has(activeLessonId)) return;
     try {
       await completeLesson(courseId, activeLessonId);
-      setCompletedLessons((prev) => new Set([...prev, activeLessonId]));
+      await reloadProgress();
       const idx = allLessons.findIndex((l) => l.id === activeLessonId);
       if (idx < allLessons.length - 1) setActiveLessonId(allLessons[idx + 1].id);
     } catch {
@@ -186,6 +199,7 @@ function LearningMode({
         Object.entries(quizAnswers).map(([key, value]) => [key, value]),
       );
       await submitModuleQuiz(courseId, activeQuizModule.id, payload);
+      await reloadProgress();
     } catch {
       /* results still shown locally */
     }
@@ -197,8 +211,11 @@ function LearningMode({
   const quizTotal = activeQuizModule?.quiz.length ?? 0;
   const quizPassed = isModuleQuizPassing(quizScore, quizTotal);
   const completedCount = completedLessons.size;
-  const totalLessons = allLessons.length;
-  const progressPct = Math.round((completedCount / totalLessons) * 100);
+  const totalLessons = progressMeta.totalLessons || allLessons.length;
+  const passedQuizCount = passedModules.size;
+  const totalQuizModules = progressMeta.totalQuizModules
+    || course.modules.filter((m) => (m.quiz?.length ?? 0) > 0).length;
+  const progressPct = progressPercent;
   const embedId = activeLesson
     ? getYoutubeEmbedId(activeLesson.videoId, activeLesson.videoUrl, youtubeUrl)
     : '';
@@ -221,7 +238,9 @@ function LearningMode({
             <div className="w-28 h-1 rounded-full overflow-hidden" style={{ background: C.bg2 }}>
               <div className="h-full rounded-full" style={{ width: `${progressPct}%`, background: C.red }} />
             </div>
-            <span className="text-[0.68rem]" style={{ color: C.text3 }}>{completedCount}/{totalLessons}</span>
+            <span className="text-[0.68rem]" style={{ color: C.text3 }}>
+              {completedCount}/{totalLessons} lessons · {passedQuizCount}/{totalQuizModules} quizzes
+            </span>
           </div>
         </div>
         <button onClick={toggleTheme} className="w-8 h-8 rounded-lg flex items-center justify-center"
@@ -275,7 +294,11 @@ function LearningMode({
                         style={{ background: activeQuizModuleId === mod.id ? isDark ? 'rgba(225,6,0,0.08)' : 'rgba(225,6,0,0.05)' : 'transparent', border: 'none', borderLeft: activeQuizModuleId === mod.id ? `2px solid ${C.red}` : '2px solid transparent', cursor: 'pointer' }}
                         onMouseEnter={(e) => { if (activeQuizModuleId !== mod.id) e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'; }}
                         onMouseLeave={(e) => { if (activeQuizModuleId !== mod.id) e.currentTarget.style.background = 'transparent'; }}>
-                        <span className="text-sm flex-shrink-0">📝</span>
+                        {passedModules.has(mod.id) ? (
+                          <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#22c55e' }} />
+                        ) : (
+                          <span className="text-sm flex-shrink-0">📝</span>
+                        )}
                         <div className="min-w-0 flex-1">
                           <p className="text-[0.78rem] font-[500]" style={{ color: activeQuizModuleId === mod.id ? C.red : C.text2 }}>Module Quiz</p>
                           <p className="text-[0.66rem] mt-0.5" style={{ color: C.text3 }}>{mod.quiz?.length ?? 0} questions</p>
@@ -854,7 +877,7 @@ export function CourseDetails() {
           <Link to="/" className="no-underline font-[700] tracking-tight text-[1rem]" style={{ color: C.text }}>Quib</Link>
         </div>
         <ul className="hidden md:flex gap-7 list-none absolute left-1/2 -translate-x-1/2">
-          {[{ label: 'Platform', href: '/' }, { label: 'For Educators', href: '/educators' }].map((l) => (
+          {[{ label: 'Platform', href: '/' }, { label: 'Sign in', href: '/signin' }].map((l) => (
             <li key={l.label}>
               <Link to={l.href} className="text-[0.875rem] font-[400] no-underline transition-opacity hover:opacity-100"
                 style={{ color: C.text2, letterSpacing: '0.01em', opacity: 0.8 }}>{l.label}</Link>

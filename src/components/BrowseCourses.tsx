@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Search } from 'lucide-react';
 import { fetchCourses } from '../api/catalogApi';
+import { CONTENT_LANGUAGES } from '../types/courseGeneration';
 import type { CatalogCourseSummary } from '../types/catalog';
 import { courseToCuratedCard } from '../utils/catalogMap';
 import { PageHeader } from '../shell/PageHeader';
@@ -16,18 +17,24 @@ export function BrowseCourses() {
   const [courses, setCourses] = useState<CatalogCourseSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
+  const [language, setLanguage] = useState('');
 
   useEffect(() => {
-    fetchCourses({ limit: 100 })
+    setLoading(true);
+    fetchCourses({ limit: 100, language: language || undefined })
       .then(setCourses)
       .catch(() => setCourses([]))
       .finally(() => setLoading(false));
-  }, []);
+  }, [language]);
 
   const filtered = courses.filter((c) => {
     if (!query.trim()) return true;
     const q = query.toLowerCase();
-    return c.title?.toLowerCase().includes(q) || c.category?.toLowerCase().includes(q) || c.channelName?.toLowerCase().includes(q);
+    return c.title?.toLowerCase().includes(q)
+      || c.category?.toLowerCase().includes(q)
+      || c.channelName?.toLowerCase().includes(q)
+      || c.ownerDisplayName?.toLowerCase().includes(q)
+      || c.educatorChannelTitle?.toLowerCase().includes(q);
   });
 
   return (
@@ -38,14 +45,26 @@ export function BrowseCourses() {
         description="Published courses from educators on Quib."
       />
 
-      <div className="relative mb-8 max-w-md">
-        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search by title, category, or channel…"
-          className="pl-9"
-        />
+      <div className="mb-8 flex flex-wrap items-center gap-4">
+        <div className="relative max-w-md flex-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search by title, category, or educator…"
+            className="pl-9"
+          />
+        </div>
+        <select
+          value={language}
+          onChange={(e) => setLanguage(e.target.value)}
+          className="h-9 rounded-md border border-border bg-background px-3 text-sm"
+        >
+          <option value="">All languages</option>
+          {CONTENT_LANGUAGES.map((l) => (
+            <option key={l.value} value={l.value}>{l.label}</option>
+          ))}
+        </select>
       </div>
 
       {loading ? (
@@ -76,10 +95,20 @@ export function BrowseCourses() {
                   <div className="aspect-video overflow-hidden bg-muted">
                     <img src={card.image} alt="" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]" />
                   </div>
-                  <div className="p-4">
-                    <Badge variant="muted">{card.tag}</Badge>
-                    <h2 className="mt-2 text-sm font-medium leading-snug">{card.title}</h2>
-                    <p className="mt-1 text-xs text-muted-foreground">{card.instructor}</p>
+                    <div className="p-4">
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant="muted">{card.tag}</Badge>
+                        {card.language && card.language !== 'en' && (
+                          <Badge variant="outline">{card.language.toUpperCase()}</Badge>
+                        )}
+                      </div>
+                      <h2 className="mt-2 text-sm font-medium leading-snug">{card.title}</h2>
+                      <div className="mt-2 flex items-center gap-2">
+                        {card.instructorAvatar ? (
+                          <img src={card.instructorAvatar} alt="" className="size-5 rounded-full object-cover" />
+                        ) : null}
+                        <p className="text-xs text-muted-foreground">{card.instructor}</p>
+                      </div>
                     <p className="mt-2 text-xs text-muted-foreground">
                       {course.moduleCount ?? '—'} modules · {course.difficulty ?? 'Mixed'}
                     </p>

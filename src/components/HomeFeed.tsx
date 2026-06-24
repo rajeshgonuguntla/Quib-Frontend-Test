@@ -157,14 +157,14 @@ export function HomeFeed() {
 
   const isNavActive = (id: NavId) => {
     if (id === 'dashboard') return location.pathname === '/dashboard' || location.pathname === '/home';
-    if (id === 'browse' || id === 'trending') return location.pathname.startsWith('/educators') || location.pathname.startsWith('/educator/');
+    if (id === 'browse' || id === 'trending') return location.pathname.startsWith('/browse-courses') || location.pathname.startsWith('/educator/');
     if (id === 'progress' || id === 'saved' || id === 'completed') return location.pathname.startsWith('/my-quizzes');
     if (id === 'settings' || id === 'help') return location.pathname.startsWith('/settings');
     return false;
   };
 
   const goToNav = (id: NavId) => {
-    if (id === 'browse' || id === 'trending') navigate('/educators');
+    if (id === 'browse' || id === 'trending') navigate('/browse-courses');
     else if (id === 'progress' || id === 'saved' || id === 'completed') navigate('/my-quizzes');
     else if (id === 'settings' || id === 'help') navigate('/settings');
     else navigate('/dashboard');
