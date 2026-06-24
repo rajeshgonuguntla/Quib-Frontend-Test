@@ -15,11 +15,6 @@ import {
   LANDING_STUDIO_TOPICS,
 } from './landing/landingThumbnails';
 
-const TICKER = [
-  'YouTube videos', 'AI quizzes', 'Structured courses', 'Progress tracking',
-  'Certificates', 'Educator Studio', 'Google sign-in', 'Browse courses',
-];
-
 function LearnMock() {
   return (
     <div className="p-4 md:p-6">
@@ -86,48 +81,6 @@ function CreateMock() {
   );
 }
 
-function TeachMock() {
-  return (
-    <div className="p-4 md:p-6 font-mono text-xs">
-      <div className="mb-3 flex gap-3 border-b border-[var(--landing-border)] pb-3">
-        <LandingThumb
-          topic="neural-networks"
-          label="Neural Networks"
-          className="h-16 w-28 shrink-0 rounded-md"
-          showPlay={false}
-        />
-        <div className="min-w-0 flex-1">
-          <div className="mb-2 flex gap-1.5">
-            <span className="size-2 rounded-full bg-red-500/80" />
-            <span className="size-2 rounded-full bg-yellow-500/80" />
-            <span className="size-2 rounded-full bg-green-500/80" />
-            <span className="ml-1 text-[var(--landing-muted)]">course.json</span>
-          </div>
-          {[
-            '{',
-            '  "title": "Neural Networks",',
-            '  "modules": 8,',
-            '  "quizzes": 24,',
-            '  "published": true',
-            '}',
-          ].map((line, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, x: -4 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.05 }}
-              viewport={{ once: true }}
-              className="leading-relaxed text-[var(--landing-muted)]"
-            >
-              {line}
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export function LandingPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -172,7 +125,7 @@ export function LandingPage() {
         >
           <p className="landing-mono-label mb-6">Learning infrastructure</p>
           <h1 className="text-4xl font-semibold leading-[1.08] tracking-tight text-[var(--landing-fg)] md:text-6xl lg:text-7xl">
-            Learn from the best educators on YouTube
+            Turn your YouTube videos into a real course.
           </h1>
           <p className="mx-auto mt-6 max-w-lg text-base leading-relaxed text-[var(--landing-muted)] md:text-lg">
             Paste a link. Get structured courses, quizzes, and progress — built for learners and creators.
@@ -210,23 +163,6 @@ export function LandingPage() {
             Free to try · No credit card
           </motion.p>
         </motion.div>
-
-        {/* Ticker */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.6 }}
-          className="absolute bottom-0 left-0 right-0 overflow-hidden border-t border-[var(--landing-border)] py-3"
-        >
-          <div className="landing-ticker flex w-max">
-            {[...TICKER, ...TICKER].map((item, i) => (
-              <span key={i} className="landing-mono-label inline-flex items-center gap-2 px-8 whitespace-nowrap">
-                <span className="text-[var(--brand,#e10600)]">·</span>
-                {item}
-              </span>
-            ))}
-          </div>
-        </motion.div>
       </section>
 
       {/* Platform blocks — like Vercel Agents / Apps / Platforms */}
@@ -249,15 +185,6 @@ export function LandingPage() {
         reverse
       />
 
-      <PlatformSection
-        id="teach"
-        title="Teach"
-        description="Publish to the Quib catalog. Your audience gets modules, assessments, and timestamp-linked lessons."
-        stat="Your content. Structured. Searchable. Shareable."
-        features={['Public catalog', 'Module breakdown', 'Quiz generation']}
-        mock={<TeachMock />}
-      />
-
       <BentoGrid />
 
       <FeaturesSection />
@@ -273,8 +200,8 @@ export function LandingPage() {
           </div>
           <div className="flex gap-12">
             {[
-              { title: 'Product', links: [{ l: 'Features', h: '#features' }, { l: 'Educators', h: '/educators' }, { l: 'Sign in', h: '/signin' }] },
-              { title: 'Company', links: [{ l: 'How it works', h: '#learn' }, { l: 'Support', h: 'mailto:support@quibb.ai' }] },
+              { title: 'Product', links: [{ l: 'Features', h: '/#features' }, { l: 'Sign in', h: '/signin' }] },
+              { title: 'Company', links: [{ l: 'How it works', h: '/#learn' }, { l: 'Support', h: 'mailto:support@quibb.ai' }] },
             ].map((col) => (
               <div key={col.title}>
                 <p className="landing-mono-label mb-3">{col.title}</p>

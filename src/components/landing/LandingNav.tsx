@@ -26,9 +26,9 @@ export function LandingNav({ isDark }: LandingNavProps) {
 
       <ul className="absolute left-1/2 hidden -translate-x-1/2 list-none gap-8 md:flex">
         {[
-          { label: 'Learn', href: '#learn' },
-          { label: 'Create', href: '#create' },
-          { label: 'Features', href: '#features' },
+          { label: 'Learn', href: '/#learn' },
+          { label: 'Create', href: '/#create' },
+          { label: 'Features', href: '/#features' },
         ].map((l) => (
           <li key={l.label}>
             <a href={l.href} className="text-sm text-[var(--landing-muted)] no-underline transition-colors hover:text-[var(--landing-fg)]">
@@ -39,9 +39,6 @@ export function LandingNav({ isDark }: LandingNavProps) {
       </ul>
 
       <div className="flex items-center gap-2">
-        <Link to="/educators" className="hidden text-sm text-[var(--landing-muted)] no-underline transition-colors hover:text-[var(--landing-fg)] md:inline">
-          Educators
-        </Link>
         <ThemeToggle size="sm" />
         <Link to="/signin" className="hidden text-sm text-[var(--landing-muted)] no-underline transition-colors hover:text-[var(--landing-fg)] sm:inline">
           Log in

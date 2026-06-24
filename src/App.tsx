@@ -16,7 +16,7 @@ import { Results } from './components/Results';
 import { Certificate } from './components/Certificate';
 import { Verification } from './components/Verification';
 import { Settings } from './components/Settings';
-import { Educators } from './components/Educators';
+// Educators page kept in src/components/Educators.tsx for later; public route redirects to home for now.
 import { EducatorStudio } from './components/EducatorStudio';
 import { EducatorMyCourses } from './components/EducatorMyCourses';
 import { CourseEditor } from './components/CourseEditor';
@@ -40,7 +40,7 @@ export default function App() {
                 <Route path="/signin" element={<SignIn />} />
               </Route>
               <Route path="/verify/:certId" element={<Verification />} />
-              <Route path="/educators" element={<Educators />} />
+              <Route path="/educators" element={<Navigate to="/" replace />} />
               <Route path="/educator-course-builder" element={<Navigate to="/educator-studio?tab=url" replace />} />
               <Route path="/course-details" element={<CourseDetails />} />
               <Route path="/course-details/:courseId" element={<CourseDetails />} />

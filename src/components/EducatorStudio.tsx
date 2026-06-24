@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router';
+import { useLocation, useNavigate, useSearchParams } from 'react-router';
 import { useGoogleLogin } from '@react-oauth/google';
 import {
   Check,
@@ -26,6 +26,7 @@ import type { CourseGenerationOptions } from '../types/courseGeneration';
 import { DEFAULT_GENERATION_OPTIONS } from '../types/courseGeneration';
 import { GenerationOptionsPanel } from './GenerationOptionsPanel';
 import { PageHeader } from '../shell/PageHeader';
+import { useRequireEducatorExperience } from '../hooks/useRequireEducatorExperience';
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
@@ -35,7 +36,9 @@ const YOUTUBE_READONLY_SCOPE = 'https://www.googleapis.com/auth/youtube.readonly
 type StudioTab = 'channel' | 'url';
 
 export function EducatorStudio() {
+  useRequireEducatorExperience();
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { profile, refreshProfile } = useUserProfile();
   const activeTab: StudioTab = searchParams.get('tab') === 'url' ? 'url' : 'channel';
@@ -55,6 +58,15 @@ export function EducatorStudio() {
   const setTab = (tab: StudioTab) => {
     setSearchParams(tab === 'url' ? { tab: 'url' } : {});
   };
+
+  useEffect(() => {
+    const incomingUrl =
+      (location.state?.youtubeUrl as string | undefined)
+      || (location.state?.playlistUrl as string | undefined);
+    if (!incomingUrl) return;
+    setPasteUrl(incomingUrl);
+    setSearchParams({ tab: 'url' }, { replace: true });
+  }, [location.state, setSearchParams]);
 
   const loadStatus = useCallback(async () => {
     setLoadingStatus(true);

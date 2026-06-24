@@ -5,14 +5,21 @@ import { useLocation, useNavigate } from 'react-router';
 import { useUserProfile } from '../context/UserProfileContext';
 import { fetchOnboarding } from '../api/catalogApi';
 import { INTERESTS_KEY, EDUCATORS_KEY } from './Onboarding';
+import {
+  CREATOR_HOME_PATH,
+  isEducatorRoute,
+  setSignInIntent,
+  type SignInIntent,
+} from '../utils/signInIntent';
 
 type GoogleLoginButtonProps = {
   theme?: 'outline' | 'filled_blue' | 'filled_black';
   size?: 'large' | 'medium' | 'small';
   width?: string | number;
+  signInIntent?: 'creator' | 'student';
 };
 
-function GoogleLoginButton({ theme = 'outline', size = 'large', width }: GoogleLoginButtonProps) {
+function GoogleLoginButton({ theme = 'outline', size = 'large', width, signInIntent }: GoogleLoginButtonProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { refreshProfile } = useUserProfile();
@@ -37,21 +44,42 @@ function GoogleLoginButton({ theme = 'outline', size = 'large', width }: GoogleL
       await refreshProfile();
 
       let destination = location.state?.returnTo as string | undefined;
+      const intent: SignInIntent =
+        signInIntent ?? (location.state?.signInIntent as SignInIntent | undefined) ?? 'student';
+      setSignInIntent(intent);
+
+      if (intent === 'student' && destination && isEducatorRoute(destination)) {
+        destination = undefined;
+      }
+
       try {
         const onboarding = await fetchOnboarding();
         if (onboarding.completed) {
           localStorage.setItem(INTERESTS_KEY, JSON.stringify(onboarding.interestIds ?? []));
           localStorage.setItem(EDUCATORS_KEY, JSON.stringify(onboarding.followedCreatorIds ?? []));
-          destination = destination || '/dashboard';
-        } else {
-          destination = '/onboarding';
+          if (!destination) {
+            destination = intent === 'creator' ? CREATOR_HOME_PATH : '/dashboard';
+          }
+        } else if (!destination) {
+          destination = intent === 'creator' ? CREATOR_HOME_PATH : '/onboarding';
         }
       } catch {
         const hasInterests = !!localStorage.getItem(INTERESTS_KEY);
-        destination = destination || (hasInterests ? '/dashboard' : '/onboarding');
+        if (!destination) {
+          if (intent === 'creator') {
+            destination = CREATOR_HOME_PATH;
+          } else {
+            destination = hasInterests ? '/dashboard' : '/onboarding';
+          }
+        }
       }
 
-      navigate(destination, { state: location.state });
+      navigate(destination, {
+        state: {
+          ...location.state,
+          ...(intent ? { signInIntent: intent } : {}),
+        },
+      });
     } catch (error) {
       console.error('Login Failed', error);
       setSignInError('Sign-in failed. Please try again.');

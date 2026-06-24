@@ -1,25 +1,58 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import axios from 'axios';
-import { Loader2, Plus, Save } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronUp,
+  GripVertical,
+  Loader2,
+  Plus,
+  Save,
+  Trash2,
+} from 'lucide-react';
 import { updateCourse } from '../api/educatorApi';
-import type { CourseModule, CourseQuizQuestion, EditableCourse } from '../types/courseGeneration';
+import {
+  COURSE_CATEGORIES,
+  CONTENT_LANGUAGES,
+  type CourseLesson,
+  type CourseModule,
+  type CourseQuizQuestion,
+  type EditableCourse,
+  type PlaylistVideo,
+  nextLessonId,
+  nextModuleId,
+} from '../types/courseGeneration';
 import { PageHeader } from '../shell/PageHeader';
+import { useRequireEducatorExperience } from '../hooks/useRequireEducatorExperience';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+import { Badge } from './ui/badge';
 
 const DIFFICULTIES = ['Beginner', 'Intermediate', 'Advanced'] as const;
 
+function moveItem<T>(list: T[], from: number, to: number): T[] {
+  if (to < 0 || to >= list.length || from === to) return list;
+  const next = [...list];
+  const [item] = next.splice(from, 1);
+  next.splice(to, 0, item);
+  return next;
+}
+
 export function CourseEditor() {
+  useRequireEducatorExperience();
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
   const [form, setForm] = useState<EditableCourse | null>(null);
+  const [includedVideoIds, setIncludedVideoIds] = useState<Set<string>>(new Set());
+  const [expandedLesson, setExpandedLesson] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
+
+  const playlistVideos = form?.playlistVideos ?? [];
 
   useEffect(() => {
     if (!courseId) return;
@@ -27,19 +60,25 @@ export function CourseEditor() {
     const load = async () => {
       setLoading(true);
       try {
-        const { data } = await axios.get<EditableCourse & { modules: CourseModule[]; isOwner?: boolean }>(`/api/course/${courseId}`);
+        const { data } = await axios.get<
+          EditableCourse & { modules: CourseModule[]; playlistVideos?: PlaylistVideo[]; isOwner?: boolean }
+        >(`/api/course/${courseId}`);
         if (!mounted) return;
         if (!data.isOwner) {
           setError('You can only edit courses you created.');
           return;
         }
+        const videos = data.playlistVideos ?? [];
         setForm({
           title: data.title ?? '',
           description: data.description ?? '',
           difficulty: data.difficulty ?? 'Intermediate',
-          category: data.category,
+          category: data.category ?? 'General',
+          contentLanguage: data.contentLanguage ?? 'en',
           modules: data.modules ?? [],
+          playlistVideos: videos,
         });
+        setIncludedVideoIds(new Set(videos.map((v) => v.videoId).filter(Boolean)));
       } catch {
         if (mounted) setError('Could not load course for editing.');
       } finally {
@@ -50,11 +89,27 @@ export function CourseEditor() {
     return () => { mounted = false; };
   }, [courseId]);
 
+  const activeVideos = useMemo(
+    () => playlistVideos.filter((v) => includedVideoIds.has(v.videoId)),
+    [playlistVideos, includedVideoIds],
+  );
+
   const updateModule = (index: number, patch: Partial<CourseModule>) => {
     setForm((prev) => {
       if (!prev) return prev;
       const modules = [...prev.modules];
       modules[index] = { ...modules[index], ...patch };
+      return { ...prev, modules };
+    });
+  };
+
+  const updateLesson = (moduleIndex: number, lessonIndex: number, patch: Partial<CourseLesson>) => {
+    setForm((prev) => {
+      if (!prev) return prev;
+      const modules = [...prev.modules];
+      const lessons = [...modules[moduleIndex].lessons];
+      lessons[lessonIndex] = { ...lessons[lessonIndex], ...patch };
+      modules[moduleIndex] = { ...modules[moduleIndex], lessons };
       return { ...prev, modules };
     });
   };
@@ -70,17 +125,103 @@ export function CourseEditor() {
     });
   };
 
-  const addQuizOption = (moduleIndex: number, quizIndex: number) => {
+  const addModule = () => {
+    setForm((prev) => {
+      if (!prev) return prev;
+      const id = nextModuleId(prev.modules);
+      return {
+        ...prev,
+        modules: [
+          ...prev.modules,
+          { id, title: `Module ${prev.modules.length + 1}`, description: '', lessons: [], quiz: [] },
+        ],
+      };
+    });
+  };
+
+  const removeModule = (index: number) => {
+    setForm((prev) => {
+      if (!prev || prev.modules.length <= 1) return prev;
+      const modules = prev.modules.filter((_, i) => i !== index);
+      return { ...prev, modules };
+    });
+  };
+
+  const moveModule = (index: number, direction: -1 | 1) => {
+    setForm((prev) => {
+      if (!prev) return prev;
+      return { ...prev, modules: moveItem(prev.modules, index, index + direction) };
+    });
+  };
+
+  const addLesson = (moduleIndex: number) => {
+    setForm((prev) => {
+      if (!prev) return prev;
+      const modules = [...prev.modules];
+      const id = nextLessonId(prev.modules);
+      const lessons = [
+        ...modules[moduleIndex].lessons,
+        { id, title: 'New lesson', duration: '5 min', type: 'reading' as const },
+      ];
+      modules[moduleIndex] = { ...modules[moduleIndex], lessons };
+      return { ...prev, modules };
+    });
+  };
+
+  const removeLesson = (moduleIndex: number, lessonIndex: number) => {
+    setForm((prev) => {
+      if (!prev) return prev;
+      const modules = [...prev.modules];
+      const lessons = modules[moduleIndex].lessons.filter((_, i) => i !== lessonIndex);
+      if (lessons.length === 0) return prev;
+      modules[moduleIndex] = { ...modules[moduleIndex], lessons };
+      return { ...prev, modules };
+    });
+  };
+
+  const moveLesson = (moduleIndex: number, lessonIndex: number, direction: -1 | 1) => {
+    setForm((prev) => {
+      if (!prev) return prev;
+      const modules = [...prev.modules];
+      modules[moduleIndex] = {
+        ...modules[moduleIndex],
+        lessons: moveItem(modules[moduleIndex].lessons, lessonIndex, lessonIndex + direction),
+      };
+      return { ...prev, modules };
+    });
+  };
+
+  const addQuizQuestion = (moduleIndex: number) => {
     setForm((prev) => {
       if (!prev) return prev;
       const modules = [...prev.modules];
       const quiz = [...(modules[moduleIndex].quiz ?? [])];
-      const options = [...(quiz[quizIndex].options ?? [])];
-      if (options.length >= 4) return prev;
-      options.push(`Option ${String.fromCharCode(65 + options.length)}`);
-      quiz[quizIndex] = { ...quiz[quizIndex], options };
+      quiz.push({
+        question: 'New question',
+        options: ['Option A', 'Option B', 'Option C', 'Option D'],
+        answer: 0,
+      });
       modules[moduleIndex] = { ...modules[moduleIndex], quiz };
       return { ...prev, modules };
+    });
+  };
+
+  const toggleVideo = (videoId: string) => {
+    setIncludedVideoIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(videoId)) next.delete(videoId);
+      else next.add(videoId);
+      return next;
+    });
+  };
+
+  const assignVideoToLesson = (moduleIndex: number, lessonIndex: number, video: PlaylistVideo) => {
+    updateLesson(moduleIndex, lessonIndex, {
+      type: 'video',
+      title: video.title,
+      duration: video.duration || '—',
+      videoId: video.videoId,
+      videoUrl: video.videoUrl,
     });
   };
 
@@ -90,7 +231,11 @@ export function CourseEditor() {
     setError(null);
     setStatus(null);
     try {
-      await updateCourse(courseId, form);
+      const { playlistVideos: _pv, ...payload } = form;
+      await updateCourse(courseId, {
+        ...payload,
+        includedVideoIds: [...includedVideoIds],
+      });
       setStatus('Course saved.');
       navigate(`/course-details/${courseId}`);
     } catch (err) {
@@ -125,7 +270,7 @@ export function CourseEditor() {
       <PageHeader
         label="Create"
         title="Edit course"
-        description="Update titles, lessons, and module quizzes. Changes apply immediately after save."
+        description="Update structure, lessons, videos, notes, and quizzes. Save re-links videos automatically."
         actions={
           <Button size="sm" onClick={() => void handleSave()} disabled={saving}>
             {saving ? <Loader2 className="animate-spin" size={14} /> : <Save size={14} />}
@@ -139,18 +284,18 @@ export function CourseEditor() {
 
       <Card className="mb-6">
         <CardHeader><CardTitle>Course details</CardTitle></CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
+        <CardContent className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2 sm:col-span-2">
             <Label htmlFor="title">Title</Label>
             <Input id="title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2 sm:col-span-2">
             <Label htmlFor="description">Description</Label>
             <textarea
               id="description"
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
-              rows={4}
+              rows={3}
               className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
             />
           </div>
@@ -165,13 +310,88 @@ export function CourseEditor() {
               {DIFFICULTIES.map((d) => <option key={d} value={d}>{d}</option>)}
             </select>
           </div>
+          <div className="space-y-2">
+            <Label htmlFor="category">Category</Label>
+            <select
+              id="category"
+              value={form.category ?? 'General'}
+              onChange={(e) => setForm({ ...form, category: e.target.value })}
+              className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm"
+            >
+              {COURSE_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="contentLanguage">Language</Label>
+            <select
+              id="contentLanguage"
+              value={form.contentLanguage ?? 'en'}
+              onChange={(e) => setForm({ ...form, contentLanguage: e.target.value })}
+              className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm"
+            >
+              {CONTENT_LANGUAGES.map((l) => <option key={l.value} value={l.value}>{l.label}</option>)}
+            </select>
+          </div>
         </CardContent>
       </Card>
 
+      {playlistVideos.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-base">Source videos</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="mb-3 text-sm text-muted-foreground">
+              Include or exclude videos from the course. Included videos can be assigned to lessons below.
+            </p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {playlistVideos.map((video) => {
+                const on = includedVideoIds.has(video.videoId);
+                return (
+                  <button
+                    key={video.videoId}
+                    type="button"
+                    onClick={() => toggleVideo(video.videoId)}
+                    className={`flex items-start gap-3 rounded-lg border p-3 text-left text-sm transition-colors ${
+                      on ? 'border-[var(--brand)] bg-[var(--brand)]/5' : 'border-border'
+                    }`}
+                  >
+                    <span className={`mt-0.5 size-4 shrink-0 rounded border ${on ? 'bg-[var(--brand)] border-[var(--brand)]' : 'border-muted-foreground'}`} />
+                    <span>
+                      <span className="font-medium line-clamp-2">{video.title}</span>
+                      <span className="mt-1 block text-xs text-muted-foreground">{video.duration}</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-3 text-xs text-muted-foreground">{activeVideos.length} of {playlistVideos.length} videos included</p>
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-sm font-medium">Modules ({form.modules.length})</h2>
+        <Button type="button" size="sm" variant="outline" onClick={addModule}>
+          <Plus size={14} /> Add module
+        </Button>
+      </div>
+
       {form.modules.map((module, moduleIndex) => (
         <Card key={module.id} className="mb-4">
-          <CardHeader>
+          <CardHeader className="flex flex-row items-start justify-between gap-2">
             <CardTitle className="text-base">Module {moduleIndex + 1}</CardTitle>
+            <div className="flex shrink-0 gap-1">
+              <Button type="button" size="icon" variant="ghost" disabled={moduleIndex === 0} onClick={() => moveModule(moduleIndex, -1)}>
+                <ChevronUp size={14} />
+              </Button>
+              <Button type="button" size="icon" variant="ghost" disabled={moduleIndex === form.modules.length - 1} onClick={() => moveModule(moduleIndex, 1)}>
+                <ChevronDown size={14} />
+              </Button>
+              <Button type="button" size="icon" variant="ghost" disabled={form.modules.length <= 1} onClick={() => removeModule(moduleIndex)}>
+                <Trash2 size={14} className="text-destructive" />
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -189,27 +409,110 @@ export function CourseEditor() {
             </div>
 
             <div>
-              <p className="mb-2 text-sm font-medium">Lessons</p>
-              <div className="space-y-2">
-                {module.lessons.map((lesson, lessonIndex) => (
-                  <div key={lesson.id} className="flex gap-2">
-                    <Input
-                      value={lesson.title}
-                      onChange={(e) => {
-                        const lessons = [...module.lessons];
-                        lessons[lessonIndex] = { ...lesson, title: e.target.value };
-                        updateModule(moduleIndex, { lessons });
-                      }}
-                      className="flex-1"
-                    />
-                    <span className="flex items-center text-xs text-muted-foreground">{lesson.type}</span>
-                  </div>
-                ))}
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-sm font-medium">Lessons</p>
+                <Button type="button" size="sm" variant="ghost" onClick={() => addLesson(moduleIndex)}>
+                  <Plus size={14} /> Add lesson
+                </Button>
+              </div>
+              <div className="space-y-3">
+                {module.lessons.map((lesson, lessonIndex) => {
+                  const lessonKey = `${module.id}-${lesson.id}`;
+                  const isOpen = expandedLesson === lessonKey;
+                  return (
+                    <div key={lesson.id} className="rounded-md border border-border">
+                      <div className="flex items-center gap-2 p-3">
+                        <GripVertical size={14} className="shrink-0 text-muted-foreground" />
+                        <Input
+                          value={lesson.title}
+                          onChange={(e) => updateLesson(moduleIndex, lessonIndex, { title: e.target.value })}
+                          className="flex-1"
+                        />
+                        <select
+                          value={lesson.type}
+                          onChange={(e) => updateLesson(moduleIndex, lessonIndex, {
+                            type: e.target.value as 'video' | 'reading',
+                            ...(e.target.value === 'reading' ? { videoId: undefined, videoUrl: undefined } : {}),
+                          })}
+                          className="h-9 rounded-md border border-border bg-background px-2 text-xs"
+                        >
+                          <option value="video">Video</option>
+                          <option value="reading">Reading</option>
+                        </select>
+                        <Button type="button" size="icon" variant="ghost" disabled={lessonIndex === 0} onClick={() => moveLesson(moduleIndex, lessonIndex, -1)}>
+                          <ChevronUp size={14} />
+                        </Button>
+                        <Button type="button" size="icon" variant="ghost" disabled={lessonIndex === module.lessons.length - 1} onClick={() => moveLesson(moduleIndex, lessonIndex, 1)}>
+                          <ChevronDown size={14} />
+                        </Button>
+                        <Button type="button" size="icon" variant="ghost" onClick={() => setExpandedLesson(isOpen ? null : lessonKey)}>
+                          <ChevronDown size={14} className={isOpen ? 'rotate-180' : ''} />
+                        </Button>
+                        <Button type="button" size="icon" variant="ghost" disabled={module.lessons.length <= 1} onClick={() => removeLesson(moduleIndex, lessonIndex)}>
+                          <Trash2 size={14} className="text-destructive" />
+                        </Button>
+                      </div>
+                      {isOpen && (
+                        <div className="space-y-3 border-t border-border p-3">
+                          {lesson.type === 'video' && activeVideos.length > 0 && (
+                            <div className="space-y-2">
+                              <Label>Assign video</Label>
+                              <div className="flex flex-wrap gap-2">
+                                {activeVideos.map((v) => (
+                                  <Button
+                                    key={v.videoId}
+                                    type="button"
+                                    size="sm"
+                                    variant={lesson.videoId === v.videoId ? 'default' : 'outline'}
+                                    onClick={() => assignVideoToLesson(moduleIndex, lessonIndex, v)}
+                                  >
+                                    {v.title.length > 40 ? `${v.title.slice(0, 40)}…` : v.title}
+                                  </Button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          <div className="space-y-2">
+                            <Label>Summary</Label>
+                            <textarea
+                              value={lesson.summary ?? ''}
+                              onChange={(e) => updateLesson(moduleIndex, lessonIndex, { summary: e.target.value })}
+                              rows={3}
+                              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Study notes (markdown)</Label>
+                            <textarea
+                              value={lesson.notes ?? ''}
+                              onChange={(e) => updateLesson(moduleIndex, lessonIndex, { notes: e.target.value })}
+                              rows={8}
+                              placeholder="### Core concept&#10;&#10;Write markdown study notes…"
+                              className="w-full rounded-md border border-border bg-background px-3 py-2 font-mono text-xs"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Takeaway</Label>
+                            <Input
+                              value={lesson.takeaway ?? ''}
+                              onChange={(e) => updateLesson(moduleIndex, lessonIndex, { takeaway: e.target.value })}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
             <div>
-              <p className="mb-2 text-sm font-medium">Module quiz</p>
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-sm font-medium">Module quiz</p>
+                <Button type="button" size="sm" variant="ghost" onClick={() => addQuizQuestion(moduleIndex)}>
+                  <Plus size={14} /> Add question
+                </Button>
+              </div>
               <div className="space-y-4">
                 {(module.quiz ?? []).map((question, quizIndex) => (
                   <div key={quizIndex} className="rounded-md border border-border p-3">
@@ -240,11 +543,6 @@ export function CourseEditor() {
                           />
                         </div>
                       ))}
-                      {question.options.length < 4 && (
-                        <Button type="button" size="sm" variant="ghost" onClick={() => addQuizOption(moduleIndex, quizIndex)}>
-                          <Plus size={14} /> Add option
-                        </Button>
-                      )}
                     </div>
                   </div>
                 ))}

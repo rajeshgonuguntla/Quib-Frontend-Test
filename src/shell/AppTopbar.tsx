@@ -25,6 +25,7 @@ import {
 import { Input } from '../components/ui/input';
 import { Sheet, SheetContent, SheetTrigger } from '../components/ui/sheet';
 import { clearToken } from '../auth';
+import { clearSignInIntent } from '../utils/signInIntent';
 import { getDisplayName } from '../utils/userDisplay';
 import { AppSidebar } from './AppSidebar';
 import { getRouteMeta } from './navConfig';
@@ -72,6 +73,7 @@ export function AppTopbar({ onOpenMobileNav }: { onOpenMobileNav?: () => void })
 
   const handleSignOut = () => {
     clearToken();
+    clearSignInIntent();
     setProfile(null);
     navigate('/signin');
   };

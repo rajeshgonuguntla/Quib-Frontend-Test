@@ -40,6 +40,12 @@ export interface CatalogCourseSummary {
   moduleCount?: number;
   playlistUrl?: string;
   isPublished?: boolean;
+  contentLanguage?: string;
+  ownerUserId?: string;
+  ownerDisplayName?: string;
+  ownerAvatarUrl?: string;
+  educatorChannelTitle?: string;
+  educatorChannelThumbnail?: string;
 }
 
 export interface CourseSearchResult {

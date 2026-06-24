@@ -6,6 +6,7 @@ import { deleteCourse, unpublishCourse } from '../api/catalogApi';
 import type { OwnedCourseSummary } from '../types/courseGeneration';
 import { ytThumb } from '../utils/catalogMap';
 import { PageHeader } from '../shell/PageHeader';
+import { useRequireEducatorExperience } from '../hooks/useRequireEducatorExperience';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -14,6 +15,7 @@ import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
 type Filter = 'all' | 'drafts' | 'published';
 
 export function EducatorMyCourses() {
+  useRequireEducatorExperience();
   const navigate = useNavigate();
   const [courses, setCourses] = useState<OwnedCourseSummary[]>([]);
   const [loading, setLoading] = useState(true);

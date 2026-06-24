@@ -35,6 +35,7 @@ export async function fetchCourses(params: {
   category?: string;
   interestId?: string;
   interestIds?: string[];
+  language?: string;
   limit?: number;
 }): Promise<CatalogCourseSummary[]> {
   const res = await axios.get<CatalogCourseSummary[]>('/api/catalog/courses', { params });
