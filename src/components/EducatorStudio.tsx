@@ -32,6 +32,8 @@ import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 
 const YOUTUBE_READONLY_SCOPE = 'https://www.googleapis.com/auth/youtube.readonly';
+/** GIS popup auth-code flow requires this literal redirect_uri at token exchange (not window.location.origin). */
+const YOUTUBE_OAUTH_REDIRECT_URI = 'postmessage';
 
 type StudioTab = 'channel' | 'url';
 
@@ -108,13 +110,14 @@ export function EducatorStudio() {
   const connectWithGoogle = useGoogleLogin({
     flow: 'auth-code',
     scope: YOUTUBE_READONLY_SCOPE,
+    redirect_uri: YOUTUBE_OAUTH_REDIRECT_URI,
     onSuccess: async (response) => {
       setConnecting(true);
       setError(null);
       try {
         const connected = await connectYoutubeChannel({
           code: response.code,
-          redirectUri: window.location.origin,
+          redirectUri: YOUTUBE_OAUTH_REDIRECT_URI,
         });
         setStatus(connected);
         await refreshProfile();

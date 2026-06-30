@@ -11,6 +11,10 @@ steps:
       - build
       - --cache-from
       - ${_AR_HOSTNAME}/${_AR_PROJECT_ID}/${_AR_REPOSITORY}/${_IMAGE_REPO}/${_SERVICE_NAME}:latest
+      - --build-arg
+      - VITE_API_BASE_URL=${_VITE_API_BASE_URL}
+      - --build-arg
+      - VITE_GOOGLE_CLIENT_ID=${_VITE_GOOGLE_CLIENT_ID}
       - -t
       - ${_AR_HOSTNAME}/${_AR_PROJECT_ID}/${_AR_REPOSITORY}/${_IMAGE_REPO}/${_SERVICE_NAME}:$COMMIT_SHA
       - -t
@@ -53,4 +57,6 @@ substitutions:
   _DEPLOY_REGION: europe-west1
   _SERVICE_NAME: quibapp
   _IMAGE_REPO: rajeshgonuguntla-quib-frontend-test
+  _VITE_API_BASE_URL: https://quib-app-backend-944587700647.europe-west1.run.app
+  _VITE_GOOGLE_CLIENT_ID: 944587700647-v4d2dqg9io3q3qbgjoif32g21bcifg9s.apps.googleusercontent.com
   _TRIGGER_ID: ec7bf7b3-9d1c-4ffd-b77b-a60bf3d01a05

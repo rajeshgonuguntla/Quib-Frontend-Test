@@ -1,253 +1,63 @@
-# Quib - YouTube to Verified Credentials
+# Quib Frontend — Source Overview
 
-A complete, production-ready ed-tech web application for turning YouTube videos into verified credentials with AI-generated quizzes and professional certificates.
+**Last updated:** June 2026
 
-## 🌟 Overview
+Quib is an ed-tech web app: learners take AI-generated quizzes and structured courses from YouTube; educators connect a channel or paste URLs to generate and publish courses.
 
-**Quib** allows learners to:
-- Paste any YouTube video or playlist URL
-- Generate AI-powered quizzes from video transcripts
-- Take interactive assessments with multiple question types
-- Earn verified certificates with unique IDs
-- Share credentials on LinkedIn
+## Authentication
 
-## ✨ Features
+- **Google OAuth only** (no email/password)
+- JWT stored in `localStorage` (`token`)
+- Sign-in intent: `creator` vs `student` in `localStorage` (`quib_sign_in_intent`) — controls educator nav visibility
+- `profile.role` from API (`learner`, `educator`, `admin`) — used for publish permissions
 
-### Core Functionality
-- 🎥 **YouTube Integration** - Generate quizzes from any video or playlist
-- 🤖 **AI-Powered Quizzes** - Custom questions based on video transcripts
-- ⚙️ **Customizable Settings** - Difficulty levels, question types, time limits
-- 📊 **Detailed Results** - Score breakdowns with topic analysis
-- 🎓 **Professional Certificates** - Verified credentials with QR codes
-- 🔗 **LinkedIn Integration** - Share achievements instantly
-- ✅ **Public Verification** - Anyone can verify certificate authenticity
+## Routes
 
-### Authentication
-- Email/password authentication
-- Google OAuth sign-in
-- Clean, modern sign-in experience
+| Route | Component | Auth |
+|-------|-----------|------|
+| `/` | LandingPage | Public |
+| `/signin` | SignIn | Public (redirect if signed in) |
+| `/verify/:certId` | Verification | Public |
+| `/course-details/:courseId` | CourseDetails | Public (player requires sign-in to enroll) |
+| `/dashboard`, `/browse-courses`, `/my-courses`, … | AppShell pages | Protected |
+| `/educator-studio`, `/educator-courses` | Educator flows | Protected + creator intent |
+| `/quiz/:id`, `/onboarding`, `/certificate/:id` | Full-bleed flows | Protected |
 
-### User Experience
-- 📱 **Responsive Design** - Works on desktop, tablet, and mobile
-- 🎨 **Modern UI** - Clean, minimal design with Quib Red (#E10600) branding
-- ♿ **Accessible** - WCAG-compliant design
-- ⚡ **Fast & Smooth** - Optimized performance with smooth transitions
+Legacy `/educators` redirects to `/`. `/educator-course-builder` redirects to `/educator-studio?tab=url`.
 
-## 🏗️ Project Structure
+## Major flows
 
-```
-/
-├── components/
-│   ├── LandingPage.tsx               # Marketing homepage
-│   ├── SignIn.tsx                    # Authentication
-│   ├── Dashboard.tsx                 # Main user dashboard
-│   ├── QuizSetup.tsx                 # Quiz generation flow
-│   ├── QuizTaking.tsx                # Interactive quiz interface
-│   ├── Results.tsx                   # Score results and review
-│   ├── Certificate.tsx               # Certificate preview and download
-│   ├── Verification.tsx              # Public certificate verification
-│   ├── Pricing.tsx                   # Pricing page
-│   ├── Settings.tsx                  # User settings
-│   ├── Button.tsx                    # Reusable button component
-│   ├── Input.tsx                     # Reusable input component
-│   ├── Card.tsx                      # Reusable card component
-│   ├── StatusPill.tsx                # Status indicator component
-│   ├── ProgressBar.tsx               # Progress indicator
-│   └── ui/                           # shadcn/ui components
-└── styles/
-    └── globals.css                   # Global styles and design tokens
-```
+### Learner
+1. Sign in as **student** → onboarding (interests) → dashboard
+2. Browse courses → open course → enroll → LearningMode (YouTube embed, lesson complete, module quizzes)
+3. Or: paste video URL → quiz setup → take quiz → results → certificate (standalone quizzes)
 
-## 🎨 Design System
+### Educator
+1. Sign in as **creator** → Educator Studio
+2. Connect YouTube channel **or** paste playlist/video URL
+3. Generate course → CourseDetails → publish
+4. Edit in Course Editor; manage in Educator My Courses
 
-### Brand Colors
-- **Primary Red**: `#E10600` - Used for CTAs and brand emphasis
-- **Hover**: `#C00500`
-- **Active**: `#A00400`
-- **Neutrals**: Gray scale from `#FAFAFA` to `#1F1F1F`
+## API integration
 
-### Typography
-- Modern sans-serif font stack (Inter-like)
-- Strong hierarchy with 8pt spacing system
-- Responsive font sizing
+All data comes from `quiz-app-backend` via Axios (`src/api/*` and inline calls in page components). Dev uses Vite proxy; production uses `VITE_API_BASE_URL` or Cloud Run fallback in `main.tsx`.
 
-### Components
-- **Button**: 4 variants (primary, secondary, ghost, destructive), 3 sizes
-- **Input**: With icons, labels, error states, and focus indicators
-- **Card**: 3 variants (standard, outlined, elevated) with hover effects
-- **StatusPill**: 5 color variants for different statuses
-- **ProgressBar**: With optional labels
+**Fallback mock data** (only when API fails or returns empty): dashboard curated cards, onboarding interests, creator profile static data in `data/creators.ts`.
 
-## 📱 Pages
+## Design
 
-1. **Landing Page** (`/`)
-   - Hero section with YouTube URL input
-   - How it works (3 steps)
-   - Features grid
-   - Pricing preview
-   - Testimonials
-   - Footer
+- **AppShell pages:** Tailwind 4 + CSS variables + `components/ui/*` (shadcn-style)
+- **Course/quiz pages:** legacy inline theme via `ThemeContext.getC()`
+- Brand red: `#E10600`
 
-2. **Sign In** (`/signin`)
-   - Split-screen design
-   - Google OAuth
-   - Email/password
-   - Sign up flow
+See [`DESIGN_SYSTEM.md`](./DESIGN_SYSTEM.md) for tokens (some sections describe older mock-first architecture).
 
-3. **Dashboard** (`/dashboard`)
-   - Stats cards (quizzes, score, certificates, streak)
-   - Quiz generation form
-   - Recent quizzes list
-   - Sidebar navigation
+## Tests
 
-4. **Quiz Setup** (`/quiz-setup/:id`)
-   - Video preview
-   - Quiz details
-   - Generation progress animation
-   - Start quiz button
+`auth.test.ts` — JWT expiry validation only. Run: `npm test`.
 
-5. **Quiz Taking** (`/quiz/:id`)
-   - Timer (optional)
-   - Progress bar
-   - Multiple choice questions
-   - True/False questions
-   - Question navigator
-   - Flag questions
-   - Submit confirmation
+## Related docs
 
-6. **Results** (`/results/:id`)
-   - Score hero with circular progress
-   - Pass/fail indicator
-   - Topic breakdown with smiley faces
-   - Question review with explanations
-   - Certificate generation CTA
-
-7. **Certificate** (`/certificate/:id`)
-   - Professional certificate design
-   - Download PDF option
-   - Share to LinkedIn
-   - Verification QR code
-   - Certificate details
-
-8. **Verification** (`/verify/:certId`)
-   - Public certificate search
-   - Verification status
-   - Certificate details display
-
-9. **Pricing** (`/pricing`)
-   - Free and Pro plans
-   - Feature comparison
-   - FAQ section
-
-10. **Settings** (`/settings`)
-    - Profile management
-    - Billing information
-    - Notifications
-    - Connected accounts
-    - Privacy & security
-
-## 🚀 Getting Started
-
-The application is ready to use with mock data. All pages and flows are fully functional for demonstration purposes.
-
-### User Flow
-
-1. **Land on homepage** → Enter YouTube URL
-2. **Sign in** → Choose authentication method
-3. **Configure quiz** → Set difficulty, question count, types
-4. **Take quiz** → Answer questions with timer (optional)
-5. **View results** → See score breakdown and review answers
-6. **Get certificate** → Download and share verified credential
-
-## 🎯 Tech Stack
-
-- **React** with TypeScript
-- **React Router** for navigation
-- **Tailwind CSS v4.0** for styling
-- **Lucide React** for icons
-- **shadcn/ui** component library
-
-## 📦 Key Dependencies
-
-- `react-router-dom` - Client-side routing
-- `lucide-react` - Icon library
-- `motion/react` - Smooth animations
-- `sonner` - Toast notifications
-- shadcn/ui components
-
-## 💡 Key Features
-
-### Quiz Generation
-- Paste any YouTube video or playlist URL
-- AI analyzes transcript to generate relevant questions
-- Customize difficulty: Easy, Medium, Hard
-- Choose question count: 5-25 questions
-- Select question types: MCQ, True/False, Short Answer
-- Optional time limits for exam-like conditions
-
-### Quiz Taking Experience
-- Clean, distraction-free interface
-- Progress tracking
-- Question navigation panel
-- Flag questions for review
-- Auto-save progress
-- Time warnings
-
-### Results & Analytics
-- Detailed score breakdown by topic
-- Question-by-question review
-- AI-generated explanations
-- Performance metrics
-- Visual feedback with progress indicators
-
-### Certificates
-- Professional A4-sized design
-- Unique verification ID
-- QR code for instant verification
-- Downloadable as PDF
-- Shareable on LinkedIn
-- Public verification page
-
-## 🎓 Pricing Plans
-
-### Free Plan
-- Take unlimited quizzes
-- View scores
-- Basic analytics
-
-### Pro Plan ($9/month)
-- Everything in Free
-- Downloadable certificates
-- LinkedIn badge sharing
-- Certificate verification
-- Priority support
-
-## 🎨 Design Philosophy
-
-- **Clean & Minimal** - White backgrounds, generous whitespace
-- **Professional** - Like Coursera, Udemy, Google certificates
-- **Consistent** - Design system with reusable components
-- **Accessible** - WCAG-compliant contrast and keyboard navigation
-- **Modern** - Soft shadows, 16px+ border radius, smooth transitions
-
-## 📄 Documentation
-
-- **[DESIGN_SYSTEM.md](./DESIGN_SYSTEM.md)** - Complete design system documentation
-
-## 🔒 Privacy & Security
-
-- User data handled securely
-- Certificate verification without exposing personal data
-- Unique verification IDs for each certificate
-- Public verification system
-
-## 🌐 Browser Support
-
-- Chrome (latest)
-- Firefox (latest)
-- Safari (latest)
-- Edge (latest)
-
-## 📝 License
-
-All rights reserved.
+- [`../README.md`](../README.md) — dev setup
+- [`../../docs/PHASE_3_FEASIBILITY.md`](../../docs/PHASE_3_FEASIBILITY.md) — upcoming features
+- [`../../quiz-app-backend/docs/FRONTEND_TO_DATABASE_MAP.md`](../../quiz-app-backend/docs/FRONTEND_TO_DATABASE_MAP.md) — screen → API → DB map

@@ -1,6 +1,6 @@
-# Quib Design System
+**Last updated:** June 2026
 
-A complete, production-ready ed-tech web application for turning YouTube videos into verified credentials.
+A React/Vite ed-tech app: YouTube → AI quizzes and structured courses. Uses Tailwind 4 + CSS variables in the AppShell, plus legacy inline styling on full-bleed quiz/course pages.
 
 ## 🎨 Design System
 
@@ -66,17 +66,19 @@ A complete, production-ready ed-tech web application for turning YouTube videos 
 
 ## 🏗️ Application Structure
 
-### Pages
-1. **LandingPage** (`/`) - Marketing homepage with hero, features, pricing
-2. **SignIn** (`/signin`) - Authentication with Google OAuth
-3. **Dashboard** (`/dashboard`) - Main user interface with quiz generation
-4. **QuizSetup** (`/quiz-setup/:id`) - Quiz generation progress
-5. **QuizTaking** (`/quiz/:id`) - Interactive quiz interface
-6. **Results** (`/results/:id`) - Score breakdown with review
-7. **Certificate** (`/certificate/:id`) - Certificate preview and download
-8. **Verification** (`/verify/:certId`) - Public certificate verification
-9. **Pricing** (`/pricing`) - Detailed pricing page
-10. **Settings** (`/settings`) - User settings and preferences
+### Pages (current routes)
+1. **LandingPage** (`/`) — Marketing homepage
+2. **SignIn** (`/signin`) — Google OAuth; creator vs student intent
+3. **Dashboard** (`/dashboard`) — Learner home inside AppShell
+4. **BrowseCourses** (`/browse-courses`) — Published course catalog
+5. **EducatorStudio** (`/educator-studio`) — YouTube connect + course generation
+6. **CourseDetails** (`/course-details/:courseId`) — Course overview + LearningMode player
+7. **CourseEditor** (`/educator-courses/:id/edit`) — Educator course editor
+8. **QuizSetup** / **QuizTaking** / **Results** — Standalone quiz flow
+9. **Certificate** / **Verification** — Certificate view and public verify
+10. **Settings** (`/settings`) — Profile edit
+
+Phase 3 (planned): `/governments`, educator analytics dashboard, pricing/checkout — see `docs/PHASE_3_FEASIBILITY.md`.
 
 ## 🎯 Key Features
 
@@ -102,8 +104,8 @@ A complete, production-ready ed-tech web application for turning YouTube videos 
 - LinkedIn sharing
 
 ## 🔐 Authentication
-- Email/Password
-- Google OAuth
+- **Google OAuth only** (`@react-oauth/google`)
+- App JWT from backend; stored in `localStorage`
 
 ## 📱 Responsive Design
 - Mobile-first approach
@@ -129,11 +131,9 @@ Uses lucide-react for consistent iconography
 
 ## 🚀 Getting Started
 
-All pages are fully functional with mock data. The application is ready for:
-- Backend integration
-- Real API connections
-- User authentication
-- Database persistence
+The app is wired to `quiz-app-backend` for auth, catalog, courses, quizzes, and certificates. Run backend on `:8451` and frontend with `npm run dev` (Vite proxies `/api`).
+
+Minor UI fallbacks exist when catalog APIs return empty (dashboard curated cards, onboarding interests).
 
 ## 📄 Certificate Design
 Professional certificates include:
