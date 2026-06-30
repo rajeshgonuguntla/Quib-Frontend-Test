@@ -126,6 +126,22 @@ export type CourseUpdatePayload = EditableCourse & {
   includedVideoIds?: string[];
 };
 
+export type CourseEditOperationType =
+  | 'SET'
+  | 'REORDER_MODULES'
+  | 'REORDER_LESSONS'
+  | 'DELETE_MODULE'
+  | 'DELETE_LESSON';
+
+export type CourseEditOperation = {
+  type: CourseEditOperationType;
+  path?: string;
+  value?: unknown;
+  moduleId?: string;
+  lessonId?: string;
+  order?: string[];
+};
+
 export function isModuleQuizPassing(score: number, total: number): boolean {
   if (total <= 0) return false;
   return Math.round((score * 100) / total) >= 70;

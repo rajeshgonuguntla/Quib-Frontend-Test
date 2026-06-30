@@ -17,15 +17,17 @@ import {
   type CourseLesson,
   type CourseModule,
   type CourseQuizQuestion,
+  type CourseEditOperation,
   type EditableCourse,
   type PlaylistVideo,
   nextLessonId,
   nextModuleId,
 } from '../types/courseGeneration';
-import { PageHeader } from '../shell/PageHeader';
+import { ArrowLeft } from 'lucide-react';
 import { useRequireEducatorExperience } from '../hooks/useRequireEducatorExperience';
 import { useAuthSessionKey } from '../auth';
-import { EducatorAssistantWidget } from './EducatorAssistantWidget';
+import { EducatorAssistantWidget, type AssistantApplyResult } from './EducatorAssistantWidget';
+import { mergeAssistantResponse, buildSavePayloadFromAssistant } from '../utils/courseEditOperations';
 import type { CourseUpdatePayload } from '../types/courseGeneration';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -87,13 +89,25 @@ export function CourseEditor() {
         const pendingRaw = sessionStorage.getItem(pendingKey);
         if (pendingRaw) {
           try {
-            const pending = JSON.parse(pendingRaw) as CourseUpdatePayload;
+            const pending = JSON.parse(pendingRaw) as
+              | CourseUpdatePayload
+              | { update?: CourseUpdatePayload | null; operations?: CourseEditOperation[] | null };
             sessionStorage.removeItem(pendingKey);
-            loadedForm = mergeAssistantUpdate(loadedForm, pending);
-            if (pending.includedVideoIds?.length) {
-              videoIds = new Set(pending.includedVideoIds);
+            if ('title' in pending || 'modules' in pending) {
+              loadedForm = mergeAssistantResponse(loadedForm, pending as CourseUpdatePayload, null);
+              const ids = (pending as CourseUpdatePayload).includedVideoIds;
+              if (ids?.length) videoIds = new Set(ids);
+            } else {
+              loadedForm = mergeAssistantResponse(
+                loadedForm,
+                pending.update ?? null,
+                pending.operations ?? null,
+              );
+              if (pending.update?.includedVideoIds?.length) {
+                videoIds = new Set(pending.update.includedVideoIds);
+              }
             }
-            setStatus('Applied AI changes from assistant — review and save.');
+            setStatus('Applied assistant changes — review and save.');
           } catch {
             sessionStorage.removeItem(pendingKey);
           }
@@ -246,12 +260,33 @@ export function CourseEditor() {
     });
   };
 
-  const applyAssistantUpdate = (update: CourseUpdatePayload) => {
-    setForm((prev) => (prev ? mergeAssistantUpdate(prev, update) : prev));
-    if (update.includedVideoIds?.length) {
-      setIncludedVideoIds(new Set(update.includedVideoIds));
+  const applyAssistantResult = (result: AssistantApplyResult) => {
+    setForm((prev) => (prev ? mergeAssistantResponse(prev, result.courseUpdate, result.operations) : prev));
+    if (result.courseUpdate?.includedVideoIds?.length) {
+      setIncludedVideoIds(new Set(result.courseUpdate.includedVideoIds));
     }
-    setStatus('AI changes applied — review the editor and click Save.');
+    setStatus('Preview applied in editor — approve in chat to save, or click Save.');
+  };
+
+  const approveAssistantChange = async (result: AssistantApplyResult) => {
+    if (!courseId || !form) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const payload = buildSavePayloadFromAssistant(form, result, includedVideoIds);
+      const merged = mergeAssistantResponse(form, result.courseUpdate, result.operations);
+      setForm(merged);
+      if (payload.includedVideoIds?.length) {
+        setIncludedVideoIds(new Set(payload.includedVideoIds));
+      }
+      await updateCourse(courseId, payload);
+      setStatus('Changes approved and saved.');
+    } catch (err) {
+      setError(axiosMessage(err) ?? 'Could not save approved changes.');
+      throw err;
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleSave = async () => {
@@ -284,9 +319,9 @@ export function CourseEditor() {
 
   if (error && !form) {
     return (
-      <div>
-        <PageHeader label="Create" title="Edit course" />
-        <p className="text-sm text-destructive">{error}</p>
+      <div className="p-6">
+        <h1 className="text-lg font-semibold">Edit course</h1>
+        <p className="mt-2 text-sm text-destructive">{error}</p>
         <Button className="mt-4" variant="outline" onClick={() => navigate('/educator-courses')}>Back</Button>
       </div>
     );
@@ -294,20 +329,8 @@ export function CourseEditor() {
 
   if (!form) return null;
 
-  return (
-    <div className="pb-24">
-      <PageHeader
-        label="Create"
-        title="Edit course"
-        description="Update structure, lessons, videos, notes, and quizzes. Save re-links videos automatically."
-        actions={
-          <Button size="sm" onClick={() => void handleSave()} disabled={saving}>
-            {saving ? <Loader2 className="animate-spin" size={14} /> : <Save size={14} />}
-            Save changes
-          </Button>
-        }
-      />
-
+  const editorBody = (
+    <>
       {status && <p className="mb-4 text-sm text-muted-foreground">{status}</p>}
       {error && <p className="mb-4 text-sm text-destructive">{error}</p>}
 
@@ -581,40 +604,60 @@ export function CourseEditor() {
         </Card>
       ))}
 
-      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background/95 px-6 py-4 backdrop-blur lg:left-[240px]">
-        <div className="mx-auto flex max-w-6xl items-center justify-between">
-          <Button variant="outline" onClick={() => navigate(courseId ? `/course-details/${courseId}` : '/educator-courses')}>
+    </>
+  );
+
+  return (
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-background">
+      <header className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-4 py-2.5 sm:px-5">
+        <div className="flex min-w-0 items-center gap-3">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="shrink-0"
+            onClick={() => navigate(courseId ? `/course-details/${courseId}` : '/educator-courses')}
+            aria-label="Back"
+          >
+            <ArrowLeft size={16} />
+          </Button>
+          <div className="min-w-0">
+            <p className="text-label text-muted-foreground">Studio · Advanced edit</p>
+            <h1 className="truncate text-sm font-semibold">{form.title || 'Untitled course'}</h1>
+          </div>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => navigate(courseId ? `/course-details/${courseId}` : '/educator-courses')}>
             Cancel
           </Button>
-          <Button onClick={() => void handleSave()} disabled={saving}>
-            {saving ? 'Saving…' : 'Save changes'}
+          <Button size="sm" onClick={() => void handleSave()} disabled={saving}>
+            {saving ? <Loader2 className="animate-spin" size={14} /> : <Save size={14} />}
+            Save
           </Button>
         </div>
-      </div>
+      </header>
 
-      {courseId && (
-        <EducatorAssistantWidget
-          courseId={courseId}
-          courseTitle={form.title}
-          sessionKey={authSessionKey}
-          onApplyCourseUpdate={applyAssistantUpdate}
-        />
-      )}
+      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+        <aside className="flex h-[min(42vh,420px)] shrink-0 flex-col border-b border-border md:h-auto md:w-[min(380px,34vw)] md:border-b-0 md:border-r">
+          {courseId && (
+            <EducatorAssistantWidget
+              variant="panel"
+              courseId={courseId}
+              courseTitle={form.title}
+              sessionKey={authSessionKey}
+              onApplyAssistantResult={applyAssistantResult}
+              onPreviewChange={applyAssistantResult}
+              onApproveAndSave={approveAssistantChange}
+            />
+          )}
+        </aside>
+
+        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-4 sm:p-6">
+          {editorBody}
+        </div>
+      </div>
     </div>
   );
-}
-
-function mergeAssistantUpdate(base: EditableCourse, update: CourseUpdatePayload): EditableCourse {
-  return {
-    ...base,
-    title: update.title?.trim() ? update.title : base.title,
-    description: update.description ?? base.description,
-    difficulty: update.difficulty ?? base.difficulty,
-    category: update.category ?? base.category,
-    contentLanguage: update.contentLanguage ?? base.contentLanguage,
-    modules: update.modules?.length ? update.modules : base.modules,
-    playlistVideos: base.playlistVideos,
-  };
 }
 
 function axiosMessage(err: unknown): string | null {

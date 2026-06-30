@@ -18,11 +18,13 @@ import { useUserProfile } from '../context/UserProfileContext';
 import { useTheme, getC } from './ThemeContext';
 import { CourseGenerationLoader } from './CourseGenerationLoader';
 import { CourseChatWidget } from './CourseChatWidget';
-import { EducatorAssistantWidget } from './EducatorAssistantWidget';
+import { EducatorAssistantWidget, type AssistantApplyResult } from './EducatorAssistantWidget';
 import { QuibLogo } from './QuibLogo';
 import { CoursePageNav } from './CoursePageNav';
 import { LessonStudyContent } from './LessonNotes';
-import type { CourseGenerationOptions, CourseUpdatePayload } from '../types/courseGeneration';
+import { updateCourse } from '../api/educatorApi';
+import { buildSavePayloadFromAssistant } from '../utils/courseEditOperations';
+import type { CourseGenerationOptions, EditableCourse } from '../types/courseGeneration';
 import { isModuleQuizPassing } from '../types/courseGeneration';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -94,6 +96,16 @@ const getYoutubeEmbedId = (videoId?: string, videoUrl?: string, fallbackUrl?: st
   return '';
 };
 
+function courseToEditable(c: Course): EditableCourse {
+  return {
+    title: c.title,
+    description: c.description,
+    difficulty: c.difficulty,
+    modules: c.modules,
+    playlistVideos: c.playlistVideos,
+  };
+}
+
 function getCourseGenerationError(err: unknown) {
   if (axios.isAxiosError(err)) {
     const data = err.response?.data as { message?: string; details?: string } | undefined;
@@ -117,6 +129,7 @@ function LearningMode({
   showCourseChat,
   showEducatorAssistant,
   onEducatorApplyUpdate,
+  onEducatorApproveAndSave,
   chatSignedIn,
   onChatSignInRequired,
   chatSessionKey,
@@ -127,7 +140,8 @@ function LearningMode({
   onBack: () => void;
   showCourseChat: boolean;
   showEducatorAssistant: boolean;
-  onEducatorApplyUpdate: (update: CourseUpdatePayload) => void;
+  onEducatorApplyUpdate: (result: AssistantApplyResult) => void;
+  onEducatorApproveAndSave: (result: AssistantApplyResult) => Promise<void>;
   chatSignedIn: boolean;
   onChatSignInRequired: () => void;
   chatSessionKey: string;
@@ -477,7 +491,8 @@ function LearningMode({
           courseId={courseId}
           courseTitle={course.title}
           sessionKey={chatSessionKey}
-          onApplyCourseUpdate={onEducatorApplyUpdate}
+          onPreviewChange={onEducatorApplyUpdate}
+          onApproveAndSave={onEducatorApproveAndSave}
         />
       )}
       {showCourseChat && !showEducatorAssistant && (
@@ -883,10 +898,21 @@ export function CourseDetails() {
   const chatSessionKey = `${resolvedCourseId ?? 'course'}-${authSessionKey}`;
   const showCourseChat = !!resolvedCourseId;
   const showEducatorAssistant = chatSignedIn && isOwner && isEducator && !!resolvedCourseId;
-  const handleEducatorApplyUpdate = (update: CourseUpdatePayload) => {
+  const handleEducatorApplyUpdate = (result: AssistantApplyResult) => {
     if (!resolvedCourseId) return;
-    sessionStorage.setItem(`assistant-pending-${resolvedCourseId}`, JSON.stringify(update));
+    sessionStorage.setItem(
+      `assistant-pending-${resolvedCourseId}`,
+      JSON.stringify({ update: result.courseUpdate, operations: result.operations }),
+    );
     navigate(`/educator-courses/${resolvedCourseId}/edit`);
+  };
+  const handleEducatorApproveAndSave = async (result: AssistantApplyResult) => {
+    if (!resolvedCourseId || !course) return;
+    const videoIds = course.playlistVideos?.map((v) => v.videoId).filter(Boolean) ?? [];
+    const payload = buildSavePayloadFromAssistant(courseToEditable(course), result, videoIds);
+    await updateCourse(resolvedCourseId, payload);
+    const res = await axios.get(`/api/course/${resolvedCourseId}`);
+    setCourse(res.data as Course);
   };
   const handleChatSignIn = () => {
     navigate('/signin', { state: { returnTo: `/course-details/${resolvedCourseId}` } });
@@ -902,6 +928,7 @@ export function CourseDetails() {
         showCourseChat={showCourseChat}
         showEducatorAssistant={showEducatorAssistant}
         onEducatorApplyUpdate={handleEducatorApplyUpdate}
+        onEducatorApproveAndSave={handleEducatorApproveAndSave}
         chatSignedIn={chatSignedIn}
         onChatSignInRequired={handleChatSignIn}
         chatSessionKey={chatSessionKey}
@@ -1194,7 +1221,8 @@ export function CourseDetails() {
           courseId={resolvedCourseId}
           courseTitle={course.title}
           sessionKey={chatSessionKey}
-          onApplyCourseUpdate={handleEducatorApplyUpdate}
+          onPreviewChange={handleEducatorApplyUpdate}
+          onApproveAndSave={handleEducatorApproveAndSave}
         />
       )}
       {showCourseChat && !showEducatorAssistant && resolvedCourseId && (
