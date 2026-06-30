@@ -1,5 +1,6 @@
 import { Link } from 'react-router';
 import { ThemeToggle } from '../ThemeToggle';
+import { QuibLogo } from '../QuibLogo';
 import { motion } from 'framer-motion';
 
 type LandingNavProps = {
@@ -15,13 +16,11 @@ export function LandingNav({ isDark }: LandingNavProps) {
       className="fixed top-0 left-0 right-0 z-[100] flex h-14 items-center justify-between border-b border-[var(--landing-border)] px-5 backdrop-blur-xl md:px-8"
       style={{ background: isDark ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)' }}
     >
-      <Link to="/" className="flex items-center gap-2 no-underline">
-        <span className="flex size-5 items-center justify-center">
-          <svg viewBox="0 0 24 24" fill="currentColor" className="size-4 text-[var(--landing-fg)]">
-            <path d="M12 2L2 22h20L12 2z" />
-          </svg>
-        </span>
-        <span className="text-sm font-semibold tracking-tight text-[var(--landing-fg)]">Quib</span>
+      <Link to="/" className="no-underline">
+        <QuibLogo
+          size={18}
+          wordmarkClassName="text-sm text-[var(--landing-fg)]"
+        />
       </Link>
 
       <ul className="absolute left-1/2 hidden -translate-x-1/2 list-none gap-8 md:flex">

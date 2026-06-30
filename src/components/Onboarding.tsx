@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import { useTheme, getC } from './ThemeContext';
 import { ThemeToggle } from './ThemeToggle';
 import { Check, ArrowRight } from 'lucide-react';
+import { QuibLogo } from './QuibLogo';
 import { fetchInterests, saveOnboarding } from '../api/catalogApi';
 import type { CatalogInterest } from '../types/catalog';
 
@@ -93,8 +94,12 @@ export function Onboarding() {
       />
 
       <div className="relative z-10 w-full max-w-3xl">
-        <div className="text-center mb-10">
-          <span className="text-[1.4rem] font-[700] tracking-tight" style={{ color: C.text }}>Quib</span>
+        <div className="text-center mb-10" style={{ color: C.text }}>
+          <QuibLogo
+            size={22}
+            wordmarkClassName="text-[1.4rem] font-[700] tracking-tight"
+            variant={isDark ? 'dark' : 'light'}
+          />
         </div>
 
         {step === 'done' && (

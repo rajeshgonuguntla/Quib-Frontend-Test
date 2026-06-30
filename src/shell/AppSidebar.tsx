@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router';
-import { ChevronRight, GraduationCap } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
+import { QuibLogoBadge } from '../components/QuibLogo';
 import { clearToken } from '../auth';
 import { useUserProfile } from '../context/UserProfileContext';
 import { SidebarNavItem } from '../components/SidebarNavItem';
@@ -79,9 +80,7 @@ export function AppSidebar({ pathname, search, onNavigate }: AppSidebarProps) {
   return (
     <div className="flex h-full flex-col">
       <div className="flex h-14 shrink-0 items-center gap-3 border-b border-border px-4">
-        <div className="flex size-7 items-center justify-center rounded-md border border-border bg-background">
-          <GraduationCap size={14} className="text-foreground" />
-        </div>
+        <QuibLogoBadge size={28} className="size-7 shrink-0" />
         <div>
           <span className="text-sm font-semibold tracking-tight text-foreground">Quib</span>
           <span className="text-label -mt-0.5 block text-muted-foreground">Platform</span>

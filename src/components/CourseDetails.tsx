@@ -19,6 +19,7 @@ import { useTheme, getC } from './ThemeContext';
 import { CourseGenerationLoader } from './CourseGenerationLoader';
 import { CourseChatWidget } from './CourseChatWidget';
 import { EducatorAssistantWidget } from './EducatorAssistantWidget';
+import { QuibLogo } from './QuibLogo';
 import { CoursePageNav } from './CoursePageNav';
 import { LessonStudyContent } from './LessonNotes';
 import type { CourseGenerationOptions, CourseUpdatePayload } from '../types/courseGeneration';
@@ -249,7 +250,13 @@ function LearningMode({
               <span className="text-[0.82rem]">Course Overview</span>
             </button>
             <div style={{ width: 1, height: 16, background: C.border }} />
-            <Link to="/" className="no-underline font-[700] tracking-tight text-[1rem]" style={{ color: C.text }}>Quib</Link>
+            <Link to="/" className="no-underline" style={{ color: C.text }}>
+              <QuibLogo
+                size={16}
+                wordmarkClassName="text-[1rem] font-[700] tracking-tight"
+                variant={isDark ? 'dark' : 'light'}
+              />
+            </Link>
           </>
         )}
         center={(
@@ -803,7 +810,13 @@ export function CourseDetails() {
           toggleTheme={toggleTheme}
           navBg={navBg}
           left={(
-            <Link to="/" className="no-underline font-[700] tracking-tight text-[1rem]" style={{ color: C.text }}>Quib</Link>
+            <Link to="/" className="no-underline" style={{ color: C.text }}>
+              <QuibLogo
+                size={16}
+                wordmarkClassName="text-[1rem] font-[700] tracking-tight"
+                variant={isDark ? 'dark' : 'light'}
+              />
+            </Link>
           )}
         />
         <div className="flex-1 flex flex-col items-center justify-center px-6" style={{ paddingTop: 56 }}>
@@ -823,7 +836,13 @@ export function CourseDetails() {
           toggleTheme={toggleTheme}
           navBg={navBg}
           left={(
-            <Link to="/" className="no-underline font-[700] tracking-tight text-[1rem]" style={{ color: C.text }}>Quib</Link>
+            <Link to="/" className="no-underline" style={{ color: C.text }}>
+              <QuibLogo
+                size={16}
+                wordmarkClassName="text-[1rem] font-[700] tracking-tight"
+                variant={isDark ? 'dark' : 'light'}
+              />
+            </Link>
           )}
         />
         <div className="flex-1 flex items-center justify-center px-6" style={{ paddingTop: 56 }}>
@@ -943,7 +962,13 @@ export function CourseDetails() {
               <span className="text-[0.82rem]">Back</span>
             </button>
             <div style={{ width: 1, height: 16, background: C.border }} />
-            <Link to="/" className="no-underline font-[700] tracking-tight text-[1rem]" style={{ color: C.text }}>Quib</Link>
+            <Link to="/" className="no-underline" style={{ color: C.text }}>
+              <QuibLogo
+                size={16}
+                wordmarkClassName="text-[1rem] font-[700] tracking-tight"
+                variant={isDark ? 'dark' : 'light'}
+              />
+            </Link>
           </>
         )}
       />

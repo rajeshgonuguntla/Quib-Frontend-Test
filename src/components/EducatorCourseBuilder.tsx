@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router';
 import { Sun, Moon, ArrowRight, Youtube } from 'lucide-react';
 import { useTheme, getC } from './ThemeContext';
 import { courseGenStateFromYoutubeUrl, getYoutubeUrlValidationError } from '../utils/youtubeUrl';
+import { QuibLogo } from './QuibLogo';
 
 const SUGGESTIONS = [
   { label: 'Single video — React Hooks', url: 'https://www.youtube.com/watch?v=TNhaISOUy6Q' },
@@ -48,8 +49,13 @@ export function EducatorCourseBuilder() {
         className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-between px-5 md:px-10"
         style={{ height: 60, background: navBg, backdropFilter: 'blur(20px)', borderBottom: `1px solid ${C.border}` }}
       >
-        <Link to="/educator-studio" className="flex items-center gap-1.5 no-underline" style={{ color: C.text }}>
-          <span className="text-[1.05rem] font-[700] tracking-tight">Quib Studio</span>
+        <Link to="/educator-studio" className="no-underline" style={{ color: C.text }}>
+          <QuibLogo
+            size={18}
+            wordmark="Quib Studio"
+            wordmarkClassName="text-[1.05rem] font-[700] tracking-tight"
+            variant={isDark ? 'dark' : 'light'}
+          />
         </Link>
         <div className="flex items-center gap-3">
           <button onClick={toggleTheme} className="w-8 h-8 rounded-lg flex items-center justify-center transition-all" style={{ background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)', border: `1px solid ${C.border}`, color: C.text2, cursor: 'pointer' }}>

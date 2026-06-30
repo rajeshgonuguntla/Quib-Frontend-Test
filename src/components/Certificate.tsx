@@ -4,6 +4,7 @@ import axios from 'axios';
 import { Button } from './Button';
 import { Card } from './Card';
 import { Award, Download, Copy, Linkedin, CheckCircle, QrCode } from 'lucide-react';
+import { QuibLogo, QuibLogoMark } from './QuibLogo';
 import { useUserProfile } from '../context/UserProfileContext';
 import { getCertificateRecipientName } from '../utils/userDisplay';
 
@@ -115,8 +116,7 @@ export function Certificate() {
       <header className="bg-white border-b border-gray-100 px-8 py-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Award className="w-7 h-7 text-[#E10600]" />
-            <span className="text-xl font-bold text-gray-900">Quib</span>
+            <QuibLogo size={24} variant="light" wordmarkClassName="text-xl font-bold text-gray-900" />
           </div>
           <Button variant="ghost" onClick={() => navigate('/dashboard')}>
             Back to Dashboard
@@ -157,9 +157,7 @@ export function Certificate() {
                   {/* Header */}
                   <div className="text-center mb-8">
                     <div className="flex items-center justify-center gap-3 mb-4">
-                      <div className="w-16 h-16 bg-[#E10600] rounded-2xl flex items-center justify-center">
-                        <Award className="w-10 h-10 text-white" />
-                      </div>
+                      <QuibLogoMark size={48} variant="light" />
                       <span className="text-4xl font-bold text-gray-900">Quib</span>
                     </div>
                     <div className="text-lg text-gray-600 tracking-widest">CERTIFICATE OF COMPLETION</div>

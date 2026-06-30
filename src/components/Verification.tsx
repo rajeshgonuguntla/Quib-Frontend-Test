@@ -5,6 +5,7 @@ import { Button } from './Button';
 import { Card } from './Card';
 import { Input } from './Input';
 import { Award, Search, CheckCircle, XCircle, Calendar, User, FileText } from 'lucide-react';
+import { QuibLogo } from './QuibLogo';
 
 export function Verification() {
   const { certId } = useParams();
@@ -59,8 +60,7 @@ export function Verification() {
       <header className="bg-white border-b border-gray-100 px-8 py-4">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <button onClick={() => navigate('/')} className="flex items-center gap-2">
-            <Award className="w-7 h-7 text-[#E10600]" />
-            <span className="text-xl font-bold text-gray-900">Quib</span>
+            <QuibLogo size={24} variant="light" wordmarkClassName="text-xl font-bold text-gray-900" />
           </button>
         </div>
       </header>

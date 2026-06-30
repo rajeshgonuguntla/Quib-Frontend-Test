@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useParams, Link, useLocation } from 'react-router';
 import { ChevronDown, ChevronUp, CheckCircle, XCircle, Linkedin, Smile, Sun, Moon, FileText, Download, Share2, Link2, Check, Copy } from 'lucide-react';
 import { useTheme, getC } from './ThemeContext';
+import { QuibLogo } from './QuibLogo';
 
 interface Question {
   id: number;
@@ -136,8 +137,12 @@ export function Results() {
       {/* Header */}
       <header className="px-8 py-4 sticky top-0 z-50" style={{ background: C.bg1, borderBottom: `1px solid ${C.border}` }}>
         <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <Link to="/dashboard" className="flex items-center gap-1.5 no-underline" style={{ color: C.text }}>
-            <span className="text-[1.05rem] font-[700] tracking-tight">Quib</span>
+          <Link to="/dashboard" className="no-underline" style={{ color: C.text }}>
+            <QuibLogo
+              size={18}
+              wordmarkClassName="text-[1.05rem] font-[700] tracking-tight"
+              variant={isDark ? 'dark' : 'light'}
+            />
           </Link>
           <div className="flex items-center gap-3">
             {/* Theme Toggle */}

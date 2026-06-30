@@ -1,4 +1,5 @@
 import { BadgeCheck, ArrowLeft } from 'lucide-react';
+import { QuibLogo } from './QuibLogo';
 import { Button } from './ui/button';
 
 interface BlogProps {
@@ -16,8 +17,7 @@ export function Blog({ onBack }: BlogProps) {
               onClick={onBack}
               className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer"
             >
-              <BadgeCheck className="w-6 h-6 text-green-600" />
-              <span className="text-gray-900">Quib</span>
+              <QuibLogo size={22} variant="light" wordmarkClassName="text-gray-900" />
             </button>
             
             <Button

@@ -5,6 +5,7 @@ import { ArrowRight, BookOpen, GraduationCap, Upload } from 'lucide-react';
 import { useTheme } from './ThemeContext';
 import { CubeLoader } from './CubeLoader';
 import { LandingNav } from './landing/LandingNav';
+import { QuibLogo } from './QuibLogo';
 import { PlatformSection } from './landing/PlatformSection';
 import { BentoGrid } from './landing/BentoGrid';
 import { FeaturesSection } from './landing/FeaturesSection';
@@ -195,7 +196,7 @@ export function LandingPage() {
       <footer className="border-t border-[var(--landing-border)] px-5 py-12 md:px-8">
         <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-8 md:flex-row">
           <div>
-            <span className="text-sm font-semibold text-[var(--landing-fg)]">Quib</span>
+            <QuibLogo size={18} wordmarkClassName="text-sm text-[var(--landing-fg)]" />
             <p className="mt-2 max-w-xs text-sm text-[var(--landing-muted)]">Learn from top YouTube educators with AI-powered courses.</p>
           </div>
           <div className="flex gap-12">

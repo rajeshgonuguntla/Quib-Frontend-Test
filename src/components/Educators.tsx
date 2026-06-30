@@ -7,6 +7,7 @@ import { EducatorsHero } from './educators/EducatorsHero';
 import { EducatorsPipeline } from './educators/EducatorsPipeline';
 import { EducatorsCapabilities } from './educators/EducatorsCapabilities';
 import { EducatorsCta } from './educators/EducatorsCta';
+import { QuibLogo } from './QuibLogo';
 import { scrollToSection } from '../utils/navigation';
 import '../styles/educators.css';
 
@@ -54,8 +55,11 @@ export function Educators() {
         className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-between px-5 md:px-10"
         style={{ height: 60, background: navBg, backdropFilter: 'blur(20px)', borderBottom: `1px solid ${C.border}` }}
       >
-        <Link to="/" className="flex items-center gap-1.5 no-underline" style={{ color: C.text }}>
-          <span className="text-[1.05rem] font-[700] tracking-tight">Quib</span>
+        <Link to="/" className="no-underline" style={{ color: C.text }}>
+          <QuibLogo
+            size={18}
+            wordmarkClassName="text-[1.05rem] font-[700] tracking-tight"
+          />
         </Link>
 
         <ul className="absolute left-1/2 hidden -translate-x-1/2 list-none gap-7 md:flex">
@@ -138,8 +142,12 @@ export function Educators() {
       <footer className="px-6 py-12 md:px-10" style={{ background: C.bg1, borderTop: `1px solid ${C.border}` }}>
         <div className="mx-auto max-w-5xl">
           <div className="mb-12 grid gap-10 md:grid-cols-4">
-            <div>
-              <span className="text-[1.05rem] font-[700] tracking-tight" style={{ color: C.text }}>Quib</span>
+            <div style={{ color: C.text }}>
+              <QuibLogo
+                size={18}
+                wordmarkClassName="text-[1.05rem] font-[700] tracking-tight"
+                variant={isDark ? 'dark' : 'light'}
+              />
               <p className="mt-3 text-sm" style={{ color: C.text2, lineHeight: 1.6 }}>
                 Turn YouTube videos into structured courses with modules, quizzes, and certificates.
               </p>
