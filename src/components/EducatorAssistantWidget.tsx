@@ -250,7 +250,7 @@ export function EducatorAssistantWidget({
 
       <div
         ref={scrollRef}
-        className="min-h-0 flex-1 overflow-y-auto px-4 py-4 space-y-3"
+        className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-4 py-4 space-y-3"
         style={{ background: C.bg }}
       >
         {messages.length === 0 && (

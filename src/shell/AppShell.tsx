@@ -14,7 +14,12 @@ export function AppShell() {
 
   return (
     <ShellProvider>
-      <div className="min-h-screen bg-background text-foreground">
+      <div
+        className={cn(
+          'bg-background text-foreground',
+          courseEditor ? 'h-dvh overflow-hidden' : 'min-h-screen',
+        )}
+      >
         {/* Vercel-style subtle grid */}
         <div
           className="pointer-events-none fixed inset-0 opacity-[0.35] dark:opacity-[0.12]"
@@ -30,16 +35,22 @@ export function AppShell() {
           </aside>
         )}
 
-        <div className={cn('flex min-h-screen flex-col', !educatorWorkspace && 'lg:ml-[240px]')}>
+        <div
+          className={cn(
+            'flex flex-col',
+            courseEditor ? 'h-dvh overflow-hidden' : 'min-h-screen',
+            !educatorWorkspace && 'lg:ml-[240px]',
+          )}
+        >
           <AppTopbar />
           <main
             className={cn(
               'flex-1',
-              courseEditor ? 'overflow-hidden p-0' : 'px-4 py-6 sm:px-6 sm:py-8',
+              courseEditor ? 'min-h-0 overflow-hidden p-0' : 'px-4 py-6 sm:px-6 sm:py-8',
             )}
           >
             {courseEditor ? (
-              <div className="h-[calc(100dvh-3.5rem)] w-full">
+              <div className="flex h-full min-h-0 w-full flex-col">
                 <Outlet />
               </div>
             ) : (
