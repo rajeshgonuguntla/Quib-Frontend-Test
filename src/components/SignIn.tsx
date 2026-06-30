@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import { ArrowLeft, BookOpen, GraduationCap } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import GoogleLoginButton from './GoogleLoginButton';
 import { useTheme } from './ThemeContext';
 import { LandingNav } from './landing/LandingNav';
@@ -16,6 +16,8 @@ type SignInCardProps = {
   pendingUrl?: string;
   isDark: boolean;
   delay?: number;
+  loginBlockedMessage?: string | null;
+  onLoginBlocked?: (message: string | null) => void;
 };
 
 function SignInCard({
@@ -28,6 +30,8 @@ function SignInCard({
   pendingUrl,
   isDark,
   delay = 0,
+  loginBlockedMessage,
+  onLoginBlocked,
 }: SignInCardProps) {
   return (
     <motion.div
@@ -57,12 +61,27 @@ function SignInCard({
           </div>
         )}
 
+        {loginBlockedMessage && (
+          <div
+            className="mt-4 rounded-lg border px-3 py-2.5 text-[0.8rem] leading-relaxed"
+            style={{
+              borderColor: 'rgba(225,6,0,0.35)',
+              background: 'rgba(225,6,0,0.08)',
+              color: '#c50500',
+            }}
+            role="alert"
+          >
+            {loginBlockedMessage}
+          </div>
+        )}
+
         <div className="signin-google-wrap mt-6">
           <GoogleLoginButton
             signInIntent={intent}
             theme={isDark ? 'filled_black' : 'outline'}
             size="large"
             width="100%"
+            onLoginBlocked={onLoginBlocked}
           />
         </div>
 
@@ -83,6 +102,7 @@ export function SignIn() {
   const { isDark } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
+  const [studentLoginBlocked, setStudentLoginBlocked] = useState<string | null>(null);
   const pendingUrl =
     (location.state?.youtubeUrl as string | undefined) ||
     (location.state?.playlistUrl as string | undefined);
@@ -122,7 +142,7 @@ export function SignIn() {
               icon={GraduationCap}
               eyebrow="For creators"
               title="Turn your YouTube videos into a real course."
-              description="Connect your channel, generate structured modules, and publish to the catalog."
+              description="Connect your channel, generate structured modules, and publish to the catalog. Educators also get full student access — browse, enroll, and learn."
               highlights={[
                 { value: 'YouTube', label: 'Paste a URL' },
                 { value: 'AI', label: 'Build course' },
@@ -137,7 +157,7 @@ export function SignIn() {
               icon={BookOpen}
               eyebrow="For students"
               title="Learn from structured educator courses."
-              description="Browse courses, take AI quizzes, track progress, and earn certificates."
+              description="Browse courses, take AI quizzes, track progress, and earn certificates. Educator accounts must use the creator sign-in on the left."
               highlights={[
                 { value: 'Browse', label: 'Courses' },
                 { value: 'AI', label: 'Quizzes' },
@@ -146,6 +166,8 @@ export function SignIn() {
               pendingUrl={pendingUrl}
               isDark={isDark}
               delay={0.18}
+              loginBlockedMessage={studentLoginBlocked}
+              onLoginBlocked={(message) => setStudentLoginBlocked(message)}
             />
           </div>
 

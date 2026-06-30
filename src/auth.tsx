@@ -1,7 +1,10 @@
 import { Navigate, Outlet, useLocation } from 'react-router';
-import { CREATOR_HOME_PATH, getSignInIntent } from './utils/signInIntent';
+import { useEffect, useState } from 'react';
+import { useUserProfile } from './context/UserProfileContext';
+import { INTERESTS_KEY } from './components/Onboarding';
 
 const TOKEN_KEY = 'token';
+const AUTH_CHANGED_EVENT = 'quib-auth-changed';
 
 type JwtPayload = {
   exp?: number;
@@ -11,8 +14,34 @@ function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
 }
 
+/** Fires when login/logout changes the stored token (fresh chat sessions). */
+export function notifyAuthChanged(): void {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event(AUTH_CHANGED_EVENT));
+  }
+}
+
+/** Changes on login, logout, or token swap — use as React key to reset ephemeral UI state. */
+export function useAuthSessionKey(): string {
+  const read = () => localStorage.getItem(TOKEN_KEY) ?? 'guest';
+  const [sessionKey, setSessionKey] = useState(read);
+
+  useEffect(() => {
+    const sync = () => setSessionKey(read());
+    window.addEventListener(AUTH_CHANGED_EVENT, sync);
+    window.addEventListener('storage', sync);
+    return () => {
+      window.removeEventListener(AUTH_CHANGED_EVENT, sync);
+      window.removeEventListener('storage', sync);
+    };
+  }, []);
+
+  return sessionKey;
+}
+
 export function clearToken(): void {
   localStorage.removeItem(TOKEN_KEY);
+  notifyAuthChanged();
 }
 
 function parseJwtPayload(token: string): JwtPayload | null {
@@ -74,13 +103,16 @@ export function ProtectedRoute() {
 }
 
 export function PublicOnlyRoute() {
-  if (isTokenValid()) {
-    if (getSignInIntent() === 'creator') {
-      return <Navigate to={CREATOR_HOME_PATH} replace />;
-    }
-    const hasInterests = !!localStorage.getItem('quib_interests');
-    return <Navigate to={hasInterests ? '/dashboard' : '/onboarding'} replace />;
+  const { loading } = useUserProfile();
+
+  if (!isTokenValid()) {
+    return <Outlet />;
   }
 
-  return <Outlet />;
+  if (loading) {
+    return null;
+  }
+
+  const hasInterests = !!localStorage.getItem(INTERESTS_KEY);
+  return <Navigate to={hasInterests ? '/dashboard' : '/onboarding'} replace />;
 }

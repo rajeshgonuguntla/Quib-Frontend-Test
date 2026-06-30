@@ -3,11 +3,15 @@ import { GoogleLogin, type CredentialResponse } from '@react-oauth/google';
 import axios from 'axios';
 import { useLocation, useNavigate } from 'react-router';
 import { useUserProfile } from '../context/UserProfileContext';
+import { fetchUserProfileWithToken } from '../api/userApi';
 import { fetchOnboarding } from '../api/catalogApi';
+import { clearToken, notifyAuthChanged } from '../auth';
 import { INTERESTS_KEY, EDUCATORS_KEY } from './Onboarding';
 import {
-  CREATOR_HOME_PATH,
+  EDUCATOR_USE_CREATOR_LOGIN_MESSAGE,
+  isEducatorAccount,
   isEducatorRoute,
+  resolveDefaultDestination,
   setSignInIntent,
   type SignInIntent,
 } from '../utils/signInIntent';
@@ -17,14 +21,29 @@ type GoogleLoginButtonProps = {
   size?: 'large' | 'medium' | 'small';
   width?: string | number;
   signInIntent?: 'creator' | 'student';
+  onLoginBlocked?: (message: string | null) => void;
 };
 
-function GoogleLoginButton({ theme = 'outline', size = 'large', width, signInIntent }: GoogleLoginButtonProps) {
+function GoogleLoginButton({
+  theme = 'outline',
+  size = 'large',
+  width,
+  signInIntent,
+  onLoginBlocked,
+}: GoogleLoginButtonProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { refreshProfile } = useUserProfile();
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [signInError, setSignInError] = useState<string | null>(null);
+
+  const showBlocked = (message: string) => {
+    if (onLoginBlocked) {
+      onLoginBlocked(message);
+    } else {
+      setSignInError(message);
+    }
+  };
 
   const handleSuccess = async (credentialResponse: CredentialResponse) => {
     if (!credentialResponse.credential) {
@@ -33,22 +52,40 @@ function GoogleLoginButton({ theme = 'outline', size = 'large', width, signInInt
     }
 
     setIsSigningIn(true);
-    setSignInError(null);
+    if (onLoginBlocked) {
+      onLoginBlocked(null);
+    } else {
+      setSignInError(null);
+    }
 
     try {
       const res = await axios.post('/api/auth/google', {
         token: credentialResponse.credential,
       });
 
-      localStorage.setItem('token', res.data.token);
-      await refreshProfile();
+      const jwt = res.data.token as string;
+      const profile = await fetchUserProfileWithToken(jwt);
 
-      let destination = location.state?.returnTo as string | undefined;
       const intent: SignInIntent =
         signInIntent ?? (location.state?.signInIntent as SignInIntent | undefined) ?? 'student';
-      setSignInIntent(intent);
 
-      if (intent === 'student' && destination && isEducatorRoute(destination)) {
+      if (intent === 'student' && isEducatorAccount(profile)) {
+        clearToken();
+        showBlocked(EDUCATOR_USE_CREATOR_LOGIN_MESSAGE);
+        setIsSigningIn(false);
+        return;
+      }
+
+      localStorage.setItem('token', jwt);
+      notifyAuthChanged();
+      await refreshProfile();
+
+      const effectiveIntent: SignInIntent = isEducatorAccount(profile) ? 'creator' : intent;
+      setSignInIntent(effectiveIntent);
+
+      let destination = location.state?.returnTo as string | undefined;
+
+      if (effectiveIntent === 'student' && destination && isEducatorRoute(destination)) {
         destination = undefined;
       }
 
@@ -58,30 +95,27 @@ function GoogleLoginButton({ theme = 'outline', size = 'large', width, signInInt
           localStorage.setItem(INTERESTS_KEY, JSON.stringify(onboarding.interestIds ?? []));
           localStorage.setItem(EDUCATORS_KEY, JSON.stringify(onboarding.followedCreatorIds ?? []));
           if (!destination) {
-            destination = intent === 'creator' ? CREATOR_HOME_PATH : '/dashboard';
+            destination = resolveDefaultDestination(profile, effectiveIntent, true);
           }
         } else if (!destination) {
-          destination = intent === 'creator' ? CREATOR_HOME_PATH : '/onboarding';
+          destination = resolveDefaultDestination(profile, effectiveIntent, false);
         }
       } catch {
         const hasInterests = !!localStorage.getItem(INTERESTS_KEY);
         if (!destination) {
-          if (intent === 'creator') {
-            destination = CREATOR_HOME_PATH;
-          } else {
-            destination = hasInterests ? '/dashboard' : '/onboarding';
-          }
+          destination = resolveDefaultDestination(profile, effectiveIntent, hasInterests);
         }
       }
 
       navigate(destination, {
         state: {
           ...location.state,
-          ...(intent ? { signInIntent: intent } : {}),
+          signInIntent: effectiveIntent,
         },
       });
     } catch (error) {
       console.error('Login Failed', error);
+      clearToken();
       setSignInError('Sign-in failed. Please try again.');
       setIsSigningIn(false);
     }
@@ -114,7 +148,17 @@ function GoogleLoginButton({ theme = 'outline', size = 'large', width, signInInt
         />
       </div>
       {signInError && (
-        <p className="mt-2 text-sm text-center" style={{ color: '#e10600' }}>{signInError}</p>
+        <div
+          className="mt-3 rounded-lg border px-3 py-2.5 text-[0.8rem] leading-relaxed"
+          style={{
+            borderColor: 'rgba(225,6,0,0.35)',
+            background: 'rgba(225,6,0,0.08)',
+            color: '#c50500',
+          }}
+          role="alert"
+        >
+          {signInError}
+        </div>
       )}
     </div>
   );

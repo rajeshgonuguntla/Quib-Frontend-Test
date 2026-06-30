@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation, useParams } from 'react-router';
 import axios from 'axios';
 import {
-  Sun, Moon, ChevronDown, ChevronRight,
+  ChevronDown, ChevronRight,
   PlayCircle, FileText, CheckCircle, CheckCircle2, Copy,
   ArrowLeft, ArrowUpRight, BookOpen, Calendar, Layers, AlertCircle, Globe, Pencil,
 } from 'lucide-react';
@@ -13,12 +13,15 @@ import {
   fetchCourseProgress,
   submitModuleQuiz,
 } from '../api/courseApi';
-import { isTokenValid } from '../auth';
+import { isTokenValid, useAuthSessionKey } from '../auth';
 import { useUserProfile } from '../context/UserProfileContext';
 import { useTheme, getC } from './ThemeContext';
 import { CourseGenerationLoader } from './CourseGenerationLoader';
+import { CourseChatWidget } from './CourseChatWidget';
+import { EducatorAssistantWidget } from './EducatorAssistantWidget';
+import { CoursePageNav } from './CoursePageNav';
 import { LessonStudyContent } from './LessonNotes';
-import type { CourseGenerationOptions } from '../types/courseGeneration';
+import type { CourseGenerationOptions, CourseUpdatePayload } from '../types/courseGeneration';
 import { isModuleQuizPassing } from '../types/courseGeneration';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -110,11 +113,23 @@ function LearningMode({
   courseId,
   youtubeUrl,
   onBack,
+  showCourseChat,
+  showEducatorAssistant,
+  onEducatorApplyUpdate,
+  chatSignedIn,
+  onChatSignInRequired,
+  chatSessionKey,
 }: {
   course: Course;
   courseId: string;
   youtubeUrl: string;
   onBack: () => void;
+  showCourseChat: boolean;
+  showEducatorAssistant: boolean;
+  onEducatorApplyUpdate: (update: CourseUpdatePayload) => void;
+  chatSignedIn: boolean;
+  onChatSignInRequired: () => void;
+  chatSessionKey: string;
 }) {
   const { isDark, toggleTheme } = useTheme();
   const C = getC(isDark);
@@ -222,32 +237,35 @@ function LearningMode({
 
   return (
     <div style={{ minHeight: '100vh', background: C.bg, color: C.text, fontFamily: 'var(--display)' }}>
-      <nav className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-between px-5 md:px-8"
-        style={{ height: 56, background: navBg, backdropFilter: 'blur(20px)', borderBottom: `1px solid ${C.border}` }}>
-        <div className="flex items-center gap-4">
-          <button onClick={onBack} className="flex items-center gap-1.5 cursor-pointer" style={{ background: 'none', border: 'none', color: C.text2, padding: 0 }}>
-            <ArrowLeft className="w-4 h-4" />
-            <span className="text-[0.82rem]">Course Overview</span>
-          </button>
-          <div style={{ width: 1, height: 16, background: C.border }} />
-          <Link to="/" className="no-underline font-[700] tracking-tight text-[1rem]" style={{ color: C.text }}>Quib</Link>
-        </div>
-        <div className="hidden md:flex flex-col items-center gap-1">
-          <span className="text-[0.78rem] font-[500] truncate max-w-xs" style={{ color: C.text }}>{course.title}</span>
-          <div className="flex items-center gap-2">
-            <div className="w-28 h-1 rounded-full overflow-hidden" style={{ background: C.bg2 }}>
-              <div className="h-full rounded-full" style={{ width: `${progressPct}%`, background: C.red }} />
+      <CoursePageNav
+        C={C}
+        isDark={isDark}
+        toggleTheme={toggleTheme}
+        navBg={navBg}
+        left={(
+          <>
+            <button onClick={onBack} className="flex items-center gap-1.5 cursor-pointer" style={{ background: 'none', border: 'none', color: C.text2, padding: 0 }}>
+              <ArrowLeft className="w-4 h-4" />
+              <span className="text-[0.82rem]">Course Overview</span>
+            </button>
+            <div style={{ width: 1, height: 16, background: C.border }} />
+            <Link to="/" className="no-underline font-[700] tracking-tight text-[1rem]" style={{ color: C.text }}>Quib</Link>
+          </>
+        )}
+        center={(
+          <div className="flex flex-col items-center gap-1">
+            <span className="text-[0.78rem] font-[500] truncate max-w-xs" style={{ color: C.text }}>{course.title}</span>
+            <div className="flex items-center gap-2">
+              <div className="w-28 h-1 rounded-full overflow-hidden" style={{ background: C.bg2 }}>
+                <div className="h-full rounded-full" style={{ width: `${progressPct}%`, background: C.red }} />
+              </div>
+              <span className="text-[0.68rem]" style={{ color: C.text3 }}>
+                {completedCount}/{totalLessons} lessons · {passedQuizCount}/{totalQuizModules} quizzes
+              </span>
             </div>
-            <span className="text-[0.68rem]" style={{ color: C.text3 }}>
-              {completedCount}/{totalLessons} lessons · {passedQuizCount}/{totalQuizModules} quizzes
-            </span>
           </div>
-        </div>
-        <button onClick={toggleTheme} className="w-8 h-8 rounded-lg flex items-center justify-center"
-          style={{ background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)', border: `1px solid ${C.border}`, color: C.text2, cursor: 'pointer' }}>
-          {isDark ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
-        </button>
-      </nav>
+        )}
+      />
 
       <div className="flex" style={{ paddingTop: 56 }}>
         {/* Sidebar */}
@@ -446,6 +464,27 @@ function LearningMode({
           )}
         </main>
       </div>
+      {showEducatorAssistant && (
+        <EducatorAssistantWidget
+          key={chatSessionKey}
+          courseId={courseId}
+          courseTitle={course.title}
+          sessionKey={chatSessionKey}
+          onApplyCourseUpdate={onEducatorApplyUpdate}
+        />
+      )}
+      {showCourseChat && !showEducatorAssistant && (
+        <CourseChatWidget
+          key={chatSessionKey}
+          courseId={courseId}
+          courseTitle={course.title}
+          lessonId={activeLessonId || undefined}
+          moduleId={activeQuizModuleId || undefined}
+          signedIn={chatSignedIn}
+          onSignInRequired={onChatSignInRequired}
+          sessionKey={chatSessionKey}
+        />
+      )}
     </div>
   );
 }
@@ -459,6 +498,8 @@ export function CourseDetails() {
   const location = useLocation();
   const { courseId: courseIdParam } = useParams();
   const { profile, refreshProfile } = useUserProfile();
+  const authSessionKey = useAuthSessionKey();
+  const chatSignedIn = isTokenValid();
 
   const youtubeUrl: string = location.state?.youtubeUrl ?? sessionStorage.getItem('courseYoutubeUrl') ?? '';
   const videoUrls: string[] | undefined = location.state?.videoUrls;
@@ -756,14 +797,15 @@ export function CourseDetails() {
   if (loading) {
     return (
       <div style={{ minHeight: '100vh', background: C.bg, color: C.text, fontFamily: 'var(--display)', display: 'flex', flexDirection: 'column' }}>
-        <nav className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-between px-5 md:px-8"
-          style={{ height: 56, background: navBg, backdropFilter: 'blur(20px)', borderBottom: `1px solid ${C.border}` }}>
-          <Link to="/" className="no-underline font-[700] tracking-tight text-[1rem]" style={{ color: C.text }}>Quib</Link>
-          <button onClick={toggleTheme} className="w-8 h-8 rounded-lg flex items-center justify-center"
-            style={{ background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)', border: `1px solid ${C.border}`, color: C.text2, cursor: 'pointer' }}>
-            {isDark ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
-          </button>
-        </nav>
+        <CoursePageNav
+          C={C}
+          isDark={isDark}
+          toggleTheme={toggleTheme}
+          navBg={navBg}
+          left={(
+            <Link to="/" className="no-underline font-[700] tracking-tight text-[1rem]" style={{ color: C.text }}>Quib</Link>
+          )}
+        />
         <div className="flex-1 flex flex-col items-center justify-center px-6" style={{ paddingTop: 56 }}>
           <CourseGenerationLoader />
         </div>
@@ -775,10 +817,15 @@ export function CourseDetails() {
   if (error || !course) {
     return (
       <div style={{ minHeight: '100vh', background: C.bg, color: C.text, fontFamily: 'var(--display)', display: 'flex', flexDirection: 'column' }}>
-        <nav className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-between px-5 md:px-8"
-          style={{ height: 56, background: navBg, backdropFilter: 'blur(20px)', borderBottom: `1px solid ${C.border}` }}>
-          <Link to="/" className="no-underline font-[700] tracking-tight text-[1rem]" style={{ color: C.text }}>Quib</Link>
-        </nav>
+        <CoursePageNav
+          C={C}
+          isDark={isDark}
+          toggleTheme={toggleTheme}
+          navBg={navBg}
+          left={(
+            <Link to="/" className="no-underline font-[700] tracking-tight text-[1rem]" style={{ color: C.text }}>Quib</Link>
+          )}
+        />
         <div className="flex-1 flex items-center justify-center px-6" style={{ paddingTop: 56 }}>
           <div className="w-full max-w-md rounded-xl p-6" style={{ background: C.bg1, border: '1px solid rgba(225,6,0,0.3)' }}>
             <div className="flex items-start gap-3 mb-5">
@@ -814,6 +861,18 @@ export function CourseDetails() {
   };
 
   // ── Learning Mode ──
+  const chatSessionKey = `${resolvedCourseId ?? 'course'}-${authSessionKey}`;
+  const showCourseChat = !!resolvedCourseId;
+  const showEducatorAssistant = chatSignedIn && isOwner && isEducator && !!resolvedCourseId;
+  const handleEducatorApplyUpdate = (update: CourseUpdatePayload) => {
+    if (!resolvedCourseId) return;
+    sessionStorage.setItem(`assistant-pending-${resolvedCourseId}`, JSON.stringify(update));
+    navigate(`/educator-courses/${resolvedCourseId}/edit`);
+  };
+  const handleChatSignIn = () => {
+    navigate('/signin', { state: { returnTo: `/course-details/${resolvedCourseId}` } });
+  };
+
   if (learningMode && resolvedCourseId) {
     return (
       <LearningMode
@@ -821,6 +880,12 @@ export function CourseDetails() {
         courseId={resolvedCourseId}
         youtubeUrl={youtubeUrl}
         onBack={() => setLearningMode(false)}
+        showCourseChat={showCourseChat}
+        showEducatorAssistant={showEducatorAssistant}
+        onEducatorApplyUpdate={handleEducatorApplyUpdate}
+        chatSignedIn={chatSignedIn}
+        onChatSignInRequired={handleChatSignIn}
+        chatSessionKey={chatSessionKey}
       />
     );
   }
@@ -865,30 +930,23 @@ export function CourseDetails() {
   // ── Course Overview ──
   return (
     <div style={{ minHeight: '100vh', background: C.bg, color: C.text, fontFamily: 'var(--display)' }}>
-      <nav className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-between px-5 md:px-10"
-        style={{ height: 56, background: navBg, backdropFilter: 'blur(20px)', borderBottom: `1px solid ${C.border}` }}>
-        <div className="flex items-center gap-4">
-          <button onClick={handleBack} className="flex items-center gap-1.5 cursor-pointer"
-            style={{ background: 'none', border: 'none', color: C.text2, padding: 0 }}>
-            <ArrowLeft className="w-4 h-4" />
-            <span className="text-[0.82rem]">Back</span>
-          </button>
-          <div style={{ width: 1, height: 16, background: C.border }} />
-          <Link to="/" className="no-underline font-[700] tracking-tight text-[1rem]" style={{ color: C.text }}>Quib</Link>
-        </div>
-        <ul className="hidden md:flex gap-7 list-none absolute left-1/2 -translate-x-1/2">
-          {[{ label: 'Platform', href: '/' }, { label: 'Sign in', href: '/signin' }].map((l) => (
-            <li key={l.label}>
-              <Link to={l.href} className="text-[0.875rem] font-[400] no-underline transition-opacity hover:opacity-100"
-                style={{ color: C.text2, letterSpacing: '0.01em', opacity: 0.8 }}>{l.label}</Link>
-            </li>
-          ))}
-        </ul>
-        <button onClick={toggleTheme} className="w-8 h-8 rounded-lg flex items-center justify-center"
-          style={{ background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)', border: `1px solid ${C.border}`, color: C.text2, cursor: 'pointer' }}>
-          {isDark ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
-        </button>
-      </nav>
+      <CoursePageNav
+        C={C}
+        isDark={isDark}
+        toggleTheme={toggleTheme}
+        navBg={navBg}
+        left={(
+          <>
+            <button onClick={handleBack} className="flex items-center gap-1.5 cursor-pointer"
+              style={{ background: 'none', border: 'none', color: C.text2, padding: 0 }}>
+              <ArrowLeft className="w-4 h-4" />
+              <span className="text-[0.82rem]">Back</span>
+            </button>
+            <div style={{ width: 1, height: 16, background: C.border }} />
+            <Link to="/" className="no-underline font-[700] tracking-tight text-[1rem]" style={{ color: C.text }}>Quib</Link>
+          </>
+        )}
+      />
 
       <div className="max-w-4xl mx-auto px-6 md:px-10" style={{ paddingTop: 96, paddingBottom: 80 }}>
         {/* Header */}
@@ -1105,6 +1163,25 @@ export function CourseDetails() {
           </p>
         </div>
       </div>
+      {showEducatorAssistant && resolvedCourseId && (
+        <EducatorAssistantWidget
+          key={chatSessionKey}
+          courseId={resolvedCourseId}
+          courseTitle={course.title}
+          sessionKey={chatSessionKey}
+          onApplyCourseUpdate={handleEducatorApplyUpdate}
+        />
+      )}
+      {showCourseChat && !showEducatorAssistant && resolvedCourseId && (
+        <CourseChatWidget
+          key={chatSessionKey}
+          courseId={resolvedCourseId}
+          courseTitle={course.title}
+          signedIn={chatSignedIn}
+          onSignInRequired={handleChatSignIn}
+          sessionKey={chatSessionKey}
+        />
+      )}
     </div>
   );
 }

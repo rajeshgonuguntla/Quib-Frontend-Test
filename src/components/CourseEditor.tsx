@@ -24,6 +24,9 @@ import {
 } from '../types/courseGeneration';
 import { PageHeader } from '../shell/PageHeader';
 import { useRequireEducatorExperience } from '../hooks/useRequireEducatorExperience';
+import { useAuthSessionKey } from '../auth';
+import { EducatorAssistantWidget } from './EducatorAssistantWidget';
+import type { CourseUpdatePayload } from '../types/courseGeneration';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -44,6 +47,7 @@ export function CourseEditor() {
   useRequireEducatorExperience();
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
+  const authSessionKey = useAuthSessionKey();
   const [form, setForm] = useState<EditableCourse | null>(null);
   const [includedVideoIds, setIncludedVideoIds] = useState<Set<string>>(new Set());
   const [expandedLesson, setExpandedLesson] = useState<string | null>(null);
@@ -69,7 +73,7 @@ export function CourseEditor() {
           return;
         }
         const videos = data.playlistVideos ?? [];
-        setForm({
+        let loadedForm: EditableCourse = {
           title: data.title ?? '',
           description: data.description ?? '',
           difficulty: data.difficulty ?? 'Intermediate',
@@ -77,8 +81,25 @@ export function CourseEditor() {
           contentLanguage: data.contentLanguage ?? 'en',
           modules: data.modules ?? [],
           playlistVideos: videos,
-        });
-        setIncludedVideoIds(new Set(videos.map((v) => v.videoId).filter(Boolean)));
+        };
+        let videoIds = new Set(videos.map((v) => v.videoId).filter(Boolean));
+        const pendingKey = `assistant-pending-${courseId}`;
+        const pendingRaw = sessionStorage.getItem(pendingKey);
+        if (pendingRaw) {
+          try {
+            const pending = JSON.parse(pendingRaw) as CourseUpdatePayload;
+            sessionStorage.removeItem(pendingKey);
+            loadedForm = mergeAssistantUpdate(loadedForm, pending);
+            if (pending.includedVideoIds?.length) {
+              videoIds = new Set(pending.includedVideoIds);
+            }
+            setStatus('Applied AI changes from assistant — review and save.');
+          } catch {
+            sessionStorage.removeItem(pendingKey);
+          }
+        }
+        setForm(loadedForm);
+        setIncludedVideoIds(videoIds);
       } catch {
         if (mounted) setError('Could not load course for editing.');
       } finally {
@@ -223,6 +244,14 @@ export function CourseEditor() {
       videoId: video.videoId,
       videoUrl: video.videoUrl,
     });
+  };
+
+  const applyAssistantUpdate = (update: CourseUpdatePayload) => {
+    setForm((prev) => (prev ? mergeAssistantUpdate(prev, update) : prev));
+    if (update.includedVideoIds?.length) {
+      setIncludedVideoIds(new Set(update.includedVideoIds));
+    }
+    setStatus('AI changes applied — review the editor and click Save.');
   };
 
   const handleSave = async () => {
@@ -562,8 +591,30 @@ export function CourseEditor() {
           </Button>
         </div>
       </div>
+
+      {courseId && (
+        <EducatorAssistantWidget
+          courseId={courseId}
+          courseTitle={form.title}
+          sessionKey={authSessionKey}
+          onApplyCourseUpdate={applyAssistantUpdate}
+        />
+      )}
     </div>
   );
+}
+
+function mergeAssistantUpdate(base: EditableCourse, update: CourseUpdatePayload): EditableCourse {
+  return {
+    ...base,
+    title: update.title?.trim() ? update.title : base.title,
+    description: update.description ?? base.description,
+    difficulty: update.difficulty ?? base.difficulty,
+    category: update.category ?? base.category,
+    contentLanguage: update.contentLanguage ?? base.contentLanguage,
+    modules: update.modules?.length ? update.modules : base.modules,
+    playlistVideos: base.playlistVideos,
+  };
 }
 
 function axiosMessage(err: unknown): string | null {
