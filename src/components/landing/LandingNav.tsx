@@ -28,11 +28,18 @@ export function LandingNav({ isDark }: LandingNavProps) {
           { label: 'Learn', href: '/#learn' },
           { label: 'Create', href: '/#create' },
           { label: 'Features', href: '/#features' },
+          { label: 'Governments', href: '/governments' },
         ].map((l) => (
           <li key={l.label}>
-            <a href={l.href} className="text-sm text-[var(--landing-muted)] no-underline transition-colors hover:text-[var(--landing-fg)]">
-              {l.label}
-            </a>
+            {l.href.startsWith('/governments') ? (
+              <Link to={l.href} className="text-sm text-[var(--landing-muted)] no-underline transition-colors hover:text-[var(--landing-fg)]">
+                {l.label}
+              </Link>
+            ) : (
+              <a href={l.href} className="text-sm text-[var(--landing-muted)] no-underline transition-colors hover:text-[var(--landing-fg)]">
+                {l.label}
+              </a>
+            )}
           </li>
         ))}
       </ul>

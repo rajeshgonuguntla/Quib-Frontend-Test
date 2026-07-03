@@ -19,7 +19,9 @@ import { Settings } from './components/Settings';
 // Educators page kept in src/components/Educators.tsx for later; public route redirects to home for now.
 import { EducatorStudio } from './components/EducatorStudio';
 import { EducatorMyCourses } from './components/EducatorMyCourses';
+import { EducatorAnalytics } from './components/EducatorAnalytics';
 import { CourseEditor } from './components/CourseEditor';
+import { Governments } from './components/Governments';
 import { EducatorProfile } from './components/EducatorProfile';
 import { CourseDetails } from './components/CourseDetails';
 import { BrowseCourses } from './components/BrowseCourses';
@@ -40,6 +42,7 @@ export default function App() {
                 <Route path="/signin" element={<SignIn />} />
               </Route>
               <Route path="/verify/:certId" element={<Verification />} />
+              <Route path="/governments" element={<Governments />} />
               <Route path="/educators" element={<Navigate to="/" replace />} />
               <Route path="/educator-course-builder" element={<Navigate to="/educator-studio?tab=url" replace />} />
               <Route path="/course-details" element={<CourseDetails />} />
@@ -59,6 +62,7 @@ export default function App() {
                   <Route path="/my-courses" element={<MyCourses />} />
                   <Route path="/educator-studio" element={<EducatorStudio />} />
                   <Route path="/educator-courses" element={<EducatorMyCourses />} />
+                  <Route path="/educator-analytics" element={<EducatorAnalytics />} />
                   <Route path="/educator-courses/:courseId/edit" element={<CourseEditor />} />
                   <Route path="/home" element={<Navigate to="/dashboard" replace />} />
                   <Route path="/educator/:id" element={<EducatorProfile />} />

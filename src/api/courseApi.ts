@@ -31,6 +31,32 @@ export async function completeLesson(courseId: string, lessonId: string): Promis
   await axios.post(`/api/courses/${courseId}/lessons/${lessonId}/complete`);
 }
 
+export async function recordLessonView(courseId: string, lessonId: string): Promise<void> {
+  await axios.post(`/api/courses/${courseId}/lessons/${lessonId}/view`);
+}
+
+export interface LessonWatchProgressPayload {
+  positionSec: number;
+  durationSec: number;
+  sessionId?: string;
+}
+
+export interface LessonWatchProgressResult {
+  sessionId: string;
+}
+
+export async function recordWatchProgress(
+  courseId: string,
+  lessonId: string,
+  payload: LessonWatchProgressPayload,
+): Promise<LessonWatchProgressResult> {
+  const res = await axios.post<LessonWatchProgressResult>(
+    `/api/courses/${courseId}/lessons/${lessonId}/watch-progress`,
+    payload,
+  );
+  return res.data;
+}
+
 export interface ModuleQuizResult {
   score: number;
   total: number;

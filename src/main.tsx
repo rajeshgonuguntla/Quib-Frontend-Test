@@ -17,7 +17,11 @@
     );
     const isGoogleAuthEndpoint = resolvedUrl.pathname.startsWith('/api/auth/google');
 
-  if (token && !isGoogleAuthEndpoint) {
+    const existingAuth =
+      (typeof config.headers?.get === 'function' ? config.headers.get('Authorization') : null)
+      ?? (config.headers as Record<string, string> | undefined)?.Authorization;
+
+  if (token && !isGoogleAuthEndpoint && !existingAuth) {
     if (config.headers?.set) {
       config.headers.set('Authorization', `Bearer ${token}`);
     } else {

@@ -59,6 +59,8 @@ function GoogleLoginButton({
     }
 
     try {
+      clearToken();
+
       const res = await axios.post('/api/auth/google', {
         token: credentialResponse.credential,
       });

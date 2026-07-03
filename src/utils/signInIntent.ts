@@ -9,7 +9,7 @@ export type SignInIntent = 'creator' | 'student';
 export const EDUCATOR_USE_CREATOR_LOGIN_MESSAGE =
   'This Google account is registered as an educator. Please sign in using the creator option (left card).';
 
-const EDUCATOR_NAV_IDS = new Set(['studio', 'my-courses-educator']);
+const EDUCATOR_NAV_IDS = new Set(['studio', 'my-courses-educator', 'educator-analytics']);
 
 export function setSignInIntent(intent: SignInIntent): void {
   localStorage.setItem(SIGN_IN_INTENT_KEY, intent);
@@ -41,7 +41,9 @@ export function isEducatorExperience(profile?: UserProfile | null): boolean {
 }
 
 export function isEducatorRoute(path: string): boolean {
-  return path.startsWith('/educator-studio') || path.startsWith('/educator-courses');
+  return path.startsWith('/educator-studio')
+    || path.startsWith('/educator-courses')
+    || path.startsWith('/educator-analytics');
 }
 
 export function filterNavGroups(groups: NavGroup[], showEducatorNav: boolean): NavGroup[] {

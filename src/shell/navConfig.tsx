@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import {
+  BarChart3,
   BookMarked,
   CheckCircle2,
   Circle,
@@ -32,6 +33,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { id: 'browse', label: 'Browse', path: '/browse-courses', icon: <Search size={15} /> },
       { id: 'studio', label: 'Studio', path: '/educator-studio', icon: <GraduationCap size={15} /> },
       { id: 'my-courses-educator', label: 'My courses', path: '/educator-courses', icon: <BookMarked size={15} /> },
+      { id: 'educator-analytics', label: 'Analytics', path: '/educator-analytics', icon: <BarChart3 size={15} /> },
       { id: 'trending', label: 'Creators', path: '/creators', icon: <TrendingUp size={15} /> },
     ],
   },
@@ -57,6 +59,7 @@ export function isNavItemActive(pathname: string, search: string, id: string, pa
   if (id === 'browse') return pathname.startsWith('/browse-courses');
   if (id === 'studio') return pathname.startsWith('/educator-studio');
   if (id === 'my-courses-educator') return pathname.startsWith('/educator-courses');
+  if (id === 'educator-analytics') return pathname.startsWith('/educator-analytics');
   if (id === 'trending') return pathname.startsWith('/creators') || pathname.startsWith('/educator/');
   if (id === 'progress') return pathname.startsWith('/my-courses') && !search.includes('filter=completed');
   if (id === 'completed') return pathname.startsWith('/my-courses') && search.includes('filter=completed');
@@ -81,6 +84,7 @@ const ROUTE_META: Record<string, RouteMeta> = {
   '/certificates': { title: 'Certificates', section: 'Library', parent: { label: 'Dashboard', path: '/dashboard' } },
   '/educator-studio': { title: 'Studio', section: 'Create', parent: { label: 'Dashboard', path: '/dashboard' } },
   '/educator-courses': { title: 'My courses', section: 'Create', parent: { label: 'Dashboard', path: '/dashboard' } },
+  '/educator-analytics': { title: 'Analytics', section: 'Insights', parent: { label: 'Dashboard', path: '/dashboard' } },
   '/settings': { title: 'Settings', section: 'Account', parent: { label: 'Dashboard', path: '/dashboard' } },
   '/quiz-setup': { title: 'Quiz setup', section: 'Create', parent: { label: 'Dashboard', path: '/dashboard' } },
   '/playlist-setup': { title: 'Playlist setup', section: 'Create', parent: { label: 'Dashboard', path: '/dashboard' } },

@@ -11,6 +11,7 @@ import {
   completeLesson,
   enrollCourse,
   fetchCourseProgress,
+  recordLessonView,
   submitModuleQuiz,
 } from '../api/courseApi';
 import { isTokenValid, useAuthSessionKey } from '../auth';
@@ -22,6 +23,9 @@ import { EducatorAssistantWidget, type AssistantApplyResult } from './EducatorAs
 import { QuibLogo } from './QuibLogo';
 import { CoursePageNav } from './CoursePageNav';
 import { LessonStudyContent } from './LessonNotes';
+import { YoutubeLessonPlayer } from './YoutubeLessonPlayer';
+import { LessonFeedbackPanel } from './LessonFeedbackPanel';
+import { CourseReviewPanel } from './CourseReviewPanel';
 import { updateCourse } from '../api/educatorApi';
 import { buildSavePayloadFromAssistant } from '../utils/courseEditOperations';
 import type { CourseGenerationOptions, EditableCourse } from '../types/courseGeneration';
@@ -184,6 +188,13 @@ function LearningMode({
   useEffect(() => {
     void reloadProgress();
   }, [courseId]);
+
+  useEffect(() => {
+    if (!activeLessonId || !chatSignedIn) return;
+    void recordLessonView(courseId, activeLessonId).catch(() => {
+      /* enrolled learners only; ignore for preview / anonymous */
+    });
+  }, [activeLessonId, courseId, chatSignedIn]);
 
   const activeLesson = allLessons.find((l) => l.id === activeLessonId);
   const activeQuizModule = course.modules.find((m) => m.id === activeQuizModuleId);
@@ -371,9 +382,14 @@ function LearningMode({
               {activeLesson.type === 'video' && embedId ? (
                 <div className="w-full rounded-2xl overflow-hidden mb-8"
                   style={{ border: `1px solid ${C.border}`, aspectRatio: '16/9', background: C.bg2 }}>
-                  <iframe src={`https://www.youtube.com/embed/${embedId}`} title={activeLesson.title}
-                    className="w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen style={{ border: 'none' }} />
+                  <YoutubeLessonPlayer
+                    videoId={embedId}
+                    title={activeLesson.title}
+                    courseId={courseId}
+                    lessonId={activeLessonId}
+                    trackProgress={chatSignedIn}
+                    className="w-full h-full"
+                  />
                 </div>
               ) : activeLesson.type === 'video' ? (
                 <div className="w-full rounded-2xl p-6 mb-8 text-center text-sm" style={{ background: C.bg1, border: `1px solid ${C.border}`, color: C.text3 }}>
@@ -400,6 +416,13 @@ function LearningMode({
                   </button>
                 )}
               </div>
+              <LessonFeedbackPanel
+                courseId={courseId}
+                lessonId={activeLessonId}
+                enabled={chatSignedIn}
+                theme={C}
+              />
+              <CourseReviewPanel courseId={courseId} enabled={chatSignedIn} theme={C} />
             </div>
           )}
 
