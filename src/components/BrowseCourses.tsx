@@ -5,6 +5,7 @@ import { fetchCourses } from '../api/catalogApi';
 import { CONTENT_LANGUAGES } from '../types/courseGeneration';
 import type { CatalogCourseSummary } from '../types/catalog';
 import { courseToCuratedCard } from '../utils/catalogMap';
+import { coursePriceLabel } from '../utils/coursePrice';
 import { PageHeader } from '../shell/PageHeader';
 import { StaggerChildren, StaggerItem } from '../shell/motion';
 import { Input } from './ui/input';
@@ -101,6 +102,7 @@ export function BrowseCourses() {
                         {card.language && card.language !== 'en' && (
                           <Badge variant="outline">{card.language.toUpperCase()}</Badge>
                         )}
+                        <Badge variant="outline">{coursePriceLabel(course)}</Badge>
                       </div>
                       <h2 className="mt-2 text-sm font-medium leading-snug">{card.title}</h2>
                       <div className="mt-2 flex items-center gap-2">

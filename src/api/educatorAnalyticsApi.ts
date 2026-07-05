@@ -6,11 +6,18 @@ export interface EducatorAnalyticsOverview {
   publishedCourses: number;
   draftCourses: number;
   totalWatchMinutes: number;
+  totalRevenueCents: number;
 }
 
 export interface EnrollmentTrendPoint {
   date: string;
   count: number;
+}
+
+export interface EnrollmentTrends {
+  daily: EnrollmentTrendPoint[];
+  weekly: EnrollmentTrendPoint[];
+  monthly: EnrollmentTrendPoint[];
 }
 
 export interface EducatorCourseMetrics {
@@ -21,6 +28,7 @@ export interface EducatorCourseMetrics {
   completionRate: number;
   avgDaysToComplete: number | null;
   lastEnrollmentAt: string | null;
+  revenueCents: number;
 }
 
 export interface MaintenanceSignal {
@@ -29,11 +37,13 @@ export interface MaintenanceSignal {
   courseTitle: string;
   message: string;
   severity: 'warning' | 'alert' | string;
+  targetId?: string | null;
+  targetType?: string | null;
 }
 
 export interface EducatorAnalyticsDashboard {
   overview: EducatorAnalyticsOverview;
-  enrollmentTrend: EnrollmentTrendPoint[];
+  enrollmentTrends: EnrollmentTrends;
   courses: EducatorCourseMetrics[];
   maintenanceSignals: MaintenanceSignal[];
 }
@@ -143,7 +153,7 @@ export interface EducatorCourseAnalyticsDetail {
   activeStudents7d: number;
   activeStudents30d: number;
   avgDaysToComplete: number | null;
-  enrollmentTrend: EnrollmentTrendPoint[];
+  enrollmentTrends: EnrollmentTrends;
   moduleFunnel: ModuleFunnelStep[];
   quizStats: ModuleQuizAnalytics[];
   lessonVideos: LessonVideoAnalytics[];
@@ -154,16 +164,49 @@ export interface EducatorCourseAnalyticsDetail {
   moduleDropOff: DropOffPoint | null;
   videoDropOff: DropOffPoint | null;
   feedback: CourseFeedbackAnalytics | null;
+  revenueCents: number;
+  contentExpiresAt: string | null;
+  contentExpired: boolean;
+  stuckStudentCount: number;
+  openContentFlags: ContentFlag[];
+}
+
+export interface ContentFlag {
+  id: string;
+  courseId: string;
+  lessonId: string | null;
+  lessonTitle: string | null;
+  moduleTitle: string | null;
+  reporterName: string | null;
+  reason: string | null;
+  status: string;
+  createdAt: string;
 }
 
 export async function fetchEducatorAnalyticsDashboard(): Promise<EducatorAnalyticsDashboard> {
-  const { data } = await axios.get<EducatorAnalyticsDashboard>('/api/educator/analytics/dashboard');
-  return data;
+  const { data } = await axios.get<EducatorAnalyticsDashboard & { enrollmentTrend?: EnrollmentTrendPoint[] }>(
+    '/api/educator/analytics/dashboard',
+  );
+  const trends = data.enrollmentTrends ?? legacyTrends(data.enrollmentTrend);
+  return { ...data, enrollmentTrends: trends };
 }
 
 export async function fetchEducatorCourseAnalytics(courseId: string): Promise<EducatorCourseAnalyticsDetail> {
-  const { data } = await axios.get<EducatorCourseAnalyticsDetail>(
+  const { data } = await axios.get<EducatorCourseAnalyticsDetail & { enrollmentTrend?: EnrollmentTrendPoint[] }>(
     `/api/educator/analytics/courses/${courseId}`,
   );
-  return data;
+  const trends = data.enrollmentTrends ?? legacyTrends(data.enrollmentTrend);
+  return { ...data, enrollmentTrends: trends };
+}
+
+function legacyTrends(daily?: EnrollmentTrendPoint[]): EnrollmentTrends {
+  return { daily: daily ?? [], weekly: [], monthly: [] };
+}
+
+export async function resolveContentFlag(courseId: string, flagId: string): Promise<void> {
+  await axios.post(`/api/educator/analytics/courses/${courseId}/content-flags/${flagId}/resolve`);
+}
+
+export async function dismissContentFlag(courseId: string, flagId: string): Promise<void> {
+  await axios.post(`/api/educator/analytics/courses/${courseId}/content-flags/${flagId}/dismiss`);
 }

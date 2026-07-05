@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react';
-import { Loader2, MessageCircle, ThumbsDown, ThumbsUp } from 'lucide-react';
+import { Flag, Loader2, MessageCircle, ThumbsDown, ThumbsUp } from 'lucide-react';
 import {
   fetchLessonComments,
   postLessonComment,
   setLessonReaction,
   type LessonComment,
 } from '../api/courseFeedbackApi';
+import { ReportOutdatedContentModal } from './ReportOutdatedContentModal';
 
 type LessonFeedbackPanelProps = {
   courseId: string;
   lessonId: string;
+  lessonTitle?: string;
   enabled: boolean;
   theme: {
     text: string;
@@ -24,6 +26,7 @@ type LessonFeedbackPanelProps = {
 export function LessonFeedbackPanel({
   courseId,
   lessonId,
+  lessonTitle,
   enabled,
   theme: C,
 }: LessonFeedbackPanelProps) {
@@ -34,6 +37,7 @@ export function LessonFeedbackPanel({
   const [draft, setDraft] = useState('');
   const [loading, setLoading] = useState(false);
   const [posting, setPosting] = useState(false);
+  const [showReport, setShowReport] = useState(false);
 
   useEffect(() => {
     if (!enabled || !lessonId) return;
@@ -92,6 +96,14 @@ export function LessonFeedbackPanel({
           <span className="text-sm font-medium" style={{ color: C.text }}>Lesson feedback</span>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowReport(true)}
+            className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs transition-colors"
+            style={{ border: `1px solid ${C.border}`, color: C.text2, background: 'transparent' }}
+          >
+            <Flag className="size-3.5" /> Report outdated
+          </button>
           <button
             type="button"
             onClick={() => void handleReaction(1)}
@@ -159,6 +171,17 @@ export function LessonFeedbackPanel({
           ))
         )}
       </div>
+
+      {showReport && (
+        <ReportOutdatedContentModal
+          courseId={courseId}
+          lessonId={lessonId}
+          lessonTitle={lessonTitle}
+          theme={C}
+          onClose={() => setShowReport(false)}
+          onSubmitted={() => setShowReport(false)}
+        />
+      )}
     </div>
   );
 }

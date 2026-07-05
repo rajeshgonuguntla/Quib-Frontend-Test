@@ -3,8 +3,6 @@ import { useNavigate, useLocation } from 'react-router';
 import axios from 'axios';
 import { ShellPage } from '../shell/ShellPage';
 import { Youtube, Clock, Play, CheckCircle, AlertCircle, ArrowRight } from 'lucide-react';
-import { useTheme, getC } from './ThemeContext';
-import { fetchQuizDetail, isUuid, mapApiQuestionsToFrontend } from '../api/quizApi';
 import { parseRawQuizJson, questionsFromRawQuiz } from '../utils/quizParse';
 
 interface QuizResponse {
@@ -104,47 +102,46 @@ export function PlaylistSetup() {
     setSetupError(null);
     setStartingQuiz(true);
     const videoUrl = quiz.videoUrl || '';
+    const quizId = quiz.quizId ? String(quiz.quizId) : '';
 
     try {
+      if (quizId && isUuid(quizId)) {
+        sessionStorage.setItem('playlistResult', JSON.stringify(result));
+        sessionStorage.setItem('playlistCurrentIndex', String(index));
+        sessionStorage.setItem('playlistCompleted', JSON.stringify([...completedQuizzes]));
+        navigate(`/quiz/${quizId}`, {
+          state: {
+            videoMeta: {
+              title: quiz.videoTitle,
+              channelName: quiz.channelName,
+              videoLength: quiz.videoLength,
+              youtubeUrl: videoUrl,
+            },
+            youtubeUrl: videoUrl,
+          },
+        });
+        return;
+      }
+
       let questions = questionsFromRawQuiz(quiz.quiz);
-      let meta = {
+      if (questions.length === 0) {
+        setSetupError(`Failed to load quiz for "${quiz.videoTitle}". Please regenerate the playlist.`);
+        return;
+      }
+
+      const meta = {
         title: parseRawQuizJson(quiz.quiz)?.title?.trim() || quiz.videoTitle,
         channelName: quiz.channelName,
         videoLength: quiz.videoLength,
         youtubeUrl: videoUrl,
       };
 
-      const quizId = quiz.quizId ? String(quiz.quizId) : '';
-      if (quizId && isUuid(quizId)) {
-        try {
-          const data = await fetchQuizDetail(quizId, true);
-          const fromApi = mapApiQuestionsToFrontend(data.questions ?? []);
-          if (fromApi.length > 0) {
-            questions = fromApi;
-            meta = {
-              title: data.title ?? quiz.videoTitle,
-              channelName: data.channelName ?? quiz.channelName,
-              videoLength: data.durationLabel ?? quiz.videoLength,
-              youtubeUrl: data.youtubeUrl ?? videoUrl,
-            };
-          }
-        } catch {
-          // fall back to raw quiz JSON if API fails (e.g. expired token)
-        }
-      }
-
-      if (questions.length === 0) {
-        setSetupError(`Failed to load quiz for "${quiz.videoTitle}". Please sign in again or regenerate the playlist.`);
-        return;
-      }
-
       sessionStorage.setItem('playlistResult', JSON.stringify(result));
       sessionStorage.setItem('playlistCurrentIndex', String(index));
       sessionStorage.setItem('playlistCompleted', JSON.stringify([...completedQuizzes]));
       sessionStorage.setItem('generatedQuestions', JSON.stringify(questions));
       sessionStorage.setItem('generatedVideoMeta', JSON.stringify(meta));
-      const quizRouteId = quizId && isUuid(quizId) ? quizId : `playlist-${index}`;
-      navigate(`/quiz/${quizRouteId}`, { state: { questions, videoMeta: meta, youtubeUrl: videoUrl } });
+      navigate(`/quiz/playlist-${index}`, { state: { questions, videoMeta: meta, youtubeUrl: videoUrl } });
     } catch {
       setSetupError(`Failed to load quiz for "${quiz.videoTitle}". Please try again.`);
     } finally {

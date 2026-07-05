@@ -57,10 +57,17 @@ export async function recordWatchProgress(
   return res.data;
 }
 
+export interface ModuleQuizQuestionResult {
+  questionIndex: number;
+  correct: boolean;
+  correctAnswer: number;
+}
+
 export interface ModuleQuizResult {
   score: number;
   total: number;
   passed: boolean;
+  questionResults?: ModuleQuizQuestionResult[];
 }
 
 export async function submitModuleQuiz(

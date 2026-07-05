@@ -46,6 +46,9 @@ export interface CatalogCourseSummary {
   ownerAvatarUrl?: string;
   educatorChannelTitle?: string;
   educatorChannelThumbnail?: string;
+  isFree?: boolean;
+  priceCents?: number;
+  currency?: string;
 }
 
 export interface CourseSearchResult {

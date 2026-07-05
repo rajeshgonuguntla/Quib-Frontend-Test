@@ -13,4 +13,5 @@ export interface UserProfile {
   defaultQuestionTypes?: Record<string, boolean>;
   theme?: string;
   role?: 'learner' | 'educator' | 'admin' | string;
+  mobilePhone?: string;
 }

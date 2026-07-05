@@ -10,6 +10,7 @@ export const EDUCATOR_USE_CREATOR_LOGIN_MESSAGE =
   'This Google account is registered as an educator. Please sign in using the creator option (left card).';
 
 const EDUCATOR_NAV_IDS = new Set(['studio', 'my-courses-educator', 'educator-analytics']);
+const ADMIN_NAV_IDS = new Set(['admin-insights']);
 
 export function setSignInIntent(intent: SignInIntent): void {
   localStorage.setItem(SIGN_IN_INTENT_KEY, intent);
@@ -22,6 +23,11 @@ export function getSignInIntent(): SignInIntent | null {
 
 export function clearSignInIntent(): void {
   localStorage.removeItem(SIGN_IN_INTENT_KEY);
+}
+
+/** Quib platform administrators only — not educators. */
+export function isAdminAccount(profile?: UserProfile | null): boolean {
+  return profile?.role === 'admin';
 }
 
 /** Backend role — educator accounts always get creator tooling in the app. */
@@ -46,11 +52,18 @@ export function isEducatorRoute(path: string): boolean {
     || path.startsWith('/educator-analytics');
 }
 
-export function filterNavGroups(groups: NavGroup[], showEducatorNav: boolean): NavGroup[] {
-  if (showEducatorNav) return groups;
+export function filterNavGroups(groups: NavGroup[], showEducatorNav: boolean, profile?: UserProfile | null): NavGroup[] {
   return groups.map((group) => ({
     ...group,
-    items: group.items.filter((item) => !EDUCATOR_NAV_IDS.has(item.id)),
+    items: group.items.filter((item) => {
+      if (ADMIN_NAV_IDS.has(item.id)) {
+        return isAdminAccount(profile);
+      }
+      if (EDUCATOR_NAV_IDS.has(item.id)) {
+        return showEducatorNav;
+      }
+      return true;
+    }),
   }));
 }
 

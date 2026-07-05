@@ -51,6 +51,11 @@ export async function fetchQuizDetail(quizId: string, includeAnswers = false) {
   return response.data;
 }
 
+export async function fetchLatestQuizAttempt(quizId: string) {
+  const response = await axios.get(`/api/quizzes/${quizId}/latest-attempt`);
+  return response.data;
+}
+
 export async function submitQuizAttempt(
   quizId: string,
   answers: Record<number, string | string[]>,

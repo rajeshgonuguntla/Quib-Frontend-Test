@@ -20,6 +20,7 @@ import { Settings } from './components/Settings';
 import { EducatorStudio } from './components/EducatorStudio';
 import { EducatorMyCourses } from './components/EducatorMyCourses';
 import { EducatorAnalytics } from './components/EducatorAnalytics';
+import { AdminInsights } from './components/AdminInsights';
 import { CourseEditor } from './components/CourseEditor';
 import { Governments } from './components/Governments';
 import { EducatorProfile } from './components/EducatorProfile';
@@ -63,6 +64,7 @@ export default function App() {
                   <Route path="/educator-studio" element={<EducatorStudio />} />
                   <Route path="/educator-courses" element={<EducatorMyCourses />} />
                   <Route path="/educator-analytics" element={<EducatorAnalytics />} />
+                  <Route path="/admin/insights" element={<AdminInsights />} />
                   <Route path="/educator-courses/:courseId/edit" element={<CourseEditor />} />
                   <Route path="/home" element={<Navigate to="/dashboard" replace />} />
                   <Route path="/educator/:id" element={<EducatorProfile />} />

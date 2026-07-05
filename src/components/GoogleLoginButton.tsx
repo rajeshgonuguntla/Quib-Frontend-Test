@@ -119,6 +119,7 @@ function GoogleLoginButton({
       console.error('Login Failed', error);
       clearToken();
       setSignInError('Sign-in failed. Please try again.');
+    } finally {
       setIsSigningIn(false);
     }
   };

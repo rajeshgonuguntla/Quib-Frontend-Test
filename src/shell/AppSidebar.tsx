@@ -67,7 +67,7 @@ export function AppSidebar({ pathname, search, onNavigate }: AppSidebarProps) {
   const navigate = useNavigate();
   const { profile, setProfile } = useUserProfile();
   const firstName = getFirstName(profile);
-  const navGroups = filterNavGroups(NAV_GROUPS, isEducatorExperience(profile));
+  const navGroups = filterNavGroups(NAV_GROUPS, isEducatorExperience(profile), profile);
 
   const handleSignOut = () => {
     clearToken();

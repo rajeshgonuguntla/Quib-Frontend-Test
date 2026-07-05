@@ -201,7 +201,7 @@ export function QuizSetup() {
 
       try {
         if (id && isUuid(id)) {
-          const data = await fetchQuizDetail(id, true);
+          const data = await fetchQuizDetail(id, false);
           if (!isMounted) return;
           const parsedQuestions = mapApiQuestionsToFrontend(data.questions ?? []);
           const parsedMeta: QuizMeta = {

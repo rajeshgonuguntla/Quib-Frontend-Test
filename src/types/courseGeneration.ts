@@ -120,6 +120,11 @@ export type EditableCourse = {
   contentLanguage?: string;
   modules: CourseModule[];
   playlistVideos?: PlaylistVideo[];
+  isFree?: boolean;
+  priceCents?: number;
+  currency?: string;
+  /** YYYY-MM-DD for educator content freshness expiry; empty string clears. */
+  contentExpiresAt?: string | null;
 };
 
 export type CourseUpdatePayload = EditableCourse & {

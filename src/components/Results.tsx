@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link, useLocation } from 'react-router';
 import { ChevronDown, ChevronUp, CheckCircle, XCircle, Linkedin, Smile, Sun, Moon, FileText, Download, Share2, Link2, Check, Copy } from 'lucide-react';
 import { useTheme, getC } from './ThemeContext';
 import { QuibLogo } from './QuibLogo';
+import { fetchLatestQuizAttempt, isUuid } from '../api/quizApi';
 
 interface Question {
   id: number;
@@ -38,8 +39,28 @@ export function Results() {
   const [expandedQuestions, setExpandedQuestions] = useState<Set<number>>(new Set());
   const [copied, setCopied] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
+  const [loadedResult, setLoadedResult] = useState(location.state?.result);
+  const [resultsError, setResultsError] = useState<string | null>(null);
+  const [resultsLoading, setResultsLoading] = useState(false);
 
-  const apiResult = location.state?.result as {
+  useEffect(() => {
+    if (loadedResult || !id || !isUuid(id)) return;
+    let mounted = true;
+    setResultsLoading(true);
+    fetchLatestQuizAttempt(id)
+      .then((data) => {
+        if (mounted) setLoadedResult(data);
+      })
+      .catch(() => {
+        if (mounted) setResultsError('No saved results found for this quiz.');
+      })
+      .finally(() => {
+        if (mounted) setResultsLoading(false);
+      });
+    return () => { mounted = false; };
+  }, [id, loadedResult]);
+
+  const apiResult = loadedResult as {
     scorePercent?: number;
     correctCount?: number;
     totalCount?: number;
@@ -81,22 +102,7 @@ export function Results() {
         isCorrect: q.correct,
         explanation: q.explanation ?? '',
       }))
-    : questions.map((q, index) => {
-        const userAnswer = (answers[index] as string | undefined) ?? '';
-        const correctAnswer = q.answer ?? '';
-        const isCorrect =
-          correctAnswer.length > 0 &&
-          userAnswer.trim().toLowerCase() === correctAnswer.trim().toLowerCase();
-        return {
-          id: index,
-          question: q.question,
-          type: q.type,
-          userAnswer: userAnswer || 'Not answered',
-          correctAnswer,
-          isCorrect,
-          explanation: q.explanation ?? '',
-        };
-      });
+    : [];
 
   const totalQuestions = apiResult?.totalCount ?? questions.length;
   const correctAnswers = apiResult?.correctCount ?? questionReview.filter((q) => q.isCorrect).length;
@@ -131,6 +137,23 @@ export function Results() {
     else newExpanded.add(id);
     setExpandedQuestions(newExpanded);
   };
+
+  if (resultsLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: C.bg, color: C.text2 }}>
+        Loading results…
+      </div>
+    );
+  }
+
+  if (!apiResult && resultsError) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-6" style={{ background: C.bg, color: C.text }}>
+        <p className="text-center text-sm" style={{ color: C.text2 }}>{resultsError}</p>
+        <Link to="/my-quizzes" className="text-sm no-underline" style={{ color: C.red }}>Back to My Quizzes</Link>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen" style={{ background: C.bg, color: C.text, fontFamily: "var(--display)" }}>

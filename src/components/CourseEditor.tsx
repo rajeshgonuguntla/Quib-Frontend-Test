@@ -37,6 +37,12 @@ import { Badge } from './ui/badge';
 
 const DIFFICULTIES = ['Beginner', 'Intermediate', 'Advanced'] as const;
 
+function formatContentExpiryInput(value?: string | null): string {
+  if (!value) return '';
+  const date = value.slice(0, 10);
+  return /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : '';
+}
+
 function moveItem<T>(list: T[], from: number, to: number): T[] {
   if (to < 0 || to >= list.length || from === to) return list;
   const next = [...list];
@@ -83,6 +89,10 @@ export function CourseEditor() {
           contentLanguage: data.contentLanguage ?? 'en',
           modules: data.modules ?? [],
           playlistVideos: videos,
+          isFree: data.isFree !== false,
+          priceCents: data.priceCents ?? 0,
+          currency: data.currency ?? 'USD',
+          contentExpiresAt: formatContentExpiryInput(data.contentExpiresAt),
         };
         let videoIds = new Set(videos.map((v) => v.videoId).filter(Boolean));
         const pendingKey = `assistant-pending-${courseId}`;
@@ -299,6 +309,7 @@ export function CourseEditor() {
       await updateCourse(courseId, {
         ...payload,
         includedVideoIds: [...includedVideoIds],
+        contentExpiresAt: form.contentExpiresAt?.trim() ? form.contentExpiresAt.trim() : '',
       });
       setStatus('Course saved.');
       navigate(`/course-details/${courseId}`);
@@ -383,6 +394,66 @@ export function CourseEditor() {
             >
               {CONTENT_LANGUAGES.map((l) => <option key={l.value} value={l.value}>{l.label}</option>)}
             </select>
+          </div>
+          <div className="space-y-2 sm:col-span-2">
+            <Label>Pricing (USD)</Label>
+            <div className="flex flex-wrap items-center gap-4">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={form.isFree !== false}
+                  onChange={(e) => setForm({
+                    ...form,
+                    isFree: e.target.checked,
+                    priceCents: e.target.checked ? 0 : Math.max(form.priceCents ?? 500, 50),
+                  })}
+                />
+                Free course
+              </label>
+              {form.isFree === false && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">$</span>
+                  <Input
+                    type="number"
+                    min={0.5}
+                    step={0.01}
+                    className="w-28"
+                    value={((form.priceCents ?? 0) / 100).toFixed(2)}
+                    onChange={(e) => {
+                      const dollars = Number.parseFloat(e.target.value);
+                      const cents = Number.isFinite(dollars) ? Math.round(dollars * 100) : 0;
+                      setForm({ ...form, priceCents: cents, isFree: false });
+                    }}
+                  />
+                  <span className="text-xs text-muted-foreground">Min $0.50 when paid</span>
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="contentExpiresAt">Content freshness</Label>
+            <div className="flex flex-wrap items-center gap-3">
+              <Input
+                id="contentExpiresAt"
+                type="date"
+                className="w-44"
+                value={form.contentExpiresAt ?? ''}
+                onChange={(e) => setForm({ ...form, contentExpiresAt: e.target.value })}
+              />
+              {form.contentExpiresAt ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setForm({ ...form, contentExpiresAt: '' })}
+                >
+                  Clear expiry
+                </Button>
+              ) : null}
+              <span className="text-xs text-muted-foreground">
+                Optional — triggers a maintenance signal after this date so you know to refresh content.
+              </span>
+            </div>
           </div>
         </CardContent>
       </Card>

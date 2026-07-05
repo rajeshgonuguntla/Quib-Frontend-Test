@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useParams, Link, useLocation } from 'react-router';
 import { Award, Clock, Flag, ChevronLeft, ChevronRight, CheckCircle, Sun, Moon } from 'lucide-react';
 import { useTheme, getC } from './ThemeContext';
@@ -81,6 +81,12 @@ export function QuizTaking() {
 
   const initialTime = Math.max(questions.length * 90, 300);
   const [timeLeft, setTimeLeft] = useState(initialTime);
+  const timeLeftRef = useRef(timeLeft);
+  const submitRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    timeLeftRef.current = timeLeft;
+  }, [timeLeft]);
 
   useEffect(() => {
     let mounted = true;
@@ -123,7 +129,7 @@ export function QuizTaking() {
   const handleSubmit = useCallback(async () => {
     if (submitting) return;
     setSubmitting(true);
-    const timeSpent = initialTime - timeLeft;
+    const timeSpent = initialTime - timeLeftRef.current;
     if (id && isUuid(id)) {
       try {
         const result = await submitQuizAttempt(id, answers, timeSpent);
@@ -135,23 +141,28 @@ export function QuizTaking() {
         return;
       }
     }
-    navigate(`/results/${id}`, { state: { questions, answers, videoMeta } });
-  }, [submitting, id, answers, videoMeta, questions, navigate, initialTime, timeLeft]);
+    setError('This quiz must be submitted from a saved quiz. Please regenerate it from setup.');
+    setSubmitting(false);
+  }, [submitting, id, answers, videoMeta, questions, navigate, initialTime]);
+
+  submitRef.current = () => {
+    void handleSubmit();
+  };
 
   useEffect(() => {
     if (isLoading || questions.length === 0) return;
     const timer = setInterval(() => {
       setTimeLeft((prev: number) => {
-        if (prev <= 0) {
+        if (prev <= 1) {
           clearInterval(timer);
-          handleSubmit();
+          submitRef.current?.();
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, [isLoading, questions.length, handleSubmit]);
+  }, [isLoading, questions.length]);
 
 
   const formatTime = (seconds: number) => {
@@ -174,6 +185,25 @@ export function QuizTaking() {
 
   const answeredCount = Object.keys(answers).length;
   const unansweredCount = questions.length - answeredCount;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: C.bg, color: C.text2 }}>
+        Loading quiz…
+      </div>
+    );
+  }
+
+  if (error || questions.length === 0) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-6" style={{ background: C.bg, color: C.text }}>
+        <p className="text-center text-sm" style={{ color: C.text2 }}>
+          {error ?? 'Quiz not found.'}
+        </p>
+        <Link to="/dashboard" className="text-sm no-underline" style={{ color: C.red }}>Back to dashboard</Link>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: C.bg, color: C.text, fontFamily: "var(--display)" }}>

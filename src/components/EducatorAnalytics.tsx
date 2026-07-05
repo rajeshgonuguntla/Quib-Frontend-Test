@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   ChevronRight,
   Clock,
+  DollarSign,
   GraduationCap,
   Layers,
   Loader2,
@@ -26,14 +27,19 @@ import {
 import {
   fetchEducatorAnalyticsDashboard,
   fetchEducatorCourseAnalytics,
+  dismissContentFlag,
+  resolveContentFlag,
   type EducatorAnalyticsDashboard,
   type EducatorCourseAnalyticsDetail,
   type EducatorCourseMetrics,
+  type ContentFlag,
 } from '../api/educatorAnalyticsApi';
 import { replyToLearnerComment } from '../api/courseFeedbackApi';
 import { PageHeader } from '../shell/PageHeader';
 import { useRequireEducatorExperience } from '../hooks/useRequireEducatorExperience';
-import { TrendBarChart } from './analytics/TrendBarChart';
+import { formatPriceCents } from '../utils/formatPrice';
+import { getMaintenanceSignalMeta } from '../utils/maintenanceSignals';
+import { EnrollmentTrendPanel } from './analytics/EnrollmentTrendPanel';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
@@ -61,7 +67,12 @@ export function EducatorAnalytics() {
       setError(null);
       try {
         const data = await fetchEducatorAnalyticsDashboard();
-        if (mounted) setDashboard(data);
+        if (mounted) {
+          setDashboard({
+            ...data,
+            enrollmentTrends: data.enrollmentTrends ?? { daily: [], weekly: [], monthly: [] },
+          });
+        }
       } catch {
         if (mounted) {
           setDashboard(null);
@@ -177,13 +188,19 @@ export function EducatorAnalytics() {
       <motion.div
         {...fadeUp}
         transition={{ ...fadeUp.transition, delay: 0.05 }}
-        className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5"
+        className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6"
       >
         <StatCard
           icon={<Users className="size-4" />}
           label="Total enrollments"
           value={overview.totalEnrollments.toLocaleString()}
           accent
+        />
+        <StatCard
+          icon={<DollarSign className="size-4" />}
+          label="Total revenue"
+          value={formatPriceCents(overview.totalRevenueCents ?? 0)}
+          subValue="Gross sales"
         />
         <StatCard
           icon={<GraduationCap className="size-4" />}
@@ -222,11 +239,11 @@ export function EducatorAnalytics() {
                 <TrendingUp className="size-4 text-[var(--chart-1)]" />
                 <CardTitle className="text-base">Enrollment trend</CardTitle>
               </div>
-              <Badge variant="secondary" className="text-[0.65rem] font-normal">90 days</Badge>
+              <Badge variant="secondary" className="text-[0.65rem] font-normal">Daily · weekly · monthly</Badge>
             </div>
           </CardHeader>
           <CardContent className="pt-6">
-            <TrendBarChart points={dashboard.enrollmentTrend} />
+            <EnrollmentTrendPanel trends={dashboard.enrollmentTrends} />
           </CardContent>
         </Card>
 
@@ -245,20 +262,43 @@ export function EducatorAnalytics() {
                 <p className="mt-1 text-xs text-muted-foreground">No issues detected across your courses.</p>
               </div>
             ) : (
-              dashboard.maintenanceSignals.map((signal) => (
-                <div
-                  key={`${signal.type}-${signal.courseId}-${signal.message}`}
-                  className="rounded-lg border border-border p-3 text-sm transition-colors hover:bg-muted/40"
-                >
-                  <div className="mb-1.5 flex items-center gap-2">
-                    <Badge variant={signal.severity === 'alert' ? 'destructive' : 'secondary'}>
-                      {signal.severity}
-                    </Badge>
-                    <span className="truncate font-medium">{signal.courseTitle}</span>
-                  </div>
-                  <p className="text-muted-foreground leading-relaxed">{signal.message}</p>
-                </div>
-              ))
+              dashboard.maintenanceSignals.map((signal) => {
+                const meta = getMaintenanceSignalMeta(signal.type);
+                const Icon = meta.icon;
+                return (
+                  <button
+                    key={`${signal.type}-${signal.courseId}-${signal.message}`}
+                    type="button"
+                    onClick={() => void openCourse(signal.courseId)}
+                    className="w-full rounded-xl border border-border/80 p-3 text-left text-sm transition-all hover:border-[var(--chart-1)]/35 hover:bg-muted/40"
+                  >
+                    <div className="mb-2 flex items-start gap-3">
+                      <span
+                        className="flex size-8 shrink-0 items-center justify-center rounded-lg"
+                        style={{
+                          background: signal.severity === 'alert'
+                            ? 'color-mix(in srgb, var(--destructive) 12%, transparent)'
+                            : 'color-mix(in srgb, var(--chart-1) 12%, transparent)',
+                          color: signal.severity === 'alert' ? 'var(--destructive)' : 'var(--chart-1)',
+                        }}
+                      >
+                        <Icon className="size-4" />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="mb-1 flex flex-wrap items-center gap-2">
+                          <Badge variant={signal.severity === 'alert' ? 'destructive' : 'secondary'} className="text-[0.6rem]">
+                            {meta.label}
+                          </Badge>
+                          <span className="truncate font-medium">{signal.courseTitle}</span>
+                        </div>
+                        <p className="text-muted-foreground leading-relaxed">{signal.message}</p>
+                        <p className="mt-1 text-[0.65rem] text-muted-foreground">{meta.hint}</p>
+                      </div>
+                      <ChevronRight className="mt-1 size-4 shrink-0 text-muted-foreground" />
+                    </div>
+                  </button>
+                );
+              })
             )}
           </CardContent>
         </Card>
@@ -436,6 +476,9 @@ function CourseCard({
           </p>
           <p className="mt-2 text-xs text-muted-foreground">
             {course.enrollmentCount} enrolled
+            {(course.revenueCents ?? 0) > 0 && (
+              <> · {formatPriceCents(course.revenueCents)} revenue</>
+            )}
             {course.lastEnrollmentAt && (
               <> · last {formatRelative(course.lastEnrollmentAt)}</>
             )}
@@ -481,8 +524,13 @@ function CourseDetailPanel({
 
   return (
     <div className="space-y-8">
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <MiniStat label="Enrollments" value={String(detail.enrollmentCount)} icon={<Users className="size-3.5" />} />
+        <MiniStat
+          label="Revenue"
+          value={formatPriceCents(detail.revenueCents ?? 0)}
+          icon={<DollarSign className="size-3.5" />}
+        />
         <MiniStat
           label="Completion"
           value={`${detail.completionRate.toFixed(0)}%`}
@@ -494,7 +542,7 @@ function CourseDetailPanel({
       </div>
 
       <Section title="Enrollment trend" icon={<TrendingUp className="size-4" />}>
-        <TrendBarChart points={detail.enrollmentTrend} maxBars={30} heightClass="h-28" />
+        <EnrollmentTrendPanel trends={detail.enrollmentTrends} heightClass="h-28" />
       </Section>
 
       <Section title="Module retention funnel" icon={<Layers className="size-4" />}>
@@ -535,6 +583,8 @@ function CourseDetailPanel({
           </div>
         )}
       </Section>
+
+      <CourseMaintenanceSection detail={detail} courseId={courseId} onRefresh={onRefresh} />
 
       {(detail.moduleDropOff || detail.videoDropOff) && (
         <Section title="Biggest drop-off points" icon={<AlertTriangle className="size-4" />}>
@@ -590,7 +640,13 @@ function CourseDetailPanel({
                       <p className="truncate text-sm font-medium">{v.lessonTitle}</p>
                       <p className="text-[0.65rem] text-muted-foreground">{v.moduleTitle}</p>
                     </div>
-                    <span className="shrink-0 text-xs font-medium tabular-nums">{v.viewCount} views</span>
+                    <div className="flex shrink-0 flex-col items-end gap-1">
+                      {detail.enrollmentCount >= 5
+                        && v.skippedCount * 100 / detail.enrollmentCount >= 30 && (
+                        <Badge variant="destructive" className="text-[0.55rem]">High skip</Badge>
+                      )}
+                      <span className="text-xs font-medium tabular-nums">{v.viewCount} views</span>
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="h-1 flex-1 overflow-hidden rounded-full bg-muted">
@@ -739,6 +795,134 @@ function DropOffCard({ label, point }: { label: string; point: import('../api/ed
         <p className="text-xs text-muted-foreground">{point.moduleTitle}</p>
       )}
       <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{point.summary}</p>
+    </div>
+  );
+}
+
+function CourseMaintenanceSection({
+  detail,
+  courseId,
+  onRefresh,
+}: {
+  detail: EducatorCourseAnalyticsDetail;
+  courseId: string;
+  onRefresh: () => void;
+}) {
+  const hasAlerts =
+    detail.contentExpired
+    || (detail.stuckStudentCount ?? 0) > 0
+    || (detail.openContentFlags?.length ?? 0) > 0;
+
+  if (!hasAlerts) return null;
+
+  return (
+    <Section title="Maintenance alerts" icon={<AlertTriangle className="size-4" />}>
+      <div className="space-y-3">
+        {detail.contentExpired && (
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 text-sm">
+            <p className="font-medium text-amber-700 dark:text-amber-300">Content freshness expired</p>
+            <p className="mt-1 text-muted-foreground">
+              You set content to expire
+              {detail.contentExpiresAt
+                ? ` on ${new Date(detail.contentExpiresAt).toLocaleDateString()}`
+                : ''}
+              . Update lessons or extend the date in the course editor.
+            </p>
+          </div>
+        )}
+        {(detail.stuckStudentCount ?? 0) > 0 && (
+          <div className="rounded-xl border border-border/60 bg-muted/20 p-4 text-sm">
+            <p className="font-medium">{detail.stuckStudentCount} stuck student{detail.stuckStudentCount === 1 ? '' : 's'}</p>
+            <p className="mt-1 text-muted-foreground">
+              Enrolled 14+ days with no activity in the last 7 days — consider outreach or content refresh.
+            </p>
+          </div>
+        )}
+        {(detail.openContentFlags?.length ?? 0) > 0 && (
+          <ContentFlagsPanel
+            flags={detail.openContentFlags ?? []}
+            courseId={courseId}
+            onRefresh={onRefresh}
+          />
+        )}
+      </div>
+    </Section>
+  );
+}
+
+function ContentFlagsPanel({
+  flags,
+  courseId,
+  onRefresh,
+}: {
+  flags: ContentFlag[];
+  courseId: string;
+  onRefresh: () => void;
+}) {
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  const handleResolve = async (flagId: string) => {
+    setBusyId(flagId);
+    try {
+      await resolveContentFlag(courseId, flagId);
+      onRefresh();
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleDismiss = async (flagId: string) => {
+    setBusyId(flagId);
+    try {
+      await dismissContentFlag(courseId, flagId);
+      onRefresh();
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  return (
+    <div className="rounded-xl border border-border/60 p-4">
+      <p className="mb-3 text-sm font-medium">Student outdated-content reports</p>
+      <div className="space-y-3">
+        {flags.map((flag) => (
+          <div key={flag.id} className="rounded-lg border border-border/60 bg-background/60 p-3 text-sm">
+            <div className="mb-1 flex flex-wrap items-center gap-2">
+              <Badge variant="secondary" className="text-[0.6rem]">Open</Badge>
+              {flag.lessonTitle ? (
+                <span className="font-medium">{flag.lessonTitle}</span>
+              ) : (
+                <span className="font-medium">Whole course</span>
+              )}
+              {flag.moduleTitle && (
+                <span className="text-xs text-muted-foreground">{flag.moduleTitle}</span>
+              )}
+            </div>
+            <p className="text-muted-foreground leading-relaxed">{flag.reason}</p>
+            <p className="mt-1 text-[0.65rem] text-muted-foreground">
+              {flag.reporterName ?? 'Learner'} · {flag.createdAt ? new Date(flag.createdAt).toLocaleDateString() : ''}
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button
+                size="sm"
+                variant="default"
+                disabled={busyId === flag.id}
+                onClick={() => void handleResolve(flag.id)}
+              >
+                Mark resolved
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={busyId === flag.id}
+                onClick={() => void handleDismiss(flag.id)}
+              >
+                Dismiss
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

@@ -110,7 +110,11 @@ export function PublicOnlyRoute() {
   }
 
   if (loading) {
-    return null;
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center text-sm text-muted-foreground">
+        Loading…
+      </div>
+    );
   }
 
   const hasInterests = !!localStorage.getItem(INTERESTS_KEY);

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation, useParams } from 'react-router';
+import { Link, useNavigate, useLocation, useParams, useSearchParams } from 'react-router';
 import axios from 'axios';
 import {
   ChevronDown, ChevronRight,
@@ -13,15 +13,20 @@ import {
   fetchCourseProgress,
   recordLessonView,
   submitModuleQuiz,
+  type ModuleQuizResult,
 } from '../api/courseApi';
+import { createCourseCheckout } from '../api/paymentApi';
 import { isTokenValid, useAuthSessionKey } from '../auth';
+import { formatPriceCents } from '../utils/formatPrice';
 import { useUserProfile } from '../context/UserProfileContext';
 import { useTheme, getC } from './ThemeContext';
 import { CourseGenerationLoader } from './CourseGenerationLoader';
+import { CoursePageNav } from './CoursePageNav';
 import { CourseChatWidget } from './CourseChatWidget';
 import { EducatorAssistantWidget, type AssistantApplyResult } from './EducatorAssistantWidget';
 import { QuibLogo } from './QuibLogo';
-import { CoursePageNav } from './CoursePageNav';
+import { PreCheckoutProfileModal } from './PreCheckoutProfileModal';
+import { isCheckoutProfileReady } from '../utils/checkoutProfile';
 import { LessonStudyContent } from './LessonNotes';
 import { YoutubeLessonPlayer } from './YoutubeLessonPlayer';
 import { LessonFeedbackPanel } from './LessonFeedbackPanel';
@@ -29,7 +34,6 @@ import { CourseReviewPanel } from './CourseReviewPanel';
 import { updateCourse } from '../api/educatorApi';
 import { buildSavePayloadFromAssistant } from '../utils/courseEditOperations';
 import type { CourseGenerationOptions, EditableCourse } from '../types/courseGeneration';
-import { isModuleQuizPassing } from '../types/courseGeneration';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -79,6 +83,11 @@ interface Course {
   videoTitle?: string;
   channelName?: string;
   videoLength?: string;
+  isFree?: boolean;
+  priceCents?: number;
+  currency?: string;
+  requiresPurchase?: boolean;
+  hasPurchased?: boolean;
 }
 
 const getYoutubeEmbedId = (videoId?: string, videoUrl?: string, fallbackUrl?: string): string => {
@@ -121,6 +130,17 @@ function getCourseGenerationError(err: unknown) {
   }
 
   return 'Unable to generate the course.';
+}
+
+function getCheckoutError(err: unknown) {
+  if (axios.isAxiosError(err)) {
+    const data = err.response?.data as { message?: string; details?: string } | undefined;
+    return data?.message || data?.details || err.message || 'Checkout is unavailable. Please try again later.';
+  }
+  if (err instanceof Error && err.message) {
+    return err.message;
+  }
+  return 'Checkout is unavailable. Please try again later.';
 }
 
 // ─── Learning Mode ─────────────────────────────────────────────────────────────
@@ -169,6 +189,9 @@ function LearningMode({
   const [progressMeta, setProgressMeta] = useState({ totalLessons: 0, totalQuizModules: 0 });
   const [quizAnswers, setQuizAnswers] = useState<Record<number, number>>({});
   const [quizSubmitted, setQuizSubmitted] = useState(false);
+  const [quizResult, setQuizResult] = useState<ModuleQuizResult | null>(null);
+  const [quizSubmitError, setQuizSubmitError] = useState<string | null>(null);
+  const [lessonActionError, setLessonActionError] = useState<string | null>(null);
 
   const reloadProgress = async () => {
     try {
@@ -211,6 +234,8 @@ function LearningMode({
     setActiveQuizModuleId(null);
     setQuizAnswers({});
     setQuizSubmitted(false);
+    setQuizResult(null);
+    setQuizSubmitError(null);
   };
 
   const openQuiz = (moduleId: string) => {
@@ -218,39 +243,56 @@ function LearningMode({
     setActiveLessonId('');
     setQuizAnswers({});
     setQuizSubmitted(false);
+    setQuizResult(null);
+    setQuizSubmitError(null);
   };
 
   const markComplete = async () => {
     if (!activeLessonId || completedLessons.has(activeLessonId)) return;
+    setLessonActionError(null);
     try {
       await completeLesson(courseId, activeLessonId);
       await reloadProgress();
       const idx = allLessons.findIndex((l) => l.id === activeLessonId);
       if (idx < allLessons.length - 1) setActiveLessonId(allLessons[idx + 1].id);
-    } catch {
-      /* keep local state unchanged on failure */
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response?.status === 401) {
+        setLessonActionError('Session expired. Please sign in again to save progress.');
+        return;
+      }
+      if (axios.isAxiosError(err) && err.response?.status === 402) {
+        setLessonActionError('Purchase required before marking lessons complete.');
+        return;
+      }
+      setLessonActionError('Could not save progress. Please try again.');
     }
   };
 
   const handleQuizSubmit = async () => {
     if (!activeQuizModule) return;
-    setQuizSubmitted(true);
+    setQuizSubmitError(null);
     try {
       const payload = Object.fromEntries(
         Object.entries(quizAnswers).map(([key, value]) => [key, value]),
       );
-      await submitModuleQuiz(courseId, activeQuizModule.id, payload);
+      const result = await submitModuleQuiz(courseId, activeQuizModule.id, payload);
+      setQuizResult(result);
+      setQuizSubmitted(true);
       await reloadProgress();
     } catch {
-      /* results still shown locally */
+      setQuizSubmitError('Could not submit quiz. Please sign in and try again.');
     }
   };
 
-  const quizScore = activeQuizModule
-    ? activeQuizModule.quiz.filter((q, i) => quizAnswers[i] === q.answer).length
-    : 0;
-  const quizTotal = activeQuizModule?.quiz.length ?? 0;
-  const quizPassed = isModuleQuizPassing(quizScore, quizTotal);
+  const correctAnswerForQuestion = (questionIndex: number): number | undefined => {
+    const fromResult = quizResult?.questionResults?.find((r) => r.questionIndex === questionIndex)?.correctAnswer;
+    if (fromResult != null && fromResult >= 0) return fromResult;
+    return undefined;
+  };
+
+  const quizScore = quizResult?.score ?? 0;
+  const quizTotal = quizResult?.total ?? activeQuizModule?.quiz.length ?? 0;
+  const quizPassed = quizResult?.passed ?? false;
   const completedCount = completedLessons.size;
   const totalLessons = progressMeta.totalLessons || allLessons.length;
   const passedQuizCount = passedModules.size;
@@ -401,7 +443,8 @@ function LearningMode({
                 theme={C}
                 moduleTitle={allLessons.find((l) => l.id === activeLessonId)?.moduleTitle}
               />
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-3">
                 {completedLessons.has(activeLessonId) ? (
                   <div className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-[0.82rem] font-[500]"
                     style={{ background: 'rgba(34,197,94,0.1)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.25)' }}>
@@ -415,10 +458,15 @@ function LearningMode({
                     Mark Complete & Continue
                   </button>
                 )}
+                </div>
+                {lessonActionError && (
+                  <p className="text-[0.8rem]" style={{ color: C.red }}>{lessonActionError}</p>
+                )}
               </div>
               <LessonFeedbackPanel
                 courseId={courseId}
                 lessonId={activeLessonId}
+                lessonTitle={activeLesson?.title}
                 enabled={chatSignedIn}
                 theme={C}
               />
@@ -441,8 +489,9 @@ function LearningMode({
                     <div className="space-y-2">
                       {q.options.map((opt, oi) => {
                         const selected = quizAnswers[qi] === oi;
-                        const correct = quizSubmitted && oi === q.answer;
-                        const wrong = quizSubmitted && selected && oi !== q.answer;
+                        const correctAnswer = correctAnswerForQuestion(qi);
+                        const correct = quizSubmitted && correctAnswer != null && oi === correctAnswer;
+                        const wrong = quizSubmitted && selected && correctAnswer != null && oi !== correctAnswer;
                         return (
                           <button key={oi} onClick={() => !quizSubmitted && setQuizAnswers((prev) => ({ ...prev, [qi]: oi }))}
                             className="w-full text-left px-4 py-3 rounded-xl text-[0.82rem] transition-all"
@@ -457,12 +506,17 @@ function LearningMode({
                 ))}
               </div>
               {!quizSubmitted ? (
-                <button onClick={handleQuizSubmit}
+                <div className="space-y-3">
+                  {quizSubmitError && (
+                    <p className="text-[0.82rem]" style={{ color: C.red }}>{quizSubmitError}</p>
+                  )}
+                  <button onClick={handleQuizSubmit}
                   disabled={Object.keys(quizAnswers).length < activeQuizModule.quiz.length}
                   className="px-8 py-3 rounded-lg text-[0.875rem] font-[600] cursor-pointer transition-all"
                   style={{ background: Object.keys(quizAnswers).length === activeQuizModule.quiz.length ? C.red : C.bg2, color: Object.keys(quizAnswers).length === activeQuizModule.quiz.length ? '#fff' : C.text3, border: 'none', boxShadow: Object.keys(quizAnswers).length === activeQuizModule.quiz.length ? '0 4px 16px rgba(225,6,0,0.25)' : 'none' }}>
                   Submit Quiz
                 </button>
+                </div>
               ) : (
                 <div className="rounded-2xl p-6" style={{ background: quizPassed ? 'rgba(34,197,94,0.08)' : 'rgba(225,6,0,0.06)', border: `1px solid ${quizPassed ? 'rgba(34,197,94,0.25)' : 'rgba(225,6,0,0.2)'}` }}>
                   <div className="flex items-center gap-4">
@@ -542,7 +596,8 @@ export function CourseDetails() {
   const navigate = useNavigate();
   const location = useLocation();
   const { courseId: courseIdParam } = useParams();
-  const { profile, refreshProfile } = useUserProfile();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { profile, refreshProfile, setProfile } = useUserProfile();
   const authSessionKey = useAuthSessionKey();
   const chatSignedIn = isTokenValid();
 
@@ -575,6 +630,7 @@ export function CourseDetails() {
   const [publishing, setPublishing] = useState(false);
   const [publishError, setPublishError] = useState<string | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [showPreCheckout, setShowPreCheckout] = useState(false);
 
   const isEducator = profile?.role === 'educator' || profile?.role === 'admin';
   const canPublish = isOwner && isEducator;
@@ -774,12 +830,17 @@ export function CourseDetails() {
           courseId?: string;
           isPublished?: boolean;
           isOwner?: boolean;
+          isFree?: boolean;
+          priceCents?: number;
+          currency?: string;
+          requiresPurchase?: boolean;
+          hasPurchased?: boolean;
         };
         setCourse(data);
         setResolvedCourseId(data.courseId ?? courseId);
         setIsPublished(!!data.isPublished);
         setIsOwner(!!data.isOwner);
-        setExpandedModules(new Set([data.modules[0]?.id]));
+        setExpandedModules(new Set([data.modules?.[0]?.id].filter(Boolean) as string[]));
         if (data.playlistUrl) {
           sessionStorage.setItem('courseYoutubeUrl', data.playlistUrl);
         }
@@ -801,6 +862,37 @@ export function CourseDetails() {
     loadCourse();
     return () => { mounted = false; };
   }, [courseId, youtubeUrl, videoUrls, generationOptions]);
+
+  useEffect(() => {
+    if (searchParams.get('checkout') !== 'success' || !resolvedCourseId) {
+      return;
+    }
+    if (!isTokenValid()) {
+      navigate('/signin', {
+        replace: true,
+        state: { returnTo: `/course-details/${resolvedCourseId}?checkout=success` },
+      });
+      return;
+    }
+    let mounted = true;
+    const completePurchase = async () => {
+      try {
+        await enrollCourse(resolvedCourseId);
+        if (!mounted) return;
+        setSearchParams({}, { replace: true });
+        const res = await axios.get(`/api/course/${resolvedCourseId}`);
+        const data = res.data as Course;
+        setCourse((prev) => (prev ? { ...prev, ...data } : data));
+        setLearningMode(true);
+      } catch {
+        if (mounted) {
+          setError('Payment received — finishing enrollment failed. Try Start Learning again.');
+        }
+      }
+    };
+    void completePurchase();
+    return () => { mounted = false; };
+  }, [resolvedCourseId, searchParams, setSearchParams, navigate]);
 
   const handleUnpublish = async () => {
     if (!resolvedCourseId) return;
@@ -838,6 +930,8 @@ export function CourseDetails() {
     return next;
   });
 
+  const isGenerating = !courseId && (!!youtubeUrl || (videoUrls?.length ?? 0) > 0);
+
   // ── Loading ──
   if (loading) {
     return (
@@ -858,7 +952,18 @@ export function CourseDetails() {
           )}
         />
         <div className="flex-1 flex flex-col items-center justify-center px-6" style={{ paddingTop: 56 }}>
-          <CourseGenerationLoader />
+          {isGenerating ? (
+            <CourseGenerationLoader />
+          ) : (
+            <div className="text-center space-y-3">
+              <div
+                className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-transparent"
+                style={{ borderTopColor: C.red, borderRightColor: C.red }}
+                aria-hidden
+              />
+              <p className="text-[0.9rem]" style={{ color: C.text2 }}>Loading course…</p>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -899,6 +1004,19 @@ export function CourseDetails() {
     );
   }
 
+  const priceLabel = formatPriceCents(
+    course.isFree === false && course.priceCents ? course.priceCents : 0,
+    course.currency,
+  );
+  const showPaidCta = !!course.requiresPurchase && !isOwner;
+  const startButtonLabel = showPaidCta ? `Buy course · ${priceLabel}` : 'Start Learning';
+
+  const proceedToCheckout = async () => {
+    if (!resolvedCourseId) return;
+    const url = await createCourseCheckout(resolvedCourseId);
+    window.location.href = url;
+  };
+
   const handleStartLearning = async () => {
     if (!resolvedCourseId) return;
     if (!isTokenValid()) {
@@ -906,12 +1024,40 @@ export function CourseDetails() {
       return;
     }
     try {
+      if (showPaidCta) {
+        if (!isCheckoutProfileReady(profile)) {
+          setShowPreCheckout(true);
+          return;
+        }
+        await proceedToCheckout();
+        return;
+      }
       await enrollCourse(resolvedCourseId);
       setLearningMode(true);
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.status === 401) {
         navigate('/signin', { state: { returnTo: `/course-details/${resolvedCourseId}` } });
         return;
+      }
+      if (axios.isAxiosError(err) && err.response?.status === 402) {
+        try {
+          if (!isCheckoutProfileReady(profile)) {
+            setShowPreCheckout(true);
+            return;
+          }
+          await proceedToCheckout();
+          return;
+        } catch (checkoutErr) {
+          setError(getCheckoutError(checkoutErr));
+          return;
+        }
+      }
+      if (axios.isAxiosError(err) && err.response?.status === 400) {
+        const msg = (err.response.data as { message?: string })?.message;
+        if (msg?.toLowerCase().includes('mobile')) {
+          setShowPreCheckout(true);
+          return;
+        }
       }
       setError('Unable to start learning. Please sign in and try again.');
     }
@@ -959,9 +1105,10 @@ export function CourseDetails() {
     );
   }
 
-  const totalLessons = course.modules.reduce((acc, m) => acc + m.lessons.length, 0);
-  const linkedVideoLessons = course.modules.reduce(
-    (acc, m) => acc + m.lessons.filter((l) => l.type === 'video' && (l.videoId || l.videoUrl)).length,
+  const modules = course.modules ?? [];
+  const totalLessons = modules.reduce((acc, m) => acc + (m.lessons?.length ?? 0), 0);
+  const linkedVideoLessons = modules.reduce(
+    (acc, m) => acc + (m.lessons ?? []).filter((l) => l.type === 'video' && (l.videoId || l.videoUrl)).length,
     0,
   );
   const sourcePlaylistSize = course.playlistVideos?.length;
@@ -1038,6 +1185,7 @@ export function CourseDetails() {
               { icon: <Calendar className="w-3.5 h-3.5" />, label: course.date },
               { icon: <Layers className="w-3.5 h-3.5" />, label: `${course.modules.length} Modules` },
               { icon: <PlayCircle className="w-3.5 h-3.5" />, label: `${totalLessons} Lessons` },
+              { icon: <BookOpen className="w-3.5 h-3.5" />, label: priceLabel },
               ...(linkedVideoLessons > 0
                 ? [{ icon: <PlayCircle className="w-3.5 h-3.5" />, label: `${linkedVideoLessons} Video lessons` }]
                 : []),
@@ -1155,12 +1303,12 @@ export function CourseDetails() {
             style={{ background: C.red, color: '#fff', border: 'none', boxShadow: '0 4px 16px rgba(225,6,0,0.3)' }}
             onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.9')}
             onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}>
-            Start Learning <ArrowUpRight className="w-4 h-4" />
+            {startButtonLabel} <ArrowUpRight className="w-4 h-4" />
           </button>
         </div>
 
         <div className="space-y-3">
-          {course.modules.map((mod, modIdx) => {
+          {modules.map((mod, modIdx) => {
             const isExpanded = expandedModules.has(mod.id);
             return (
               <div key={mod.id} className="rounded-2xl overflow-hidden" style={{ border: `1px solid ${C.border}`, background: C.bg1 }}>
@@ -1207,7 +1355,7 @@ export function CourseDetails() {
                         <span className="text-sm flex-shrink-0">📝</span>
                         <div className="flex-1">
                           <span className="text-[0.82rem] font-[500]" style={{ color: C.red }}>Module Quiz</span>
-                          <span className="text-[0.72rem] ml-2" style={{ color: isDark ? 'rgba(225,6,0,0.6)' : 'rgba(225,6,0,0.5)' }}>· {mod.quiz.length} questions</span>
+                          <span className="text-[0.72rem] ml-2" style={{ color: isDark ? 'rgba(225,6,0,0.6)' : 'rgba(225,6,0,0.5)' }}>· {mod.quiz?.length ?? 0} questions</span>
                         </div>
                         <button onClick={handleStartLearning}
                           className="text-[0.72rem] font-[600] px-3 py-1.5 rounded-lg cursor-pointer"
@@ -1231,7 +1379,7 @@ export function CourseDetails() {
             style={{ background: C.red, color: '#fff', border: 'none', boxShadow: '0 6px 24px rgba(225,6,0,0.3)' }}
             onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.9')}
             onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}>
-            Start Learning <ArrowUpRight className="w-4 h-4" />
+            {startButtonLabel} <ArrowUpRight className="w-4 h-4" />
           </button>
           <p className="text-[0.78rem] mt-3" style={{ color: C.text3 }}>
             {totalLessons} video lessons · {course.modules.length} module quizzes · Certificate on completion
@@ -1256,6 +1404,20 @@ export function CourseDetails() {
           signedIn={chatSignedIn}
           onSignInRequired={handleChatSignIn}
           sessionKey={chatSessionKey}
+        />
+      )}
+      {showPreCheckout && profile && (
+        <PreCheckoutProfileModal
+          profile={profile}
+          theme={C}
+          onCancel={() => setShowPreCheckout(false)}
+          onComplete={(updated) => {
+            setProfile(updated);
+            setShowPreCheckout(false);
+            void proceedToCheckout().catch((checkoutErr) => {
+              setError(getCheckoutError(checkoutErr));
+            });
+          }}
         />
       )}
     </div>

@@ -1,11 +1,13 @@
 import { useMemo } from 'react';
 import type { EnrollmentTrendPoint } from '../../api/educatorAnalyticsApi';
+import type { EnrollmentTrendGranularity } from './EnrollmentTrendPanel';
 
 type TrendBarChartProps = {
   points: EnrollmentTrendPoint[];
   maxBars?: number;
   className?: string;
   heightClass?: string;
+  granularity?: EnrollmentTrendGranularity;
 };
 
 /** Lightweight CSS bar chart — brand-accented, hover tooltips. */
@@ -14,6 +16,7 @@ export function TrendBarChart({
   maxBars = 30,
   className,
   heightClass = 'h-36',
+  granularity = 'daily',
 }: TrendBarChartProps) {
   const bars = useMemo(() => {
     const slice = points.length > maxBars ? points.slice(points.length - maxBars) : points;
@@ -23,12 +26,12 @@ export function TrendBarChart({
       items: slice.map((p) => ({
         ...p,
         heightPercent: (p.count / peak) * 100,
-        label: formatShortDate(p.date),
+        label: formatTrendLabel(p.date, granularity),
       })),
       total,
       peak,
     };
-  }, [points, maxBars]);
+  }, [points, maxBars, granularity]);
 
   if (bars.items.length === 0) {
     return (
@@ -73,9 +76,13 @@ export function TrendBarChart({
   );
 }
 
-function formatShortDate(iso: string): string {
+function formatTrendLabel(iso: string, granularity: EnrollmentTrendGranularity): string {
   try {
-    return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    const date = new Date(iso);
+    if (granularity === 'monthly') {
+      return date.toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+    }
+    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   } catch {
     return iso;
   }

@@ -73,6 +73,26 @@ export async function setLessonReaction(
   return data;
 }
 
+export interface ContentFlagReport {
+  id: string;
+  courseId: string;
+  lessonId: string | null;
+  reason: string | null;
+  status: string;
+  createdAt?: string;
+}
+
+export async function reportOutdatedContent(
+  courseId: string,
+  payload: { lessonId?: string; reason: string },
+): Promise<ContentFlagReport> {
+  const { data } = await axios.post<ContentFlagReport>(
+    `/api/courses/${courseId}/content-flags`,
+    payload,
+  );
+  return data;
+}
+
 export async function replyToLearnerComment(
   courseId: string,
   commentId: string,
