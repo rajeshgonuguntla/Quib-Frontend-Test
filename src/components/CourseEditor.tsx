@@ -34,7 +34,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Badge } from './ui/badge';
-import { ModuleAssignmentEditor } from './assignments/ModuleAssignmentEditor';
+import { CourseAssignmentEditor } from './assignments/ModuleAssignmentEditor';
 
 const DIFFICULTIES = ['Beginner', 'Intermediate', 'Advanced'] as const;
 
@@ -673,12 +673,20 @@ export function CourseEditor() {
               </div>
             </div>
 
-            {courseId && (
-              <ModuleAssignmentEditor courseId={courseId} moduleId={module.id} />
-            )}
           </CardContent>
         </Card>
       ))}
+
+      {courseId && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Course assignment</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <CourseAssignmentEditor courseId={courseId} />
+          </CardContent>
+        </Card>
+      )}
 
     </>
   );
@@ -713,8 +721,8 @@ export function CourseEditor() {
         </div>
       </header>
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden md:flex-row">
-        <aside className="flex h-[min(42vh,420px)] min-h-0 shrink-0 flex-col overflow-hidden border-b border-border md:h-full md:w-[min(380px,34vw)] md:border-b-0 md:border-r">
+      <div className="grid min-h-0 flex-1 overflow-hidden grid-rows-[minmax(0,min(42vh,420px))_minmax(0,1fr)] md:grid-cols-[min(380px,34vw)_minmax(0,1fr)] md:grid-rows-1">
+        <aside className="flex min-h-0 flex-col overflow-hidden border-b border-border md:border-b-0 md:border-r">
           {courseId && (
             <div className="flex h-full min-h-0 flex-col">
               <EducatorAssistantWidget
@@ -730,7 +738,7 @@ export function CourseEditor() {
           )}
         </aside>
 
-        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-4 sm:p-6">
+        <div className="min-h-0 overflow-y-auto overscroll-y-contain p-4 sm:p-6">
           {editorBody}
         </div>
       </div>

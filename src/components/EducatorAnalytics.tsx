@@ -325,7 +325,7 @@ export function EducatorAnalytics() {
                   <div className="min-w-0">
                     <p className="font-medium truncate">{sub.assignmentTitle}</p>
                     <p className="text-xs text-muted-foreground">
-                      {sub.studentName} · {sub.courseTitle} / {sub.moduleTitle}
+                      {sub.studentName} · {sub.courseTitle}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {sub.filename} · {new Date(sub.submittedAt).toLocaleString()}

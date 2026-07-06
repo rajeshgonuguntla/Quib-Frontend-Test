@@ -29,7 +29,7 @@ import { PreCheckoutProfileModal } from './PreCheckoutProfileModal';
 import { isCheckoutProfileReady } from '../utils/checkoutProfile';
 import { LessonStudyContent } from './LessonNotes';
 import { fetchCourseAssignmentSummary } from '../api/assignmentApi';
-import { ModuleAssignmentPanel } from './assignments/ModuleAssignmentPanel';
+import { CourseAssignmentPanel } from './assignments/ModuleAssignmentPanel';
 import { YoutubeLessonPlayer } from './YoutubeLessonPlayer';
 import { LessonFeedbackPanel } from './LessonFeedbackPanel';
 import { CourseReviewPanel } from './CourseReviewPanel';
@@ -185,11 +185,11 @@ function LearningMode({
   );
   const [activeLessonId, setActiveLessonId] = useState<string>(firstLessonId);
   const [activeQuizModuleId, setActiveQuizModuleId] = useState<string | null>(null);
-  const [activeAssignmentModuleId, setActiveAssignmentModuleId] = useState<string | null>(null);
+  const [activeAssignment, setActiveAssignment] = useState(false);
   const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set());
   const [passedModules, setPassedModules] = useState<Set<string>>(new Set());
-  const [passedAssignmentModules, setPassedAssignmentModules] = useState<Set<string>>(new Set());
-  const [assignmentModuleIds, setAssignmentModuleIds] = useState<Set<string>>(new Set());
+  const [assignmentPassed, setAssignmentPassed] = useState(false);
+  const [hasCourseAssignment, setHasCourseAssignment] = useState(false);
   const [progressPercent, setProgressPercent] = useState(0);
   const [progressMeta, setProgressMeta] = useState({
     totalLessons: 0,
@@ -207,7 +207,7 @@ function LearningMode({
       const progress = await fetchCourseProgress(courseId);
       setCompletedLessons(new Set(progress.completedLessonIds));
       setPassedModules(new Set(progress.passedModuleIds));
-      setPassedAssignmentModules(new Set(progress.passedAssignmentModuleIds ?? []));
+      setAssignmentPassed((progress.passedAssignmentModuleIds ?? []).includes('course'));
       setProgressPercent(progress.progressPercent);
       setProgressMeta({
         totalLessons: progress.totalLessons,
@@ -226,11 +226,11 @@ function LearningMode({
   useEffect(() => {
     let mounted = true;
     fetchCourseAssignmentSummary(courseId)
-      .then((items) => {
-        if (mounted) setAssignmentModuleIds(new Set(items.map((i) => i.moduleId)));
+      .then((summary) => {
+        if (mounted) setHasCourseAssignment(summary != null);
       })
       .catch(() => {
-        if (mounted) setAssignmentModuleIds(new Set());
+        if (mounted) setHasCourseAssignment(false);
       });
     return () => {
       mounted = false;
@@ -257,7 +257,7 @@ function LearningMode({
   const openLesson = (id: string) => {
     setActiveLessonId(id);
     setActiveQuizModuleId(null);
-    setActiveAssignmentModuleId(null);
+    setActiveAssignment(false);
     setQuizAnswers({});
     setQuizSubmitted(false);
     setQuizResult(null);
@@ -266,7 +266,7 @@ function LearningMode({
 
   const openQuiz = (moduleId: string) => {
     setActiveQuizModuleId(moduleId);
-    setActiveAssignmentModuleId(null);
+    setActiveAssignment(false);
     setActiveLessonId('');
     setQuizAnswers({});
     setQuizSubmitted(false);
@@ -274,8 +274,8 @@ function LearningMode({
     setQuizSubmitError(null);
   };
 
-  const openAssignment = (moduleId: string) => {
-    setActiveAssignmentModuleId(moduleId);
+  const openAssignment = () => {
+    setActiveAssignment(true);
     setActiveQuizModuleId(null);
     setActiveLessonId('');
     setQuizAnswers({});
@@ -283,8 +283,6 @@ function LearningMode({
     setQuizResult(null);
     setQuizSubmitError(null);
   };
-
-  const activeAssignmentModule = course.modules.find((m) => m.id === activeAssignmentModuleId);
 
   const markComplete = async () => {
     if (!activeLessonId || completedLessons.has(activeLessonId)) return;
@@ -335,11 +333,11 @@ function LearningMode({
   const completedCount = completedLessons.size;
   const totalLessons = progressMeta.totalLessons || allLessons.length;
   const passedQuizCount = passedModules.size;
-  const passedAssignmentCount = passedAssignmentModules.size;
+  const passedAssignmentCount = assignmentPassed ? 1 : 0;
   const totalQuizModules = progressMeta.totalQuizModules
     || course.modules.filter((m) => (m.quiz?.length ?? 0) > 0).length;
   const totalAssignmentModules = progressMeta.totalAssignmentModules
-    || assignmentModuleIds.size;
+    || (hasCourseAssignment ? 1 : 0);
   const progressPct = progressPercent;
   const embedId = activeLesson
     ? getYoutubeEmbedId(activeLesson.videoId, activeLesson.videoUrl, youtubeUrl)
@@ -441,27 +439,37 @@ function LearningMode({
                         </div>
                       </button>
                       )}
-                      {assignmentModuleIds.has(mod.id) && (
-                      <button onClick={() => openAssignment(mod.id)} className="w-full flex items-center gap-3 px-4 py-2.5 text-left"
-                        style={{ background: activeAssignmentModuleId === mod.id ? isDark ? 'rgba(225,6,0,0.08)' : 'rgba(225,6,0,0.05)' : 'transparent', border: 'none', borderLeft: activeAssignmentModuleId === mod.id ? `2px solid ${C.red}` : '2px solid transparent', cursor: 'pointer' }}
-                        onMouseEnter={(e) => { if (activeAssignmentModuleId !== mod.id) e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'; }}
-                        onMouseLeave={(e) => { if (activeAssignmentModuleId !== mod.id) e.currentTarget.style.background = 'transparent'; }}>
-                        {passedAssignmentModules.has(mod.id) ? (
-                          <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#22c55e' }} />
-                        ) : (
-                          <FileText className="w-3.5 h-3.5 flex-shrink-0" style={{ color: activeAssignmentModuleId === mod.id ? C.red : C.text3 }} />
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <p className="text-[0.78rem] font-[500]" style={{ color: activeAssignmentModuleId === mod.id ? C.red : C.text2 }}>Assignment</p>
-                          <p className="text-[0.66rem] mt-0.5" style={{ color: C.text3 }}>Submit work</p>
-                        </div>
-                      </button>
-                      )}
                     </div>
                   )}
                 </div>
               );
             })}
+            {hasCourseAssignment && (
+              <button
+                type="button"
+                onClick={() => openAssignment()}
+                className="w-full flex items-center gap-3 px-4 py-3 text-left"
+                style={{
+                  background: activeAssignment ? isDark ? 'rgba(225,6,0,0.08)' : 'rgba(225,6,0,0.05)' : 'transparent',
+                  border: 'none',
+                  borderTop: `1px solid ${C.border}`,
+                  borderLeft: activeAssignment ? `2px solid ${C.red}` : '2px solid transparent',
+                  cursor: 'pointer',
+                }}
+                onMouseEnter={(e) => { if (!activeAssignment) e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'; }}
+                onMouseLeave={(e) => { if (!activeAssignment) e.currentTarget.style.background = 'transparent'; }}
+              >
+                {assignmentPassed ? (
+                  <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#22c55e' }} />
+                ) : (
+                  <FileText className="w-3.5 h-3.5 flex-shrink-0" style={{ color: activeAssignment ? C.red : C.text3 }} />
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="text-[0.78rem] font-[500]" style={{ color: activeAssignment ? C.red : C.text2 }}>Course assignment</p>
+                  <p className="text-[0.66rem] mt-0.5" style={{ color: C.text3 }}>Submit work</p>
+                </div>
+              </button>
+            )}
           </div>
         </aside>
 
@@ -477,7 +485,6 @@ function LearningMode({
                 {course.modules.map((mod, modIdx) => {
                   const isExpanded = expandedModules.has(mod.id);
                   const hasQuiz = (mod.quiz?.length ?? 0) > 0;
-                  const hasAssignment = assignmentModuleIds.has(mod.id);
                   return (
                     <div key={mod.id} className="rounded-lg overflow-hidden" style={{ border: `1px solid ${C.border}` }}>
                       <button
@@ -495,7 +502,7 @@ function LearningMode({
                       {isExpanded && (
                         <div className="pb-1">
                           {mod.lessons.map((lesson) => {
-                            const isActive = activeLessonId === lesson.id && !activeQuizModuleId && !activeAssignmentModuleId;
+                            const isActive = activeLessonId === lesson.id && !activeQuizModuleId && !activeAssignment;
                             return (
                               <button
                                 key={lesson.id}
@@ -528,31 +535,31 @@ function LearningMode({
                               📝 Module Quiz ({mod.quiz?.length ?? 0})
                             </button>
                           )}
-                          {hasAssignment && (
-                            <button
-                              type="button"
-                              onClick={() => openAssignment(mod.id)}
-                              className="w-full text-left px-3 py-2 text-[0.78rem] font-[500]"
-                              style={{
-                                background: activeAssignmentModuleId === mod.id ? isDark ? 'rgba(225,6,0,0.08)' : 'rgba(225,6,0,0.05)' : 'transparent',
-                                border: 'none',
-                                color: activeAssignmentModuleId === mod.id ? C.red : C.text2,
-                                cursor: 'pointer',
-                              }}
-                            >
-                              Assignment
-                            </button>
-                          )}
                         </div>
                       )}
                     </div>
                   );
                 })}
+                {hasCourseAssignment && (
+                  <button
+                    type="button"
+                    onClick={() => openAssignment()}
+                    className="w-full text-left px-3 py-2 text-[0.78rem] font-[500] rounded-lg"
+                    style={{
+                      background: activeAssignment ? isDark ? 'rgba(225,6,0,0.08)' : 'rgba(225,6,0,0.05)' : 'transparent',
+                      border: `1px solid ${C.border}`,
+                      color: activeAssignment ? C.red : C.text2,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Course assignment
+                  </button>
+                )}
               </div>
             </div>
           </div>
 
-          {activeLesson && !activeQuizModuleId && !activeAssignmentModuleId && (
+          {activeLesson && !activeQuizModuleId && !activeAssignment && (
             <div className="max-w-3xl mx-auto px-6 py-10">
               <p className="text-[0.7rem] mb-5 uppercase tracking-widest" style={{ color: C.text3, fontFamily: 'var(--mono)' }}>
                 {allLessons.find((l) => l.id === activeLessonId)?.moduleTitle}
@@ -684,18 +691,16 @@ function LearningMode({
             </div>
           )}
 
-          {activeAssignmentModule && activeAssignmentModuleId && (
-            <ModuleAssignmentPanel
+          {activeAssignment && (
+            <CourseAssignmentPanel
               courseId={courseId}
-              moduleId={activeAssignmentModuleId}
-              moduleTitle={activeAssignmentModule.title}
               C={C}
               isDark={isDark}
               onSubmitted={() => void reloadProgress()}
             />
           )}
 
-          {!activeLesson && !activeQuizModuleId && !activeAssignmentModuleId && (
+          {!activeLesson && !activeQuizModuleId && !activeAssignment && (
             <div className="max-w-3xl mx-auto px-6 py-10 text-center">
               <p className="text-[0.9rem] mb-4" style={{ color: C.text2 }}>
                 {allLessons.length === 0
