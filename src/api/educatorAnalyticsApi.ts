@@ -41,11 +41,25 @@ export interface MaintenanceSignal {
   targetType?: string | null;
 }
 
+export interface PendingAssignmentSubmission {
+  submissionId: string;
+  courseId: string;
+  courseTitle: string;
+  moduleId: string;
+  moduleTitle: string;
+  assignmentTitle: string;
+  studentEmail: string;
+  studentName: string;
+  filename: string;
+  submittedAt: string;
+}
+
 export interface EducatorAnalyticsDashboard {
   overview: EducatorAnalyticsOverview;
   enrollmentTrends: EnrollmentTrends;
   courses: EducatorCourseMetrics[];
   maintenanceSignals: MaintenanceSignal[];
+  pendingAssignmentSubmissions?: PendingAssignmentSubmission[];
 }
 
 export interface ModuleFunnelStep {

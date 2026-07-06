@@ -3,11 +3,14 @@ import axios from 'axios';
 export interface CourseProgress {
   completedLessonIds: string[];
   passedModuleIds: string[];
+  passedAssignmentModuleIds?: string[];
   progressPercent: number;
   totalLessons: number;
   completedLessons: number;
   totalQuizModules: number;
   passedQuizModules: number;
+  totalAssignmentModules?: number;
+  passedAssignmentModules?: number;
 }
 
 export async function enrollCourse(courseId: string): Promise<void> {
@@ -19,11 +22,14 @@ export async function fetchCourseProgress(courseId: string): Promise<CourseProgr
   return res.data ?? {
     completedLessonIds: [],
     passedModuleIds: [],
+    passedAssignmentModuleIds: [],
     progressPercent: 0,
     totalLessons: 0,
     completedLessons: 0,
     totalQuizModules: 0,
     passedQuizModules: 0,
+    totalAssignmentModules: 0,
+    passedAssignmentModules: 0,
   };
 }
 

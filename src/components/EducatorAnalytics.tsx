@@ -21,6 +21,7 @@ import {
   ThumbsDown,
   ThumbsUp,
   TrendingUp,
+  Upload,
   Users,
   X,
 } from 'lucide-react';
@@ -71,6 +72,7 @@ export function EducatorAnalytics() {
           setDashboard({
             ...data,
             enrollmentTrends: data.enrollmentTrends ?? { daily: [], weekly: [], monthly: [] },
+            pendingAssignmentSubmissions: data.pendingAssignmentSubmissions ?? [],
           });
         }
       } catch {
@@ -149,6 +151,7 @@ export function EducatorAnalytics() {
   }
 
   const { overview } = dashboard;
+  const pendingSubmissions = dashboard.pendingAssignmentSubmissions ?? [];
 
   return (
     <div className="space-y-8">
@@ -303,6 +306,44 @@ export function EducatorAnalytics() {
           </CardContent>
         </Card>
       </motion.div>
+
+      {pendingSubmissions.length > 0 && (
+        <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.12 }}>
+          <Card className="overflow-hidden">
+            <CardHeader className="border-b border-border/60 bg-muted/30 pb-4">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Upload className="size-4 text-[var(--chart-1)]" />
+                  <CardTitle className="text-base">Pending assignment submissions</CardTitle>
+                </div>
+                <Badge variant="secondary">{pendingSubmissions.length}</Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="divide-y divide-border/60 p-0">
+              {pendingSubmissions.map((sub) => (
+                <div key={sub.submissionId} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm">
+                  <div className="min-w-0">
+                    <p className="font-medium truncate">{sub.assignmentTitle}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {sub.studentName} · {sub.courseTitle} / {sub.moduleTitle}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {sub.filename} · {new Date(sub.submittedAt).toLocaleString()}
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate(`/educator-courses/${sub.courseId}/edit`)}
+                  >
+                    Grade in editor
+                  </Button>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.15 }}>
         <div className="mb-4 flex items-center gap-2">

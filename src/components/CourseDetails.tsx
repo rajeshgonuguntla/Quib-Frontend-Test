@@ -28,6 +28,8 @@ import { QuibLogo } from './QuibLogo';
 import { PreCheckoutProfileModal } from './PreCheckoutProfileModal';
 import { isCheckoutProfileReady } from '../utils/checkoutProfile';
 import { LessonStudyContent } from './LessonNotes';
+import { fetchCourseAssignmentSummary } from '../api/assignmentApi';
+import { ModuleAssignmentPanel } from './assignments/ModuleAssignmentPanel';
 import { YoutubeLessonPlayer } from './YoutubeLessonPlayer';
 import { LessonFeedbackPanel } from './LessonFeedbackPanel';
 import { CourseReviewPanel } from './CourseReviewPanel';
@@ -183,10 +185,17 @@ function LearningMode({
   );
   const [activeLessonId, setActiveLessonId] = useState<string>(firstLessonId);
   const [activeQuizModuleId, setActiveQuizModuleId] = useState<string | null>(null);
+  const [activeAssignmentModuleId, setActiveAssignmentModuleId] = useState<string | null>(null);
   const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set());
   const [passedModules, setPassedModules] = useState<Set<string>>(new Set());
+  const [passedAssignmentModules, setPassedAssignmentModules] = useState<Set<string>>(new Set());
+  const [assignmentModuleIds, setAssignmentModuleIds] = useState<Set<string>>(new Set());
   const [progressPercent, setProgressPercent] = useState(0);
-  const [progressMeta, setProgressMeta] = useState({ totalLessons: 0, totalQuizModules: 0 });
+  const [progressMeta, setProgressMeta] = useState({
+    totalLessons: 0,
+    totalQuizModules: 0,
+    totalAssignmentModules: 0,
+  });
   const [quizAnswers, setQuizAnswers] = useState<Record<number, number>>({});
   const [quizSubmitted, setQuizSubmitted] = useState(false);
   const [quizResult, setQuizResult] = useState<ModuleQuizResult | null>(null);
@@ -198,10 +207,12 @@ function LearningMode({
       const progress = await fetchCourseProgress(courseId);
       setCompletedLessons(new Set(progress.completedLessonIds));
       setPassedModules(new Set(progress.passedModuleIds));
+      setPassedAssignmentModules(new Set(progress.passedAssignmentModuleIds ?? []));
       setProgressPercent(progress.progressPercent);
       setProgressMeta({
         totalLessons: progress.totalLessons,
         totalQuizModules: progress.totalQuizModules,
+        totalAssignmentModules: progress.totalAssignmentModules ?? 0,
       });
     } catch {
       /* progress unavailable until enrolled */
@@ -210,6 +221,20 @@ function LearningMode({
 
   useEffect(() => {
     void reloadProgress();
+  }, [courseId]);
+
+  useEffect(() => {
+    let mounted = true;
+    fetchCourseAssignmentSummary(courseId)
+      .then((items) => {
+        if (mounted) setAssignmentModuleIds(new Set(items.map((i) => i.moduleId)));
+      })
+      .catch(() => {
+        if (mounted) setAssignmentModuleIds(new Set());
+      });
+    return () => {
+      mounted = false;
+    };
   }, [courseId]);
 
   useEffect(() => {
@@ -232,6 +257,7 @@ function LearningMode({
   const openLesson = (id: string) => {
     setActiveLessonId(id);
     setActiveQuizModuleId(null);
+    setActiveAssignmentModuleId(null);
     setQuizAnswers({});
     setQuizSubmitted(false);
     setQuizResult(null);
@@ -240,12 +266,25 @@ function LearningMode({
 
   const openQuiz = (moduleId: string) => {
     setActiveQuizModuleId(moduleId);
+    setActiveAssignmentModuleId(null);
     setActiveLessonId('');
     setQuizAnswers({});
     setQuizSubmitted(false);
     setQuizResult(null);
     setQuizSubmitError(null);
   };
+
+  const openAssignment = (moduleId: string) => {
+    setActiveAssignmentModuleId(moduleId);
+    setActiveQuizModuleId(null);
+    setActiveLessonId('');
+    setQuizAnswers({});
+    setQuizSubmitted(false);
+    setQuizResult(null);
+    setQuizSubmitError(null);
+  };
+
+  const activeAssignmentModule = course.modules.find((m) => m.id === activeAssignmentModuleId);
 
   const markComplete = async () => {
     if (!activeLessonId || completedLessons.has(activeLessonId)) return;
@@ -296,8 +335,11 @@ function LearningMode({
   const completedCount = completedLessons.size;
   const totalLessons = progressMeta.totalLessons || allLessons.length;
   const passedQuizCount = passedModules.size;
+  const passedAssignmentCount = passedAssignmentModules.size;
   const totalQuizModules = progressMeta.totalQuizModules
     || course.modules.filter((m) => (m.quiz?.length ?? 0) > 0).length;
+  const totalAssignmentModules = progressMeta.totalAssignmentModules
+    || assignmentModuleIds.size;
   const progressPct = progressPercent;
   const embedId = activeLesson
     ? getYoutubeEmbedId(activeLesson.videoId, activeLesson.videoUrl, youtubeUrl)
@@ -335,6 +377,7 @@ function LearningMode({
               </div>
               <span className="text-[0.68rem]" style={{ color: C.text3 }}>
                 {completedCount}/{totalLessons} lessons · {passedQuizCount}/{totalQuizModules} quizzes
+                {totalAssignmentModules > 0 ? ` · ${passedAssignmentCount}/${totalAssignmentModules} assignments` : ''}
               </span>
             </div>
           </div>
@@ -382,6 +425,7 @@ function LearningMode({
                           </button>
                         );
                       })}
+                      {(mod.quiz?.length ?? 0) > 0 && (
                       <button onClick={() => openQuiz(mod.id)} className="w-full flex items-center gap-3 px-4 py-2.5 text-left"
                         style={{ background: activeQuizModuleId === mod.id ? isDark ? 'rgba(225,6,0,0.08)' : 'rgba(225,6,0,0.05)' : 'transparent', border: 'none', borderLeft: activeQuizModuleId === mod.id ? `2px solid ${C.red}` : '2px solid transparent', cursor: 'pointer' }}
                         onMouseEnter={(e) => { if (activeQuizModuleId !== mod.id) e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'; }}
@@ -396,6 +440,23 @@ function LearningMode({
                           <p className="text-[0.66rem] mt-0.5" style={{ color: C.text3 }}>{mod.quiz?.length ?? 0} questions</p>
                         </div>
                       </button>
+                      )}
+                      {assignmentModuleIds.has(mod.id) && (
+                      <button onClick={() => openAssignment(mod.id)} className="w-full flex items-center gap-3 px-4 py-2.5 text-left"
+                        style={{ background: activeAssignmentModuleId === mod.id ? isDark ? 'rgba(225,6,0,0.08)' : 'rgba(225,6,0,0.05)' : 'transparent', border: 'none', borderLeft: activeAssignmentModuleId === mod.id ? `2px solid ${C.red}` : '2px solid transparent', cursor: 'pointer' }}
+                        onMouseEnter={(e) => { if (activeAssignmentModuleId !== mod.id) e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'; }}
+                        onMouseLeave={(e) => { if (activeAssignmentModuleId !== mod.id) e.currentTarget.style.background = 'transparent'; }}>
+                        {passedAssignmentModules.has(mod.id) ? (
+                          <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#22c55e' }} />
+                        ) : (
+                          <FileText className="w-3.5 h-3.5 flex-shrink-0" style={{ color: activeAssignmentModuleId === mod.id ? C.red : C.text3 }} />
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[0.78rem] font-[500]" style={{ color: activeAssignmentModuleId === mod.id ? C.red : C.text2 }}>Assignment</p>
+                          <p className="text-[0.66rem] mt-0.5" style={{ color: C.text3 }}>Submit work</p>
+                        </div>
+                      </button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -406,7 +467,92 @@ function LearningMode({
 
         {/* Main */}
         <main className="flex-1 min-w-0">
-          {activeLesson && !activeQuizModuleId && (
+          {/* Mobile course outline */}
+          <div className="md:hidden border-b" style={{ borderColor: C.border, background: C.bg1 }}>
+            <div className="px-4 py-3">
+              <p className="text-[0.7rem] uppercase tracking-widest mb-2" style={{ color: C.text3, fontFamily: 'var(--mono)' }}>
+                Course outline
+              </p>
+              <div className="space-y-2 max-h-56 overflow-y-auto">
+                {course.modules.map((mod, modIdx) => {
+                  const isExpanded = expandedModules.has(mod.id);
+                  const hasQuiz = (mod.quiz?.length ?? 0) > 0;
+                  const hasAssignment = assignmentModuleIds.has(mod.id);
+                  return (
+                    <div key={mod.id} className="rounded-lg overflow-hidden" style={{ border: `1px solid ${C.border}` }}>
+                      <button
+                        type="button"
+                        onClick={() => toggleModule(mod.id)}
+                        className="w-full flex items-center justify-between px-3 py-2 text-left"
+                        style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
+                      >
+                        <span className="text-[0.8rem] font-[500] truncate" style={{ color: C.text }}>
+                          {modIdx + 1}. {mod.title}
+                        </span>
+                        {isExpanded ? <ChevronDown className="w-3.5 h-3.5" style={{ color: C.text3 }} />
+                          : <ChevronRight className="w-3.5 h-3.5" style={{ color: C.text3 }} />}
+                      </button>
+                      {isExpanded && (
+                        <div className="pb-1">
+                          {mod.lessons.map((lesson) => {
+                            const isActive = activeLessonId === lesson.id && !activeQuizModuleId && !activeAssignmentModuleId;
+                            return (
+                              <button
+                                key={lesson.id}
+                                type="button"
+                                onClick={() => openLesson(lesson.id)}
+                                className="w-full text-left px-3 py-2 text-[0.78rem] truncate"
+                                style={{
+                                  background: isActive ? isDark ? 'rgba(225,6,0,0.08)' : 'rgba(225,6,0,0.05)' : 'transparent',
+                                  border: 'none',
+                                  color: isActive ? C.red : C.text2,
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                {lesson.title}
+                              </button>
+                            );
+                          })}
+                          {hasQuiz && (
+                            <button
+                              type="button"
+                              onClick={() => openQuiz(mod.id)}
+                              className="w-full text-left px-3 py-2 text-[0.78rem] font-[500]"
+                              style={{
+                                background: activeQuizModuleId === mod.id ? isDark ? 'rgba(225,6,0,0.08)' : 'rgba(225,6,0,0.05)' : 'transparent',
+                                border: 'none',
+                                color: activeQuizModuleId === mod.id ? C.red : C.text2,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              📝 Module Quiz ({mod.quiz?.length ?? 0})
+                            </button>
+                          )}
+                          {hasAssignment && (
+                            <button
+                              type="button"
+                              onClick={() => openAssignment(mod.id)}
+                              className="w-full text-left px-3 py-2 text-[0.78rem] font-[500]"
+                              style={{
+                                background: activeAssignmentModuleId === mod.id ? isDark ? 'rgba(225,6,0,0.08)' : 'rgba(225,6,0,0.05)' : 'transparent',
+                                border: 'none',
+                                color: activeAssignmentModuleId === mod.id ? C.red : C.text2,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              Assignment
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {activeLesson && !activeQuizModuleId && !activeAssignmentModuleId && (
             <div className="max-w-3xl mx-auto px-6 py-10">
               <p className="text-[0.7rem] mb-5 uppercase tracking-widest" style={{ color: C.text3, fontFamily: 'var(--mono)' }}>
                 {allLessons.find((l) => l.id === activeLessonId)?.moduleTitle}
@@ -538,26 +684,24 @@ function LearningMode({
             </div>
           )}
 
-          {!activeLesson && !activeQuizModuleId && (
-            <div className="max-w-3xl mx-auto px-6 py-10 text-center md:text-left">
+          {activeAssignmentModule && activeAssignmentModuleId && (
+            <ModuleAssignmentPanel
+              courseId={courseId}
+              moduleId={activeAssignmentModuleId}
+              moduleTitle={activeAssignmentModule.title}
+              C={C}
+              isDark={isDark}
+              onSubmitted={() => void reloadProgress()}
+            />
+          )}
+
+          {!activeLesson && !activeQuizModuleId && !activeAssignmentModuleId && (
+            <div className="max-w-3xl mx-auto px-6 py-10 text-center">
               <p className="text-[0.9rem] mb-4" style={{ color: C.text2 }}>
                 {allLessons.length === 0
                   ? 'This course has no lessons yet.'
-                  : 'Select a lesson from the course outline to begin.'}
+                  : 'Select a lesson, quiz, or assignment from the outline above.'}
               </p>
-              <div className="md:hidden space-y-2">
-                {allLessons.map((lesson) => (
-                  <button
-                    key={lesson.id}
-                    type="button"
-                    onClick={() => openLesson(lesson.id)}
-                    className="w-full text-left px-4 py-3 rounded-xl text-[0.85rem]"
-                    style={{ background: C.bg1, border: `1px solid ${C.border}`, color: C.text, cursor: 'pointer' }}
-                  >
-                    {lesson.title}
-                  </button>
-                ))}
-              </div>
             </div>
           )}
         </main>

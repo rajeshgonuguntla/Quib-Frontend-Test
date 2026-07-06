@@ -34,6 +34,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Badge } from './ui/badge';
+import { ModuleAssignmentEditor } from './assignments/ModuleAssignmentEditor';
 
 const DIFFICULTIES = ['Beginner', 'Intermediate', 'Advanced'] as const;
 
@@ -671,6 +672,10 @@ export function CourseEditor() {
                 ))}
               </div>
             </div>
+
+            {courseId && (
+              <ModuleAssignmentEditor courseId={courseId} moduleId={module.id} />
+            )}
           </CardContent>
         </Card>
       ))}
