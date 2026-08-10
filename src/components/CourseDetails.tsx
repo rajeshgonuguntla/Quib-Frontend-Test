@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useLocation, useParams, useSearchParams } from 'react-router';
 import axios from 'axios';
 import {
@@ -35,6 +35,7 @@ import { LessonFeedbackPanel } from './LessonFeedbackPanel';
 import { CourseReviewPanel } from './CourseReviewPanel';
 import { updateCourse } from '../api/educatorApi';
 import { buildSavePayloadFromAssistant } from '../utils/courseEditOperations';
+import { downloadCoursePdf } from '../utils/downloadCoursePdf';
 import type { CourseGenerationOptions, EditableCourse } from '../types/courseGeneration';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -201,6 +202,20 @@ function LearningMode({
   const [quizResult, setQuizResult] = useState<ModuleQuizResult | null>(null);
   const [quizSubmitError, setQuizSubmitError] = useState<string | null>(null);
   const [lessonActionError, setLessonActionError] = useState<string | null>(null);
+  const [downloadBusy, setDownloadBusy] = useState(false);
+
+  const handleDownloadCourse = useCallback(async () => {
+    if (downloadBusy) return;
+    setDownloadBusy(true);
+    try {
+      await downloadCoursePdf(course);
+    } catch (err) {
+      console.error('Course download failed', err);
+      window.alert('Unable to download the course. Please try again.');
+    } finally {
+      setDownloadBusy(false);
+    }
+  }, [course, downloadBusy]);
 
   const reloadProgress = async () => {
     try {
@@ -350,6 +365,8 @@ function LearningMode({
         isDark={isDark}
         toggleTheme={toggleTheme}
         navBg={navBg}
+        onDownloadCourse={() => void handleDownloadCourse()}
+        downloadBusy={downloadBusy}
         left={(
           <>
             <button onClick={onBack} className="flex items-center gap-1.5 cursor-pointer" style={{ background: 'none', border: 'none', color: C.text2, padding: 0 }}>
@@ -780,11 +797,25 @@ export function CourseDetails() {
   const [publishError, setPublishError] = useState<string | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
   const [showPreCheckout, setShowPreCheckout] = useState(false);
+  const [downloadBusy, setDownloadBusy] = useState(false);
 
   const isEducator = profile?.role === 'educator' || profile?.role === 'admin';
   const canPublish = isOwner && isEducator;
 
   const navBg = isDark ? 'rgba(6,6,8,0.92)' : 'rgba(255,255,255,0.92)';
+
+  const handleDownloadCourse = useCallback(async () => {
+    if (!course || downloadBusy) return;
+    setDownloadBusy(true);
+    try {
+      await downloadCoursePdf(course);
+    } catch (err) {
+      console.error('Course download failed', err);
+      window.alert('Unable to download the course. Please try again.');
+    } finally {
+      setDownloadBusy(false);
+    }
+  }, [course, downloadBusy]);
 
   useEffect(() => {
     if (youtubeUrl) sessionStorage.setItem('courseYoutubeUrl', youtubeUrl);
@@ -1300,6 +1331,8 @@ export function CourseDetails() {
         isDark={isDark}
         toggleTheme={toggleTheme}
         navBg={navBg}
+        onDownloadCourse={() => void handleDownloadCourse()}
+        downloadBusy={downloadBusy}
         left={(
           <>
             <button onClick={handleBack} className="flex items-center gap-1.5 cursor-pointer"

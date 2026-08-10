@@ -12,7 +12,8 @@ type NotesTheme = {
 
 function formatInline(text: string, theme: NotesTheme): ReactNode[] {
   const parts: ReactNode[] = [];
-  const pattern = /(\*\*[^*]+\*\*|`[^`]+`)/g;
+  // Bold before italic so **x** is not treated as nested italics.
+  const pattern = /(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g;
   let last = 0;
   let match: RegExpExecArray | null;
   let key = 0;
@@ -27,6 +28,12 @@ function formatInline(text: string, theme: NotesTheme): ReactNode[] {
         <strong key={key++} style={{ color: theme.text, fontWeight: 600 }}>
           {token.slice(2, -2)}
         </strong>,
+      );
+    } else if (token.startsWith('*')) {
+      parts.push(
+        <em key={key++} style={{ color: theme.text2 }}>
+          {token.slice(1, -1)}
+        </em>,
       );
     } else {
       parts.push(

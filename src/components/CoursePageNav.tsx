@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { Sun, Moon } from 'lucide-react';
+import { Sun, Moon, Download, Loader2 } from 'lucide-react';
 import { clearToken, isTokenValid } from '../auth';
 import { useUserProfile } from '../context/UserProfileContext';
 import { UserAvatar } from './UserAvatar';
@@ -24,6 +24,9 @@ type CoursePageNavProps = {
   navBg: string;
   left?: ReactNode;
   center?: ReactNode;
+  /** Download course PDF — shown left of the theme toggle. */
+  onDownloadCourse?: () => void;
+  downloadBusy?: boolean;
 };
 
 export function CoursePageNav({
@@ -33,6 +36,8 @@ export function CoursePageNav({
   navBg,
   left,
   center,
+  onDownloadCourse,
+  downloadBusy = false,
 }: CoursePageNavProps) {
   const navigate = useNavigate();
   const { profile, setProfile } = useUserProfile();
@@ -97,6 +102,28 @@ export function CoursePageNav({
       </div>
 
       <div className="flex items-center gap-2 shrink-0">
+        {onDownloadCourse && (
+          <button
+            type="button"
+            onClick={onDownloadCourse}
+            disabled={downloadBusy}
+            className="w-8 h-8 rounded-lg flex items-center justify-center disabled:opacity-60"
+            style={{
+              background: isDark ? 'rgba(225,6,0,0.12)' : 'rgba(225,6,0,0.08)',
+              border: `1px solid ${isDark ? 'rgba(225,6,0,0.35)' : 'rgba(225,6,0,0.25)'}`,
+              color: C.red,
+              cursor: downloadBusy ? 'wait' : 'pointer',
+            }}
+            aria-label={downloadBusy ? 'Preparing download' : 'Download course'}
+            title="Download course"
+          >
+            {downloadBusy ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Download className="w-3.5 h-3.5" />
+            )}
+          </button>
+        )}
         <button
           type="button"
           onClick={toggleTheme}

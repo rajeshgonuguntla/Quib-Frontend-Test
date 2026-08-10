@@ -4,6 +4,7 @@ import axios from 'axios';
 import { enrollCourse } from '../api/courseApi';
 import { sendCourseChat, type CourseChatMessage } from '../api/courseChatApi';
 import { useTheme, getC } from './ThemeContext';
+import { LessonNotes } from './LessonNotes';
 
 interface CourseChatWidgetProps {
   courseId: string;
@@ -14,6 +15,8 @@ interface CourseChatWidgetProps {
   onSignInRequired?: () => void;
   /** Changes on login/logout/refresh — forces a fresh in-memory chat (never persisted). */
   sessionKey: string;
+  /** `panel` = docked full-height column on the lesson page; `floating` = FAB overlay. */
+  variant?: 'floating' | 'panel';
 }
 
 function getChatError(err: unknown): string {
@@ -41,10 +44,12 @@ export function CourseChatWidget({
   signedIn,
   onSignInRequired,
   sessionKey,
+  variant = 'floating',
 }: CourseChatWidgetProps) {
+  const isPanel = variant === 'panel';
   const { isDark } = useTheme();
   const C = getC(isDark);
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(isPanel);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<CourseChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
@@ -56,14 +61,14 @@ export function CourseChatWidget({
     setMessages([]);
     setInput('');
     setError(null);
-    setOpen(false);
-  }, [courseId, sessionKey]);
+    if (!isPanel) setOpen(false);
+  }, [courseId, sessionKey, isPanel]);
 
   useEffect(() => {
-    if (open && scrollRef.current) {
+    if ((open || isPanel) && scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [open, messages, loading]);
+  }, [open, isPanel, messages, loading]);
 
   const sendMessage = async () => {
     const text = input.trim();
@@ -111,123 +116,158 @@ export function CourseChatWidget({
 
   const panelBg = isDark ? 'rgba(12,12,16,0.98)' : 'rgba(255,255,255,0.98)';
 
+  const chatPanel = (
+    <div
+      className={
+        isPanel
+          ? 'flex h-full min-h-0 w-full flex-col overflow-hidden'
+          : 'flex flex-col overflow-hidden rounded-2xl shadow-2xl'
+      }
+      style={
+        isPanel
+          ? { background: C.bg }
+          : {
+              width: 'min(380px, calc(100vw - 2rem))',
+              height: 'min(520px, calc(100vh - 8rem))',
+              background: panelBg,
+              border: `1px solid ${C.border}`,
+              backdropFilter: 'blur(20px)',
+            }
+      }
+    >
+      <div
+        className="flex shrink-0 items-center justify-between px-4 py-3"
+        style={{ borderBottom: `1px solid ${C.border}`, background: C.bg1 }}
+      >
+        <div className="min-w-0">
+          <p className="text-[0.85rem] font-[600] truncate" style={{ color: C.text }}>
+            Course tutor
+          </p>
+          <p className="text-[0.7rem] truncate" style={{ color: C.text3 }}>
+            {courseTitle}
+          </p>
+        </div>
+        {!isPanel && (
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className="w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer"
+            style={{ background: C.bg2, border: `1px solid ${C.border}`, color: C.text2 }}
+            aria-label="Close chat"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+
+      <div
+        ref={scrollRef}
+        className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-4 py-4 space-y-3"
+        style={{ background: C.bg }}
+      >
+        {messages.length === 0 && (
+          <div
+            className="rounded-xl px-4 py-3 text-[0.8rem] leading-relaxed"
+            style={{ background: C.bg1, border: `1px solid ${C.border}`, color: C.text2 }}
+          >
+            {signedIn
+              ? 'Hi! Ask me anything about this course — I\'m here to help.'
+              : 'Sign in to chat with your course tutor.'}
+          </div>
+        )}
+        {messages.map((msg, idx) => (
+          <div
+            key={`${msg.role}-${idx}`}
+            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+          >
+            <div
+              className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-[0.82rem] leading-relaxed ${
+                msg.role === 'user'
+                  ? 'whitespace-pre-wrap'
+                  : '[&_p]:mb-1.5 [&_p:last-child]:mb-0 [&_ul]:mb-1.5 [&_ul:last-child]:mb-0 [&_pre]:mb-2 [&_h2]:mt-2 [&_h3]:mt-2 [&_.lesson-notes]:text-[0.82rem]'
+              }`}
+              style={{
+                background: msg.role === 'user' ? C.red : C.bg1,
+                color: msg.role === 'user' ? '#fff' : C.text,
+                border: msg.role === 'user' ? 'none' : `1px solid ${C.border}`,
+              }}
+            >
+              {msg.role === 'assistant' ? (
+                <LessonNotes
+                  content={msg.content}
+                  theme={{
+                    text: C.text,
+                    text2: C.text2,
+                    text3: C.text3,
+                    border: C.border,
+                    bg1: C.bg1,
+                    bg2: C.bg2,
+                    red: C.red,
+                  }}
+                />
+              ) : (
+                msg.content
+              )}
+            </div>
+          </div>
+        ))}
+        {loading && (
+          <div className="flex items-center gap-2 text-[0.78rem]" style={{ color: C.text3 }}>
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Thinking…
+          </div>
+        )}
+      </div>
+
+      {error && (
+        <p className="shrink-0 px-4 pb-2 text-[0.75rem]" style={{ color: C.red }}>
+          {error}
+        </p>
+      )}
+
+      <div
+        className="flex shrink-0 items-end gap-2 px-3 py-3"
+        style={{ borderTop: `1px solid ${C.border}`, background: C.bg1 }}
+      >
+        <textarea
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              void sendMessage();
+            }
+          }}
+          rows={2}
+          placeholder={signedIn ? 'Ask a question about this course…' : 'Sign in to ask a question…'}
+          className="flex-1 resize-none rounded-xl px-3 py-2 text-[0.82rem] outline-none"
+          style={{
+            background: C.bg2,
+            border: `1px solid ${C.border}`,
+            color: C.text,
+          }}
+        />
+        <button
+          type="button"
+          onClick={() => void sendMessage()}
+          disabled={!input.trim() || loading}
+          className="w-10 h-10 rounded-xl flex items-center justify-center cursor-pointer disabled:opacity-50"
+          style={{ background: C.red, color: '#fff', border: 'none' }}
+          aria-label="Send message"
+        >
+          <Send className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+
+  if (isPanel) {
+    return chatPanel;
+  }
+
   return (
     <div className="fixed bottom-6 right-6 z-[200] flex flex-col items-end gap-3">
-      {open && (
-        <div
-          className="flex flex-col overflow-hidden rounded-2xl shadow-2xl"
-          style={{
-            width: 'min(380px, calc(100vw - 2rem))',
-            height: 'min(520px, calc(100vh - 8rem))',
-            background: panelBg,
-            border: `1px solid ${C.border}`,
-            backdropFilter: 'blur(20px)',
-          }}
-        >
-          <div
-            className="flex items-center justify-between px-4 py-3"
-            style={{ borderBottom: `1px solid ${C.border}`, background: C.bg1 }}
-          >
-            <div className="min-w-0">
-              <p className="text-[0.85rem] font-[600] truncate" style={{ color: C.text }}>
-                Course tutor
-              </p>
-              <p className="text-[0.7rem] truncate" style={{ color: C.text3 }}>
-                {courseTitle}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              className="w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer"
-              style={{ background: C.bg2, border: `1px solid ${C.border}`, color: C.text2 }}
-              aria-label="Close chat"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-
-          <div
-            ref={scrollRef}
-            className="flex-1 overflow-y-auto px-4 py-4 space-y-3"
-            style={{ background: C.bg }}
-          >
-            {messages.length === 0 && (
-              <div
-                className="rounded-xl px-4 py-3 text-[0.8rem] leading-relaxed"
-                style={{ background: C.bg1, border: `1px solid ${C.border}`, color: C.text2 }}
-              >
-                {signedIn
-                  ? 'Hi! Ask me anything about this course — I\'m here to help.'
-                  : 'Sign in to chat with your course tutor.'}
-              </div>
-            )}
-            {messages.map((msg, idx) => (
-              <div
-                key={`${msg.role}-${idx}`}
-                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                <div
-                  className="max-w-[85%] rounded-2xl px-3.5 py-2.5 text-[0.82rem] leading-relaxed whitespace-pre-wrap"
-                  style={{
-                    background: msg.role === 'user' ? C.red : C.bg1,
-                    color: msg.role === 'user' ? '#fff' : C.text,
-                    border: msg.role === 'user' ? 'none' : `1px solid ${C.border}`,
-                  }}
-                >
-                  {msg.content}
-                </div>
-              </div>
-            ))}
-            {loading && (
-              <div className="flex items-center gap-2 text-[0.78rem]" style={{ color: C.text3 }}>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Thinking…
-              </div>
-            )}
-          </div>
-
-          {error && (
-            <p className="px-4 pb-2 text-[0.75rem]" style={{ color: C.red }}>
-              {error}
-            </p>
-          )}
-
-          <div
-            className="flex items-end gap-2 px-3 py-3"
-            style={{ borderTop: `1px solid ${C.border}`, background: C.bg1 }}
-          >
-            <textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  void sendMessage();
-                }
-              }}
-              rows={2}
-              placeholder={signedIn ? 'Ask a question about this course…' : 'Sign in to ask a question…'}
-              className="flex-1 resize-none rounded-xl px-3 py-2 text-[0.82rem] outline-none"
-              style={{
-                background: C.bg2,
-                border: `1px solid ${C.border}`,
-                color: C.text,
-              }}
-            />
-            <button
-              type="button"
-              onClick={() => void sendMessage()}
-              disabled={!input.trim() || loading}
-              className="w-10 h-10 rounded-xl flex items-center justify-center cursor-pointer disabled:opacity-50"
-              style={{ background: C.red, color: '#fff', border: 'none' }}
-              aria-label="Send message"
-            >
-              <Send className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      )}
+      {open && chatPanel}
 
       <button
         type="button"
