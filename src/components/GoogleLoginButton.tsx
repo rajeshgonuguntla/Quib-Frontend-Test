@@ -7,7 +7,10 @@ import { fetchUserProfileWithToken } from '../api/userApi';
 import { fetchOnboarding } from '../api/catalogApi';
 import { clearToken, notifyAuthChanged } from '../auth';
 import { INTERESTS_KEY, EDUCATORS_KEY } from './Onboarding';
+import type { UserProfile } from '../types/userProfile';
+import type { OnboardingState } from '../types/catalog';
 import {
+  CREATOR_FLOW_ENABLED,
   EDUCATOR_USE_CREATOR_LOGIN_MESSAGE,
   isEducatorAccount,
   isEducatorRoute,
@@ -15,6 +18,12 @@ import {
   setSignInIntent,
   type SignInIntent,
 } from '../utils/signInIntent';
+
+type GoogleAuthResponse = {
+  token: string;
+  profile?: UserProfile | null;
+  onboarding?: OnboardingState | null;
+};
 
 type GoogleLoginButtonProps = {
   theme?: 'outline' | 'filled_blue' | 'filled_black';
@@ -33,7 +42,7 @@ function GoogleLoginButton({
 }: GoogleLoginButtonProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { refreshProfile } = useUserProfile();
+  const { setProfile } = useUserProfile();
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [signInError, setSignInError] = useState<string | null>(null);
 
@@ -61,17 +70,31 @@ function GoogleLoginButton({
     try {
       clearToken();
 
-      const res = await axios.post('/api/auth/google', {
+      const res = await axios.post<GoogleAuthResponse>('/api/auth/google', {
         token: credentialResponse.credential,
       });
 
-      const jwt = res.data.token as string;
-      const profile = await fetchUserProfileWithToken(jwt);
+      const jwt = res.data.token;
+      // Prefer bootstrap payload from auth; fall back for older backends.
+      let profile = res.data.profile ?? null;
+      let onboarding = res.data.onboarding ?? null;
 
-      const intent: SignInIntent =
+      if (!profile || !onboarding) {
+        localStorage.setItem('token', jwt);
+        const [fallbackProfile, fallbackOnboarding] = await Promise.all([
+          profile ? Promise.resolve(profile) : fetchUserProfileWithToken(jwt),
+          onboarding ? Promise.resolve(onboarding) : fetchOnboarding().catch(() => null),
+        ]);
+        profile = fallbackProfile;
+        onboarding = fallbackOnboarding;
+      }
+
+      const requestedIntent: SignInIntent =
         signInIntent ?? (location.state?.signInIntent as SignInIntent | undefined) ?? 'student';
+      // ponytail: creator flow gated — always student until CREATOR_FLOW_ENABLED
+      const intent: SignInIntent = CREATOR_FLOW_ENABLED ? requestedIntent : 'student';
 
-      if (intent === 'student' && isEducatorAccount(profile)) {
+      if (CREATOR_FLOW_ENABLED && intent === 'student' && isEducatorAccount(profile)) {
         clearToken();
         showBlocked(EDUCATOR_USE_CREATOR_LOGIN_MESSAGE);
         setIsSigningIn(false);
@@ -80,9 +103,10 @@ function GoogleLoginButton({
 
       localStorage.setItem('token', jwt);
       notifyAuthChanged();
-      await refreshProfile();
+      setProfile(profile);
 
-      const effectiveIntent: SignInIntent = isEducatorAccount(profile) ? 'creator' : intent;
+      const effectiveIntent: SignInIntent =
+        CREATOR_FLOW_ENABLED && isEducatorAccount(profile) ? 'creator' : intent;
       setSignInIntent(effectiveIntent);
 
       let destination = location.state?.returnTo as string | undefined;
@@ -91,22 +115,19 @@ function GoogleLoginButton({
         destination = undefined;
       }
 
-      try {
-        const onboarding = await fetchOnboarding();
-        if (onboarding.completed) {
-          localStorage.setItem(INTERESTS_KEY, JSON.stringify(onboarding.interestIds ?? []));
-          localStorage.setItem(EDUCATORS_KEY, JSON.stringify(onboarding.followedCreatorIds ?? []));
-          if (!destination) {
-            destination = resolveDefaultDestination(profile, effectiveIntent, true);
-          }
-        } else if (!destination) {
-          destination = resolveDefaultDestination(profile, effectiveIntent, false);
-        }
-      } catch {
-        const hasInterests = !!localStorage.getItem(INTERESTS_KEY);
+      if (onboarding?.completed) {
+        localStorage.setItem(INTERESTS_KEY, JSON.stringify(onboarding.interestIds ?? []));
+        localStorage.setItem(EDUCATORS_KEY, JSON.stringify(onboarding.followedCreatorIds ?? []));
         if (!destination) {
-          destination = resolveDefaultDestination(profile, effectiveIntent, hasInterests);
+          destination = resolveDefaultDestination(profile, effectiveIntent, true);
         }
+      } else if (!destination) {
+        const hasInterests = !!localStorage.getItem(INTERESTS_KEY);
+        destination = resolveDefaultDestination(
+          profile,
+          effectiveIntent,
+          onboarding ? onboarding.completed : hasInterests,
+        );
       }
 
       navigate(destination, {
@@ -136,7 +157,7 @@ function GoogleLoginButton({
             style={{ borderColor: 'rgba(225,6,0,0.35)', borderTopColor: '#e10600' }}
           />
           <p className="text-sm font-medium text-white/80">Signing you in…</p>
-          <p className="text-xs text-white/45">Loading your profile</p>
+          <p className="text-xs text-white/45">Almost there</p>
         </div>
       )}
       <div style={{ opacity: isSigningIn ? 0.5 : 1, pointerEvents: isSigningIn ? 'none' : 'auto' }}>

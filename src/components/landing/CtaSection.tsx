@@ -12,6 +12,7 @@ import { BookOpen, GraduationCap, Play, Sparkles } from 'lucide-react';
 import { LandingThumb } from './LandingThumb';
 import { LANDING_CTA_TOPICS } from './landingThumbnails';
 import { useTheme } from '../ThemeContext';
+import { CREATOR_FLOW_ENABLED } from '../../utils/signInIntent';
 
 const MODES = [
   { label: 'learn', line: 'Paste a YouTube video or playlist URL', hint: 'Sign in · Generate a quiz · Save your progress' },
@@ -230,7 +231,7 @@ export function CtaSection() {
             transition={{ delay: 0.4, type: 'spring', stiffness: 200 }}
             className="inline-block bg-gradient-to-r from-[var(--landing-fg)] via-[var(--brand,#e10600)] to-[var(--landing-fg)] bg-clip-text text-transparent"
           >
-            Quib
+            Cuib
           </motion.span>
         </h2>
 
@@ -300,13 +301,16 @@ export function CtaSection() {
             </Link>
           </motion.div>
 
-          <Link
-            to="/signin"
-            state={{ signInIntent: 'creator' }}
-            className="rounded-md border border-[var(--landing-border)] bg-[var(--landing-card)]/50 px-7 py-3.5 text-sm text-[var(--landing-fg)] no-underline backdrop-blur-sm transition-colors hover:border-[var(--brand,#e10600)] hover:text-[var(--landing-fg)]"
-          >
-            For educators
-          </Link>
+          {/* ponytail: restore with CREATOR_FLOW_ENABLED */}
+          {CREATOR_FLOW_ENABLED && (
+            <Link
+              to="/signin"
+              state={{ signInIntent: 'creator' }}
+              className="rounded-md border border-[var(--landing-border)] bg-[var(--landing-card)]/50 px-7 py-3.5 text-sm text-[var(--landing-fg)] no-underline backdrop-blur-sm transition-colors hover:border-[var(--brand,#e10600)] hover:text-[var(--landing-fg)]"
+            >
+              For educators
+            </Link>
+          )}
         </motion.div>
 
         {/* Honest capability strip */}

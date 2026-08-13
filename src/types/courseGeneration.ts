@@ -24,6 +24,8 @@ export type CourseGenerationOptions = {
   questionsPerModule: number;
   courseStructure: CourseStructure;
   contentLanguage: ContentLanguage;
+  /** Freeform brief from course-builder follow-ups — injected into Gemini prompt. */
+  builderNotes?: string;
 };
 
 export const DEFAULT_GENERATION_OPTIONS: CourseGenerationOptions = {

@@ -82,7 +82,7 @@ export function AppSidebar({ pathname, search, onNavigate }: AppSidebarProps) {
       <div className="flex h-14 shrink-0 items-center gap-3 border-b border-border px-4">
         <QuibLogoBadge size={28} className="size-7 shrink-0" />
         <div>
-          <span className="text-sm font-semibold tracking-tight text-foreground">Quib</span>
+          <span className="text-sm font-semibold tracking-tight text-foreground">Cuib</span>
           <span className="text-label -mt-0.5 block text-muted-foreground">Platform</span>
         </div>
       </div>

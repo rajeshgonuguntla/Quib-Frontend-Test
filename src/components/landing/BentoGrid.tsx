@@ -104,7 +104,7 @@ export function BentoGrid() {
   return (
     <section id="teach" ref={ref} className="border-t border-[var(--landing-border)] px-5 py-24 md:px-8 md:py-32">
       <div className="mx-auto max-w-6xl">
-        {/* Teach — replaces Quib branding + Workflows bento cards */}
+        {/* Teach — replaces Cuib branding + Workflows bento cards */}
         <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-12 lg:gap-12">
           <motion.div
             initial={{ opacity: 0, y: 24 }}
@@ -114,7 +114,7 @@ export function BentoGrid() {
           >
             <h2 className="text-3xl font-semibold tracking-tight text-[var(--landing-fg)] md:text-4xl">Teach</h2>
             <p className="landing-mono-label mt-4 max-w-xs leading-relaxed">
-              Publish to the Quib catalog. Your audience gets modules, assessments, and timestamp-linked lessons.
+              Publish to the Cuib catalog. Your audience gets modules, assessments, and timestamp-linked lessons.
             </p>
           </motion.div>
 

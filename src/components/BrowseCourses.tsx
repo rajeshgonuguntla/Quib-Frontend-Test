@@ -43,7 +43,7 @@ export function BrowseCourses() {
       <PageHeader
         label="Courses"
         title="Browse"
-        description="Published courses from educators on Quib."
+        description="Published courses from educators on Cuib."
       />
 
       <div className="mb-8 flex flex-wrap items-center gap-4">

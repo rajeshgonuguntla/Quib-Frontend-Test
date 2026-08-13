@@ -108,7 +108,7 @@ export function Results() {
   const correctAnswers = apiResult?.correctCount ?? questionReview.filter((q) => q.isCorrect).length;
   const score = apiResult?.scorePercent ?? (totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0);
   const passed = apiResult?.passed ?? score >= 70;
-  const shareText = `I scored ${score}% on "${quizTitle}" on Quib! Can you beat my score?`;
+  const shareText = `I scored ${score}% on "${quizTitle}" on Cuib! Can you beat my score?`;
 
   const breakdown = (
     ['mcq', 'trueFalse', 'shortAnswer'] as Question['type'][]

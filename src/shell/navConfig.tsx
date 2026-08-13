@@ -109,7 +109,7 @@ export function getRouteMeta(pathname: string): RouteMeta {
   if (pathname.startsWith('/results/')) {
     return { title: 'Results', section: 'Quiz', parent: { label: 'Dashboard', path: '/dashboard' } };
   }
-  return ROUTE_META[pathname] ?? { title: 'Quib', section: 'Dashboard' };
+  return ROUTE_META[pathname] ?? { title: 'Cuib', section: 'Dashboard' };
 }
 
 export const FULL_BLEED_PATHS = ['/onboarding', '/quiz/', '/certificate/'];

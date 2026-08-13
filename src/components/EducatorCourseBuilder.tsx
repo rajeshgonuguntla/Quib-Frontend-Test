@@ -52,7 +52,7 @@ export function EducatorCourseBuilder() {
         <Link to="/educator-studio" className="no-underline" style={{ color: C.text }}>
           <QuibLogo
             size={18}
-            wordmark="Quib Studio"
+            wordmark="Cuib Studio"
             wordmarkClassName="text-[1.05rem] font-[700] tracking-tight"
             variant={isDark ? 'dark' : 'light'}
           />

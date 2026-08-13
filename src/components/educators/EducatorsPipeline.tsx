@@ -21,14 +21,14 @@ const STEPS = [
   },
   {
     num: '02',
-    title: 'Quib builds the course',
-    desc: 'Quib generates modules, lessons, and quizzes from the video content. Course generation can take a few minutes.',
+    title: 'Cuib builds the course',
+    desc: 'Cuib generates modules, lessons, and quizzes from the video content. Course generation can take a few minutes.',
     topic: 'machine-learning' as LandingThumbTopic,
   },
   {
     num: '03',
     title: 'Publish to the catalog',
-    desc: 'Review your course, publish it, and share it with learners on Quib.',
+    desc: 'Review your course, publish it, and share it with learners on Cuib.',
     topic: 'course-catalog' as LandingThumbTopic,
   },
 ];

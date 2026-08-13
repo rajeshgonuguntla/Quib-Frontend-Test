@@ -38,7 +38,9 @@ const PAGE_W = 595.28; // A4 pt
 const PAGE_H = 841.89;
 const CONTENT_W = PAGE_W - MARGIN * 2;
 const LOGO_SIZE = 36;
-const BRAND = 'Quib';
+import { BRAND_NAME } from '../brand';
+
+const BRAND = BRAND_NAME;
 const ACCENT: [number, number, number] = [225, 6, 0];
 const TEXT: [number, number, number] = [28, 28, 32];
 const MUTED: [number, number, number] = [100, 100, 110];
@@ -81,7 +83,7 @@ async function loadQuibLogoPng(): Promise<string> {
     const img = await new Promise<HTMLImageElement>((resolve, reject) => {
       const el = new Image();
       el.onload = () => resolve(el);
-      el.onerror = () => reject(new Error('Failed to load Quib logo'));
+      el.onerror = () => reject(new Error('Failed to load Cuib logo'));
       el.src = url;
     });
 
@@ -540,7 +542,7 @@ function addFooter(doc: jsPDF, pageCount: number) {
   }
 }
 
-/** Download a neatly formatted PDF of the course with the Quib logo top-right. */
+/** Download a neatly formatted PDF of the course with the Cuib logo top-right. */
 export async function downloadCoursePdf(course: DownloadableCourse): Promise<void> {
   const doc = new jsPDF({ unit: 'pt', format: 'a4', orientation: 'portrait' });
   let logoDataUrl: string | null = null;
@@ -631,5 +633,5 @@ export async function downloadCoursePdf(course: DownloadableCourse): Promise<voi
   });
 
   addFooter(doc, doc.getNumberOfPages());
-  doc.save(`${slugify(course.title)}-quib-course.pdf`);
+  doc.save(`${slugify(course.title)}-cuib-course.pdf`);
 }

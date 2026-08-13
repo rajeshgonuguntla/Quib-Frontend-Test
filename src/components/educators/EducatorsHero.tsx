@@ -201,7 +201,7 @@ export function EducatorsHero({ isDark, C, navigate }: EducatorsHeroProps) {
             margin: '0 auto 2rem',
           }}
         >
-          Connect your channel or paste a link in Educator Studio — Quib generates modules, quizzes, and a course you can publish to the catalog.
+          Connect your channel or paste a link in Educator Studio — Cuib generates modules, quizzes, and a course you can publish to the catalog.
         </motion.p>
 
         <motion.div

@@ -4,6 +4,12 @@ import type { NavGroup } from '../shell/navConfig';
 export const SIGN_IN_INTENT_KEY = 'quib_sign_in_intent';
 export const CREATOR_HOME_PATH = '/educator-studio?tab=url';
 
+/**
+ * Master switch for creator / educator product surface (sign-in card, studio nav, educator routes).
+ * ponytail: set true to restore creator flow without digging through call sites.
+ */
+export const CREATOR_FLOW_ENABLED = false;
+
 export type SignInIntent = 'creator' | 'student';
 
 export const EDUCATOR_USE_CREATOR_LOGIN_MESSAGE =
@@ -13,10 +19,11 @@ const EDUCATOR_NAV_IDS = new Set(['studio', 'my-courses-educator', 'educator-ana
 const ADMIN_NAV_IDS = new Set(['admin-insights']);
 
 export function setSignInIntent(intent: SignInIntent): void {
-  localStorage.setItem(SIGN_IN_INTENT_KEY, intent);
+  localStorage.setItem(SIGN_IN_INTENT_KEY, CREATOR_FLOW_ENABLED ? intent : 'student');
 }
 
 export function getSignInIntent(): SignInIntent | null {
+  if (!CREATOR_FLOW_ENABLED) return 'student';
   const value = localStorage.getItem(SIGN_IN_INTENT_KEY);
   return value === 'creator' || value === 'student' ? value : null;
 }
@@ -25,7 +32,7 @@ export function clearSignInIntent(): void {
   localStorage.removeItem(SIGN_IN_INTENT_KEY);
 }
 
-/** Quib platform administrators only — not educators. */
+/** Cuib platform administrators only — not educators. */
 export function isAdminAccount(profile?: UserProfile | null): boolean {
   return profile?.role === 'admin';
 }
@@ -40,6 +47,7 @@ export function isEducatorAccount(profile?: UserProfile | null): boolean {
  * or when a learner signed in via the creator path to build their first course.
  */
 export function isEducatorExperience(profile?: UserProfile | null): boolean {
+  if (!CREATOR_FLOW_ENABLED) return false;
   if (isEducatorAccount(profile)) {
     return true;
   }
@@ -74,6 +82,9 @@ export function resolveDefaultDestination(
 ): string {
   if (!onboardingCompleted) {
     return '/onboarding';
+  }
+  if (!CREATOR_FLOW_ENABLED) {
+    return '/dashboard';
   }
   if (isEducatorAccount(profile)) {
     return '/dashboard';

@@ -2,8 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useLocation, useParams, useSearchParams } from 'react-router';
 import axios from 'axios';
 import {
-  ChevronDown, ChevronRight,
-  PlayCircle, FileText, CheckCircle, CheckCircle2, Copy,
+  ChevronDown, ChevronRight, ChevronUp,
+  PlayCircle, FileText, CheckCircle, CheckCircle2, Copy, CircleHelp,
   ArrowLeft, ArrowUpRight, BookOpen, Calendar, Layers, AlertCircle, Globe, Pencil,
 } from 'lucide-react';
 import { publishCourse, unpublishCourse, deleteCourse } from '../api/catalogApi';
@@ -28,6 +28,7 @@ import { QuibLogo } from './QuibLogo';
 import { PreCheckoutProfileModal } from './PreCheckoutProfileModal';
 import { isCheckoutProfileReady } from '../utils/checkoutProfile';
 import { LessonStudyContent } from './LessonNotes';
+import { StudyRailPanel } from './StudyRailPanel';
 import { fetchCourseAssignmentSummary } from '../api/assignmentApi';
 import { CourseAssignmentPanel } from './assignments/ModuleAssignmentPanel';
 import { YoutubeLessonPlayer } from './YoutubeLessonPlayer';
@@ -146,6 +147,16 @@ function getCheckoutError(err: unknown) {
   return 'Checkout is unavailable. Please try again later.';
 }
 
+type StudyTab = 'overview' | 'notes' | 'flashcards' | 'blanks' | 'exam';
+
+const STUDY_TABS: { id: StudyTab; label: string }[] = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'notes', label: 'Notes' },
+  { id: 'flashcards', label: 'Flashcards' },
+  { id: 'blanks', label: 'Fill in blanks' },
+  { id: 'exam', label: 'Create your own exam' },
+];
+
 // ─── Learning Mode ─────────────────────────────────────────────────────────────
 
 function LearningMode({
@@ -181,12 +192,13 @@ function LearningMode({
   );
 
   const firstLessonId = allLessons[0]?.id ?? '';
-  const [expandedModules, setExpandedModules] = useState<Set<string>>(
-    () => new Set(course.modules[0]?.id ? [course.modules[0].id] : []),
-  );
+  const firstModuleId = course.modules[0]?.id ?? '';
+  const [activeModuleId, setActiveModuleId] = useState<string>(firstModuleId);
   const [activeLessonId, setActiveLessonId] = useState<string>(firstLessonId);
   const [activeQuizModuleId, setActiveQuizModuleId] = useState<string | null>(null);
   const [activeAssignment, setActiveAssignment] = useState(false);
+  const [studyTab, setStudyTab] = useState<StudyTab>('overview');
+  const [submodulesOpen, setSubmodulesOpen] = useState(true);
   const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set());
   const [passedModules, setPassedModules] = useState<Set<string>>(new Set());
   const [assignmentPassed, setAssignmentPassed] = useState(false);
@@ -260,19 +272,23 @@ function LearningMode({
   }, [activeLessonId, courseId, chatSignedIn]);
 
   const activeLesson = allLessons.find((l) => l.id === activeLessonId);
+  const activeModule =
+    course.modules.find((m) => m.id === activeModuleId) ?? course.modules[0];
   const activeQuizModule = course.modules.find((m) => m.id === activeQuizModuleId);
   const navBg = isDark ? 'rgba(6,6,8,0.92)' : 'rgba(255,255,255,0.92)';
-
-  const toggleModule = (id: string) => setExpandedModules((prev) => {
-    const next = new Set(prev);
-    next.has(id) ? next.delete(id) : next.add(id);
-    return next;
-  });
+  const lessonActive = !!activeLesson && !activeQuizModuleId && !activeAssignment;
+  const studyTabsEnabled = lessonActive;
+  const lessonIndexInModule = activeModule
+    ? activeModule.lessons.findIndex((l) => l.id === activeLessonId)
+    : -1;
 
   const openLesson = (id: string) => {
+    const lesson = allLessons.find((l) => l.id === id);
+    if (lesson?.moduleId) setActiveModuleId(lesson.moduleId);
     setActiveLessonId(id);
     setActiveQuizModuleId(null);
     setActiveAssignment(false);
+    setStudyTab('overview');
     setQuizAnswers({});
     setQuizSubmitted(false);
     setQuizResult(null);
@@ -280,6 +296,7 @@ function LearningMode({
   };
 
   const openQuiz = (moduleId: string) => {
+    setActiveModuleId(moduleId);
     setActiveQuizModuleId(moduleId);
     setActiveAssignment(false);
     setActiveLessonId('');
@@ -299,6 +316,68 @@ function LearningMode({
     setQuizSubmitError(null);
   };
 
+  type SubStep =
+    | { kind: 'lesson'; id: string; moduleId: string; title: string }
+    | { kind: 'quiz'; moduleId: string; title: string }
+    | { kind: 'assignment'; title: string };
+
+  const subSteps: SubStep[] = [];
+  for (const mod of course.modules) {
+    for (const lesson of mod.lessons) {
+      subSteps.push({ kind: 'lesson', id: lesson.id, moduleId: mod.id, title: lesson.title });
+    }
+    if ((mod.quiz?.length ?? 0) > 0) {
+      subSteps.push({ kind: 'quiz', moduleId: mod.id, title: `${mod.title} · Quiz` });
+    }
+  }
+  if (hasCourseAssignment) {
+    subSteps.push({ kind: 'assignment', title: 'Course assignment' });
+  }
+
+  const currentSubStepIndex = (() => {
+    if (activeAssignment) {
+      return subSteps.findIndex((s) => s.kind === 'assignment');
+    }
+    if (activeQuizModuleId) {
+      return subSteps.findIndex((s) => s.kind === 'quiz' && s.moduleId === activeQuizModuleId);
+    }
+    if (activeLessonId) {
+      return subSteps.findIndex((s) => s.kind === 'lesson' && s.id === activeLessonId);
+    }
+    return -1;
+  })();
+
+  const nextSubStep =
+    currentSubStepIndex >= 0 && currentSubStepIndex < subSteps.length - 1
+      ? subSteps[currentSubStepIndex + 1]
+      : null;
+
+  const goToSubStep = (step: SubStep) => {
+    if (step.kind === 'lesson') openLesson(step.id);
+    else if (step.kind === 'quiz') openQuiz(step.moduleId);
+    else openAssignment();
+  };
+
+  const selectModule = (moduleId: string) => {
+    const mod = course.modules.find((m) => m.id === moduleId);
+    if (!mod) return;
+    const currentInModule =
+      !!activeLessonId &&
+      allLessons.find((l) => l.id === activeLessonId)?.moduleId === moduleId &&
+      !activeQuizModuleId &&
+      !activeAssignment;
+    if (currentInModule) {
+      setActiveModuleId(moduleId);
+      return;
+    }
+    setActiveModuleId(moduleId);
+    if (mod.lessons[0]) {
+      openLesson(mod.lessons[0].id);
+    } else if ((mod.quiz?.length ?? 0) > 0) {
+      openQuiz(moduleId);
+    }
+  };
+
   const markComplete = async () => {
     if (!activeLessonId || completedLessons.has(activeLessonId)) return;
     setLessonActionError(null);
@@ -306,7 +385,12 @@ function LearningMode({
       await completeLesson(courseId, activeLessonId);
       await reloadProgress();
       const idx = allLessons.findIndex((l) => l.id === activeLessonId);
-      if (idx < allLessons.length - 1) setActiveLessonId(allLessons[idx + 1].id);
+      if (idx < allLessons.length - 1) {
+        const next = allLessons[idx + 1];
+        setActiveLessonId(next.id);
+        setActiveModuleId(next.moduleId);
+        setStudyTab('overview');
+      }
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.status === 401) {
         setLessonActionError('Session expired. Please sign in again to save progress.');
@@ -359,7 +443,7 @@ function LearningMode({
     : '';
 
   return (
-    <div style={{ minHeight: '100vh', background: C.bg, color: C.text, fontFamily: 'var(--display)' }}>
+    <div style={{ height: '100vh', overflow: 'hidden', background: C.bg, color: C.text, fontFamily: 'var(--display)' }}>
       <CoursePageNav
         C={C}
         isDark={isDark}
@@ -374,7 +458,7 @@ function LearningMode({
               <span className="text-[0.82rem]">Course Overview</span>
             </button>
             <div style={{ width: 1, height: 16, background: C.border }} />
-            <Link to="/" className="no-underline" style={{ color: C.text }}>
+            <Link to="/dashboard" className="no-underline" style={{ color: C.text }}>
               <QuibLogo
                 size={16}
                 wordmarkClassName="text-[1rem] font-[700] tracking-tight"
@@ -399,357 +483,515 @@ function LearningMode({
         )}
       />
 
-      <div className="flex" style={{ paddingTop: 56 }}>
-        {/* Sidebar */}
-        <aside className="hidden md:flex flex-col flex-shrink-0 overflow-y-auto"
-          style={{ width: 300, height: 'calc(100vh - 56px)', position: 'sticky', top: 56, borderRight: `1px solid ${C.border}`, background: C.bg1 }}>
-          <div className="flex-1 overflow-y-auto py-2">
-            {course.modules.map((mod, modIdx) => {
-              const isExpanded = expandedModules.has(mod.id);
-              return (
-                <div key={mod.id}>
-                  <button onClick={() => toggleModule(mod.id)} className="w-full flex items-center justify-between px-4 py-3.5 text-left"
-                    style={{ background: 'transparent', border: 'none', borderBottom: `1px solid ${C.border}`, cursor: 'pointer' }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)')}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}>
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <span className="w-5 h-5 rounded flex items-center justify-center flex-shrink-0 text-[0.65rem] font-[700]"
-                        style={{ background: C.red, color: '#fff' }}>{modIdx + 1}</span>
-                      <span className="text-[0.8rem] font-[500] truncate" style={{ color: C.text }}>{mod.title}</span>
-                    </div>
-                    {isExpanded ? <ChevronDown className="w-3.5 h-3.5 flex-shrink-0" style={{ color: C.text3 }} />
-                      : <ChevronRight className="w-3.5 h-3.5 flex-shrink-0" style={{ color: C.text3 }} />}
-                  </button>
-                  {isExpanded && (
-                    <div style={{ borderBottom: `1px solid ${C.border}` }}>
-                      {mod.lessons.map((lesson) => {
-                        const isActive = activeLessonId === lesson.id;
-                        const isDone = completedLessons.has(lesson.id);
-                        return (
-                          <button key={lesson.id} onClick={() => openLesson(lesson.id)} className="w-full flex items-center gap-3 px-4 py-2.5 text-left"
-                            style={{ background: isActive ? isDark ? 'rgba(225,6,0,0.08)' : 'rgba(225,6,0,0.05)' : 'transparent', border: 'none', borderLeft: isActive ? `2px solid ${C.red}` : '2px solid transparent', cursor: 'pointer' }}
-                            onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'; }}
-                            onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}>
-                            {isDone ? <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#22c55e' }} />
-                              : lesson.type === 'video' ? <PlayCircle className="w-3.5 h-3.5 flex-shrink-0" style={{ color: isActive ? C.red : C.text3 }} />
-                                : <FileText className="w-3.5 h-3.5 flex-shrink-0" style={{ color: isActive ? C.red : C.text3 }} />}
-                            <div className="min-w-0 flex-1">
-                              <p className="text-[0.78rem] truncate" style={{ color: isActive ? C.text : isDone ? C.text3 : C.text2 }}>{lesson.title}</p>
-                              <p className="text-[0.66rem] mt-0.5" style={{ color: C.text3 }}>{lesson.duration}</p>
-                            </div>
-                          </button>
-                        );
-                      })}
-                      {(mod.quiz?.length ?? 0) > 0 && (
-                      <button onClick={() => openQuiz(mod.id)} className="w-full flex items-center gap-3 px-4 py-2.5 text-left"
-                        style={{ background: activeQuizModuleId === mod.id ? isDark ? 'rgba(225,6,0,0.08)' : 'rgba(225,6,0,0.05)' : 'transparent', border: 'none', borderLeft: activeQuizModuleId === mod.id ? `2px solid ${C.red}` : '2px solid transparent', cursor: 'pointer' }}
-                        onMouseEnter={(e) => { if (activeQuizModuleId !== mod.id) e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'; }}
-                        onMouseLeave={(e) => { if (activeQuizModuleId !== mod.id) e.currentTarget.style.background = 'transparent'; }}>
-                        {passedModules.has(mod.id) ? (
-                          <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#22c55e' }} />
-                        ) : (
-                          <span className="text-sm flex-shrink-0">📝</span>
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <p className="text-[0.78rem] font-[500]" style={{ color: activeQuizModuleId === mod.id ? C.red : C.text2 }}>Module Quiz</p>
-                          <p className="text-[0.66rem] mt-0.5" style={{ color: C.text3 }}>{mod.quiz?.length ?? 0} questions</p>
-                        </div>
-                      </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-            {hasCourseAssignment && (
-              <button
-                type="button"
-                onClick={() => openAssignment()}
-                className="w-full flex items-center gap-3 px-4 py-3 text-left"
-                style={{
-                  background: activeAssignment ? isDark ? 'rgba(225,6,0,0.08)' : 'rgba(225,6,0,0.05)' : 'transparent',
-                  border: 'none',
-                  borderTop: `1px solid ${C.border}`,
-                  borderLeft: activeAssignment ? `2px solid ${C.red}` : '2px solid transparent',
-                  cursor: 'pointer',
-                }}
-                onMouseEnter={(e) => { if (!activeAssignment) e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'; }}
-                onMouseLeave={(e) => { if (!activeAssignment) e.currentTarget.style.background = 'transparent'; }}
-              >
-                {assignmentPassed ? (
-                  <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#22c55e' }} />
-                ) : (
-                  <FileText className="w-3.5 h-3.5 flex-shrink-0" style={{ color: activeAssignment ? C.red : C.text3 }} />
-                )}
-                <div className="min-w-0 flex-1">
-                  <p className="text-[0.78rem] font-[500]" style={{ color: activeAssignment ? C.red : C.text2 }}>Course assignment</p>
-                  <p className="text-[0.66rem] mt-0.5" style={{ color: C.text3 }}>Submit work</p>
-                </div>
-              </button>
-            )}
-          </div>
-        </aside>
-
-        {/* Main */}
-        <main className="flex-1 min-w-0">
-          {/* Mobile course outline */}
-          <div className="md:hidden border-b" style={{ borderColor: C.border, background: C.bg1 }}>
-            <div className="px-4 py-3">
-              <p className="text-[0.7rem] uppercase tracking-widest mb-2" style={{ color: C.text3, fontFamily: 'var(--mono)' }}>
-                Course outline
-              </p>
-              <div className="space-y-2 max-h-56 overflow-y-auto">
+      <div className="flex flex-col" style={{ paddingTop: 56, height: '100vh' }}>
+        {/* Module tabs + collapsible lesson chips */}
+        <div className="shrink-0" style={{ borderBottom: `1px solid ${C.border}`, background: C.bg1 }}>
+          <div className="flex items-center gap-2 px-3 sm:px-4 pt-3" style={{ paddingBottom: submodulesOpen ? 8 : 12 }}>
+            <div className="min-w-0 flex-1 overflow-x-auto">
+              <div className="flex items-center gap-1 min-w-max">
                 {course.modules.map((mod, modIdx) => {
-                  const isExpanded = expandedModules.has(mod.id);
-                  const hasQuiz = (mod.quiz?.length ?? 0) > 0;
+                  const isActive = activeModule?.id === mod.id;
                   return (
-                    <div key={mod.id} className="rounded-lg overflow-hidden" style={{ border: `1px solid ${C.border}` }}>
-                      <button
-                        type="button"
-                        onClick={() => toggleModule(mod.id)}
-                        className="w-full flex items-center justify-between px-3 py-2 text-left"
-                        style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
+                    <button
+                      key={mod.id}
+                      type="button"
+                      onClick={() => selectModule(mod.id)}
+                      aria-current={isActive ? 'page' : undefined}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg text-left cursor-pointer max-w-[240px]"
+                      style={{
+                        background: isActive ? (isDark ? 'rgba(225,6,0,0.1)' : 'rgba(225,6,0,0.06)') : 'transparent',
+                        border: 'none',
+                        color: isActive ? C.text : C.text3,
+                      }}
+                    >
+                      <span
+                        className="w-5 h-5 rounded flex items-center justify-center flex-shrink-0 text-[0.65rem] font-[700]"
+                        style={{
+                          background: isActive ? C.red : C.bg2,
+                          color: isActive ? '#fff' : C.text3,
+                          border: isActive ? 'none' : `1px solid ${C.border}`,
+                        }}
                       >
-                        <span className="text-[0.8rem] font-[500] truncate" style={{ color: C.text }}>
-                          {modIdx + 1}. {mod.title}
-                        </span>
-                        {isExpanded ? <ChevronDown className="w-3.5 h-3.5" style={{ color: C.text3 }} />
-                          : <ChevronRight className="w-3.5 h-3.5" style={{ color: C.text3 }} />}
-                      </button>
-                      {isExpanded && (
-                        <div className="pb-1">
-                          {mod.lessons.map((lesson) => {
-                            const isActive = activeLessonId === lesson.id && !activeQuizModuleId && !activeAssignment;
-                            return (
-                              <button
-                                key={lesson.id}
-                                type="button"
-                                onClick={() => openLesson(lesson.id)}
-                                className="w-full text-left px-3 py-2 text-[0.78rem] truncate"
-                                style={{
-                                  background: isActive ? isDark ? 'rgba(225,6,0,0.08)' : 'rgba(225,6,0,0.05)' : 'transparent',
-                                  border: 'none',
-                                  color: isActive ? C.red : C.text2,
-                                  cursor: 'pointer',
-                                }}
-                              >
-                                {lesson.title}
-                              </button>
-                            );
-                          })}
-                          {hasQuiz && (
-                            <button
-                              type="button"
-                              onClick={() => openQuiz(mod.id)}
-                              className="w-full text-left px-3 py-2 text-[0.78rem] font-[500]"
-                              style={{
-                                background: activeQuizModuleId === mod.id ? isDark ? 'rgba(225,6,0,0.08)' : 'rgba(225,6,0,0.05)' : 'transparent',
-                                border: 'none',
-                                color: activeQuizModuleId === mod.id ? C.red : C.text2,
-                                cursor: 'pointer',
-                              }}
-                            >
-                              📝 Module Quiz ({mod.quiz?.length ?? 0})
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </div>
+                        {modIdx + 1}
+                      </span>
+                      <span className="text-[0.8rem] font-[500] truncate">{mod.title}</span>
+                    </button>
                   );
                 })}
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setSubmodulesOpen((v) => !v)}
+              className="w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer shrink-0"
+              style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text2 }}
+              aria-label={submodulesOpen ? 'Collapse lessons' : 'Expand lessons'}
+              aria-expanded={submodulesOpen}
+              title={submodulesOpen ? 'Collapse lessons' : 'Expand lessons'}
+            >
+              {submodulesOpen ? (
+                <ChevronUp className="w-4 h-4" />
+              ) : (
+                <ChevronDown className="w-4 h-4" />
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => nextSubStep && goToSubStep(nextSubStep)}
+              disabled={!nextSubStep}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[0.78rem] font-[600] cursor-pointer shrink-0 disabled:opacity-40 disabled:cursor-default"
+              style={{
+                background: nextSubStep ? C.red : C.bg2,
+                color: nextSubStep ? '#fff' : C.text3,
+                border: nextSubStep ? 'none' : `1px solid ${C.border}`,
+              }}
+              aria-label="Next lesson"
+              title={nextSubStep ? `Next: ${nextSubStep.title}` : 'End of course'}
+            >
+              Next
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {submodulesOpen && (
+            <div className="overflow-x-auto px-3 sm:px-4 pb-3">
+              <div className="flex items-center gap-2 min-w-max">
+                {(activeModule?.lessons ?? []).map((lesson) => {
+                  const isActive = activeLessonId === lesson.id && !activeQuizModuleId && !activeAssignment;
+                  const isDone = completedLessons.has(lesson.id);
+                  return (
+                    <button
+                      key={lesson.id}
+                      type="button"
+                      onClick={() => openLesson(lesson.id)}
+                      aria-current={isActive ? 'page' : undefined}
+                      className="flex items-center gap-2 px-3 py-2 rounded-full text-left cursor-pointer max-w-[260px]"
+                      style={{
+                        background: isActive ? (isDark ? 'rgba(225,6,0,0.08)' : 'rgba(225,6,0,0.05)') : C.bg,
+                        border: `1px solid ${isActive ? C.red : C.border}`,
+                        color: isActive ? C.text : C.text2,
+                      }}
+                    >
+                      {isDone ? (
+                        <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#22c55e' }} />
+                      ) : lesson.type === 'video' ? (
+                        <PlayCircle className="w-3.5 h-3.5 flex-shrink-0" style={{ color: isActive ? C.red : C.text3 }} />
+                      ) : (
+                        <FileText className="w-3.5 h-3.5 flex-shrink-0" style={{ color: isActive ? C.red : C.text3 }} />
+                      )}
+                      <span className="text-[0.75rem] font-[500] truncate">{lesson.title}</span>
+                      {lesson.duration ? (
+                        <span className="text-[0.65rem] flex-shrink-0" style={{ color: C.text3 }}>{lesson.duration}</span>
+                      ) : null}
+                    </button>
+                  );
+                })}
+                {(activeModule?.quiz?.length ?? 0) > 0 && activeModule && (
+                  <button
+                    type="button"
+                    onClick={() => openQuiz(activeModule.id)}
+                    aria-current={activeQuizModuleId === activeModule.id ? 'page' : undefined}
+                    className="flex items-center gap-2 px-3 py-2 rounded-full text-left cursor-pointer"
+                    style={{
+                      background: activeQuizModuleId === activeModule.id
+                        ? (isDark ? 'rgba(225,6,0,0.08)' : 'rgba(225,6,0,0.05)')
+                        : C.bg,
+                      border: `1px solid ${activeQuizModuleId === activeModule.id ? C.red : C.border}`,
+                      color: activeQuizModuleId === activeModule.id ? C.text : C.text2,
+                    }}
+                  >
+                    {passedModules.has(activeModule.id) ? (
+                      <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#22c55e' }} />
+                    ) : (
+                      <CircleHelp className="w-3.5 h-3.5 flex-shrink-0" style={{ color: activeQuizModuleId === activeModule.id ? C.red : C.text3 }} />
+                    )}
+                    <span className="text-[0.75rem] font-[500]">Module Quiz</span>
+                    <span className="text-[0.65rem] flex-shrink-0" style={{ color: C.text3 }}>
+                      {activeModule.quiz.length}q
+                    </span>
+                  </button>
+                )}
                 {hasCourseAssignment && (
                   <button
                     type="button"
                     onClick={() => openAssignment()}
-                    className="w-full text-left px-3 py-2 text-[0.78rem] font-[500] rounded-lg"
+                    aria-current={activeAssignment ? 'page' : undefined}
+                    className="flex items-center gap-2 px-3 py-2 rounded-full text-left cursor-pointer"
                     style={{
-                      background: activeAssignment ? isDark ? 'rgba(225,6,0,0.08)' : 'rgba(225,6,0,0.05)' : 'transparent',
-                      border: `1px solid ${C.border}`,
-                      color: activeAssignment ? C.red : C.text2,
-                      cursor: 'pointer',
+                      background: activeAssignment ? (isDark ? 'rgba(225,6,0,0.08)' : 'rgba(225,6,0,0.05)') : C.bg,
+                      border: `1px solid ${activeAssignment ? C.red : C.border}`,
+                      color: activeAssignment ? C.text : C.text2,
                     }}
                   >
-                    Course assignment
+                    {assignmentPassed ? (
+                      <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#22c55e' }} />
+                    ) : (
+                      <FileText className="w-3.5 h-3.5 flex-shrink-0" style={{ color: activeAssignment ? C.red : C.text3 }} />
+                    )}
+                    <span className="text-[0.75rem] font-[500]">Course assignment</span>
                   </button>
                 )}
               </div>
             </div>
-          </div>
+          )}
+        </div>
 
-          {activeLesson && !activeQuizModuleId && !activeAssignment && (
-            <div className="max-w-3xl mx-auto px-6 py-10">
-              <p className="text-[0.7rem] mb-5 uppercase tracking-widest" style={{ color: C.text3, fontFamily: 'var(--mono)' }}>
-                {allLessons.find((l) => l.id === activeLessonId)?.moduleTitle}
-              </p>
-              <h1 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(1.6rem, 3vw, 2.2rem)', fontWeight: 400, lineHeight: 1.2, color: C.text, marginBottom: 12 }}>
-                {activeLesson.title}
-              </h1>
-              <div className="flex items-center gap-3 mb-8">
-                <span className="text-[0.68rem] font-[500] px-2 py-1 rounded uppercase tracking-wide"
-                  style={{ background: C.redDim, color: C.red, fontFamily: 'var(--mono)' }}>
-                  {activeLesson.type === 'video' ? '▶ Video' : '📄 Reading'}
-                </span>
-                <span className="text-[0.75rem]" style={{ color: C.text3 }}>{activeLesson.duration}</span>
+        <div className="flex flex-1 min-h-0">
+          {/* Study rail */}
+          <aside
+            className="hidden md:flex flex-col flex-shrink-0 overflow-y-auto"
+            style={{ width: 240, borderRight: `1px solid ${C.border}`, background: C.bg1 }}
+          >
+            {lessonActive && activeLesson ? (
+              <div className="px-4 pt-5 pb-3" style={{ borderBottom: `1px solid ${C.border}` }}>
+                <p className="text-[0.7rem] font-[600]" style={{ color: C.text3 }}>
+                  #{lessonIndexInModule >= 0 ? lessonIndexInModule + 1 : '—'}
+                </p>
+                <p className="text-[0.88rem] font-[600] mt-1 leading-snug" style={{ color: C.text }}>
+                  {activeLesson.title}
+                </p>
+                {activeLesson.duration ? (
+                  <p className="text-[0.7rem] mt-1" style={{ color: C.text3 }}>{activeLesson.duration}</p>
+                ) : null}
               </div>
-              {activeLesson.type === 'video' && embedId ? (
-                <div className="w-full rounded-2xl overflow-hidden mb-8"
-                  style={{ border: `1px solid ${C.border}`, aspectRatio: '16/9', background: C.bg2 }}>
-                  <YoutubeLessonPlayer
-                    videoId={embedId}
-                    title={activeLesson.title}
+            ) : (
+              <div className="px-4 pt-5 pb-3" style={{ borderBottom: `1px solid ${C.border}` }}>
+                <p className="text-[0.88rem] font-[600]" style={{ color: C.text }}>
+                  {activeAssignment ? 'Course assignment' : 'Module quiz'}
+                </p>
+                <p className="text-[0.72rem] mt-1" style={{ color: C.text3 }}>
+                  Study tools unlock when a lesson is selected
+                </p>
+              </div>
+            )}
+
+            <nav className="flex-1 py-3 px-2 space-y-0.5">
+              {STUDY_TABS.map((tab) => {
+                const isActive = studyTabsEnabled && studyTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    disabled={!studyTabsEnabled}
+                    onClick={() => setStudyTab(tab.id)}
+                    aria-current={isActive ? 'page' : undefined}
+                    className="w-full text-left px-3 py-2.5 rounded-lg text-[0.8rem] font-[500] cursor-pointer disabled:cursor-default disabled:opacity-45"
+                    style={{
+                      background: isActive ? (isDark ? 'rgba(225,6,0,0.12)' : 'rgba(225,6,0,0.08)') : 'transparent',
+                      border: 'none',
+                      borderLeft: isActive ? `2px solid ${C.red}` : '2px solid transparent',
+                      color: isActive ? C.text : C.text2,
+                    }}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </nav>
+
+            {(activeModule?.quiz?.length ?? 0) > 0 && activeModule && (
+              <div className="mt-auto px-3 py-3" style={{ borderTop: `1px solid ${C.border}` }}>
+                <button
+                  type="button"
+                  onClick={() => openQuiz(activeModule.id)}
+                  className="w-full text-left px-3 py-2.5 rounded-lg cursor-pointer"
+                  style={{
+                    background: activeQuizModuleId === activeModule.id
+                      ? (isDark ? 'rgba(225,6,0,0.1)' : 'rgba(225,6,0,0.06)')
+                      : 'transparent',
+                    border: `1px solid ${C.border}`,
+                  }}
+                >
+                  <p className="text-[0.78rem] font-[600]" style={{ color: C.text }}>Module quiz</p>
+                  <p className="text-[0.68rem] mt-0.5" style={{ color: C.text3 }}>
+                    {activeModule.quiz.length} questions
+                  </p>
+                </button>
+              </div>
+            )}
+          </aside>
+
+          {/* Main */}
+          <main className="flex-1 min-w-0 overflow-y-auto">
+            {/* Mobile study tabs */}
+            {lessonActive && (
+              <div className="md:hidden overflow-x-auto px-4 py-2" style={{ borderBottom: `1px solid ${C.border}`, background: C.bg1 }}>
+                <div className="flex gap-2 min-w-max">
+                  {STUDY_TABS.map((tab) => {
+                    const isActive = studyTab === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => setStudyTab(tab.id)}
+                        aria-current={isActive ? 'page' : undefined}
+                        className="px-3 py-1.5 rounded-full text-[0.72rem] font-[500] cursor-pointer whitespace-nowrap"
+                        style={{
+                          background: isActive ? (isDark ? 'rgba(225,6,0,0.12)' : 'rgba(225,6,0,0.08)') : C.bg,
+                          border: `1px solid ${isActive ? C.red : C.border}`,
+                          color: isActive ? C.text : C.text2,
+                        }}
+                      >
+                        {tab.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {lessonActive && activeLesson && (
+              <div className="max-w-3xl mx-auto px-6 py-10">
+                <p className="text-[0.7rem] mb-5 uppercase tracking-widest" style={{ color: C.text3, fontFamily: 'var(--mono)' }}>
+                  {activeLesson.moduleTitle}
+                </p>
+                <h1 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(1.6rem, 3vw, 2.2rem)', fontWeight: 400, lineHeight: 1.2, color: C.text, marginBottom: 12 }}>
+                  #{lessonIndexInModule >= 0 ? lessonIndexInModule + 1 : ''} {activeLesson.title}
+                </h1>
+
+                {studyTab === 'overview' && (
+                  <>
+                    <div className="flex items-center gap-3 mb-8">
+                      <span className="text-[0.68rem] font-[500] px-2 py-1 rounded uppercase tracking-wide"
+                        style={{ background: C.redDim, color: C.red, fontFamily: 'var(--mono)' }}>
+                        {activeLesson.type === 'video' ? '▶ Video' : '📄 Reading'}
+                      </span>
+                      <span className="text-[0.75rem]" style={{ color: C.text3 }}>{activeLesson.duration}</span>
+                    </div>
+                    {activeLesson.type === 'video' && embedId ? (
+                      <div className="w-full rounded-2xl overflow-hidden mb-8"
+                        style={{ border: `1px solid ${C.border}`, aspectRatio: '16/9', background: C.bg2 }}>
+                        <YoutubeLessonPlayer
+                          videoId={embedId}
+                          title={activeLesson.title}
+                          courseId={courseId}
+                          lessonId={activeLessonId}
+                          trackProgress={chatSignedIn}
+                          className="w-full h-full"
+                        />
+                      </div>
+                    ) : activeLesson.type === 'video' ? (
+                      <div className="w-full rounded-2xl p-6 mb-8 text-center text-sm" style={{ background: C.bg1, border: `1px solid ${C.border}`, color: C.text3 }}>
+                        Video player unavailable for this lesson.
+                      </div>
+                    ) : null}
+                    <LessonStudyContent
+                      lesson={activeLesson}
+                      theme={C}
+                      moduleTitle={activeLesson.moduleTitle}
+                      mode="overview"
+                    />
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-3">
+                        {completedLessons.has(activeLessonId) ? (
+                          <div className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-[0.82rem] font-[500]"
+                            style={{ background: 'rgba(34,197,94,0.1)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.25)' }}>
+                            <CheckCircle className="w-4 h-4" /> Completed
+                          </div>
+                        ) : (
+                          <button onClick={markComplete} className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-[0.82rem] font-[600] cursor-pointer"
+                            style={{ background: C.red, color: '#fff', border: 'none' }}
+                            onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.9')}
+                            onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}>
+                            Mark Complete & Continue
+                          </button>
+                        )}
+                      </div>
+                      {lessonActionError && (
+                        <p className="text-[0.8rem]" style={{ color: C.red }}>{lessonActionError}</p>
+                      )}
+                    </div>
+                    <LessonFeedbackPanel
+                      courseId={courseId}
+                      lessonId={activeLessonId}
+                      lessonTitle={activeLesson?.title}
+                      enabled={chatSignedIn}
+                      theme={C}
+                    />
+                    <CourseReviewPanel courseId={courseId} enabled={chatSignedIn} theme={C} />
+                  </>
+                )}
+
+                {studyTab === 'notes' && (
+                  <StudyRailPanel
                     courseId={courseId}
                     lessonId={activeLessonId}
-                    trackProgress={chatSignedIn}
-                    className="w-full h-full"
+                    tool="notes"
+                    theme={C}
+                    isDark={isDark}
+                    fallbackNotes={activeLesson.notes}
                   />
+                )}
+
+                {(studyTab === 'flashcards' || studyTab === 'blanks' || studyTab === 'exam') && (
+                  <StudyRailPanel
+                    courseId={courseId}
+                    lessonId={activeLessonId}
+                    tool={studyTab}
+                    theme={C}
+                    isDark={isDark}
+                  />
+                )}
+              </div>
+            )}
+
+            {activeQuizModule && (
+              <div className="max-w-3xl mx-auto px-6 py-10">
+                <p className="text-[0.7rem] mb-4 uppercase tracking-widest" style={{ color: C.text3, fontFamily: 'var(--mono)' }}>{activeQuizModule.title}</p>
+                <h1 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(1.6rem, 3vw, 2.2rem)', fontWeight: 400, lineHeight: 1.2, color: C.text, marginBottom: 8 }}>Module Quiz</h1>
+                <p className="text-[0.85rem] mb-8" style={{ color: C.text2 }}>{activeQuizModule.quiz.length} questions · Test your understanding</p>
+                <div className="space-y-5 mb-8">
+                  {activeQuizModule.quiz.map((q, qi) => (
+                    <div key={qi} className="rounded-2xl p-6" style={{ background: C.bg1, border: `1px solid ${C.border}` }}>
+                      <p className="text-[0.875rem] font-[500] mb-4 leading-relaxed" style={{ color: C.text }}>
+                        <span style={{ color: C.red, fontFamily: 'var(--mono)', fontSize: '0.72rem', marginRight: 8 }}>Q{qi + 1}</span>
+                        {q.question}
+                      </p>
+                      <div className="space-y-2">
+                        {q.options.map((opt, oi) => {
+                          const selected = quizAnswers[qi] === oi;
+                          const correctAnswer = correctAnswerForQuestion(qi);
+                          const correct = quizSubmitted && correctAnswer != null && oi === correctAnswer;
+                          const wrong = quizSubmitted && selected && correctAnswer != null && oi !== correctAnswer;
+                          return (
+                            <button key={oi} onClick={() => !quizSubmitted && setQuizAnswers((prev) => ({ ...prev, [qi]: oi }))}
+                              className="w-full text-left px-4 py-3 rounded-xl text-[0.82rem] transition-all"
+                              style={{ background: correct ? 'rgba(34,197,94,0.12)' : wrong ? 'rgba(225,6,0,0.1)' : selected ? isDark ? 'rgba(225,6,0,0.1)' : 'rgba(225,6,0,0.06)' : isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.025)', border: `1px solid ${correct ? 'rgba(34,197,94,0.35)' : wrong ? 'rgba(225,6,0,0.3)' : selected ? C.red : C.border}`, color: correct ? '#22c55e' : wrong ? C.red : C.text2, cursor: quizSubmitted ? 'default' : 'pointer' }}>
+                              <span className="font-[600] mr-2" style={{ fontFamily: 'var(--mono)', fontSize: '0.72rem' }}>{String.fromCharCode(65 + oi)}.</span>
+                              {opt}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ) : activeLesson.type === 'video' ? (
-                <div className="w-full rounded-2xl p-6 mb-8 text-center text-sm" style={{ background: C.bg1, border: `1px solid ${C.border}`, color: C.text3 }}>
-                  Video player unavailable for this lesson.
-                </div>
-              ) : null}
-              <LessonStudyContent
-                lesson={activeLesson}
-                theme={C}
-                moduleTitle={allLessons.find((l) => l.id === activeLessonId)?.moduleTitle}
-              />
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-3">
-                {completedLessons.has(activeLessonId) ? (
-                  <div className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-[0.82rem] font-[500]"
-                    style={{ background: 'rgba(34,197,94,0.1)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.25)' }}>
-                    <CheckCircle className="w-4 h-4" /> Completed
+                {!quizSubmitted ? (
+                  <div className="space-y-3">
+                    {quizSubmitError && (
+                      <p className="text-[0.82rem]" style={{ color: C.red }}>{quizSubmitError}</p>
+                    )}
+                    <button onClick={handleQuizSubmit}
+                    disabled={Object.keys(quizAnswers).length < activeQuizModule.quiz.length}
+                    className="px-8 py-3 rounded-lg text-[0.875rem] font-[600] cursor-pointer transition-all"
+                    style={{ background: Object.keys(quizAnswers).length === activeQuizModule.quiz.length ? C.red : C.bg2, color: Object.keys(quizAnswers).length === activeQuizModule.quiz.length ? '#fff' : C.text3, border: 'none', boxShadow: Object.keys(quizAnswers).length === activeQuizModule.quiz.length ? '0 4px 16px rgba(225,6,0,0.25)' : 'none' }}>
+                    Submit Quiz
+                  </button>
                   </div>
                 ) : (
-                  <button onClick={markComplete} className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-[0.82rem] font-[600] cursor-pointer"
-                    style={{ background: C.red, color: '#fff', border: 'none' }}
-                    onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.9')}
-                    onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}>
-                    Mark Complete & Continue
-                  </button>
-                )}
-                </div>
-                {lessonActionError && (
-                  <p className="text-[0.8rem]" style={{ color: C.red }}>{lessonActionError}</p>
+                  <div className="rounded-2xl p-6" style={{ background: quizPassed ? 'rgba(34,197,94,0.08)' : 'rgba(225,6,0,0.06)', border: `1px solid ${quizPassed ? 'rgba(34,197,94,0.25)' : 'rgba(225,6,0,0.2)'}` }}>
+                    <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0"
+                        style={{ background: quizPassed ? 'rgba(34,197,94,0.15)' : C.redDim, border: `1px solid ${quizPassed ? 'rgba(34,197,94,0.3)' : 'rgba(225,6,0,0.2)'}` }}>
+                        <span style={{ fontFamily: 'var(--serif)', fontSize: '1.1rem', color: quizPassed ? '#22c55e' : C.red }}>{quizScore}/{quizTotal}</span>
+                      </div>
+                      <div>
+                        <p className="font-[600] text-[0.95rem]" style={{ color: C.text }}>{quizPassed ? 'Great work!' : 'Keep going'}</p>
+                        <p className="text-[0.8rem] mt-0.5" style={{ color: C.text2 }}>
+                          {quizPassed
+                            ? 'You passed this module. Move on to the next one.'
+                            : `You got ${quizScore} of ${quizTotal} correct (${Math.round((quizScore / Math.max(quizTotal, 1)) * 100)}%). You need 70% to pass.`}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
-              <LessonFeedbackPanel
+            )}
+
+            {activeAssignment && (
+              <CourseAssignmentPanel
                 courseId={courseId}
-                lessonId={activeLessonId}
-                lessonTitle={activeLesson?.title}
-                enabled={chatSignedIn}
-                theme={C}
+                C={C}
+                isDark={isDark}
+                onSubmitted={() => void reloadProgress()}
               />
-              <CourseReviewPanel courseId={courseId} enabled={chatSignedIn} theme={C} />
-            </div>
-          )}
+            )}
 
-          {activeQuizModule && (
-            <div className="max-w-3xl mx-auto px-6 py-10">
-              <p className="text-[0.7rem] mb-4 uppercase tracking-widest" style={{ color: C.text3, fontFamily: 'var(--mono)' }}>{activeQuizModule.title}</p>
-              <h1 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(1.6rem, 3vw, 2.2rem)', fontWeight: 400, lineHeight: 1.2, color: C.text, marginBottom: 8 }}>Module Quiz</h1>
-              <p className="text-[0.85rem] mb-8" style={{ color: C.text2 }}>{activeQuizModule.quiz.length} questions · Test your understanding</p>
-              <div className="space-y-5 mb-8">
-                {activeQuizModule.quiz.map((q, qi) => (
-                  <div key={qi} className="rounded-2xl p-6" style={{ background: C.bg1, border: `1px solid ${C.border}` }}>
-                    <p className="text-[0.875rem] font-[500] mb-4 leading-relaxed" style={{ color: C.text }}>
-                      <span style={{ color: C.red, fontFamily: 'var(--mono)', fontSize: '0.72rem', marginRight: 8 }}>Q{qi + 1}</span>
-                      {q.question}
-                    </p>
-                    <div className="space-y-2">
-                      {q.options.map((opt, oi) => {
-                        const selected = quizAnswers[qi] === oi;
-                        const correctAnswer = correctAnswerForQuestion(qi);
-                        const correct = quizSubmitted && correctAnswer != null && oi === correctAnswer;
-                        const wrong = quizSubmitted && selected && correctAnswer != null && oi !== correctAnswer;
-                        return (
-                          <button key={oi} onClick={() => !quizSubmitted && setQuizAnswers((prev) => ({ ...prev, [qi]: oi }))}
-                            className="w-full text-left px-4 py-3 rounded-xl text-[0.82rem] transition-all"
-                            style={{ background: correct ? 'rgba(34,197,94,0.12)' : wrong ? 'rgba(225,6,0,0.1)' : selected ? isDark ? 'rgba(225,6,0,0.1)' : 'rgba(225,6,0,0.06)' : isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.025)', border: `1px solid ${correct ? 'rgba(34,197,94,0.35)' : wrong ? 'rgba(225,6,0,0.3)' : selected ? C.red : C.border}`, color: correct ? '#22c55e' : wrong ? C.red : C.text2, cursor: quizSubmitted ? 'default' : 'pointer' }}>
-                            <span className="font-[600] mr-2" style={{ fontFamily: 'var(--mono)', fontSize: '0.72rem' }}>{String.fromCharCode(65 + oi)}.</span>
-                            {opt}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
+            {!activeLesson && !activeQuizModuleId && !activeAssignment && (
+              <div className="max-w-3xl mx-auto px-6 py-10 text-center">
+                <p className="text-[0.9rem] mb-4" style={{ color: C.text2 }}>
+                  {allLessons.length === 0
+                    ? 'This course has no lessons yet.'
+                    : 'Select a lesson, quiz, or assignment from the strips above.'}
+                </p>
               </div>
-              {!quizSubmitted ? (
-                <div className="space-y-3">
-                  {quizSubmitError && (
-                    <p className="text-[0.82rem]" style={{ color: C.red }}>{quizSubmitError}</p>
-                  )}
-                  <button onClick={handleQuizSubmit}
-                  disabled={Object.keys(quizAnswers).length < activeQuizModule.quiz.length}
-                  className="px-8 py-3 rounded-lg text-[0.875rem] font-[600] cursor-pointer transition-all"
-                  style={{ background: Object.keys(quizAnswers).length === activeQuizModule.quiz.length ? C.red : C.bg2, color: Object.keys(quizAnswers).length === activeQuizModule.quiz.length ? '#fff' : C.text3, border: 'none', boxShadow: Object.keys(quizAnswers).length === activeQuizModule.quiz.length ? '0 4px 16px rgba(225,6,0,0.25)' : 'none' }}>
-                  Submit Quiz
-                </button>
-                </div>
-              ) : (
-                <div className="rounded-2xl p-6" style={{ background: quizPassed ? 'rgba(34,197,94,0.08)' : 'rgba(225,6,0,0.06)', border: `1px solid ${quizPassed ? 'rgba(34,197,94,0.25)' : 'rgba(225,6,0,0.2)'}` }}>
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0"
-                      style={{ background: quizPassed ? 'rgba(34,197,94,0.15)' : C.redDim, border: `1px solid ${quizPassed ? 'rgba(34,197,94,0.3)' : 'rgba(225,6,0,0.2)'}` }}>
-                      <span style={{ fontFamily: 'var(--serif)', fontSize: '1.1rem', color: quizPassed ? '#22c55e' : C.red }}>{quizScore}/{quizTotal}</span>
-                    </div>
-                    <div>
-                      <p className="font-[600] text-[0.95rem]" style={{ color: C.text }}>{quizPassed ? 'Great work!' : 'Keep going'}</p>
-                      <p className="text-[0.8rem] mt-0.5" style={{ color: C.text2 }}>
-                        {quizPassed
-                          ? 'You passed this module. Move on to the next one.'
-                          : `You got ${quizScore} of ${quizTotal} correct (${Math.round((quizScore / Math.max(quizTotal, 1)) * 100)}%). You need 70% to pass.`}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+            )}
+          </main>
 
-          {activeAssignment && (
-            <CourseAssignmentPanel
-              courseId={courseId}
-              C={C}
-              isDark={isDark}
-              onSubmitted={() => void reloadProgress()}
-            />
-          )}
-
-          {!activeLesson && !activeQuizModuleId && !activeAssignment && (
-            <div className="max-w-3xl mx-auto px-6 py-10 text-center">
-              <p className="text-[0.9rem] mb-4" style={{ color: C.text2 }}>
-                {allLessons.length === 0
-                  ? 'This course has no lessons yet.'
-                  : 'Select a lesson, quiz, or assignment from the outline above.'}
-              </p>
-            </div>
-          )}
-        </main>
+          {/* Right rail: educator assistant or course tutor — full-height (desktop); FAB on small screens */}
+          {showEducatorAssistant ? (
+            <>
+              <aside
+                className="hidden lg:flex flex-col flex-shrink-0 min-h-0"
+                style={{
+                  width: 400,
+                  borderLeft: `1px solid ${C.border}`,
+                  background: C.bg,
+                }}
+              >
+                <EducatorAssistantWidget
+                  key={chatSessionKey}
+                  variant="panel"
+                  courseId={courseId}
+                  courseTitle={course.title}
+                  sessionKey={chatSessionKey}
+                  onPreviewChange={onEducatorApplyUpdate}
+                  onApproveAndSave={onEducatorApproveAndSave}
+                />
+              </aside>
+              <div className="lg:hidden">
+                <EducatorAssistantWidget
+                  key={`${chatSessionKey}-mobile`}
+                  courseId={courseId}
+                  courseTitle={course.title}
+                  sessionKey={chatSessionKey}
+                  onPreviewChange={onEducatorApplyUpdate}
+                  onApproveAndSave={onEducatorApproveAndSave}
+                />
+              </div>
+            </>
+          ) : showCourseChat ? (
+            <>
+              <aside
+                className="hidden lg:flex flex-col flex-shrink-0 min-h-0"
+                style={{
+                  width: 400,
+                  borderLeft: `1px solid ${C.border}`,
+                  background: C.bg,
+                }}
+              >
+                <CourseChatWidget
+                  key={chatSessionKey}
+                  courseId={courseId}
+                  courseTitle={course.title}
+                  lessonId={activeLessonId || undefined}
+                  moduleId={activeQuizModuleId || undefined}
+                  signedIn={chatSignedIn}
+                  onSignInRequired={onChatSignInRequired}
+                  sessionKey={chatSessionKey}
+                  variant="panel"
+                />
+              </aside>
+              <div className="lg:hidden">
+                <CourseChatWidget
+                  key={`${chatSessionKey}-mobile`}
+                  courseId={courseId}
+                  courseTitle={course.title}
+                  lessonId={activeLessonId || undefined}
+                  moduleId={activeQuizModuleId || undefined}
+                  signedIn={chatSignedIn}
+                  onSignInRequired={onChatSignInRequired}
+                  sessionKey={chatSessionKey}
+                  variant="floating"
+                />
+              </div>
+            </>
+          ) : null}
+        </div>
       </div>
-      {showEducatorAssistant && (
-        <EducatorAssistantWidget
-          key={chatSessionKey}
-          courseId={courseId}
-          courseTitle={course.title}
-          sessionKey={chatSessionKey}
-          onPreviewChange={onEducatorApplyUpdate}
-          onApproveAndSave={onEducatorApproveAndSave}
-        />
-      )}
-      {showCourseChat && !showEducatorAssistant && (
-        <CourseChatWidget
-          key={chatSessionKey}
-          courseId={courseId}
-          courseTitle={course.title}
-          lessonId={activeLessonId || undefined}
-          moduleId={activeQuizModuleId || undefined}
-          signedIn={chatSignedIn}
-          onSignInRequired={onChatSignInRequired}
-          sessionKey={chatSessionKey}
-        />
-      )}
     </div>
   );
 }
@@ -1122,7 +1364,7 @@ export function CourseDetails() {
           toggleTheme={toggleTheme}
           navBg={navBg}
           left={(
-            <Link to="/" className="no-underline" style={{ color: C.text }}>
+            <Link to="/dashboard" className="no-underline" style={{ color: C.text }}>
               <QuibLogo
                 size={16}
                 wordmarkClassName="text-[1rem] font-[700] tracking-tight"
@@ -1159,7 +1401,7 @@ export function CourseDetails() {
           toggleTheme={toggleTheme}
           navBg={navBg}
           left={(
-            <Link to="/" className="no-underline" style={{ color: C.text }}>
+            <Link to="/dashboard" className="no-underline" style={{ color: C.text }}>
               <QuibLogo
                 size={16}
                 wordmarkClassName="text-[1rem] font-[700] tracking-tight"
@@ -1325,7 +1567,7 @@ export function CourseDetails() {
 
   // ── Course Overview ──
   return (
-    <div style={{ minHeight: '100vh', background: C.bg, color: C.text, fontFamily: 'var(--display)' }}>
+    <div style={{ height: '100vh', overflow: 'hidden', background: C.bg, color: C.text, fontFamily: 'var(--display)' }}>
       <CoursePageNav
         C={C}
         isDark={isDark}
@@ -1341,7 +1583,7 @@ export function CourseDetails() {
               <span className="text-[0.82rem]">Back</span>
             </button>
             <div style={{ width: 1, height: 16, background: C.border }} />
-            <Link to="/" className="no-underline" style={{ color: C.text }}>
+            <Link to="/dashboard" className="no-underline" style={{ color: C.text }}>
               <QuibLogo
                 size={16}
                 wordmarkClassName="text-[1rem] font-[700] tracking-tight"
@@ -1352,7 +1594,9 @@ export function CourseDetails() {
         )}
       />
 
-      <div className="max-w-4xl mx-auto px-6 md:px-10" style={{ paddingTop: 96, paddingBottom: 80 }}>
+      <div className="flex" style={{ paddingTop: 56, height: '100%' }}>
+      <div className="min-w-0 flex-1 overflow-y-auto" style={{ paddingBottom: 80 }}>
+      <div className="max-w-4xl mx-auto px-6 md:px-10" style={{ paddingTop: 40 }}>
         {/* Header */}
         <div className="mb-10">
           <h1 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(2rem, 4vw, 2.8rem)', fontWeight: 400, lineHeight: 1.15, color: C.text, marginBottom: 20 }}>
@@ -1568,16 +1812,42 @@ export function CourseDetails() {
           </p>
         </div>
       </div>
+      </div>
+
       {showEducatorAssistant && resolvedCourseId && (
-        <EducatorAssistantWidget
-          key={chatSessionKey}
-          courseId={resolvedCourseId}
-          courseTitle={course.title}
-          sessionKey={chatSessionKey}
-          onPreviewChange={handleEducatorApplyUpdate}
-          onApproveAndSave={handleEducatorApproveAndSave}
-        />
+        <>
+          <aside
+            className="hidden lg:flex flex-col flex-shrink-0 min-h-0"
+            style={{
+              width: 400,
+              height: 'calc(100vh - 56px)',
+              borderLeft: `1px solid ${C.border}`,
+              background: C.bg,
+            }}
+          >
+            <EducatorAssistantWidget
+              key={chatSessionKey}
+              variant="panel"
+              courseId={resolvedCourseId}
+              courseTitle={course.title}
+              sessionKey={chatSessionKey}
+              onPreviewChange={handleEducatorApplyUpdate}
+              onApproveAndSave={handleEducatorApproveAndSave}
+            />
+          </aside>
+          <div className="lg:hidden">
+            <EducatorAssistantWidget
+              key={`${chatSessionKey}-mobile`}
+              courseId={resolvedCourseId}
+              courseTitle={course.title}
+              sessionKey={chatSessionKey}
+              onPreviewChange={handleEducatorApplyUpdate}
+              onApproveAndSave={handleEducatorApproveAndSave}
+            />
+          </div>
+        </>
       )}
+      </div>
       {showCourseChat && !showEducatorAssistant && resolvedCourseId && (
         <CourseChatWidget
           key={chatSessionKey}

@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import GoogleLoginButton from './GoogleLoginButton';
 import { useTheme } from './ThemeContext';
 import { LandingNav } from './landing/LandingNav';
+import { CREATOR_FLOW_ENABLED } from '../utils/signInIntent';
 
 type SignInCardProps = {
   intent: 'creator' | 'student';
@@ -133,31 +134,38 @@ export function SignIn() {
             transition={{ delay: 0.05 }}
             className="mb-10 text-center text-2xl font-semibold tracking-tight text-[var(--landing-fg)] md:text-4xl"
           >
-            Choose how you want to use Quib
+            {CREATOR_FLOW_ENABLED ? 'Choose how you want to use Cuib' : 'Sign in to Cuib'}
           </motion.h1>
 
-          <div className="grid gap-6 md:grid-cols-2">
-            <SignInCard
-              intent="creator"
-              icon={GraduationCap}
-              eyebrow="For creators"
-              title="Turn your YouTube videos into a real course."
-              description="Connect your channel, generate structured modules, and publish to the catalog. Educators also get full student access — browse, enroll, and learn."
-              highlights={[
-                { value: 'YouTube', label: 'Paste a URL' },
-                { value: 'AI', label: 'Build course' },
-                { value: 'Publish', label: 'To catalog' },
-              ]}
-              pendingUrl={pendingUrl}
-              isDark={isDark}
-              delay={0.1}
-            />
+          <div className={CREATOR_FLOW_ENABLED ? 'grid gap-6 md:grid-cols-2' : 'mx-auto grid max-w-md gap-6'}>
+            {/* ponytail: creator card kept; gated by CREATOR_FLOW_ENABLED */}
+            {CREATOR_FLOW_ENABLED && (
+              <SignInCard
+                intent="creator"
+                icon={GraduationCap}
+                eyebrow="For creators"
+                title="Turn your YouTube videos into a real course."
+                description="Connect your channel, generate structured modules, and publish to the catalog. Educators also get full student access — browse, enroll, and learn."
+                highlights={[
+                  { value: 'YouTube', label: 'Paste a URL' },
+                  { value: 'AI', label: 'Build course' },
+                  { value: 'Publish', label: 'To catalog' },
+                ]}
+                pendingUrl={pendingUrl}
+                isDark={isDark}
+                delay={0.1}
+              />
+            )}
             <SignInCard
               intent="student"
               icon={BookOpen}
               eyebrow="For students"
               title="Learn from structured educator courses."
-              description="Browse courses, take AI quizzes, track progress, and earn certificates. Educator accounts must use the creator sign-in on the left."
+              description={
+                CREATOR_FLOW_ENABLED
+                  ? 'Browse courses, take AI quizzes, track progress, and earn certificates. Educator accounts must use the creator sign-in on the left.'
+                  : 'Browse courses, take AI quizzes, track progress, and earn certificates.'
+              }
               highlights={[
                 { value: 'Browse', label: 'Courses' },
                 { value: 'AI', label: 'Quizzes' },
@@ -186,7 +194,7 @@ export function SignIn() {
             transition={{ delay: 0.35 }}
             className="mx-auto mt-6 max-w-lg text-center text-xs leading-relaxed text-[var(--landing-muted)]"
           >
-            By continuing, you agree to Quib&apos;s Terms of Service and Privacy Policy.
+            By continuing, you agree to Cuib&apos;s Terms of Service and Privacy Policy.
           </motion.p>
 
           <Link

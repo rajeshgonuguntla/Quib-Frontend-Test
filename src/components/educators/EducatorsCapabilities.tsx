@@ -38,7 +38,7 @@ const CAPABILITIES: Array<{
   },
   {
     title: 'Publish to catalog',
-    desc: 'When your course is ready, publish it so learners can browse and enroll on Quib.',
+    desc: 'When your course is ready, publish it so learners can browse and enroll on Cuib.',
     topic: 'course-catalog',
     tags: ['Catalog', 'Enrollments', 'Shareable'],
   },
@@ -93,7 +93,7 @@ export function EducatorsCapabilities({ C, isDark }: { C: ThemeColors; isDark: b
           built from your video
         </motion.h2>
         <p style={{ fontSize: '0.9rem', color: C.text2, lineHeight: 1.7, maxWidth: 480, marginBottom: 48 }}>
-          One starting point on YouTube — structured output on Quib.
+          One starting point on YouTube — structured output on Cuib.
         </p>
 
         <div className="grid gap-5 md:grid-cols-2">

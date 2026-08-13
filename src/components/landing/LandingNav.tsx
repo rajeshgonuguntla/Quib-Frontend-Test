@@ -7,6 +7,9 @@ type LandingNavProps = {
   isDark: boolean;
 };
 
+/** ponytail: Governments page/route kept; flip true when the nav tab should return. */
+const SHOW_GOVERNMENTS_NAV = false;
+
 export function LandingNav({ isDark }: LandingNavProps) {
   return (
     <motion.nav
@@ -28,7 +31,7 @@ export function LandingNav({ isDark }: LandingNavProps) {
           { label: 'Learn', href: '/#learn' },
           { label: 'Create', href: '/#create' },
           { label: 'Features', href: '/#features' },
-          { label: 'Governments', href: '/governments' },
+          ...(SHOW_GOVERNMENTS_NAV ? [{ label: 'Governments', href: '/governments' }] : []),
         ].map((l) => (
           <li key={l.label}>
             {l.href.startsWith('/governments') ? (

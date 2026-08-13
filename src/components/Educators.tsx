@@ -165,20 +165,20 @@ export function Educators() {
               <ul className="list-none space-y-2 p-0 text-[0.82rem]">
                 <li><Link to="/educators#how-it-works" className="no-underline transition-opacity hover:opacity-80" style={{ color: C.text2 }}>How It Works</Link></li>
                 <li><Link to="/" className="no-underline transition-opacity hover:opacity-80" style={{ color: C.text2 }}>Platform</Link></li>
-                <li><a href="mailto:support@quibb.ai" className="no-underline transition-opacity hover:opacity-80" style={{ color: C.text2 }}>Contact</a></li>
+                <li><a href="mailto:support@cuib.ai" className="no-underline transition-opacity hover:opacity-80" style={{ color: C.text2 }}>Contact</a></li>
               </ul>
             </div>
             <div>
               <h4 className="mb-3 text-[0.82rem] font-[600]" style={{ color: C.text }}>Legal</h4>
               <ul className="list-none space-y-2 p-0 text-[0.82rem]">
-                <li><a href="mailto:support@quibb.ai?subject=Privacy" className="no-underline transition-opacity hover:opacity-80" style={{ color: C.text2 }}>Privacy</a></li>
-                <li><a href="mailto:support@quibb.ai?subject=Terms" className="no-underline transition-opacity hover:opacity-80" style={{ color: C.text2 }}>Terms</a></li>
-                <li><a href="mailto:support@quibb.ai" className="no-underline transition-opacity hover:opacity-80" style={{ color: C.text2 }}>Support</a></li>
+                <li><a href="mailto:support@cuib.ai?subject=Privacy" className="no-underline transition-opacity hover:opacity-80" style={{ color: C.text2 }}>Privacy</a></li>
+                <li><a href="mailto:support@cuib.ai?subject=Terms" className="no-underline transition-opacity hover:opacity-80" style={{ color: C.text2 }}>Terms</a></li>
+                <li><a href="mailto:support@cuib.ai" className="no-underline transition-opacity hover:opacity-80" style={{ color: C.text2 }}>Support</a></li>
               </ul>
             </div>
           </div>
           <div className="pt-8 text-center text-[0.78rem]" style={{ borderTop: `1px solid ${C.border}`, color: C.text3 }}>
-            © 2026 Quib. All rights reserved.
+            © 2026 Cuib. All rights reserved.
           </div>
         </div>
       </footer>

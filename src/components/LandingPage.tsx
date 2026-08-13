@@ -15,6 +15,7 @@ import {
   LANDING_COURSE_THUMBNAILS,
   LANDING_STUDIO_TOPICS,
 } from './landing/landingThumbnails';
+import { STUDENT_UPLOAD_ENABLED } from '../utils/studentInputModes';
 
 function LearnMock() {
   return (
@@ -146,10 +147,15 @@ export function LandingPage() {
               placeholder="Paste a YouTube URL…"
               className="min-w-0 flex-1 bg-transparent px-4 py-3 font-mono text-sm text-[var(--landing-fg)] outline-none placeholder:text-[var(--landing-muted)]"
             />
-            <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={(e: ChangeEvent<HTMLInputElement>) => { e.target.value = ''; }} />
-            <button type="button" onClick={() => fileInputRef.current?.click()} className="border-l border-[var(--landing-border)] px-3 text-[var(--landing-muted)] transition-colors hover:text-[var(--landing-fg)]">
-              <Upload size={16} />
-            </button>
+            {/* ponytail: file upload gated — STUDENT_UPLOAD_ENABLED */}
+            {STUDENT_UPLOAD_ENABLED && (
+              <>
+                <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={(e: ChangeEvent<HTMLInputElement>) => { e.target.value = ''; }} />
+                <button type="button" onClick={() => fileInputRef.current?.click()} className="border-l border-[var(--landing-border)] px-3 text-[var(--landing-muted)] transition-colors hover:text-[var(--landing-fg)]" aria-label="Upload document">
+                  <Upload size={16} />
+                </button>
+              </>
+            )}
             <button type="submit" className="flex items-center gap-1.5 border-l border-[var(--landing-border)] bg-[var(--landing-fg)] px-5 py-3 text-sm font-medium text-[var(--landing-bg)] transition-opacity hover:opacity-90">
               Start <ArrowRight size={14} />
             </button>
@@ -202,7 +208,7 @@ export function LandingPage() {
           <div className="flex gap-12">
             {[
               { title: 'Product', links: [{ l: 'Features', h: '/#features' }, { l: 'Sign in', h: '/signin' }] },
-              { title: 'Company', links: [{ l: 'How it works', h: '/#learn' }, { l: 'Support', h: 'mailto:support@quibb.ai' }] },
+              { title: 'Company', links: [{ l: 'How it works', h: '/#learn' }, { l: 'Support', h: 'mailto:support@cuib.ai' }] },
             ].map((col) => (
               <div key={col.title}>
                 <p className="landing-mono-label mb-3">{col.title}</p>
@@ -219,7 +225,7 @@ export function LandingPage() {
             ))}
           </div>
         </div>
-        <p className="mx-auto mt-10 max-w-6xl text-xs text-[var(--landing-muted)]">© 2026 Quib. All rights reserved.</p>
+        <p className="mx-auto mt-10 max-w-6xl text-xs text-[var(--landing-muted)]">© 2026 Cuib. All rights reserved.</p>
       </footer>
     </div>
   );

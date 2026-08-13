@@ -24,6 +24,7 @@ import { AdminInsights } from './components/AdminInsights';
 import { CourseEditor } from './components/CourseEditor';
 import { Governments } from './components/Governments';
 import { EducatorProfile } from './components/EducatorProfile';
+import { CourseBuilderFollowupsPage } from './components/CourseBuilderFollowupsPage';
 import { CourseDetails } from './components/CourseDetails';
 import { BrowseCourses } from './components/BrowseCourses';
 import { Creators } from './components/Creators';
@@ -70,6 +71,7 @@ export default function App() {
                   <Route path="/educator/:id" element={<EducatorProfile />} />
                   <Route path="/my-quizzes" element={<MyQuizzes />} />
                   <Route path="/certificates" element={<MyCertificates />} />
+                  <Route path="/course-builder" element={<CourseBuilderFollowupsPage />} />
                   <Route path="/quiz-setup" element={<QuizSetup />} />
                   <Route path="/quiz-setup/:id" element={<QuizSetup />} />
                   <Route path="/playlist-setup/:id" element={<PlaylistSetup />} />

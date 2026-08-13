@@ -189,7 +189,7 @@ export function Creators() {
       <PageHeader
         label="Discover"
         title="Creators"
-        description="Explore educators and YouTube channels with courses and quizzes on Quib."
+        description="Explore educators and YouTube channels with courses and quizzes on Cuib."
       />
 
       <section className="mb-10">
@@ -199,7 +199,7 @@ export function Creators() {
             <h2 className="text-sm font-medium">Trending this week</h2>
           </div>
           {!loadingTrending && trending.length > 0 && (
-            <span className="text-xs text-muted-foreground">Ranked by popularity on Quib</span>
+            <span className="text-xs text-muted-foreground">Ranked by popularity on Cuib</span>
           )}
         </div>
 

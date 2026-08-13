@@ -162,6 +162,7 @@ export function LessonStudyContent({
   lesson,
   theme,
   moduleTitle,
+  mode = 'all',
 }: {
   lesson: {
     title: string;
@@ -173,14 +174,30 @@ export function LessonStudyContent({
   };
   theme: NotesTheme;
   moduleTitle?: string;
+  /** `overview` = summary/concepts/takeaway; `notes` = study notes only; `all` = everything. */
+  mode?: 'all' | 'overview' | 'notes';
 }) {
-  const hasRich =
-    lesson.summary?.trim() ||
+  const showOverview = mode === 'all' || mode === 'overview';
+  const showNotes = mode === 'all' || mode === 'notes';
+
+  const hasOverview =
+    !!lesson.summary?.trim() ||
     (lesson.keyConcepts && lesson.keyConcepts.length > 0) ||
-    lesson.takeaway?.trim() ||
-    lesson.notes?.trim();
+    !!lesson.takeaway?.trim();
+  const hasNotes = !!lesson.notes?.trim();
+  const hasRich =
+    (showOverview && hasOverview) || (showNotes && hasNotes) || (mode === 'all' && (hasOverview || hasNotes));
 
   if (!hasRich) {
+    if (mode === 'notes') {
+      return (
+        <div className="rounded-2xl p-6 mb-8" style={{ background: theme.bg1, border: `1px solid ${theme.border}` }}>
+          <p className="text-[0.875rem] leading-relaxed" style={{ color: theme.text2, lineHeight: 1.8 }}>
+            No study notes for this lesson yet.
+          </p>
+        </div>
+      );
+    }
     return (
       <div className="rounded-2xl p-6 mb-8" style={{ background: theme.bg1, border: `1px solid ${theme.border}` }}>
         <p className="text-[0.875rem] leading-relaxed" style={{ color: theme.text2, lineHeight: 1.8 }}>
@@ -199,7 +216,7 @@ export function LessonStudyContent({
 
   return (
     <div className="space-y-6 mb-8">
-      {lesson.summary?.trim() ? (
+      {showOverview && lesson.summary?.trim() ? (
         <div className="rounded-2xl p-6" style={{ background: theme.bg1, border: `1px solid ${theme.border}` }}>
           <p className="text-[0.7rem] uppercase tracking-widest mb-3" style={{ color: theme.text3, fontFamily: 'var(--mono)' }}>
             Summary
@@ -210,7 +227,7 @@ export function LessonStudyContent({
         </div>
       ) : null}
 
-      {lesson.keyConcepts && lesson.keyConcepts.length > 0 ? (
+      {showOverview && lesson.keyConcepts && lesson.keyConcepts.length > 0 ? (
         <div className="rounded-2xl p-6" style={{ background: theme.bg1, border: `1px solid ${theme.border}` }}>
           <p className="text-[0.7rem] uppercase tracking-widest mb-3" style={{ color: theme.text3, fontFamily: 'var(--mono)' }}>
             Key concepts
@@ -225,7 +242,7 @@ export function LessonStudyContent({
         </div>
       ) : null}
 
-      {lesson.takeaway?.trim() ? (
+      {showOverview && lesson.takeaway?.trim() ? (
         <div
           className="rounded-2xl p-5"
           style={{ background: theme.bg1, border: `1px solid ${theme.border}`, borderLeft: `3px solid ${theme.red}` }}
@@ -239,7 +256,7 @@ export function LessonStudyContent({
         </div>
       ) : null}
 
-      {lesson.notes?.trim() ? (
+      {showNotes && lesson.notes?.trim() ? (
         <div className="rounded-2xl p-6" style={{ background: theme.bg1, border: `1px solid ${theme.border}` }}>
           <p className="text-[0.7rem] uppercase tracking-widest mb-4" style={{ color: theme.text3, fontFamily: 'var(--mono)' }}>
             Study notes

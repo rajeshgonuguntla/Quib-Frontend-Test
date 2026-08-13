@@ -144,7 +144,7 @@ function buildLoaderHtml(isDark: boolean) {
 <script>
 const formations = {
   original: {
-    label: 'Quib',
+    label: 'Cuib',
     cubes: [
       { x: 200, y: 215, op: 1.0, brand: 1 },
       { x: 160, y: 140, op: 0.5, brand: 0 },

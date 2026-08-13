@@ -80,7 +80,7 @@ export function Verification() {
           <div className="flex gap-3">
             <Input
               type="text"
-              placeholder="Enter certificate ID (e.g., QUIB-2026-ML-8472)"
+              placeholder="Enter certificate ID (e.g., CUIB-2026-ML-8472)"
               value={searchId}
               onChange={(e) => setSearchId(e.target.value)}
               icon={<Search className="w-5 h-5" />}
@@ -189,9 +189,9 @@ export function Verification() {
               <Award className="w-6 h-6 text-white" />
             </div>
             <div>
-              <div className="font-bold text-blue-900 mb-2">About Quib Verification</div>
+              <div className="font-bold text-blue-900 mb-2">About Cuib Verification</div>
               <div className="text-sm text-blue-800 leading-relaxed">
-                All Quib certificates include a unique verification ID. This public verification page 
+                All Cuib certificates include a unique verification ID. This public verification page 
                 allows anyone to confirm the authenticity and validity of a certificate. Each certificate 
                 includes details about the recipient, course, score, and issue date.
               </div>

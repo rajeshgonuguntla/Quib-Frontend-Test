@@ -12,6 +12,7 @@ import { useShell } from '../shell/ShellContext';
 import { StaggerChildren, StaggerItem } from '../shell/motion';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
+import { StudentMasterInput } from './StudentMasterInput';
 
 const FALLBACK_CURATED = [
   {
@@ -95,11 +96,11 @@ export function Dashboard() {
     const incomingPlaylistUrl = location.state?.playlistUrl as string | undefined;
     const incomingVideoUrl = location.state?.youtubeUrl as string | undefined;
     if (incomingPlaylistUrl) {
-      navigate('/playlist-setup/new', { state: { playlistUrl: incomingPlaylistUrl }, replace: true });
+      navigate('/course-builder', { state: { youtubeUrl: incomingPlaylistUrl }, replace: true });
       return;
     }
     if (incomingVideoUrl) {
-      navigate('/quiz-setup/new', { state: { youtubeUrl: incomingVideoUrl }, replace: true });
+      navigate('/course-builder', { state: { youtubeUrl: incomingVideoUrl }, replace: true });
     }
   }, [location.state, navigate]);
 
@@ -210,6 +211,10 @@ export function Dashboard() {
             Browse all <ArrowUpRight size={14} />
           </Button>
         </div>
+      </StaggerItem>
+
+      <StaggerItem>
+        <StudentMasterInput />
       </StaggerItem>
 
       <StaggerItem>

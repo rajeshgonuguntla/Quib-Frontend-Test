@@ -164,7 +164,7 @@ export function Settings() {
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               <p className="text-muted-foreground">Need help with courses, Studio, or your account?</p>
-              <a href="mailto:support@quibb.ai" className="block text-foreground underline-offset-4 hover:underline">support@quibb.ai</a>
+              <a href="mailto:support@cuib.ai" className="block text-foreground underline-offset-4 hover:underline">support@cuib.ai</a>
             </CardContent>
           </Card>
         </TabsContent>

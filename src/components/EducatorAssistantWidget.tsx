@@ -32,7 +32,7 @@ interface EducatorAssistantWidgetProps {
   onApproveAndSave?: (result: AssistantApplyResult) => Promise<void>;
   /** Preview in editor without saving. */
   onPreviewChange?: (result: AssistantApplyResult) => void;
-  /** `panel` = docked left column in course editor; `floating` = FAB overlay (course details). */
+  /** `panel` = docked full-height column; `floating` = slide-in dock + FAB. */
   variant?: 'floating' | 'panel';
 }
 
@@ -102,10 +102,10 @@ export function EducatorAssistantWidget({
   }, [courseId, sessionKey, isPanel]);
 
   useEffect(() => {
-    if (open && scrollRef.current) {
+    if ((open || isPanel) && scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [open, messages, loading, loadingPhase, approvingIndex]);
+  }, [open, isPanel, messages, loading, loadingPhase, approvingIndex]);
 
   const previewChange = (result: AssistantApplyResult) => {
     if (onPreviewChange) {
@@ -117,8 +117,8 @@ export function EducatorAssistantWidget({
     }
   };
 
-  const sendMessage = async () => {
-    const text = input.trim();
+  const sendMessage = async (rawText?: string) => {
+    const text = (rawText ?? input).trim();
     if (!text || loading) return;
 
     setMessages((prev) => [...prev, { role: 'user', content: text }]);
@@ -201,37 +201,46 @@ export function EducatorAssistantWidget({
     );
   };
 
-  const panelBg = isDark ? 'rgba(12,12,16,0.98)' : 'rgba(255,255,255,0.98)';
+  const panelBg = isDark ? C.bg : C.bg;
+  const suggestions = isPanel
+    ? [
+        'Rename module 1 to Getting Started',
+        'Move the last lesson to the top of module 1',
+        'Add a clearer summary to lesson 1',
+      ]
+    : [
+        'Set a clearer course title',
+        'Reorder modules for a better flow',
+        'Shorten the course description',
+      ];
 
   const chatPanel = (
     <div
       className={
         isPanel
-          ? 'flex h-full min-h-0 flex-col overflow-hidden bg-background'
-          : 'flex flex-col overflow-hidden rounded-2xl shadow-2xl'
+          ? 'flex h-full min-h-0 w-full flex-col overflow-hidden'
+          : 'flex h-full min-h-0 w-full flex-col overflow-hidden'
       }
-      style={
-        isPanel
-          ? undefined
-          : {
-              width: 'min(400px, calc(100vw - 2rem))',
-              height: 'min(540px, calc(100vh - 8rem))',
-              background: panelBg,
-              border: `1px solid ${C.border}`,
-              backdropFilter: 'blur(20px)',
-            }
-      }
+      style={{
+        background: panelBg,
+        borderLeft: isPanel ? undefined : `1px solid ${C.border}`,
+      }}
     >
       <div
-        className="flex shrink-0 items-center justify-between px-4 py-3"
+        className="flex shrink-0 items-center justify-between gap-3 px-4 py-3.5"
         style={{ borderBottom: `1px solid ${C.border}`, background: C.bg1 }}
       >
         <div className="min-w-0">
-          <p className="text-[0.85rem] font-[600] truncate flex items-center gap-1.5" style={{ color: C.text }}>
-            <Sparkles className="w-4 h-4" style={{ color: C.red }} />
-            {isPanel ? 'Course editor assistant' : 'Course assistant'}
+          <p className="text-[0.88rem] font-[600] truncate flex items-center gap-2" style={{ color: C.text }}>
+            <span
+              className="inline-flex size-7 items-center justify-center rounded-lg"
+              style={{ background: C.redDim, color: C.red }}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+            </span>
+            Course assistant
           </p>
-          <p className="text-[0.7rem] truncate" style={{ color: C.text3 }}>
+          <p className="mt-1 text-[0.7rem] truncate pl-9" style={{ color: C.text3 }}>
             {courseTitle}
           </p>
         </div>
@@ -239,7 +248,7 @@ export function EducatorAssistantWidget({
           <button
             type="button"
             onClick={() => setOpen(false)}
-            className="w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer"
+            className="w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer shrink-0"
             style={{ background: C.bg2, border: `1px solid ${C.border}`, color: C.text2 }}
             aria-label="Close assistant"
           >
@@ -254,22 +263,53 @@ export function EducatorAssistantWidget({
         style={{ background: C.bg }}
       >
         {messages.length === 0 && (
-          <div
-            className="rounded-xl px-4 py-3 text-[0.8rem] leading-relaxed"
-            style={{ background: C.bg1, border: `1px solid ${C.border}`, color: C.text2 }}
-          >
-            {isPanel ? (
-              <>
-                Describe changes to your course on the left — modules stay visible on the right.
-                Use <strong>Approve &amp; save</strong> to persist without leaving this screen.
-              </>
-            ) : (
-              <>
-                Simple edits (rename, reorder) run instantly. When the assistant proposes changes,
-                use <strong>Approve &amp; save</strong> to persist them.
-                {canPreview ? ' Use Preview if you want to review in the editor first.' : null}
-              </>
-            )}
+          <div className="space-y-3">
+            <div
+              className="rounded-2xl px-4 py-4 text-[0.82rem] leading-relaxed"
+              style={{ background: C.bg1, border: `1px solid ${C.border}`, color: C.text2 }}
+            >
+              <p className="font-[600] mb-1.5" style={{ color: C.text }}>
+                Edit this course with plain language
+              </p>
+              <p>
+                Ask for renames, reorders, or wording tweaks.
+                Use <strong style={{ color: C.text }}>Approve &amp; save</strong> when a change is proposed
+                {canPreview ? ', or Preview first.' : '.'}
+              </p>
+            </div>
+            <div>
+              <p className="mb-2 text-[0.68rem] uppercase tracking-wider" style={{ color: C.text3, fontFamily: 'var(--mono)' }}>
+                Try one
+              </p>
+              <div className="flex flex-col gap-2">
+                {suggestions.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    disabled={loading}
+                    onClick={() => {
+                      void sendMessage(s);
+                    }}
+                    className="rounded-xl px-3.5 py-2.5 text-left text-[0.78rem] leading-snug cursor-pointer transition-colors disabled:opacity-50"
+                    style={{
+                      background: C.bg1,
+                      border: `1px solid ${C.border}`,
+                      color: C.text2,
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = C.red;
+                      e.currentTarget.style.color = C.text;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = C.border;
+                      e.currentTarget.style.color = C.text2;
+                    }}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         )}
         {messages.map((msg, idx) => (
@@ -306,7 +346,7 @@ export function EducatorAssistantWidget({
                       Approve &amp; save
                     </button>
                   )}
-                  {canPreview && !isPanel && (
+                  {canPreview && (
                     <button
                       type="button"
                       disabled={approvingIndex === idx || loading}
@@ -318,22 +358,7 @@ export function EducatorAssistantWidget({
                         border: `1px solid ${C.border}`,
                       }}
                     >
-                      Preview in editor
-                    </button>
-                  )}
-                  {canPreview && isPanel && (
-                    <button
-                      type="button"
-                      disabled={approvingIndex === idx || loading}
-                      onClick={() => handlePreview(idx)}
-                      className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[0.75rem] font-medium cursor-pointer disabled:opacity-50"
-                      style={{
-                        background: C.bg2,
-                        color: C.text,
-                        border: `1px solid ${C.border}`,
-                      }}
-                    >
-                      Preview only
+                      {isPanel ? 'Preview only' : 'Preview in editor'}
                     </button>
                   )}
                 </div>
@@ -381,12 +406,8 @@ export function EducatorAssistantWidget({
             }
           }}
           rows={2}
-          placeholder={
-            isPanel
-              ? 'Describe changes to this course…'
-              : 'e.g. Set title to Intro to React · move module 2 to top…'
-          }
-          className="flex-1 resize-none rounded-xl px-3 py-2 text-[0.82rem] outline-none"
+          placeholder="Ask to rename, reorder, or rewrite…"
+          className="flex-1 resize-none rounded-xl px-3 py-2.5 text-[0.82rem] outline-none"
           style={{
             background: C.bg2,
             border: `1px solid ${C.border}`,
@@ -411,27 +432,51 @@ export function EducatorAssistantWidget({
     return chatPanel;
   }
 
+  // Full-height right dock (opens from FAB)
   return (
-    <div className="fixed bottom-24 right-6 z-[200] flex flex-col items-end gap-3 md:bottom-6">
-      {open && chatPanel}
-
-      <button
-        type="button"
-        onClick={() => setOpen((prev) => !prev)}
-        className="flex items-center gap-2 px-4 py-3 rounded-full shadow-lg cursor-pointer transition-transform hover:scale-[1.02]"
+    <>
+      {open && (
+        <div
+          className="fixed inset-0 z-[199] bg-black/40 lg:bg-transparent"
+          onClick={() => setOpen(false)}
+          aria-hidden
+        />
+      )}
+      <aside
+        className="fixed z-[200] flex flex-col transition-transform duration-300 ease-out"
         style={{
-          background: isDark ? '#1a1a22' : '#fff',
-          color: C.text,
-          border: `1px solid ${C.border}`,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
+          top: 56,
+          right: 0,
+          bottom: 0,
+          width: 'min(400px, 100vw)',
+          transform: open ? 'translateX(0)' : 'translateX(100%)',
+          pointerEvents: open ? 'auto' : 'none',
+          boxShadow: open ? (isDark ? '-12px 0 40px rgba(0,0,0,0.45)' : '-12px 0 40px rgba(0,0,0,0.12)') : 'none',
+          borderLeft: `1px solid ${C.border}`,
+          background: C.bg,
         }}
-        aria-label={open ? 'Close course assistant' : 'Open course assistant'}
+        aria-hidden={!open}
       >
-        <Sparkles className="w-5 h-5" style={{ color: C.red }} />
-        <span className="text-[0.82rem] font-[600] hidden sm:inline">
-          {open ? 'Close assistant' : 'AI assistant'}
-        </span>
-      </button>
-    </div>
+        {chatPanel}
+      </aside>
+
+      {!open && (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="fixed bottom-6 right-6 z-[200] flex items-center gap-2 px-4 py-3 rounded-full shadow-lg cursor-pointer transition-transform hover:scale-[1.02]"
+          style={{
+            background: C.red,
+            color: '#fff',
+            border: 'none',
+            boxShadow: '0 8px 32px rgba(225,6,0,0.35)',
+          }}
+          aria-label="Open course assistant"
+        >
+          <Sparkles className="w-5 h-5" />
+          <span className="text-[0.82rem] font-[600] hidden sm:inline">AI assistant</span>
+        </button>
+      )}
+    </>
   );
 }

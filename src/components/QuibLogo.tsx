@@ -1,3 +1,4 @@
+import { BRAND_NAME } from '../brand';
 import { useTheme } from './ThemeContext';
 import { cn } from './ui/utils';
 
@@ -45,7 +46,7 @@ export function QuibLogoMark({ size = 20, className, variant = 'auto' }: QuibLog
       aria-hidden
       xmlns="http://www.w3.org/2000/svg"
     >
-      <title>Quib</title>
+      <title>{BRAND_NAME}</title>
       <g transform="translate(200,200)">
         <polygon points="0,-100 120,-42 0,17 -120,-42" fill={c.top} />
         <polygon points="-120,-42 0,17 0,137 -120,78" fill={c.left} />
@@ -94,7 +95,7 @@ export function QuibLogoBadge({
   return (
     <img
       src={src}
-      alt="Quib"
+      alt={BRAND_NAME}
       width={size}
       height={size}
       className={cn('rounded-md object-contain', className)}
@@ -105,7 +106,7 @@ export function QuibLogoBadge({
 /** Cube mark with optional wordmark — default branding lockup. */
 export function QuibLogo({
   showWordmark = true,
-  wordmark = 'Quib',
+  wordmark = BRAND_NAME,
   size = 20,
   className,
   wordmarkClassName,

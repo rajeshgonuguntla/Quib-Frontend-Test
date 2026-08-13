@@ -62,7 +62,7 @@ export function Certificate() {
       score: cert?.scorePercent ?? 0,
       date: issueDate,
       certificateId: code,
-      verificationUrl: code ? `quib.ai/verify/${code}` : '',
+      verificationUrl: code ? `cuib.ai/verify/${code}` : '',
     };
   }, [cert, profile]);
 
@@ -158,7 +158,7 @@ export function Certificate() {
                   <div className="text-center mb-8">
                     <div className="flex items-center justify-center gap-3 mb-4">
                       <QuibLogoMark size={48} variant="light" />
-                      <span className="text-4xl font-bold text-gray-900">Quib</span>
+                      <span className="text-4xl font-bold text-gray-900">Cuib</span>
                     </div>
                     <div className="text-lg text-gray-600 tracking-widest">CERTIFICATE OF COMPLETION</div>
                   </div>
