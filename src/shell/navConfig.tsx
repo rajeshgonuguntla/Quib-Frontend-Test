@@ -10,6 +10,7 @@ import {
   Search,
   Settings,
   Shield,
+  Sparkles,
   TrendingUp,
 } from 'lucide-react';
 
@@ -32,6 +33,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { id: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: <Home size={15} /> },
       { id: 'browse', label: 'Browse', path: '/browse-courses', icon: <Search size={15} /> },
+      { id: 'upgrade', label: 'Upgrade', path: '/upgrade', icon: <Sparkles size={15} /> },
       { id: 'studio', label: 'Studio', path: '/educator-studio', icon: <GraduationCap size={15} /> },
       { id: 'my-courses-educator', label: 'My courses', path: '/educator-courses', icon: <BookMarked size={15} /> },
       { id: 'educator-analytics', label: 'Analytics', path: '/educator-analytics', icon: <BarChart3 size={15} /> },
@@ -69,6 +71,7 @@ export function isNavItemActive(pathname: string, search: string, id: string, pa
   if (id === 'saved') return pathname.startsWith('/my-quizzes') || pathname.startsWith('/certificates');
   if (id === 'settings') return pathname.startsWith('/settings') && !search.includes('tab=');
   if (id === 'help') return pathname.startsWith('/settings') && search.includes('tab=help');
+  if (id === 'upgrade') return pathname.startsWith('/upgrade');
   return pathname === path;
 }
 
@@ -90,6 +93,8 @@ const ROUTE_META: Record<string, RouteMeta> = {
   '/educator-analytics': { title: 'Analytics', section: 'Insights', parent: { label: 'Dashboard', path: '/dashboard' } },
   '/admin/insights': { title: 'Platform insights', section: 'Admin', parent: { label: 'Dashboard', path: '/dashboard' } },
   '/settings': { title: 'Settings', section: 'Account', parent: { label: 'Dashboard', path: '/dashboard' } },
+  '/upgrade': { title: 'Upgrade', section: 'Unlimited', parent: { label: 'Dashboard', path: '/dashboard' } },
+  '/upgrade/success': { title: 'Subscription', section: 'Unlimited', parent: { label: 'Upgrade', path: '/upgrade' } },
   '/quiz-setup': { title: 'Quiz setup', section: 'Create', parent: { label: 'Dashboard', path: '/dashboard' } },
   '/playlist-setup': { title: 'Playlist setup', section: 'Create', parent: { label: 'Dashboard', path: '/dashboard' } },
 };

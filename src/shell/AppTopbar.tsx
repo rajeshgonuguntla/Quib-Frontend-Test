@@ -171,6 +171,12 @@ export function AppTopbar({ onOpenMobileNav }: { onOpenMobileNav?: () => void })
       </div>
 
       <div className="flex items-center gap-1.5">
+        <Link
+          to="/upgrade"
+          className="hidden rounded-md px-2.5 py-1 text-xs font-medium text-foreground no-underline transition-colors hover:bg-accent sm:inline-flex"
+        >
+          Upgrade
+        </Link>
         <ThemeToggle size="sm" />
         <button
           type="button"
@@ -194,6 +200,7 @@ export function AppTopbar({ onOpenMobileNav }: { onOpenMobileNav?: () => void })
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => navigate('/settings')}>Settings</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate('/upgrade')}>Upgrade</DropdownMenuItem>
             <DropdownMenuItem onClick={() => navigate('/my-courses')}>My courses</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">

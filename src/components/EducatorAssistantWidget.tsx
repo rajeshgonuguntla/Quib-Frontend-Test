@@ -7,6 +7,7 @@ import {
 } from '../api/educatorAssistantApi';
 import type { CourseEditOperation, CourseUpdatePayload } from '../types/courseGeneration';
 import { useTheme, getC } from './ThemeContext';
+import { LessonNotes } from './LessonNotes';
 
 export interface AssistantMessage {
   role: 'user' | 'assistant';
@@ -322,14 +323,33 @@ export function EducatorAssistantWidget({
           >
             <div className="max-w-[92%]">
               <div
-                className="rounded-2xl px-3.5 py-2.5 text-[0.82rem] leading-relaxed whitespace-pre-wrap"
+                className={`rounded-2xl px-3.5 py-2.5 text-[0.82rem] leading-relaxed ${
+                  msg.role === 'user'
+                    ? 'whitespace-pre-wrap'
+                    : '[&_p]:mb-1.5 [&_p:last-child]:mb-0 [&_ul]:mb-1.5 [&_ul:last-child]:mb-0 [&_pre]:mb-2 [&_.lesson-notes]:text-[0.82rem]'
+                }`}
                 style={{
                   background: msg.role === 'user' ? C.red : C.bg1,
                   color: msg.role === 'user' ? '#fff' : C.text,
                   border: msg.role === 'user' ? 'none' : `1px solid ${C.border}`,
                 }}
               >
-                {msg.content}
+                {msg.role === 'assistant' ? (
+                  <LessonNotes
+                    content={msg.content}
+                    theme={{
+                      text: C.text,
+                      text2: C.text2,
+                      text3: C.text3,
+                      border: C.border,
+                      bg1: C.bg1,
+                      bg2: C.bg2,
+                      red: C.red,
+                    }}
+                  />
+                ) : (
+                  msg.content
+                )}
               </div>
               {msg.role === 'assistant' && msg.pendingChange && msg.changeStatus === 'pending' && (
                 <div className="mt-2 flex flex-wrap gap-2">

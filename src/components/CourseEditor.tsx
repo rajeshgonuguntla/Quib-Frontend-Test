@@ -309,6 +309,8 @@ export function CourseEditor() {
       const { playlistVideos: _pv, ...payload } = form;
       await updateCourse(courseId, {
         ...payload,
+        isFree: true,
+        priceCents: 0,
         includedVideoIds: [...includedVideoIds],
         contentExpiresAt: form.contentExpiresAt?.trim() ? form.contentExpiresAt.trim() : '',
       });
@@ -395,41 +397,6 @@ export function CourseEditor() {
             >
               {CONTENT_LANGUAGES.map((l) => <option key={l.value} value={l.value}>{l.label}</option>)}
             </select>
-          </div>
-          <div className="space-y-2 sm:col-span-2">
-            <Label>Pricing (USD)</Label>
-            <div className="flex flex-wrap items-center gap-4">
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={form.isFree !== false}
-                  onChange={(e) => setForm({
-                    ...form,
-                    isFree: e.target.checked,
-                    priceCents: e.target.checked ? 0 : Math.max(form.priceCents ?? 500, 50),
-                  })}
-                />
-                Free course
-              </label>
-              {form.isFree === false && (
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">$</span>
-                  <Input
-                    type="number"
-                    min={0.5}
-                    step={0.01}
-                    className="w-28"
-                    value={((form.priceCents ?? 0) / 100).toFixed(2)}
-                    onChange={(e) => {
-                      const dollars = Number.parseFloat(e.target.value);
-                      const cents = Number.isFinite(dollars) ? Math.round(dollars * 100) : 0;
-                      setForm({ ...form, priceCents: cents, isFree: false });
-                    }}
-                  />
-                  <span className="text-xs text-muted-foreground">Min $0.50 when paid</span>
-                </div>
-              )}
-            </div>
           </div>
           <div className="space-y-2 sm:col-span-2">
             <Label htmlFor="contentExpiresAt">Content freshness</Label>

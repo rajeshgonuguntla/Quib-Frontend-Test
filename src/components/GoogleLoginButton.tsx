@@ -18,6 +18,7 @@ import {
   setSignInIntent,
   type SignInIntent,
 } from '../utils/signInIntent';
+import { peekReferralCode, rememberReferralCode } from '../utils/referralCode';
 
 type GoogleAuthResponse = {
   token: string;
@@ -70,8 +71,14 @@ function GoogleLoginButton({
     try {
       clearToken();
 
+      const referralCode = peekReferralCode()
+        ?? new URLSearchParams(location.search).get('ref')
+        ?? undefined;
+      rememberReferralCode(referralCode);
+
       const res = await axios.post<GoogleAuthResponse>('/api/auth/google', {
         token: credentialResponse.credential,
+        referralCode,
       });
 
       const jwt = res.data.token;

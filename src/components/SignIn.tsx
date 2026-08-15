@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import GoogleLoginButton from './GoogleLoginButton';
 import { useTheme } from './ThemeContext';
 import { LandingNav } from './landing/LandingNav';
+import { rememberReferralCode } from '../utils/referralCode';
 import { CREATOR_FLOW_ENABLED } from '../utils/signInIntent';
 
 type SignInCardProps = {
@@ -109,10 +110,11 @@ export function SignIn() {
     (location.state?.playlistUrl as string | undefined);
 
   useEffect(() => {
+    rememberReferralCode(new URLSearchParams(location.search).get('ref'));
     if (location.hash) {
       navigate(`/${location.hash}`, { replace: true });
     }
-  }, [location.hash, navigate]);
+  }, [location.hash, location.search, navigate]);
 
   return (
     <div className={`landing-page min-h-screen overflow-x-hidden ${isDark ? '' : 'light'}`}>

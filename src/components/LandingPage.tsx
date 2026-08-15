@@ -208,6 +208,7 @@ export function LandingPage() {
           <div className="flex gap-12">
             {[
               { title: 'Product', links: [{ l: 'Features', h: '/#features' }, { l: 'Sign in', h: '/signin' }] },
+              { title: 'Legal', links: [{ l: 'Terms', h: '/terms' }, { l: 'Privacy', h: '/privacy' }] },
               { title: 'Company', links: [{ l: 'How it works', h: '/#learn' }, { l: 'Support', h: 'mailto:support@cuib.ai' }] },
             ].map((col) => (
               <div key={col.title}>

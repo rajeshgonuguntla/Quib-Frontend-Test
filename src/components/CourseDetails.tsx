@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Link, useNavigate, useLocation, useParams, useSearchParams } from 'react-router';
+import { Link, useNavigate, useLocation, useParams } from 'react-router';
 import axios from 'axios';
 import {
   ChevronDown, ChevronRight, ChevronUp,
@@ -15,9 +15,8 @@ import {
   submitModuleQuiz,
   type ModuleQuizResult,
 } from '../api/courseApi';
-import { createCourseCheckout } from '../api/paymentApi';
 import { isTokenValid, useAuthSessionKey } from '../auth';
-import { formatPriceCents } from '../utils/formatPrice';
+import { isTrialExhausted } from '../api/billingApi';
 import { useUserProfile } from '../context/UserProfileContext';
 import { useTheme, getC } from './ThemeContext';
 import { CourseGenerationLoader } from './CourseGenerationLoader';
@@ -25,8 +24,7 @@ import { CoursePageNav } from './CoursePageNav';
 import { CourseChatWidget } from './CourseChatWidget';
 import { EducatorAssistantWidget, type AssistantApplyResult } from './EducatorAssistantWidget';
 import { QuibLogo } from './QuibLogo';
-import { PreCheckoutProfileModal } from './PreCheckoutProfileModal';
-import { isCheckoutProfileReady } from '../utils/checkoutProfile';
+import { TrialUpgradePrompt } from './TrialUpgradePrompt';
 import { LessonStudyContent } from './LessonNotes';
 import { StudyRailPanel } from './StudyRailPanel';
 import { fetchCourseAssignmentSummary } from '../api/assignmentApi';
@@ -135,17 +133,6 @@ function getCourseGenerationError(err: unknown) {
   }
 
   return 'Unable to generate the course.';
-}
-
-function getCheckoutError(err: unknown) {
-  if (axios.isAxiosError(err)) {
-    const data = err.response?.data as { message?: string; details?: string } | undefined;
-    return data?.message || data?.details || err.message || 'Checkout is unavailable. Please try again later.';
-  }
-  if (err instanceof Error && err.message) {
-    return err.message;
-  }
-  return 'Checkout is unavailable. Please try again later.';
 }
 
 type StudyTab = 'overview' | 'notes' | 'flashcards' | 'blanks' | 'exam';
@@ -495,10 +482,6 @@ function LearningMode({
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.status === 401) {
         setLessonActionError('Session expired. Please sign in again to save progress.');
-        return;
-      }
-      if (axios.isAxiosError(err) && err.response?.status === 402) {
-        setLessonActionError('Purchase required before marking lessons complete.');
         return;
       }
       setLessonActionError('Could not save progress. Please try again.');
@@ -1219,8 +1202,7 @@ export function CourseDetails() {
   const navigate = useNavigate();
   const location = useLocation();
   const { courseId: courseIdParam } = useParams();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const { profile, refreshProfile, setProfile } = useUserProfile();
+  const { profile, refreshProfile } = useUserProfile();
   const authSessionKey = useAuthSessionKey();
   const chatSignedIn = isTokenValid();
 
@@ -1253,7 +1235,7 @@ export function CourseDetails() {
   const [publishing, setPublishing] = useState(false);
   const [publishError, setPublishError] = useState<string | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
-  const [showPreCheckout, setShowPreCheckout] = useState(false);
+  const [trialExhausted, setTrialExhausted] = useState(false);
   const [downloadBusy, setDownloadBusy] = useState(false);
 
   const isEducator = profile?.role === 'educator' || profile?.role === 'admin';
@@ -1491,6 +1473,9 @@ export function CourseDetails() {
         setLoading(false);
       } catch (err) {
         if (!mounted) return;
+        if (isTrialExhausted(err)) {
+          setTrialExhausted(true);
+        }
         setError(getCourseGenerationError(err));
         setLoading(false);
       }
@@ -1499,37 +1484,6 @@ export function CourseDetails() {
     loadCourse();
     return () => { mounted = false; };
   }, [courseId, youtubeUrl, videoUrls, generationOptions]);
-
-  useEffect(() => {
-    if (searchParams.get('checkout') !== 'success' || !resolvedCourseId) {
-      return;
-    }
-    if (!isTokenValid()) {
-      navigate('/signin', {
-        replace: true,
-        state: { returnTo: `/course-details/${resolvedCourseId}?checkout=success` },
-      });
-      return;
-    }
-    let mounted = true;
-    const completePurchase = async () => {
-      try {
-        await enrollCourse(resolvedCourseId);
-        if (!mounted) return;
-        setSearchParams({}, { replace: true });
-        const res = await axios.get(`/api/course/${resolvedCourseId}`);
-        const data = res.data as Course;
-        setCourse((prev) => (prev ? { ...prev, ...data } : data));
-        setLearningMode(true);
-      } catch {
-        if (mounted) {
-          setError('Payment received — finishing enrollment failed. Try Start Learning again.');
-        }
-      }
-    };
-    void completePurchase();
-    return () => { mounted = false; };
-  }, [resolvedCourseId, searchParams, setSearchParams, navigate]);
 
   const handleUnpublish = async () => {
     if (!resolvedCourseId) return;
@@ -1626,33 +1580,26 @@ export function CourseDetails() {
           )}
         />
         <div className="flex-1 flex items-center justify-center px-6" style={{ paddingTop: 56 }}>
-          <div className="w-full max-w-md rounded-xl p-6" style={{ background: C.bg1, border: '1px solid rgba(225,6,0,0.3)' }}>
-            <div className="flex items-start gap-3 mb-5">
-              <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: C.red }} />
-              <p className="text-sm leading-relaxed" style={{ color: C.text2 }}>{error ?? 'Something went wrong.'}</p>
+          {trialExhausted ? (
+            <TrialUpgradePrompt message={error ?? "You've used your 3 free courses. Upgrade to Unlimited to continue."} onBack={handleBack} />
+          ) : (
+            <div className="w-full max-w-md rounded-xl p-6" style={{ background: C.bg1, border: '1px solid rgba(225,6,0,0.3)' }}>
+              <div className="flex items-start gap-3 mb-5">
+                <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: C.red }} />
+                <p className="text-sm leading-relaxed" style={{ color: C.text2 }}>{error ?? 'Something went wrong.'}</p>
+              </div>
+              <button onClick={handleBack} className="px-5 py-2.5 rounded-lg text-sm font-[500] cursor-pointer"
+                style={{ background: C.bg2, border: `1px solid ${C.border2}`, color: C.text2 }}>
+                ← Go back
+              </button>
             </div>
-            <button onClick={handleBack} className="px-5 py-2.5 rounded-lg text-sm font-[500] cursor-pointer"
-              style={{ background: C.bg2, border: `1px solid ${C.border2}`, color: C.text2 }}>
-              ← Go back
-            </button>
-          </div>
+          )}
         </div>
       </div>
     );
   }
 
-  const priceLabel = formatPriceCents(
-    course.isFree === false && course.priceCents ? course.priceCents : 0,
-    course.currency,
-  );
-  const showPaidCta = !!course.requiresPurchase && !isOwner;
-  const startButtonLabel = showPaidCta ? `Buy course · ${priceLabel}` : 'Start Learning';
-
-  const proceedToCheckout = async () => {
-    if (!resolvedCourseId) return;
-    const url = await createCourseCheckout(resolvedCourseId);
-    window.location.href = url;
-  };
+  const startButtonLabel = 'Start Learning';
 
   const handleStartLearning = async () => {
     if (!resolvedCourseId) return;
@@ -1661,40 +1608,12 @@ export function CourseDetails() {
       return;
     }
     try {
-      if (showPaidCta) {
-        if (!isCheckoutProfileReady(profile)) {
-          setShowPreCheckout(true);
-          return;
-        }
-        await proceedToCheckout();
-        return;
-      }
       await enrollCourse(resolvedCourseId);
       setLearningMode(true);
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.status === 401) {
         navigate('/signin', { state: { returnTo: `/course-details/${resolvedCourseId}` } });
         return;
-      }
-      if (axios.isAxiosError(err) && err.response?.status === 402) {
-        try {
-          if (!isCheckoutProfileReady(profile)) {
-            setShowPreCheckout(true);
-            return;
-          }
-          await proceedToCheckout();
-          return;
-        } catch (checkoutErr) {
-          setError(getCheckoutError(checkoutErr));
-          return;
-        }
-      }
-      if (axios.isAxiosError(err) && err.response?.status === 400) {
-        const msg = (err.response.data as { message?: string })?.message;
-        if (msg?.toLowerCase().includes('mobile')) {
-          setShowPreCheckout(true);
-          return;
-        }
       }
       setError('Unable to start learning. Please sign in and try again.');
     }
@@ -2063,20 +1982,6 @@ export function CourseDetails() {
         </>
       )}
       </div>
-      {showPreCheckout && profile && (
-        <PreCheckoutProfileModal
-          profile={profile}
-          theme={C}
-          onCancel={() => setShowPreCheckout(false)}
-          onComplete={(updated) => {
-            setProfile(updated);
-            setShowPreCheckout(false);
-            void proceedToCheckout().catch((checkoutErr) => {
-              setError(getCheckoutError(checkoutErr));
-            });
-          }}
-        />
-      )}
     </div>
   );
 }

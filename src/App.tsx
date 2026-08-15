@@ -16,6 +16,8 @@ import { Results } from './components/Results';
 import { Certificate } from './components/Certificate';
 import { Verification } from './components/Verification';
 import { Settings } from './components/Settings';
+import { Upgrade, UpgradeSuccess } from './components/Upgrade';
+import { LegalPage } from './components/LegalPage';
 // Educators page kept in src/components/Educators.tsx for later; public route redirects to home for now.
 import { EducatorStudio } from './components/EducatorStudio';
 import { EducatorMyCourses } from './components/EducatorMyCourses';
@@ -40,6 +42,8 @@ export default function App() {
           <UserProfileProvider>
             <Routes>
               <Route path="/" element={<LandingPage />} />
+              <Route path="/terms" element={<LegalPage kind="terms" />} />
+              <Route path="/privacy" element={<LegalPage kind="privacy" />} />
               <Route element={<PublicOnlyRoute />}>
                 <Route path="/signin" element={<SignIn />} />
               </Route>
@@ -77,6 +81,8 @@ export default function App() {
                   <Route path="/playlist-setup/:id" element={<PlaylistSetup />} />
                   <Route path="/results/:id" element={<Results />} />
                   <Route path="/settings" element={<Settings />} />
+                  <Route path="/upgrade" element={<Upgrade />} />
+                  <Route path="/upgrade/success" element={<UpgradeSuccess />} />
                 </Route>
               </Route>
             </Routes>

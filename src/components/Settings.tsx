@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router';
-import { HelpCircle, User } from 'lucide-react';
+import { Link, useNavigate, useSearchParams } from 'react-router';
+import { HelpCircle, User, CreditCard, Gift } from 'lucide-react';
 import { useUserProfile } from '../context/UserProfileContext';
 import { updateUserProfile } from '../api/userApi';
 import { UserAvatar } from './UserAvatar';
@@ -12,6 +12,14 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Button } from './ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import {
+  createBillingPortal,
+  fetchBillingMe,
+  fetchReferrals,
+  requestAnnualRefund,
+  type BillingStatus,
+  type ReferralStatus,
+} from '../api/billingApi';
 
 export function Settings() {
   const navigate = useNavigate();
@@ -29,7 +37,7 @@ export function Settings() {
 
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab === 'help') {
+    if (tab === 'help' || tab === 'billing' || tab === 'referrals') {
       setActiveTab(tab);
     }
   }, [searchParams]);
@@ -46,6 +54,8 @@ export function Settings() {
 
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User },
+    { id: 'billing', label: 'Billing', icon: CreditCard },
+    { id: 'referrals', label: 'Referrals', icon: Gift },
     { id: 'help', label: 'Help', icon: HelpCircle },
   ];
 
@@ -99,7 +109,14 @@ export function Settings() {
     <div>
       <PageHeader label="Account" title="Settings" description="Manage your account and preferences." />
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="max-w-3xl">
+      <Tabs
+        value={activeTab}
+        onValueChange={(tab) => {
+          setActiveTab(tab);
+          navigate(tab === 'profile' ? '/settings' : `/settings?tab=${tab}`);
+        }}
+        className="max-w-3xl"
+      >
         <TabsList className="mb-6">
           {tabs.map((tab) => (
             <TabsTrigger key={tab.id} value={tab.id} className="gap-1.5">
@@ -169,6 +186,14 @@ export function Settings() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="billing">
+          <BillingPanel />
+        </TabsContent>
+
+        <TabsContent value="referrals">
+          <ReferralsPanel />
+        </TabsContent>
+
         <TabsContent value="help">
           <Card>
             <CardHeader>
@@ -182,5 +207,163 @@ export function Settings() {
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+function fmtDate(iso?: string | null): string {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? '—' : d.toLocaleDateString();
+}
+
+function BillingPanel() {
+  const [status, setStatus] = useState<BillingStatus | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [refundMsg, setRefundMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchBillingMe()
+      .then(setStatus)
+      .catch(() => setError('Could not load billing status.'));
+  }, []);
+
+  const manage = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      window.location.href = await createBillingPortal();
+    } catch (err) {
+      setError((err as Error).message || 'Billing portal is unavailable.');
+      setBusy(false);
+    }
+  };
+
+  const refund = async () => {
+    if (!window.confirm('Request a full refund and cancel Unlimited immediately?')) return;
+    setBusy(true);
+    setRefundMsg(null);
+    try {
+      const result = await requestAnnualRefund();
+      if (result.status === 'approved') {
+        setRefundMsg('Refund processed. Unlimited access has ended.');
+        setStatus(await fetchBillingMe());
+      } else {
+        setRefundMsg(result.reason || 'Refund declined.');
+      }
+    } catch (err) {
+      setRefundMsg((err as Error).message || 'Could not submit refund request.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="font-serif-display text-lg font-normal">Billing</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4 text-sm">
+        {error && <p className="text-destructive">{error}</p>}
+        {!status ? (
+          <p className="text-muted-foreground">Loading…</p>
+        ) : (
+          <>
+            <p>
+              Plan:{' '}
+              <span className="font-medium">
+                {status.plan === 'annual' ? 'Unlimited Annual' : status.plan === 'monthly' ? 'Unlimited Monthly' : 'None'}
+              </span>
+            </p>
+            <p className="text-muted-foreground">
+              Status: {status.status ?? 'no subscription'}
+              {status.cancelAtPeriodEnd ? ' · cancels at period end' : ''}
+            </p>
+            <p className="text-muted-foreground">
+              Current period ends {fmtDate(status.currentPeriodEnd)}
+            </p>
+            <p className="text-muted-foreground">
+              Trial: {status.trialCoursesUsed}/{status.trialLimit} generated courses used
+              {status.complimentaryUntil ? ` · complimentary through ${fmtDate(status.complimentaryUntil)}` : ''}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" onClick={() => void manage()} disabled={busy}>
+                {busy ? 'Opening…' : 'Manage billing'}
+              </Button>
+              <Button type="button" variant="outline" asChild>
+                <Link to="/upgrade">Change plan</Link>
+              </Button>
+              {status.refundEligible && (
+                <Button type="button" variant="outline" onClick={() => void refund()} disabled={busy}>
+                  Request 14-day refund
+                </Button>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Cancel, resume, switch Annual/Monthly, and update your payment method in the Stripe billing portal.
+              Annual refunds within 14 days of first payment are requested here, not in the portal.
+            </p>
+            {refundMsg && <p className="text-sm">{refundMsg}</p>}
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function ReferralsPanel() {
+  const [data, setData] = useState<ReferralStatus | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchReferrals()
+      .then(setData)
+      .catch(() => setError('Could not load referrals.'));
+  }, []);
+
+  const copy = async () => {
+    if (!data?.shareUrl) return;
+    await navigator.clipboard.writeText(data.shareUrl);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1600);
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="font-serif-display text-lg font-normal">Referrals</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4 text-sm">
+        {error && <p className="text-destructive">{error}</p>}
+        {!data ? (
+          <p className="text-muted-foreground">Loading…</p>
+        ) : (
+          <>
+            <p>Share your code. When someone creates an account with it, you both get one free month of Unlimited (up to 3 months earned).</p>
+            <p className="font-mono text-lg tracking-wide">{data.code}</p>
+            <p className="break-all text-muted-foreground">{data.shareUrl}</p>
+            <Button type="button" variant="outline" onClick={() => void copy()}>
+              {copied ? 'Copied' : 'Copy invite link'}
+            </Button>
+            <p className="text-muted-foreground">Months earned: {data.monthsEarned} / {data.maxMonths}</p>
+            <div>
+              <p className="mb-2 font-medium">People you referred</p>
+              {data.referred.length === 0 ? (
+                <p className="text-muted-foreground">No one yet.</p>
+              ) : (
+                <ul className="space-y-1 text-muted-foreground">
+                  {data.referred.map((row) => (
+                    <li key={`${row.displayName}-${row.createdAt}`}>
+                      {row.displayName} · joined {fmtDate(row.createdAt)}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
   );
 }

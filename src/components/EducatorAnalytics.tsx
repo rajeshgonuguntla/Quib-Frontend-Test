@@ -8,7 +8,6 @@ import {
   CheckCircle2,
   ChevronRight,
   Clock,
-  DollarSign,
   GraduationCap,
   Layers,
   Loader2,
@@ -38,7 +37,6 @@ import {
 import { replyToLearnerComment } from '../api/courseFeedbackApi';
 import { PageHeader } from '../shell/PageHeader';
 import { useRequireEducatorExperience } from '../hooks/useRequireEducatorExperience';
-import { formatPriceCents } from '../utils/formatPrice';
 import { getMaintenanceSignalMeta } from '../utils/maintenanceSignals';
 import { EnrollmentTrendPanel } from './analytics/EnrollmentTrendPanel';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -191,19 +189,13 @@ export function EducatorAnalytics() {
       <motion.div
         {...fadeUp}
         transition={{ ...fadeUp.transition, delay: 0.05 }}
-        className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6"
+        className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5"
       >
         <StatCard
           icon={<Users className="size-4" />}
           label="Total enrollments"
           value={overview.totalEnrollments.toLocaleString()}
           accent
-        />
-        <StatCard
-          icon={<DollarSign className="size-4" />}
-          label="Total revenue"
-          value={formatPriceCents(overview.totalRevenueCents ?? 0)}
-          subValue="Gross sales"
         />
         <StatCard
           icon={<GraduationCap className="size-4" />}
@@ -517,9 +509,6 @@ function CourseCard({
           </p>
           <p className="mt-2 text-xs text-muted-foreground">
             {course.enrollmentCount} enrolled
-            {(course.revenueCents ?? 0) > 0 && (
-              <> · {formatPriceCents(course.revenueCents)} revenue</>
-            )}
             {course.lastEnrollmentAt && (
               <> · last {formatRelative(course.lastEnrollmentAt)}</>
             )}
@@ -565,13 +554,8 @@ function CourseDetailPanel({
 
   return (
     <div className="space-y-8">
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <MiniStat label="Enrollments" value={String(detail.enrollmentCount)} icon={<Users className="size-3.5" />} />
-        <MiniStat
-          label="Revenue"
-          value={formatPriceCents(detail.revenueCents ?? 0)}
-          icon={<DollarSign className="size-3.5" />}
-        />
         <MiniStat
           label="Completion"
           value={`${detail.completionRate.toFixed(0)}%`}
