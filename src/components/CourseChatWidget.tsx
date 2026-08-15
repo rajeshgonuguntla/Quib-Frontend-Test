@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { MessageCircle, Send, X, Loader2 } from 'lucide-react';
+import { MessageCircle, Send, X, Loader2, ChevronsRight } from 'lucide-react';
 import axios from 'axios';
 import { enrollCourse } from '../api/courseApi';
 import { sendCourseChat, type CourseChatMessage } from '../api/courseChatApi';
@@ -17,6 +17,8 @@ interface CourseChatWidgetProps {
   sessionKey: string;
   /** `panel` = docked full-height column on the lesson page; `floating` = FAB overlay. */
   variant?: 'floating' | 'panel';
+  /** Collapse the docked panel so the lesson column can grow. */
+  onCollapse?: () => void;
 }
 
 function getChatError(err: unknown): string {
@@ -45,6 +47,7 @@ export function CourseChatWidget({
   onSignInRequired,
   sessionKey,
   variant = 'floating',
+  onCollapse,
 }: CourseChatWidgetProps) {
   const isPanel = variant === 'panel';
   const { isDark } = useTheme();
@@ -136,10 +139,10 @@ export function CourseChatWidget({
       }
     >
       <div
-        className="flex shrink-0 items-center justify-between px-4 py-3"
+        className="flex shrink-0 items-center justify-between gap-2 px-4 py-3"
         style={{ borderBottom: `1px solid ${C.border}`, background: C.bg1 }}
       >
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1 overflow-hidden pr-2">
           <p className="text-[0.85rem] font-[600] truncate" style={{ color: C.text }}>
             Course tutor
           </p>
@@ -147,17 +150,18 @@ export function CourseChatWidget({
             {courseTitle}
           </p>
         </div>
-        {!isPanel && (
+        {(isPanel && onCollapse) || !isPanel ? (
           <button
             type="button"
-            onClick={() => setOpen(false)}
-            className="w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer"
-            style={{ background: C.bg2, border: `1px solid ${C.border}`, color: C.text2 }}
-            aria-label="Close chat"
+            onClick={() => (isPanel ? onCollapse?.() : setOpen(false))}
+            className="w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer shrink-0"
+            style={{ background: C.red, color: '#fff', border: 'none' }}
+            aria-label={isPanel ? 'Collapse course tutor' : 'Close chat'}
+            title={isPanel ? 'Collapse tutor' : 'Close'}
           >
-            <X className="w-4 h-4" />
+            {isPanel ? <ChevronsRight className="w-4 h-4" /> : <X className="w-4 h-4" />}
           </button>
-        )}
+        ) : null}
       </div>
 
       <div

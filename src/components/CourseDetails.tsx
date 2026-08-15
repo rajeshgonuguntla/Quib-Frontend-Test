@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate, useLocation, useParams, useSearchParams } from 'react-router';
 import axios from 'axios';
 import {
   ChevronDown, ChevronRight, ChevronUp,
-  PlayCircle, FileText, CheckCircle, CheckCircle2, Copy, CircleHelp,
+  PlayCircle, FileText, CheckCircle, CheckCircle2, Copy, CircleHelp, MessageCircle,
   ArrowLeft, ArrowUpRight, BookOpen, Calendar, Layers, AlertCircle, Globe, Pencil,
 } from 'lucide-react';
 import { publishCourse, unpublishCourse, deleteCourse } from '../api/catalogApi';
@@ -37,6 +37,7 @@ import { CourseReviewPanel } from './CourseReviewPanel';
 import { updateCourse } from '../api/educatorApi';
 import { buildSavePayloadFromAssistant } from '../utils/courseEditOperations';
 import { downloadCoursePdf } from '../utils/downloadCoursePdf';
+import { numberedLessonTitle, withoutLessonNumberPrefix } from '../utils/lessonTitle';
 import type { CourseGenerationOptions, EditableCourse } from '../types/courseGeneration';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -157,6 +158,100 @@ const STUDY_TABS: { id: StudyTab; label: string }[] = [
   { id: 'exam', label: 'Create your own exam' },
 ];
 
+function ModuleLessonFlyout({
+  module,
+  origin,
+  C,
+  isDark,
+  activeLessonId,
+  completedLessons,
+  passedModules,
+  onOpenLesson,
+  onOpenQuiz,
+  onKeepOpen,
+  onClose,
+}: {
+  module: Module;
+  origin: DOMRect;
+  C: ReturnType<typeof getC>;
+  isDark: boolean;
+  activeLessonId: string;
+  completedLessons: Set<string>;
+  passedModules: Set<string>;
+  onOpenLesson: (id: string) => void;
+  onOpenQuiz: (moduleId: string) => void;
+  onKeepOpen: () => void;
+  onClose: () => void;
+}) {
+  const width = 280;
+  const left = Math.max(8, Math.min(origin.left, window.innerWidth - width - 8));
+  return (
+    <div
+      role="menu"
+      onMouseEnter={onKeepOpen}
+      onMouseLeave={onClose}
+      className="fixed z-[300] max-h-[min(360px,70vh)] overflow-y-auto rounded-xl py-1.5 shadow-xl"
+      style={{
+        top: origin.bottom + 4,
+        left,
+        width,
+        background: C.bg,
+        border: `1px solid ${C.border2}`,
+        boxShadow: isDark ? '0 16px 40px rgba(0,0,0,0.55)' : '0 16px 40px rgba(0,0,0,0.12)',
+      }}
+    >
+      {module.lessons.map((lesson, i) => {
+        const isActive = activeLessonId === lesson.id;
+        const isDone = completedLessons.has(lesson.id);
+        return (
+          <button
+            key={lesson.id}
+            type="button"
+            role="menuitem"
+            onClick={() => onOpenLesson(lesson.id)}
+            className="flex w-full items-center gap-2 px-3 py-2 text-left cursor-pointer"
+            style={{
+              background: isActive ? (isDark ? 'rgba(225,6,0,0.1)' : 'rgba(225,6,0,0.06)') : 'transparent',
+              border: 'none',
+              color: isActive ? C.text : C.text2,
+            }}
+          >
+            {isDone ? (
+              <CheckCircle className="w-3.5 h-3.5 shrink-0" style={{ color: '#22c55e' }} />
+            ) : lesson.type === 'video' ? (
+              <PlayCircle className="w-3.5 h-3.5 shrink-0" style={{ color: isActive ? C.red : C.text3 }} />
+            ) : (
+              <FileText className="w-3.5 h-3.5 shrink-0" style={{ color: isActive ? C.red : C.text3 }} />
+            )}
+            <span className="min-w-0 flex-1 truncate text-[0.78rem] font-[500]">
+              {withoutLessonNumberPrefix(lesson.title) || lesson.title}
+            </span>
+            <span className="shrink-0 text-[0.65rem]" style={{ color: C.text3 }}>
+              {lesson.duration || `#${i + 1}`}
+            </span>
+          </button>
+        );
+      })}
+      {(module.quiz?.length ?? 0) > 0 && (
+        <button
+          type="button"
+          role="menuitem"
+          onClick={() => onOpenQuiz(module.id)}
+          className="flex w-full items-center gap-2 px-3 py-2 text-left cursor-pointer"
+          style={{ background: 'transparent', border: 'none', borderTop: `1px solid ${C.border}`, color: C.text2 }}
+        >
+          {passedModules.has(module.id) ? (
+            <CheckCircle className="w-3.5 h-3.5 shrink-0" style={{ color: '#22c55e' }} />
+          ) : (
+            <CircleHelp className="w-3.5 h-3.5 shrink-0" style={{ color: C.text3 }} />
+          )}
+          <span className="text-[0.78rem] font-[500]">Module Quiz</span>
+        </button>
+      )}
+    </div>
+  );
+}
+
 // ─── Learning Mode ─────────────────────────────────────────────────────────────
 
 function LearningMode({
@@ -199,6 +294,12 @@ function LearningMode({
   const [activeAssignment, setActiveAssignment] = useState(false);
   const [studyTab, setStudyTab] = useState<StudyTab>('overview');
   const [submodulesOpen, setSubmodulesOpen] = useState(true);
+  const [tutorCollapsed, setTutorCollapsed] = useState(false);
+  const [tutorWidth, setTutorWidth] = useState(400);
+  const tutorResize = useRef<{ startX: number; startW: number } | null>(null);
+  const [previewModuleId, setPreviewModuleId] = useState<string | null>(null);
+  const [previewRect, setPreviewRect] = useState<DOMRect | null>(null);
+  const previewLeaveTimer = useRef<number | null>(null);
   const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set());
   const [passedModules, setPassedModules] = useState<Set<string>>(new Set());
   const [assignmentPassed, setAssignmentPassed] = useState(false);
@@ -442,6 +543,58 @@ function LearningMode({
     ? getYoutubeEmbedId(activeLesson.videoId, activeLesson.videoUrl, youtubeUrl)
     : '';
 
+  const onTutorResizePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const handle = e.currentTarget;
+    handle.setPointerCapture(e.pointerId);
+    tutorResize.current = { startX: e.clientX, startW: tutorWidth };
+    const max = Math.min(720, Math.floor(window.innerWidth * 0.55));
+    const onMove = (ev: PointerEvent) => {
+      const drag = tutorResize.current;
+      if (!drag) return;
+      const next = Math.round(drag.startW + (drag.startX - ev.clientX));
+      setTutorWidth(Math.min(max, Math.max(280, next)));
+    };
+    const onUp = (ev: PointerEvent) => {
+      tutorResize.current = null;
+      handle.releasePointerCapture(ev.pointerId);
+      handle.removeEventListener('pointermove', onMove);
+      handle.removeEventListener('pointerup', onUp);
+      document.body.style.removeProperty('cursor');
+      document.body.style.removeProperty('user-select');
+    };
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    handle.addEventListener('pointermove', onMove);
+    handle.addEventListener('pointerup', onUp);
+  };
+
+  const keepModulePreview = () => {
+    if (previewLeaveTimer.current != null) {
+      window.clearTimeout(previewLeaveTimer.current);
+      previewLeaveTimer.current = null;
+    }
+  };
+
+  const showModulePreview = (moduleId: string, el: HTMLElement) => {
+    keepModulePreview();
+    setPreviewModuleId(moduleId);
+    setPreviewRect(el.getBoundingClientRect());
+  };
+
+  const hideModulePreview = () => {
+    keepModulePreview();
+    previewLeaveTimer.current = window.setTimeout(() => {
+      setPreviewModuleId(null);
+      setPreviewRect(null);
+      previewLeaveTimer.current = null;
+    }, 180);
+  };
+
+  const previewModule = previewModuleId
+    ? course.modules.find((m) => m.id === previewModuleId) ?? null
+    : null;
+
   return (
     <div style={{ height: '100vh', overflow: 'hidden', background: C.bg, color: C.text, fontFamily: 'var(--display)' }}>
       <CoursePageNav
@@ -492,30 +645,37 @@ function LearningMode({
                 {course.modules.map((mod, modIdx) => {
                   const isActive = activeModule?.id === mod.id;
                   return (
-                    <button
+                    <div
                       key={mod.id}
-                      type="button"
-                      onClick={() => selectModule(mod.id)}
-                      aria-current={isActive ? 'page' : undefined}
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg text-left cursor-pointer max-w-[240px]"
-                      style={{
-                        background: isActive ? (isDark ? 'rgba(225,6,0,0.1)' : 'rgba(225,6,0,0.06)') : 'transparent',
-                        border: 'none',
-                        color: isActive ? C.text : C.text3,
-                      }}
+                      className="relative"
+                      onMouseEnter={(e) => showModulePreview(mod.id, e.currentTarget)}
+                      onMouseLeave={hideModulePreview}
                     >
-                      <span
-                        className="w-5 h-5 rounded flex items-center justify-center flex-shrink-0 text-[0.65rem] font-[700]"
+                      <button
+                        type="button"
+                        onClick={() => selectModule(mod.id)}
+                        aria-current={isActive ? 'page' : undefined}
+                        aria-haspopup="menu"
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-left cursor-pointer max-w-[240px]"
                         style={{
-                          background: isActive ? C.red : C.bg2,
-                          color: isActive ? '#fff' : C.text3,
-                          border: isActive ? 'none' : `1px solid ${C.border}`,
+                          background: isActive ? (isDark ? 'rgba(225,6,0,0.1)' : 'rgba(225,6,0,0.06)') : 'transparent',
+                          border: 'none',
+                          color: isActive ? C.text : C.text3,
                         }}
                       >
-                        {modIdx + 1}
-                      </span>
-                      <span className="text-[0.8rem] font-[500] truncate">{mod.title}</span>
-                    </button>
+                        <span
+                          className="w-5 h-5 rounded flex items-center justify-center flex-shrink-0 text-[0.65rem] font-[700]"
+                          style={{
+                            background: isActive ? C.red : C.bg2,
+                            color: isActive ? '#fff' : C.text3,
+                            border: isActive ? 'none' : `1px solid ${C.border}`,
+                          }}
+                        >
+                          {modIdx + 1}
+                        </span>
+                        <span className="text-[0.8rem] font-[500] truncate">{mod.title}</span>
+                      </button>
+                    </div>
                   );
                 })}
               </div>
@@ -638,6 +798,32 @@ function LearningMode({
           )}
         </div>
 
+        {previewModule && previewRect && (
+          <ModuleLessonFlyout
+            module={previewModule}
+            origin={previewRect}
+            C={C}
+            isDark={isDark}
+            activeLessonId={activeLessonId}
+            completedLessons={completedLessons}
+            passedModules={passedModules}
+            onOpenLesson={(id) => {
+              keepModulePreview();
+              openLesson(id);
+              setPreviewModuleId(null);
+              setPreviewRect(null);
+            }}
+            onOpenQuiz={(moduleId) => {
+              keepModulePreview();
+              openQuiz(moduleId);
+              setPreviewModuleId(null);
+              setPreviewRect(null);
+            }}
+            onKeepOpen={keepModulePreview}
+            onClose={hideModulePreview}
+          />
+        )}
+
         <div className="flex flex-1 min-h-0">
           {/* Study rail */}
           <aside
@@ -650,7 +836,7 @@ function LearningMode({
                   #{lessonIndexInModule >= 0 ? lessonIndexInModule + 1 : '—'}
                 </p>
                 <p className="text-[0.88rem] font-[600] mt-1 leading-snug" style={{ color: C.text }}>
-                  {activeLesson.title}
+                  {withoutLessonNumberPrefix(activeLesson.title)}
                 </p>
                 {activeLesson.duration ? (
                   <p className="text-[0.7rem] mt-1" style={{ color: C.text3 }}>{activeLesson.duration}</p>
@@ -748,7 +934,7 @@ function LearningMode({
                   {activeLesson.moduleTitle}
                 </p>
                 <h1 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(1.6rem, 3vw, 2.2rem)', fontWeight: 400, lineHeight: 1.2, color: C.text, marginBottom: 12 }}>
-                  #{lessonIndexInModule >= 0 ? lessonIndexInModule + 1 : ''} {activeLesson.title}
+                  {numberedLessonTitle(lessonIndexInModule, activeLesson.title)}
                 </h1>
 
                 {studyTab === 'overview' && (
@@ -921,75 +1107,104 @@ function LearningMode({
             )}
           </main>
 
-          {/* Right rail: educator assistant or course tutor — full-height (desktop); FAB on small screens */}
-          {showEducatorAssistant ? (
+          {/* Right rail — collapse + drag-resize (desktop); FAB on small screens */}
+          {(showEducatorAssistant || showCourseChat) && (
             <>
-              <aside
-                className="hidden lg:flex flex-col flex-shrink-0 min-h-0"
-                style={{
-                  width: 400,
-                  borderLeft: `1px solid ${C.border}`,
-                  background: C.bg,
-                }}
-              >
-                <EducatorAssistantWidget
-                  key={chatSessionKey}
-                  variant="panel"
-                  courseId={courseId}
-                  courseTitle={course.title}
-                  sessionKey={chatSessionKey}
-                  onPreviewChange={onEducatorApplyUpdate}
-                  onApproveAndSave={onEducatorApproveAndSave}
-                />
-              </aside>
+              <div className="hidden lg:flex min-h-0 flex-shrink-0">
+                {!tutorCollapsed && (
+                  <div
+                    role="separator"
+                    aria-orientation="vertical"
+                    aria-label="Resize assistant panel"
+                    onPointerDown={onTutorResizePointerDown}
+                    className="w-2 flex-shrink-0 cursor-col-resize flex items-center justify-center"
+                    style={{ background: C.bg1, borderLeft: `1px solid ${C.border}` }}
+                    title="Drag to resize"
+                  >
+                    <div
+                      className="w-1 h-10 rounded-full"
+                      style={{ background: C.red, opacity: 0.85 }}
+                    />
+                  </div>
+                )}
+                <aside
+                  className="flex flex-col min-h-0"
+                  style={{
+                    width: tutorCollapsed ? 48 : tutorWidth,
+                    borderLeft: tutorCollapsed ? `1px solid ${C.border}` : 'none',
+                    background: C.bg,
+                  }}
+                >
+                  {tutorCollapsed ? (
+                    <button
+                      type="button"
+                      onClick={() => setTutorCollapsed(false)}
+                      className="mx-auto mt-3 w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer"
+                      style={{ background: C.red, color: '#fff', border: 'none' }}
+                      aria-label="Expand assistant"
+                      title="Open assistant"
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                    </button>
+                  ) : null}
+                  <div
+                    className="h-full min-h-0 flex-1 flex-col"
+                    style={{ display: tutorCollapsed ? 'none' : 'flex' }}
+                  >
+                    {showEducatorAssistant ? (
+                      <EducatorAssistantWidget
+                        key={chatSessionKey}
+                        variant="panel"
+                        courseId={courseId}
+                        courseTitle={course.title}
+                        sessionKey={chatSessionKey}
+                        onPreviewChange={onEducatorApplyUpdate}
+                        onApproveAndSave={onEducatorApproveAndSave}
+                        onCollapse={() => setTutorCollapsed(true)}
+                      />
+                    ) : (
+                      <CourseChatWidget
+                        key={chatSessionKey}
+                        courseId={courseId}
+                        courseTitle={course.title}
+                        lessonId={activeLessonId || undefined}
+                        moduleId={activeQuizModuleId || undefined}
+                        signedIn={chatSignedIn}
+                        onSignInRequired={onChatSignInRequired}
+                        sessionKey={chatSessionKey}
+                        variant="panel"
+                        onCollapse={() => setTutorCollapsed(true)}
+                      />
+                    )}
+                  </div>
+                </aside>
+              </div>
               <div className="lg:hidden">
-                <EducatorAssistantWidget
-                  key={`${chatSessionKey}-mobile`}
-                  courseId={courseId}
-                  courseTitle={course.title}
-                  sessionKey={chatSessionKey}
-                  onPreviewChange={onEducatorApplyUpdate}
-                  onApproveAndSave={onEducatorApproveAndSave}
-                />
+                {showEducatorAssistant ? (
+                  <EducatorAssistantWidget
+                    key={`${chatSessionKey}-mobile`}
+                    courseId={courseId}
+                    courseTitle={course.title}
+                    sessionKey={chatSessionKey}
+                    onPreviewChange={onEducatorApplyUpdate}
+                    onApproveAndSave={onEducatorApproveAndSave}
+                  />
+                ) : (
+                  <CourseChatWidget
+                    key={`${chatSessionKey}-mobile`}
+                    courseId={courseId}
+                    courseTitle={course.title}
+                    lessonId={activeLessonId || undefined}
+                    moduleId={activeQuizModuleId || undefined}
+                    signedIn={chatSignedIn}
+                    onSignInRequired={onChatSignInRequired}
+                    sessionKey={chatSessionKey}
+                    variant="floating"
+                  />
+                )}
               </div>
             </>
-          ) : showCourseChat ? (
-            <>
-              <aside
-                className="hidden lg:flex flex-col flex-shrink-0 min-h-0"
-                style={{
-                  width: 400,
-                  borderLeft: `1px solid ${C.border}`,
-                  background: C.bg,
-                }}
-              >
-                <CourseChatWidget
-                  key={chatSessionKey}
-                  courseId={courseId}
-                  courseTitle={course.title}
-                  lessonId={activeLessonId || undefined}
-                  moduleId={activeQuizModuleId || undefined}
-                  signedIn={chatSignedIn}
-                  onSignInRequired={onChatSignInRequired}
-                  sessionKey={chatSessionKey}
-                  variant="panel"
-                />
-              </aside>
-              <div className="lg:hidden">
-                <CourseChatWidget
-                  key={`${chatSessionKey}-mobile`}
-                  courseId={courseId}
-                  courseTitle={course.title}
-                  lessonId={activeLessonId || undefined}
-                  moduleId={activeQuizModuleId || undefined}
-                  signedIn={chatSignedIn}
-                  onSignInRequired={onChatSignInRequired}
-                  sessionKey={chatSessionKey}
-                  variant="floating"
-                />
-              </div>
-            </>
-          ) : null}
+          )}
         </div>
       </div>
     </div>
@@ -1848,16 +2063,6 @@ export function CourseDetails() {
         </>
       )}
       </div>
-      {showCourseChat && !showEducatorAssistant && resolvedCourseId && (
-        <CourseChatWidget
-          key={chatSessionKey}
-          courseId={resolvedCourseId}
-          courseTitle={course.title}
-          signedIn={chatSignedIn}
-          onSignInRequired={handleChatSignIn}
-          sessionKey={chatSessionKey}
-        />
-      )}
       {showPreCheckout && profile && (
         <PreCheckoutProfileModal
           profile={profile}

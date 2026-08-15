@@ -32,6 +32,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const root = document.documentElement;
     root.dataset.theme = isDark ? 'dark' : 'light';
     root.classList.toggle('dark', isDark);
+    root.style.colorScheme = isDark ? 'dark' : 'light';
     try {
       localStorage.setItem(THEME_STORAGE_KEY, isDark ? 'dark' : 'light');
     } catch {

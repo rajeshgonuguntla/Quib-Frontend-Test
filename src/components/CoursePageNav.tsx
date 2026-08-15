@@ -52,15 +52,6 @@ export function CoursePageNav({
 
   const defaultCenter = (
     <ul className="hidden md:flex gap-7 list-none">
-      <li>
-        <Link
-          to="/"
-          className="text-[0.875rem] font-[400] no-underline transition-opacity hover:opacity-100"
-          style={{ color: C.text2, letterSpacing: '0.01em', opacity: 0.8 }}
-        >
-          Platform
-        </Link>
-      </li>
       {signedIn ? (
         <li>
           <Link

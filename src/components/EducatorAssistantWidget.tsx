@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Check, Loader2, Send, Sparkles, X } from 'lucide-react';
+import { Check, ChevronsRight, Loader2, Send, Sparkles, X } from 'lucide-react';
 import axios from 'axios';
 import {
   sendEducatorAssistantMessage,
@@ -34,6 +34,7 @@ interface EducatorAssistantWidgetProps {
   onPreviewChange?: (result: AssistantApplyResult) => void;
   /** `panel` = docked full-height column; `floating` = slide-in dock + FAB. */
   variant?: 'floating' | 'panel';
+  onCollapse?: () => void;
 }
 
 type LoadingPhase = 'idle' | 'routing' | 'local' | 'ai' | 'applying';
@@ -73,6 +74,7 @@ export function EducatorAssistantWidget({
   onApproveAndSave,
   onPreviewChange,
   variant = 'floating',
+  onCollapse,
 }: EducatorAssistantWidgetProps) {
   const isPanel = variant === 'panel';
   const { isDark } = useTheme();
@@ -230,10 +232,10 @@ export function EducatorAssistantWidget({
         className="flex shrink-0 items-center justify-between gap-3 px-4 py-3.5"
         style={{ borderBottom: `1px solid ${C.border}`, background: C.bg1 }}
       >
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1 overflow-hidden">
           <p className="text-[0.88rem] font-[600] truncate flex items-center gap-2" style={{ color: C.text }}>
             <span
-              className="inline-flex size-7 items-center justify-center rounded-lg"
+              className="inline-flex size-7 items-center justify-center rounded-lg shrink-0"
               style={{ background: C.redDim, color: C.red }}
             >
               <Sparkles className="w-3.5 h-3.5" />
@@ -244,17 +246,18 @@ export function EducatorAssistantWidget({
             {courseTitle}
           </p>
         </div>
-        {!isPanel && (
+        {(isPanel && onCollapse) || !isPanel ? (
           <button
             type="button"
-            onClick={() => setOpen(false)}
+            onClick={() => (isPanel ? onCollapse?.() : setOpen(false))}
             className="w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer shrink-0"
-            style={{ background: C.bg2, border: `1px solid ${C.border}`, color: C.text2 }}
-            aria-label="Close assistant"
+            style={{ background: C.red, color: '#fff', border: 'none' }}
+            aria-label={isPanel ? 'Collapse assistant' : 'Close assistant'}
+            title={isPanel ? 'Collapse assistant' : 'Close'}
           >
-            <X className="w-4 h-4" />
+            {isPanel ? <ChevronsRight className="w-4 h-4" /> : <X className="w-4 h-4" />}
           </button>
-        )}
+        ) : null}
       </div>
 
       <div
