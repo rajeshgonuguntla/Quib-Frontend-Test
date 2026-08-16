@@ -33,6 +33,34 @@ import { Creators } from './components/Creators';
 import { MyCourses } from './components/MyCourses';
 import { ProtectedRoute, PublicOnlyRoute } from './auth';
 import { AppShell } from './shell/AppShell';
+import { Component, type ReactNode } from 'react';
+
+class RouteErrorBoundary extends Component<{ children: ReactNode }, { message: string | null }> {
+  state = { message: null as string | null };
+
+  static getDerivedStateFromError(err: Error) {
+    return { message: err?.message || 'Something went wrong.' };
+  }
+
+  render() {
+    if (this.state.message) {
+      return (
+        <div style={{ minHeight: '100vh', background: '#060608', color: '#f2f2f0', padding: 40, fontFamily: 'system-ui' }}>
+          <p style={{ fontSize: 18, marginBottom: 12 }}>This page failed to load.</p>
+          <p style={{ color: '#8a8a8a', marginBottom: 24 }}>{this.state.message}</p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            style={{ background: '#E10600', color: '#fff', border: 'none', padding: '10px 16px', borderRadius: 8, cursor: 'pointer' }}
+          >
+            Reload
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 export default function App() {
   return (
@@ -40,6 +68,7 @@ export default function App() {
       <ThemeProvider>
         <Router>
           <UserProfileProvider>
+            <RouteErrorBoundary>
             <Routes>
               <Route path="/" element={<LandingPage />} />
               <Route path="/terms" element={<LegalPage kind="terms" />} />
@@ -86,6 +115,7 @@ export default function App() {
                 </Route>
               </Route>
             </Routes>
+            </RouteErrorBoundary>
           </UserProfileProvider>
         </Router>
       </ThemeProvider>

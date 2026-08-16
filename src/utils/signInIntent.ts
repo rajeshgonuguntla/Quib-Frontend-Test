@@ -64,6 +64,9 @@ export function filterNavGroups(groups: NavGroup[], showEducatorNav: boolean, pr
   return groups.map((group) => ({
     ...group,
     items: group.items.filter((item) => {
+      if (item.id === 'upgrade') {
+        return !isAdminAccount(profile);
+      }
       if (ADMIN_NAV_IDS.has(item.id)) {
         return isAdminAccount(profile);
       }

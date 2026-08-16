@@ -25,7 +25,7 @@ import {
 import { Input } from '../components/ui/input';
 import { Sheet, SheetContent, SheetTrigger } from '../components/ui/sheet';
 import { clearToken } from '../auth';
-import { clearSignInIntent } from '../utils/signInIntent';
+import { clearSignInIntent, isAdminAccount } from '../utils/signInIntent';
 import { getDisplayName } from '../utils/userDisplay';
 import { AppSidebar } from './AppSidebar';
 import { getRouteMeta } from './navConfig';
@@ -35,6 +35,7 @@ export function AppTopbar({ onOpenMobileNav }: { onOpenMobileNav?: () => void })
   const navigate = useNavigate();
   const { profile, setProfile } = useUserProfile();
   const meta = getRouteMeta(location.pathname);
+  const hideUpgrade = isAdminAccount(profile);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<CourseSearchResult[]>([]);
@@ -171,12 +172,14 @@ export function AppTopbar({ onOpenMobileNav }: { onOpenMobileNav?: () => void })
       </div>
 
       <div className="flex items-center gap-1.5">
-        <Link
-          to="/upgrade"
-          className="hidden rounded-md px-2.5 py-1 text-xs font-medium text-foreground no-underline transition-colors hover:bg-accent sm:inline-flex"
-        >
-          Upgrade
-        </Link>
+        {!hideUpgrade && (
+          <Link
+            to="/upgrade"
+            className="hidden rounded-md px-2.5 py-1 text-xs font-medium text-foreground no-underline transition-colors hover:bg-accent sm:inline-flex"
+          >
+            Upgrade
+          </Link>
+        )}
         <ThemeToggle size="sm" />
         <button
           type="button"
@@ -200,7 +203,9 @@ export function AppTopbar({ onOpenMobileNav }: { onOpenMobileNav?: () => void })
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => navigate('/settings')}>Settings</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate('/upgrade')}>Upgrade</DropdownMenuItem>
+            {!hideUpgrade && (
+              <DropdownMenuItem onClick={() => navigate('/upgrade')}>Upgrade</DropdownMenuItem>
+            )}
             <DropdownMenuItem onClick={() => navigate('/my-courses')}>My courses</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">

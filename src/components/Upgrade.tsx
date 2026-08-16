@@ -3,6 +3,8 @@ import { Link, useNavigate, useSearchParams } from 'react-router';
 import { Check, Sparkles } from 'lucide-react';
 import { createUnlimitedCheckout, fetchBillingMe, isTrialExhausted } from '../api/billingApi';
 import { formatPriceCents } from '../utils/formatPrice';
+import { useUserProfile } from '../context/UserProfileContext';
+import { isAdminAccount } from '../utils/signInIntent';
 import { PageHeader } from '../shell/PageHeader';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -13,6 +15,8 @@ const ANNUAL_LIST_CENTS = MONTHLY_CENTS * 12;
 
 export function Upgrade() {
   const navigate = useNavigate();
+  const { profile } = useUserProfile();
+  const isAdmin = isAdminAccount(profile);
   const [searchParams] = useSearchParams();
   const [plan, setPlan] = useState<'annual' | 'monthly'>('annual');
   const [busy, setBusy] = useState(false);
@@ -21,6 +25,7 @@ export function Upgrade() {
   const cancelled = searchParams.get('checkout') === 'cancelled';
 
   useEffect(() => {
+    if (isAdmin) return;
     let mounted = true;
     fetchBillingMe()
       .then((me) => {
@@ -32,7 +37,7 @@ export function Upgrade() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [isAdmin]);
 
   const subscribe = async () => {
     setBusy(true);
@@ -60,15 +65,21 @@ export function Upgrade() {
           Checkout was cancelled. You can pick a plan whenever you’re ready.
         </p>
       )}
-      {alreadyUnlimited && (
+      {isAdmin ? (
+        <p className="mb-4 rounded-md border border-border bg-muted/40 px-4 py-3 text-sm">
+          Platform admin accounts have Unlimited generation with no payment. Checkout is not required.
+        </p>
+      ) : alreadyUnlimited ? (
         <p className="mb-4 rounded-md border border-border bg-muted/40 px-4 py-3 text-sm">
           You’re already on Unlimited.{' '}
           <button type="button" className="underline" onClick={() => navigate('/settings?tab=billing')}>
             Manage billing
           </button>
         </p>
-      )}
+      ) : null}
 
+      {isAdmin ? null : (
+      <>
       <div className="mb-4 inline-flex rounded-lg border border-border p-1">
         <button
           type="button"
@@ -144,6 +155,8 @@ export function Upgrade() {
           <Link to="/privacy" className="underline">Privacy Policy</Link>.
         </p>
       </div>
+      </>
+      )}
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { HelpCircle, User, CreditCard, Gift } from 'lucide-react';
 import { useUserProfile } from '../context/UserProfileContext';
+import { isAdminAccount } from '../utils/signInIntent';
 import { updateUserProfile } from '../api/userApi';
 import { UserAvatar } from './UserAvatar';
 import { getDisplayName } from '../utils/userDisplay';
@@ -217,16 +218,19 @@ function fmtDate(iso?: string | null): string {
 }
 
 function BillingPanel() {
+  const { profile } = useUserProfile();
+  const isAdmin = isAdminAccount(profile);
   const [status, setStatus] = useState<BillingStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [refundMsg, setRefundMsg] = useState<string | null>(null);
 
   useEffect(() => {
+    if (isAdmin) return;
     fetchBillingMe()
       .then(setStatus)
       .catch(() => setError('Could not load billing status.'));
-  }, []);
+  }, [isAdmin]);
 
   const manage = async () => {
     setBusy(true);
@@ -265,7 +269,11 @@ function BillingPanel() {
       </CardHeader>
       <CardContent className="space-y-4 text-sm">
         {error && <p className="text-destructive">{error}</p>}
-        {!status ? (
+        {isAdmin ? (
+          <p className="text-muted-foreground">
+            Platform admin — Unlimited generation with no payment restrictions.
+          </p>
+        ) : !status ? (
           <p className="text-muted-foreground">Loading…</p>
         ) : (
           <>

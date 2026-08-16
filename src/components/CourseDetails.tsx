@@ -268,13 +268,14 @@ function LearningMode({
 }) {
   const { isDark, toggleTheme } = useTheme();
   const C = getC(isDark);
+  const modules = course.modules ?? [];
 
-  const allLessons = course.modules.flatMap((m) =>
-    m.lessons.map((l) => ({ ...l, moduleId: m.id, moduleTitle: m.title }))
+  const allLessons = modules.flatMap((m) =>
+    (m.lessons ?? []).map((l) => ({ ...l, moduleId: m.id, moduleTitle: m.title }))
   );
 
   const firstLessonId = allLessons[0]?.id ?? '';
-  const firstModuleId = course.modules[0]?.id ?? '';
+  const firstModuleId = modules[0]?.id ?? '';
   const [activeModuleId, setActiveModuleId] = useState<string>(firstModuleId);
   const [activeLessonId, setActiveLessonId] = useState<string>(firstLessonId);
   const [activeQuizModuleId, setActiveQuizModuleId] = useState<string | null>(null);
@@ -361,13 +362,13 @@ function LearningMode({
 
   const activeLesson = allLessons.find((l) => l.id === activeLessonId);
   const activeModule =
-    course.modules.find((m) => m.id === activeModuleId) ?? course.modules[0];
-  const activeQuizModule = course.modules.find((m) => m.id === activeQuizModuleId);
+    modules.find((m) => m.id === activeModuleId) ?? modules[0];
+  const activeQuizModule = modules.find((m) => m.id === activeQuizModuleId);
   const navBg = isDark ? 'rgba(6,6,8,0.92)' : 'rgba(255,255,255,0.92)';
   const lessonActive = !!activeLesson && !activeQuizModuleId && !activeAssignment;
   const studyTabsEnabled = lessonActive;
   const lessonIndexInModule = activeModule
-    ? activeModule.lessons.findIndex((l) => l.id === activeLessonId)
+    ? (activeModule.lessons ?? []).findIndex((l) => l.id === activeLessonId)
     : -1;
 
   const openLesson = (id: string) => {
@@ -410,8 +411,8 @@ function LearningMode({
     | { kind: 'assignment'; title: string };
 
   const subSteps: SubStep[] = [];
-  for (const mod of course.modules) {
-    for (const lesson of mod.lessons) {
+  for (const mod of modules) {
+    for (const lesson of mod.lessons ?? []) {
       subSteps.push({ kind: 'lesson', id: lesson.id, moduleId: mod.id, title: lesson.title });
     }
     if ((mod.quiz?.length ?? 0) > 0) {
@@ -447,7 +448,7 @@ function LearningMode({
   };
 
   const selectModule = (moduleId: string) => {
-    const mod = course.modules.find((m) => m.id === moduleId);
+    const mod = modules.find((m) => m.id === moduleId);
     if (!mod) return;
     const currentInModule =
       !!activeLessonId &&
@@ -459,8 +460,9 @@ function LearningMode({
       return;
     }
     setActiveModuleId(moduleId);
-    if (mod.lessons[0]) {
-      openLesson(mod.lessons[0].id);
+    const firstLesson = (mod.lessons ?? [])[0];
+    if (firstLesson) {
+      openLesson(firstLesson.id);
     } else if ((mod.quiz?.length ?? 0) > 0) {
       openQuiz(moduleId);
     }
@@ -511,14 +513,14 @@ function LearningMode({
   };
 
   const quizScore = quizResult?.score ?? 0;
-  const quizTotal = quizResult?.total ?? activeQuizModule?.quiz.length ?? 0;
+  const quizTotal = quizResult?.total ?? activeQuizModule?.quiz?.length ?? 0;
   const quizPassed = quizResult?.passed ?? false;
   const completedCount = completedLessons.size;
   const totalLessons = progressMeta.totalLessons || allLessons.length;
   const passedQuizCount = passedModules.size;
   const passedAssignmentCount = assignmentPassed ? 1 : 0;
   const totalQuizModules = progressMeta.totalQuizModules
-    || course.modules.filter((m) => (m.quiz?.length ?? 0) > 0).length;
+    || modules.filter((m) => (m.quiz?.length ?? 0) > 0).length;
   const totalAssignmentModules = progressMeta.totalAssignmentModules
     || (hasCourseAssignment ? 1 : 0);
   const progressPct = progressPercent;
@@ -575,7 +577,7 @@ function LearningMode({
   };
 
   const previewModule = previewModuleId
-    ? course.modules.find((m) => m.id === previewModuleId) ?? null
+    ? modules.find((m) => m.id === previewModuleId) ?? null
     : null;
 
   return (
@@ -625,7 +627,7 @@ function LearningMode({
           <div className="flex items-center gap-2 px-3 sm:px-4 pt-3" style={{ paddingBottom: submodulesOpen ? 8 : 12 }}>
             <div className="min-w-0 flex-1 overflow-x-auto">
               <div className="flex items-center gap-1 min-w-max">
-                {course.modules.map((mod, modIdx) => {
+                {modules.map((mod, modIdx) => {
                   const isActive = activeModule?.id === mod.id;
                   return (
                     <div
@@ -752,7 +754,7 @@ function LearningMode({
                     )}
                     <span className="text-[0.75rem] font-[500]">Module Quiz</span>
                     <span className="text-[0.65rem] flex-shrink-0" style={{ color: C.text3 }}>
-                      {activeModule.quiz.length}q
+                      {activeModule.quiz?.length ?? 0}q
                     </span>
                   </button>
                 )}
@@ -1743,9 +1745,8 @@ export function CourseDetails() {
             {[
               { icon: <BookOpen className="w-3.5 h-3.5" />, label: `Difficulty ${course.difficulty}` },
               { icon: <Calendar className="w-3.5 h-3.5" />, label: course.date },
-              { icon: <Layers className="w-3.5 h-3.5" />, label: `${course.modules.length} Modules` },
+              { icon: <Layers className="w-3.5 h-3.5" />, label: `${modules.length} Modules` },
               { icon: <PlayCircle className="w-3.5 h-3.5" />, label: `${totalLessons} Lessons` },
-              { icon: <BookOpen className="w-3.5 h-3.5" />, label: priceLabel },
               ...(linkedVideoLessons > 0
                 ? [{ icon: <PlayCircle className="w-3.5 h-3.5" />, label: `${linkedVideoLessons} Video lessons` }]
                 : []),
@@ -1884,7 +1885,7 @@ export function CourseDetails() {
                   <div className="flex items-center gap-3">
                     <span className="text-[0.72rem] font-[500] px-3 py-1 rounded-full"
                       style={{ background: isDark ? 'rgba(225,6,0,0.12)' : 'rgba(225,6,0,0.08)', color: C.red, border: `1px solid ${isDark ? 'rgba(225,6,0,0.2)' : 'rgba(225,6,0,0.12)'}` }}>
-                      {mod.lessons.length} Lessons
+                      {(mod.lessons ?? []).length} Lessons
                     </span>
                     {isExpanded ? <ChevronDown className="w-4 h-4" style={{ color: C.text3 }} /> : <ChevronRight className="w-4 h-4" style={{ color: C.text3 }} />}
                   </div>
@@ -1896,7 +1897,7 @@ export function CourseDetails() {
                       <p className="text-[0.85rem] mb-5" style={{ color: C.text2, lineHeight: 1.7 }}>{mod.description}</p>
                       <p className="text-[0.72rem] font-[600] uppercase tracking-wider mb-3" style={{ color: C.text3, fontFamily: 'var(--mono)' }}>Lessons</p>
                       <div className="space-y-1 mb-5">
-                        {mod.lessons.map((lesson, li) => (
+                        {(mod.lessons ?? []).map((lesson, li) => (
                           <div key={lesson.id} className="flex items-center gap-3 py-2 px-3 rounded-lg"
                             style={{ background: isDark ? 'rgba(255,255,255,0.025)' : 'rgba(0,0,0,0.02)' }}>
                             <span className="text-[0.68rem] font-[600] w-5 text-center flex-shrink-0" style={{ color: C.text3, fontFamily: 'var(--mono)' }}>
@@ -1942,7 +1943,7 @@ export function CourseDetails() {
             {startButtonLabel} <ArrowUpRight className="w-4 h-4" />
           </button>
           <p className="text-[0.78rem] mt-3" style={{ color: C.text3 }}>
-            {totalLessons} video lessons · {course.modules.length} module quizzes · Certificate on completion
+            {totalLessons} video lessons · {modules.length} module quizzes · Certificate on completion
           </p>
         </div>
       </div>
