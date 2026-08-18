@@ -9,7 +9,7 @@ import {
   type StudyFlashcard,
   type StudyToolType,
 } from '../api/studyRailApi';
-import { readCachedStudyTool, writeCachedStudyTool } from '../utils/studyToolCache';
+import { resolveStudyToolData, writeCachedStudyTool } from '../utils/studyToolCache';
 import { LessonNotes } from './LessonNotes';
 
 type Theme = {
@@ -31,6 +31,9 @@ type Props = {
   isDark: boolean;
   /** Shown for notes until AI generate succeeds */
   fallbackNotes?: string;
+  /** Course-generation first batch — shown until the learner regenerates */
+  seedFlashcards?: StudyFlashcard[];
+  seedBlanks?: StudyBlank[];
 };
 
 function getError(err: unknown): string {
@@ -48,17 +51,26 @@ function getError(err: unknown): string {
   return 'Unable to generate study tools.';
 }
 
-export function StudyRailPanel({ courseId, lessonId, tool, theme: C, isDark, fallbackNotes }: Props) {
+export function StudyRailPanel({
+  courseId,
+  lessonId,
+  tool,
+  theme: C,
+  isDark,
+  fallbackNotes,
+  seedFlashcards,
+  seedBlanks,
+}: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<LessonStudyToolResponse | null>(
-    () => readCachedStudyTool(courseId, lessonId, tool),
+    () => resolveStudyToolData(courseId, lessonId, tool, seedFlashcards, seedBlanks),
   );
 
   useEffect(() => {
     setError(null);
-    setData(readCachedStudyTool(courseId, lessonId, tool));
-  }, [courseId, lessonId, tool]);
+    setData(resolveStudyToolData(courseId, lessonId, tool, seedFlashcards, seedBlanks));
+  }, [courseId, lessonId, tool, seedFlashcards, seedBlanks]);
 
   const generate = async () => {
     setLoading(true);
@@ -86,8 +98,10 @@ export function StudyRailPanel({ courseId, lessonId, tool, theme: C, isDark, fal
         <div>
           <p className="text-[0.95rem] font-[600]" style={{ color: C.text }}>{title}</p>
           <p className="text-[0.75rem] mt-0.5" style={{ color: C.text3 }}>
-            Generated from this lesson&apos;s transcript / study material
-            {data?.source ? ` · source: ${data.source}` : ''}
+            {data?.source === 'course'
+              ? 'Included with this lesson. Regenerate anytime for a new set from the transcript.'
+              : 'Generated from this lesson\u2019s transcript / study material'}
+            {data?.source && data.source !== 'course' ? ` · source: ${data.source}` : ''}
           </p>
         </div>
         <button

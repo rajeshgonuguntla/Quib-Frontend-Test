@@ -229,7 +229,7 @@ html.dark *::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.22);
 }
 
-/* Lesson player: hide the bar (still scrollable) vs thin red ray when tutor is open */
+/* Collapsed tutor FAB sits on the lesson edge — hide the bar, keep scroll */
 .cuib-scroll-hidden {
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -238,52 +238,6 @@ html.dark *::-webkit-scrollbar-thumb {
 .cuib-scroll-hidden::-webkit-scrollbar {
   width: 0;
   height: 0;
-}
-
-.cuib-scroll-ray {
-  scrollbar-width: thin;
-  scrollbar-color: #e10600 transparent;
-}
-
-.cuib-scroll-ray::-webkit-scrollbar {
-  width: 2px;
-  height: 2px;
-}
-
-.cuib-scroll-ray::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.cuib-scroll-ray::-webkit-scrollbar-thumb {
-  background: #e10600;
-  border-radius: 999px;
-  box-shadow: 0 0 8px 1px rgba(225, 6, 0, 0.75);
-}
-
-html.dark .cuib-scroll-ray::-webkit-scrollbar-thumb {
-  background: #e10600;
-}
-
-@media (min-width: 1024px) {
-  .cuib-scroll-ray-lg {
-    scrollbar-width: thin;
-    scrollbar-color: #e10600 transparent;
-  }
-
-  .cuib-scroll-ray-lg::-webkit-scrollbar {
-    width: 2px;
-    height: 2px;
-  }
-
-  .cuib-scroll-ray-lg::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .cuib-scroll-ray-lg::-webkit-scrollbar-thumb {
-    background: #e10600;
-    border-radius: 999px;
-    box-shadow: 0 0 8px 1px rgba(225, 6, 0, 0.75);
-  }
 }
 
 /* Scrolling text animation */

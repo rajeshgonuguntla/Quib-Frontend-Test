@@ -57,6 +57,8 @@ interface Lesson {
   keyConcepts?: string[];
   takeaway?: string;
   notes?: string;
+  flashcards?: { front: string; back: string }[];
+  blanks?: { sentence: string; answer: string; hint?: string }[];
 }
 
 interface PlaylistVideo {
@@ -887,7 +889,7 @@ function LearningMode({
           {/* Main */}
           <main
             className={`flex-1 min-w-0 overflow-y-auto ${
-              tutorCollapsed ? 'cuib-scroll-hidden' : 'cuib-scroll-hidden cuib-scroll-ray-lg'
+              tutorCollapsed ? 'cuib-scroll-hidden' : ''
             }`}
           >
             {/* Mobile study tabs */}
@@ -1007,6 +1009,8 @@ function LearningMode({
                     tool={studyTab}
                     theme={C}
                     isDark={isDark}
+                    seedFlashcards={activeLesson.flashcards}
+                    seedBlanks={activeLesson.blanks}
                   />
                 )}
               </div>

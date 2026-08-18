@@ -96,6 +96,8 @@ export type CourseLesson = {
   keyConcepts?: string[];
   takeaway?: string;
   notes?: string;
+  flashcards?: { front: string; back: string }[];
+  blanks?: { sentence: string; answer: string; hint?: string }[];
 };
 
 export type CourseModule = {

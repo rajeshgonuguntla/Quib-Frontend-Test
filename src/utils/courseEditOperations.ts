@@ -178,7 +178,12 @@ function applyDeleteLesson(course: EditableCourse, moduleId: string, lessonId: s
 function cloneModule(m: CourseModule): CourseModule {
   return {
     ...m,
-    lessons: m.lessons.map((l) => ({ ...l, keyConcepts: l.keyConcepts ? [...l.keyConcepts] : undefined })),
+    lessons: m.lessons.map((l) => ({
+      ...l,
+      keyConcepts: l.keyConcepts ? [...l.keyConcepts] : undefined,
+      flashcards: l.flashcards ? [...l.flashcards] : undefined,
+      blanks: l.blanks ? [...l.blanks] : undefined,
+    })),
     quiz: m.quiz.map((q) => ({ ...q, options: [...q.options] })),
   };
 }
