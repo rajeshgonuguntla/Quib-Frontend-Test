@@ -108,7 +108,9 @@ export function AppSidebar({ pathname, search, onNavigate }: AppSidebarProps) {
         >
           <UserAvatar profile={profile} size="sm" />
           <div className="min-w-0 flex-1">
-            <div className="truncate text-sm font-medium leading-none text-foreground">{firstName}</div>
+            <div className="truncate text-sm font-medium leading-none text-foreground">
+              {firstName || (profile ? 'Account' : 'Loading…')}
+            </div>
             <div className="truncate text-xs text-muted-foreground">{profile?.email ?? 'Account'}</div>
           </div>
           <ChevronRight size={13} className="shrink-0 text-muted-foreground" />

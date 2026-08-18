@@ -26,8 +26,8 @@ export function UserAvatar({ profile, size = 'md', className = '', style }: User
   if (showFallback) {
     return (
       <div
-        className={`flex shrink-0 items-center justify-center rounded-full font-semibold text-white ${s.box} ${s.text} ${className}`}
-        style={{ background: bg, ...style }}
+        className={`flex shrink-0 items-center justify-center rounded-full font-semibold text-white ${s.box} ${s.text} ${className} ${profile ? '' : 'bg-muted'}`}
+        style={profile ? { background: bg, ...style } : style}
         aria-hidden
       >
         {letter}

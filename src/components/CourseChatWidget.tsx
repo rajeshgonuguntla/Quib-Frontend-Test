@@ -270,7 +270,7 @@ export function CourseChatWidget({
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-[200] flex flex-col items-end gap-3">
+    <div className="fixed z-[200] flex flex-col items-end gap-3" style={{ bottom: 24, right: 16 }}>
       {open && chatPanel}
 
       <button

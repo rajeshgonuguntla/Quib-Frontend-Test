@@ -201,7 +201,9 @@ export function Dashboard() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-label mb-2 text-muted-foreground">{greeting()}</p>
-            <h1 className="font-serif-display text-2xl tracking-tight sm:text-3xl">Welcome back, {firstName}</h1>
+            <h1 className="font-serif-display text-2xl tracking-tight sm:text-3xl">
+              {firstName ? `Welcome back, ${firstName}` : 'Welcome back'}
+            </h1>
             <p className="mt-2 text-sm text-muted-foreground">
               You have <span className="font-medium text-foreground">{coursesInProgress}</span> course
               {coursesInProgress === 1 ? '' : 's'} to continue.

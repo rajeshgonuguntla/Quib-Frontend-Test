@@ -9,6 +9,7 @@ import {
   type StudyFlashcard,
   type StudyToolType,
 } from '../api/studyRailApi';
+import { readCachedStudyTool, writeCachedStudyTool } from '../utils/studyToolCache';
 import { LessonNotes } from './LessonNotes';
 
 type Theme = {
@@ -50,11 +51,13 @@ function getError(err: unknown): string {
 export function StudyRailPanel({ courseId, lessonId, tool, theme: C, isDark, fallbackNotes }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<LessonStudyToolResponse | null>(null);
+  const [data, setData] = useState<LessonStudyToolResponse | null>(
+    () => readCachedStudyTool(courseId, lessonId, tool),
+  );
 
   useEffect(() => {
-    setData(null);
     setError(null);
+    setData(readCachedStudyTool(courseId, lessonId, tool));
   }, [courseId, lessonId, tool]);
 
   const generate = async () => {
@@ -62,6 +65,7 @@ export function StudyRailPanel({ courseId, lessonId, tool, theme: C, isDark, fal
     setError(null);
     try {
       const res = await generateLessonStudyTool(courseId, lessonId, tool);
+      writeCachedStudyTool(courseId, lessonId, tool, res);
       setData(res);
     } catch (err) {
       setError(getError(err));

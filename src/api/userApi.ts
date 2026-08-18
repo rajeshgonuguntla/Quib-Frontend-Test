@@ -2,7 +2,7 @@ import axios from 'axios';
 import type { UserProfile } from '../types/userProfile';
 
 export async function fetchUserProfile(): Promise<UserProfile> {
-  const res = await axios.get<UserProfile>('/api/users/me');
+  const res = await axios.get<UserProfile>('/api/users/me', { timeout: 12_000 });
   return res.data;
 }
 

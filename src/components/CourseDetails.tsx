@@ -621,7 +621,7 @@ function LearningMode({
         )}
       />
 
-      <div className="flex flex-col" style={{ paddingTop: 56, height: '100vh' }}>
+      <div className="flex flex-col overflow-hidden" style={{ paddingTop: 56, height: '100vh', boxSizing: 'border-box' }}>
         {/* Module tabs + collapsible lesson chips */}
         <div className="shrink-0" style={{ borderBottom: `1px solid ${C.border}`, background: C.bg1 }}>
           <div className="flex items-center gap-2 px-3 sm:px-4 pt-3" style={{ paddingBottom: submodulesOpen ? 8 : 12 }}>
@@ -809,7 +809,7 @@ function LearningMode({
           />
         )}
 
-        <div className="flex flex-1 min-h-0">
+        <div className="relative flex flex-1 min-h-0">
           {/* Study rail */}
           <aside
             className="hidden md:flex flex-col flex-shrink-0 overflow-y-auto"
@@ -885,7 +885,11 @@ function LearningMode({
           </aside>
 
           {/* Main */}
-          <main className="flex-1 min-w-0 overflow-y-auto">
+          <main
+            className={`flex-1 min-w-0 overflow-y-auto ${
+              tutorCollapsed ? 'cuib-scroll-hidden' : 'cuib-scroll-hidden cuib-scroll-ray-lg'
+            }`}
+          >
             {/* Mobile study tabs */}
             {lessonActive && (
               <div className="md:hidden overflow-x-auto px-4 py-2" style={{ borderBottom: `1px solid ${C.border}`, background: C.bg1 }}>
@@ -1095,8 +1099,25 @@ function LearningMode({
           {/* Right rail — collapse + drag-resize (desktop); FAB on small screens */}
           {(showEducatorAssistant || showCourseChat) && (
             <>
-              <div className="hidden lg:flex min-h-0 flex-shrink-0">
-                {!tutorCollapsed && (
+              {tutorCollapsed ? (
+                <button
+                  type="button"
+                  onClick={() => setTutorCollapsed(false)}
+                  className="hidden lg:flex absolute z-20 w-8 h-8 rounded-lg items-center justify-center cursor-pointer"
+                  style={{
+                    top: 12,
+                    right: 12,
+                    background: C.red,
+                    color: '#fff',
+                    border: 'none',
+                  }}
+                  aria-label="Expand assistant"
+                  title="Open assistant"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                </button>
+              ) : (
+                <div className="hidden lg:flex min-h-0 flex-shrink-0">
                   <div
                     role="separator"
                     aria-orientation="vertical"
@@ -1111,59 +1132,43 @@ function LearningMode({
                       style={{ background: C.red, opacity: 0.85 }}
                     />
                   </div>
-                )}
-                <aside
-                  className="flex flex-col min-h-0"
-                  style={{
-                    width: tutorCollapsed ? 48 : tutorWidth,
-                    borderLeft: tutorCollapsed ? `1px solid ${C.border}` : 'none',
-                    background: C.bg,
-                  }}
-                >
-                  {tutorCollapsed ? (
-                    <button
-                      type="button"
-                      onClick={() => setTutorCollapsed(false)}
-                      className="mx-auto mt-3 w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer"
-                      style={{ background: C.red, color: '#fff', border: 'none' }}
-                      aria-label="Expand assistant"
-                      title="Open assistant"
-                    >
-                      <MessageCircle className="w-4 h-4" />
-                    </button>
-                  ) : null}
-                  <div
-                    className="h-full min-h-0 flex-1 flex-col"
-                    style={{ display: tutorCollapsed ? 'none' : 'flex' }}
+                  <aside
+                    className="flex flex-col min-h-0"
+                    style={{
+                      width: tutorWidth,
+                      background: C.bg,
+                    }}
                   >
-                    {showEducatorAssistant ? (
-                      <EducatorAssistantWidget
-                        key={chatSessionKey}
-                        variant="panel"
-                        courseId={courseId}
-                        courseTitle={course.title}
-                        sessionKey={chatSessionKey}
-                        onPreviewChange={onEducatorApplyUpdate}
-                        onApproveAndSave={onEducatorApproveAndSave}
-                        onCollapse={() => setTutorCollapsed(true)}
-                      />
-                    ) : (
-                      <CourseChatWidget
-                        key={chatSessionKey}
-                        courseId={courseId}
-                        courseTitle={course.title}
-                        lessonId={activeLessonId || undefined}
-                        moduleId={activeQuizModuleId || undefined}
-                        signedIn={chatSignedIn}
-                        onSignInRequired={onChatSignInRequired}
-                        sessionKey={chatSessionKey}
-                        variant="panel"
-                        onCollapse={() => setTutorCollapsed(true)}
-                      />
-                    )}
-                  </div>
-                </aside>
-              </div>
+                    <div className="h-full min-h-0 flex-1 flex flex-col">
+                      {showEducatorAssistant ? (
+                        <EducatorAssistantWidget
+                          key={chatSessionKey}
+                          variant="panel"
+                          courseId={courseId}
+                          courseTitle={course.title}
+                          sessionKey={chatSessionKey}
+                          onPreviewChange={onEducatorApplyUpdate}
+                          onApproveAndSave={onEducatorApproveAndSave}
+                          onCollapse={() => setTutorCollapsed(true)}
+                        />
+                      ) : (
+                        <CourseChatWidget
+                          key={chatSessionKey}
+                          courseId={courseId}
+                          courseTitle={course.title}
+                          lessonId={activeLessonId || undefined}
+                          moduleId={activeQuizModuleId || undefined}
+                          signedIn={chatSignedIn}
+                          onSignInRequired={onChatSignInRequired}
+                          sessionKey={chatSessionKey}
+                          variant="panel"
+                          onCollapse={() => setTutorCollapsed(true)}
+                        />
+                      )}
+                    </div>
+                  </aside>
+                </div>
+              )}
               <div className="lg:hidden">
                 {showEducatorAssistant ? (
                   <EducatorAssistantWidget

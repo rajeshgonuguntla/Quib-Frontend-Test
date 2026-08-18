@@ -1,25 +1,25 @@
 import type { UserProfile } from '../types/userProfile';
 
 export function getDisplayName(profile: UserProfile | null | undefined): string {
-  if (!profile) return 'Learner';
+  if (!profile) return '';
   const fromParts = [profile.firstName, profile.lastName].filter(Boolean).join(' ').trim();
   return (
     profile.certificateDisplayName?.trim() ||
     profile.displayName?.trim() ||
     fromParts ||
     profile.email?.split('@')[0] ||
-    'Learner'
+    ''
   );
 }
 
 export function getFirstName(profile: UserProfile | null | undefined): string {
-  if (!profile) return 'there';
+  if (!profile) return '';
   if (profile.firstName?.trim()) return profile.firstName.trim();
   const display = profile.displayName?.trim();
-  if (display) return display.split(/\s+/)[0] ?? 'there';
+  if (display) return display.split(/\s+/)[0] ?? '';
   const emailLocal = profile.email?.split('@')[0];
   if (emailLocal) return emailLocal;
-  return 'there';
+  return '';
 }
 
 /** Google-style avatar palette — deterministic color from name/email */
@@ -46,9 +46,10 @@ export function getAvatarBackgroundColor(seed: string): string {
 
 /** Single letter for avatar fallback (first character of display name) */
 export function getAvatarLetter(profile: UserProfile | null | undefined): string {
+  if (!profile) return '';
   const name = getDisplayName(profile);
   const letter = name.trim().charAt(0);
-  return letter ? letter.toUpperCase() : '?';
+  return letter ? letter.toUpperCase() : '';
 }
 
 export function getAvatarColorSeed(profile: UserProfile | null | undefined): string {

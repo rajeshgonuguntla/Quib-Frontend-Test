@@ -24,7 +24,7 @@ import {
 
 export function Settings() {
   const navigate = useNavigate();
-  const { profile, loading, setProfile } = useUserProfile();
+  const { profile, error, refreshProfile, setProfile } = useUserProfile();
   const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState('profile');
   const [saving, setSaving] = useState(false);
@@ -133,7 +133,14 @@ export function Settings() {
               <CardTitle className="font-serif-display text-lg font-normal">Profile</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              {loading && !profile ? (
+              {error && !profile ? (
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">{error}</p>
+                  <Button type="button" variant="outline" onClick={() => void refreshProfile()}>
+                    Retry
+                  </Button>
+                </div>
+              ) : !profile ? (
                 <p className="text-sm text-muted-foreground">Loading profile…</p>
               ) : (
                 <>

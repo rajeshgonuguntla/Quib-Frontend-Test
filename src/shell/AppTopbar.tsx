@@ -35,7 +35,7 @@ export function AppTopbar({ onOpenMobileNav }: { onOpenMobileNav?: () => void })
   const navigate = useNavigate();
   const { profile, setProfile } = useUserProfile();
   const meta = getRouteMeta(location.pathname);
-  const hideUpgrade = isAdminAccount(profile);
+  const hideUpgrade = !profile || isAdminAccount(profile);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<CourseSearchResult[]>([]);

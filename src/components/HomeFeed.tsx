@@ -286,7 +286,7 @@ export function HomeFeed() {
                 lineHeight: 1.1,
               }}
             >
-              Welcome back, {firstName}
+              {firstName ? `Welcome back, ${firstName}` : 'Welcome back'}
             </h1>
             <p className="mt-2 text-sm" style={{ color: T.t2 }}>
               You have <strong className="font-medium text-white">3 courses</strong> in progress. Ready to continue?

@@ -487,8 +487,10 @@ export function EducatorAssistantWidget({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="fixed bottom-6 right-6 z-[200] flex items-center gap-2 px-4 py-3 rounded-full shadow-lg cursor-pointer transition-transform hover:scale-[1.02]"
+          className="fixed z-[200] flex items-center gap-2 px-4 py-3 rounded-full shadow-lg cursor-pointer transition-transform hover:scale-[1.02]"
           style={{
+            bottom: 24,
+            right: 16,
             background: C.red,
             color: '#fff',
             border: 'none',
