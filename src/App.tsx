@@ -7,7 +7,7 @@ import { LandingPage } from './components/LandingPage';
 import { SignIn } from './components/SignIn';
 import { Dashboard } from './components/Dashboard';
 import { Onboarding } from './components/Onboarding';
-import { MyQuizzes } from './components/MyQuizzes';
+import { Library, MyCoursesRedirect } from './components/Library';
 import { MyCertificates } from './components/MyCertificates';
 import { QuizSetup } from './components/QuizSetup';
 import { PlaylistSetup } from './components/PlaylistSetup';
@@ -28,9 +28,7 @@ import { Governments } from './components/Governments';
 import { EducatorProfile } from './components/EducatorProfile';
 import { CourseBuilderFollowupsPage } from './components/CourseBuilderFollowupsPage';
 import { CourseDetails } from './components/CourseDetails';
-import { BrowseCourses } from './components/BrowseCourses';
-import { Creators } from './components/Creators';
-import { MyCourses } from './components/MyCourses';
+import { BrowseCoursesRedirect, CreatorsRedirect, Discover } from './components/Discover';
 import { ProtectedRoute, PublicOnlyRoute } from './auth';
 import { AppShell } from './shell/AppShell';
 import { Component, type ReactNode } from 'react';
@@ -92,9 +90,11 @@ export default function App() {
                 {/* Authenticated app shell */}
                 <Route element={<AppShell />}>
                   <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/browse-courses" element={<BrowseCourses />} />
-                  <Route path="/creators" element={<Creators />} />
-                  <Route path="/my-courses" element={<MyCourses />} />
+                  <Route path="/discover" element={<Discover />} />
+                  <Route path="/browse-courses" element={<BrowseCoursesRedirect />} />
+                  <Route path="/creators" element={<CreatorsRedirect />} />
+                  <Route path="/library" element={<Library />} />
+                  <Route path="/my-courses" element={<MyCoursesRedirect />} />
                   <Route path="/educator-studio" element={<EducatorStudio />} />
                   <Route path="/educator-courses" element={<EducatorMyCourses />} />
                   <Route path="/educator-analytics" element={<EducatorAnalytics />} />
@@ -102,7 +102,7 @@ export default function App() {
                   <Route path="/educator-courses/:courseId/edit" element={<CourseEditor />} />
                   <Route path="/home" element={<Navigate to="/dashboard" replace />} />
                   <Route path="/educator/:id" element={<EducatorProfile />} />
-                  <Route path="/my-quizzes" element={<MyQuizzes />} />
+                  <Route path="/my-quizzes" element={<Navigate to="/library?tab=saved" replace />} />
                   <Route path="/certificates" element={<MyCertificates />} />
                   <Route path="/course-builder" element={<CourseBuilderFollowupsPage />} />
                   <Route path="/quiz-setup" element={<QuizSetup />} />

@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { MessageCircle, Send, X, Loader2, ChevronsRight } from 'lucide-react';
 import axios from 'axios';
-import { enrollCourse } from '../api/courseApi';
 import { sendCourseChat, type CourseChatMessage } from '../api/courseChatApi';
 import { useTheme, getC } from './ThemeContext';
 import { LessonNotes } from './LessonNotes';
@@ -19,6 +18,8 @@ interface CourseChatWidgetProps {
   variant?: 'floating' | 'panel';
   /** Collapse the docked panel so the lesson column can grow. */
   onCollapse?: () => void;
+  /** Bump to toggle the floating chat open/closed (left-nav Ask AI). */
+  openSignal?: number;
 }
 
 function getChatError(err: unknown): string {
@@ -48,6 +49,7 @@ export function CourseChatWidget({
   sessionKey,
   variant = 'floating',
   onCollapse,
+  openSignal = 0,
 }: CourseChatWidgetProps) {
   const isPanel = variant === 'panel';
   const { isDark } = useTheme();
@@ -66,6 +68,10 @@ export function CourseChatWidget({
     setError(null);
     if (!isPanel) setOpen(false);
   }, [courseId, sessionKey, isPanel]);
+
+  useEffect(() => {
+    if (!isPanel && openSignal > 0) setOpen((prev) => !prev);
+  }, [openSignal, isPanel]);
 
   useEffect(() => {
     if ((open || isPanel) && scrollRef.current) {
@@ -99,19 +105,9 @@ export function CourseChatWidget({
     try {
       await tryChat();
     } catch (err) {
-      if (axios.isAxiosError(err) && err.response?.status === 403) {
-        try {
-          await enrollCourse(courseId);
-          await tryChat();
-          return;
-        } catch (retryErr) {
-          setMessages((prev) => prev.slice(0, -1));
-          setError(getChatError(retryErr));
-        }
-      } else {
-        setMessages((prev) => prev.slice(0, -1));
-        setError(getChatError(err));
-      }
+      // ponytail: do not silent-enroll here — Start Learning is the enroll gate.
+      setMessages((prev) => prev.slice(0, -1));
+      setError(getChatError(err));
     } finally {
       setLoading(false);
     }

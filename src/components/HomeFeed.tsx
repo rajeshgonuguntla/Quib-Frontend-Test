@@ -8,9 +8,7 @@ import {
   Bell,
   BookMarked,
   BookOpen,
-  CheckCircle2,
   ChevronRight,
-  Circle,
   Clock,
   GraduationCap,
   HelpCircle,
@@ -146,7 +144,7 @@ const tagColors: Record<string, { color: string; bg: string }> = {
   'Web Dev': { color: '#38BDF8', bg: 'rgba(56,189,248,0.08)' },
 };
 
-type NavId = 'dashboard' | 'browse' | 'trending' | 'progress' | 'saved' | 'completed' | 'settings' | 'help';
+type NavId = 'dashboard' | 'browse' | 'trending' | 'library' | 'progress' | 'saved' | 'completed' | 'settings' | 'help';
 
 export function HomeFeed() {
   const navigate = useNavigate();
@@ -158,14 +156,18 @@ export function HomeFeed() {
   const isNavActive = (id: NavId) => {
     if (id === 'dashboard') return location.pathname === '/dashboard' || location.pathname === '/home';
     if (id === 'browse' || id === 'trending') return location.pathname.startsWith('/browse-courses') || location.pathname.startsWith('/educator/');
-    if (id === 'progress' || id === 'saved' || id === 'completed') return location.pathname.startsWith('/my-quizzes');
+    if (id === 'library' || id === 'progress' || id === 'saved' || id === 'completed') {
+      return location.pathname.startsWith('/library')
+        || location.pathname.startsWith('/my-quizzes')
+        || location.pathname.startsWith('/my-courses');
+    }
     if (id === 'settings' || id === 'help') return location.pathname.startsWith('/settings');
     return false;
   };
 
   const goToNav = (id: NavId) => {
     if (id === 'browse' || id === 'trending') navigate('/browse-courses');
-    else if (id === 'progress' || id === 'saved' || id === 'completed') navigate('/my-quizzes');
+    else if (id === 'library' || id === 'progress' || id === 'saved' || id === 'completed') navigate('/library');
     else if (id === 'settings' || id === 'help') navigate('/settings');
     else navigate('/dashboard');
   };
@@ -199,9 +201,7 @@ export function HomeFeed() {
 
           <NavGroup label="Library">
             {[
-              { id: 'progress' as const, label: 'In Progress', icon: <Circle size={15} />, badge: '3' },
-              { id: 'saved' as const, label: 'Saved', icon: <BookMarked size={15} /> },
-              { id: 'completed' as const, label: 'Completed', icon: <CheckCircle2 size={15} />, badge: '7' },
+              { id: 'library' as const, label: 'Library', icon: <BookMarked size={15} /> },
             ].map((item) => (
               <SidebarNavItem key={item.id} item={item} active={isNavActive(item.id)} onClick={() => goToNav(item.id)} />
             ))}

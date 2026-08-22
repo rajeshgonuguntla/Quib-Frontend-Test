@@ -148,7 +148,7 @@ export function CoursePageNav({
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => navigate('/settings')}>Settings</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate('/my-courses')}>My courses</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/library')}>Library</DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
                 Sign out

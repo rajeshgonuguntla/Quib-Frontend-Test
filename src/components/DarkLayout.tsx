@@ -10,7 +10,7 @@ import { QuibLogo } from './QuibLogo';
 
 interface DarkLayoutProps {
   children: ReactNode;
-  activeNav: 'dashboard' | 'my-quizzes' | 'settings';
+  activeNav: 'dashboard' | 'library' | 'my-quizzes' | 'settings';
   title?: string;
   subtitle?: string;
   sectionLabel?: string;
@@ -47,7 +47,7 @@ export function DarkLayout({
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
-    { id: 'my-quizzes', label: 'My Quizzes', icon: FileText, path: '/my-quizzes' },
+    { id: 'library', label: 'Library', icon: FileText, path: '/library' },
     { id: 'settings', label: 'Settings', icon: SettingsIcon, path: '/settings' },
   ];
 

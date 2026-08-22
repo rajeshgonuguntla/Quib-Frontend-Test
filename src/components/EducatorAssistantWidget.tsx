@@ -36,6 +36,8 @@ interface EducatorAssistantWidgetProps {
   /** `panel` = docked full-height column; `floating` = slide-in dock + FAB. */
   variant?: 'floating' | 'panel';
   onCollapse?: () => void;
+  /** Bump to toggle the floating assistant open/closed (left-nav Ask AI). */
+  openSignal?: number;
 }
 
 type LoadingPhase = 'idle' | 'routing' | 'local' | 'ai' | 'applying';
@@ -76,6 +78,7 @@ export function EducatorAssistantWidget({
   onPreviewChange,
   variant = 'floating',
   onCollapse,
+  openSignal = 0,
 }: EducatorAssistantWidgetProps) {
   const isPanel = variant === 'panel';
   const { isDark } = useTheme();
@@ -103,6 +106,10 @@ export function EducatorAssistantWidget({
     sessionIdRef.current = crypto.randomUUID();
     courseRevisionRef.current = undefined;
   }, [courseId, sessionKey, isPanel]);
+
+  useEffect(() => {
+    if (!isPanel && openSignal > 0) setOpen((prev) => !prev);
+  }, [openSignal, isPanel]);
 
   useEffect(() => {
     if ((open || isPanel) && scrollRef.current) {

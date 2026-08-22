@@ -115,7 +115,7 @@ function TrendingRail({
   );
 }
 
-export function Creators() {
+export function Creators({ embedded = false }: { embedded?: boolean }) {
   const navigate = useNavigate();
   const [creators, setCreators] = useState<CatalogCreator[]>([]);
   const [trending, setTrending] = useState<CatalogCreator[]>([]);
@@ -186,17 +186,19 @@ export function Creators() {
 
   return (
     <div>
-      <PageHeader
-        label="Discover"
-        title="Creators"
-        description="Explore educators and YouTube channels with courses and quizzes on Cuib."
-      />
+      {!embedded && (
+        <PageHeader
+          label="Discover"
+          title="Creators"
+          description="Explore educators and YouTube channels with courses and quizzes on Cuib."
+        />
+      )}
 
       <section className="mb-10">
         <div className="mb-4 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <TrendingUp size={16} className="text-[var(--brand)]" />
-            <h2 className="text-sm font-medium">Trending this week</h2>
+            <h2 className="text-sm font-medium">Trending creators</h2>
           </div>
           {!loadingTrending && trending.length > 0 && (
             <span className="text-xs text-muted-foreground">Ranked by popularity on Cuib</span>

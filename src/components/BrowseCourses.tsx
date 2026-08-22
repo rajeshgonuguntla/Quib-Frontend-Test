@@ -13,7 +13,7 @@ import { Card } from './ui/card';
 import { Badge } from './ui/badge';
 import { Skeleton } from './ui/skeleton';
 
-export function BrowseCourses() {
+export function BrowseCourses({ embedded = false }: { embedded?: boolean }) {
   const navigate = useNavigate();
   const [courses, setCourses] = useState<CatalogCourseSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,11 +40,13 @@ export function BrowseCourses() {
 
   return (
     <div>
-      <PageHeader
-        label="Courses"
-        title="Browse"
-        description="Published courses from educators on Cuib."
-      />
+      {!embedded && (
+        <PageHeader
+          label="Courses"
+          title="Browse"
+          description="Published courses from educators on Cuib."
+        />
+      )}
 
       <div className="mb-8 flex flex-wrap items-center gap-4">
         <div className="relative max-w-md flex-1">

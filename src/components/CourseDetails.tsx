@@ -36,6 +36,11 @@ import { updateCourse } from '../api/educatorApi';
 import { buildSavePayloadFromAssistant } from '../utils/courseEditOperations';
 import { downloadCoursePdf } from '../utils/downloadCoursePdf';
 import { numberedLessonTitle, withoutLessonNumberPrefix } from '../utils/lessonTitle';
+import {
+  hasCourseProgress,
+  markCourseLaunched,
+  wasCourseLaunched,
+} from '../utils/courseLaunch';
 import type { CourseGenerationOptions, EditableCourse } from '../types/courseGeneration';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -286,6 +291,7 @@ function LearningMode({
   const [submodulesOpen, setSubmodulesOpen] = useState(true);
   const [tutorCollapsed, setTutorCollapsed] = useState(false);
   const [tutorWidth, setTutorWidth] = useState(400);
+  const [askOpenSignal, setAskOpenSignal] = useState(0);
   const tutorResize = useRef<{ startX: number; startW: number } | null>(null);
   const [previewModuleId, setPreviewModuleId] = useState<string | null>(null);
   const [previewRect, setPreviewRect] = useState<DOMRect | null>(null);
@@ -372,6 +378,20 @@ function LearningMode({
   const lessonIndexInModule = activeModule
     ? (activeModule.lessons ?? []).findIndex((l) => l.id === activeLessonId)
     : -1;
+  const tutorAvailable = showEducatorAssistant || showCourseChat;
+
+  /** Same as the right-rail icon: only open/close the tutor, no new main page. */
+  const toggleAskAi = () => {
+    if (!tutorAvailable) {
+      onChatSignInRequired();
+      return;
+    }
+    setTutorCollapsed((c) => !c);
+    // Floating FAB is lg:hidden — only toggle it on small screens.
+    if (typeof window !== 'undefined' && window.matchMedia('(max-width: 1023px)').matches) {
+      setAskOpenSignal((n) => n + 1);
+    }
+  };
 
   const openLesson = (id: string) => {
     const lesson = allLessons.find((l) => l.id === id);
@@ -862,6 +882,21 @@ function LearningMode({
                   </button>
                 );
               })}
+              {studyTabsEnabled && (
+                <button
+                  type="button"
+                  onClick={toggleAskAi}
+                  className="w-full text-left px-3 py-2.5 rounded-lg text-[0.8rem] font-[500] cursor-pointer"
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    borderLeft: '2px solid transparent',
+                    color: C.text2,
+                  }}
+                >
+                  Ask AI
+                </button>
+              )}
             </nav>
 
             {(activeModule?.quiz?.length ?? 0) > 0 && activeModule && (
@@ -915,6 +950,18 @@ function LearningMode({
                       </button>
                     );
                   })}
+                  <button
+                    type="button"
+                    onClick={toggleAskAi}
+                    className="px-3 py-1.5 rounded-full text-[0.72rem] font-[500] cursor-pointer whitespace-nowrap"
+                    style={{
+                      background: C.bg,
+                      border: `1px solid ${C.border}`,
+                      color: C.text2,
+                    }}
+                  >
+                    Ask AI
+                  </button>
                 </div>
               </div>
             )}
@@ -924,7 +971,16 @@ function LearningMode({
                 <p className="text-[0.7rem] mb-5 uppercase tracking-widest" style={{ color: C.text3, fontFamily: 'var(--mono)' }}>
                   {activeLesson.moduleTitle}
                 </p>
-                <h1 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(1.6rem, 3vw, 2.2rem)', fontWeight: 400, lineHeight: 1.2, color: C.text, marginBottom: 12 }}>
+                <h1
+                  className="font-[600] tracking-tight"
+                  style={{
+                    fontFamily: 'var(--display)',
+                    fontSize: 'clamp(1.6rem, 3vw, 2.2rem)',
+                    lineHeight: 1.25,
+                    color: C.text,
+                    marginBottom: 12,
+                  }}
+                >
                   {numberedLessonTitle(lessonIndexInModule, activeLesson.title)}
                 </h1>
 
@@ -1019,7 +1075,18 @@ function LearningMode({
             {activeQuizModule && (
               <div className="max-w-3xl mx-auto px-6 py-10">
                 <p className="text-[0.7rem] mb-4 uppercase tracking-widest" style={{ color: C.text3, fontFamily: 'var(--mono)' }}>{activeQuizModule.title}</p>
-                <h1 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(1.6rem, 3vw, 2.2rem)', fontWeight: 400, lineHeight: 1.2, color: C.text, marginBottom: 8 }}>Module Quiz</h1>
+                <h1
+                  className="font-[600] tracking-tight"
+                  style={{
+                    fontFamily: 'var(--display)',
+                    fontSize: 'clamp(1.6rem, 3vw, 2.2rem)',
+                    lineHeight: 1.25,
+                    color: C.text,
+                    marginBottom: 8,
+                  }}
+                >
+                  Module Quiz
+                </h1>
                 <p className="text-[0.85rem] mb-8" style={{ color: C.text2 }}>{activeQuizModule.quiz.length} questions · Test your understanding</p>
                 <div className="space-y-5 mb-8">
                   {activeQuizModule.quiz.map((q, qi) => (
@@ -1064,7 +1131,7 @@ function LearningMode({
                     <div className="flex items-center gap-4">
                       <div className="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0"
                         style={{ background: quizPassed ? 'rgba(34,197,94,0.15)' : C.redDim, border: `1px solid ${quizPassed ? 'rgba(34,197,94,0.3)' : 'rgba(225,6,0,0.2)'}` }}>
-                        <span style={{ fontFamily: 'var(--serif)', fontSize: '1.1rem', color: quizPassed ? '#22c55e' : C.red }}>{quizScore}/{quizTotal}</span>
+                        <span className="font-[600] tabular-nums" style={{ fontFamily: 'var(--display)', fontSize: '1.1rem', color: quizPassed ? '#22c55e' : C.red }}>{quizScore}/{quizTotal}</span>
                       </div>
                       <div>
                         <p className="font-[600] text-[0.95rem]" style={{ color: C.text }}>{quizPassed ? 'Great work!' : 'Keep going'}</p>
@@ -1154,6 +1221,7 @@ function LearningMode({
                           onPreviewChange={onEducatorApplyUpdate}
                           onApproveAndSave={onEducatorApproveAndSave}
                           onCollapse={() => setTutorCollapsed(true)}
+                          openSignal={askOpenSignal}
                         />
                       ) : (
                         <CourseChatWidget
@@ -1167,6 +1235,7 @@ function LearningMode({
                           sessionKey={chatSessionKey}
                           variant="panel"
                           onCollapse={() => setTutorCollapsed(true)}
+                          openSignal={askOpenSignal}
                         />
                       )}
                     </div>
@@ -1182,6 +1251,7 @@ function LearningMode({
                     sessionKey={chatSessionKey}
                     onPreviewChange={onEducatorApplyUpdate}
                     onApproveAndSave={onEducatorApproveAndSave}
+                    openSignal={askOpenSignal}
                   />
                 ) : (
                   <CourseChatWidget
@@ -1194,6 +1264,7 @@ function LearningMode({
                     onSignInRequired={onChatSignInRequired}
                     sessionKey={chatSessionKey}
                     variant="floating"
+                    openSignal={askOpenSignal}
                   />
                 )}
               </div>
@@ -1481,6 +1552,25 @@ export function CourseDetails() {
             state: { ...location.state, courseId: data.courseId },
           });
         }
+
+        // Picture 1 (overview) only before the learner has started — resume in the lesson player.
+        const id = data.courseId ?? courseId;
+        if (id && isTokenValid()) {
+          if (wasCourseLaunched(id)) {
+            setLearningMode(true);
+          } else {
+            try {
+              const progress = await fetchCourseProgress(id);
+              if (hasCourseProgress(progress)) {
+                markCourseLaunched(id);
+                setLearningMode(true);
+              }
+            } catch {
+              /* not enrolled / anonymous — stay on overview */
+            }
+          }
+        }
+
         setLoading(false);
       } catch (err) {
         if (!mounted) return;
@@ -1620,6 +1710,7 @@ export function CourseDetails() {
     }
     try {
       await enrollCourse(resolvedCourseId);
+      markCourseLaunched(resolvedCourseId);
       setLearningMode(true);
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.status === 401) {
@@ -1632,8 +1723,9 @@ export function CourseDetails() {
 
   // ── Learning Mode ──
   const chatSessionKey = `${resolvedCourseId ?? 'course'}-${authSessionKey}`;
-  const showCourseChat = !!resolvedCourseId;
+  // Ask tutor only after Start Learning — never on the pre-launch overview.
   const showEducatorAssistant = chatSignedIn && isOwner && isEducator && !!resolvedCourseId;
+  const showCourseChat = learningMode && !!resolvedCourseId && !showEducatorAssistant;
   const handleEducatorApplyUpdate = (result: AssistantApplyResult) => {
     if (!resolvedCourseId) return;
     sessionStorage.setItem(
@@ -1692,6 +1784,9 @@ export function CourseDetails() {
       const data = await publishCourse(resolvedCourseId);
       setIsPublished(!!data.isPublished);
       setIsOwner(!!data.isOwner);
+      // Published course view = lesson player (picture 2), not the pre-start overview.
+      markCourseLaunched(resolvedCourseId);
+      setLearningMode(true);
     } catch (err) {
       setPublishError(getCourseGenerationError(err));
     } finally {

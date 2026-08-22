@@ -150,7 +150,7 @@ export function Results() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-6" style={{ background: C.bg, color: C.text }}>
         <p className="text-center text-sm" style={{ color: C.text2 }}>{resultsError}</p>
-        <Link to="/my-quizzes" className="text-sm no-underline" style={{ color: C.red }}>Back to My Quizzes</Link>
+        <Link to="/library?tab=saved" className="text-sm no-underline" style={{ color: C.red }}>Back to Library</Link>
       </div>
     );
   }

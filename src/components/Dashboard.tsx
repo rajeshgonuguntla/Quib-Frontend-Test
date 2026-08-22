@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
-import { ArrowUpRight, Clock, Star, TrendingUp, Users } from 'lucide-react';
+import { ArrowUpRight, Clock, Star, Users } from 'lucide-react';
 import axios from 'axios';
-import { fetchCourses, fetchEnrollments, fetchPopularCreators } from '../api/catalogApi';
+import { fetchCourses, fetchEnrollments } from '../api/catalogApi';
 import { useUserProfile } from '../context/UserProfileContext';
 import { getFirstName } from '../utils/userDisplay';
 import { courseToCuratedCard, ytThumb } from '../utils/catalogMap';
@@ -71,14 +71,6 @@ type ProgressItem = {
   kind?: 'course' | 'quiz';
 };
 
-type TrendingItem = {
-  id: string;
-  name: string;
-  sub: string;
-  videos: string;
-  img: string;
-};
-
 export function Dashboard() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -90,7 +82,6 @@ export function Dashboard() {
 
   const [inProgress, setInProgress] = useState<ProgressItem[]>([]);
   const [curated, setCurated] = useState<CuratedCard[]>([]);
-  const [trending, setTrending] = useState<TrendingItem[]>([]);
 
   useEffect(() => {
     const incomingPlaylistUrl = location.state?.playlistUrl as string | undefined;
@@ -107,24 +98,11 @@ export function Dashboard() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [quizzesRes, popular, courses, enrollments] = await Promise.all([
+        const [quizzesRes, courses, enrollments] = await Promise.all([
           axios.get('/api/quizzes').catch(() => ({ data: [] })),
-          fetchPopularCreators().catch(() => []),
           fetchCourses({ category: 'Web Development', limit: 4 }).catch(() => []),
           fetchEnrollments().catch(() => []),
         ]);
-
-        const popularList = popular;
-
-        setTrending(
-          popularList.slice(0, 6).map((c) => ({
-            id: c.id,
-            name: c.name,
-            sub: c.tagline,
-            videos: `${c.videoCount}+`,
-            img: ytThumb('youtubeVideoId' in c && c.youtubeVideoId ? c.youtubeVideoId : (c as { videoId: string }).videoId),
-          })),
-        );
 
         if (courses.length > 0) setCurated(courses.map(courseToCuratedCard));
 
@@ -209,8 +187,8 @@ export function Dashboard() {
               {coursesInProgress === 1 ? '' : 's'} to continue.
             </p>
           </div>
-          <Button variant="outline" size="sm" className="hidden sm:inline-flex" onClick={() => navigate('/browse-courses')}>
-            Browse all <ArrowUpRight size={14} />
+          <Button variant="outline" size="sm" className="hidden sm:inline-flex" onClick={() => navigate('/discover')}>
+            Discover <ArrowUpRight size={14} />
           </Button>
         </div>
       </StaggerItem>
@@ -220,7 +198,7 @@ export function Dashboard() {
       </StaggerItem>
 
       <StaggerItem>
-        <SectionHeader theme={T} label="Continue learning" icon={<Clock size={14} />} action="View all" onAction={() => navigate('/my-courses')} />
+        <SectionHeader theme={T} label="Continue learning" icon={<Clock size={14} />} action="View all" onAction={() => navigate('/library')} />
         {inProgress.length === 0 ? (
           <p className="text-sm text-muted-foreground">No courses or quizzes in progress yet.</p>
         ) : (
@@ -242,7 +220,7 @@ export function Dashboard() {
       </StaggerItem>
 
       <StaggerItem>
-        <SectionHeader theme={T} label="Curated for you" icon={<Star size={14} />} action="See all" onAction={() => navigate('/browse-courses')} />
+        <SectionHeader theme={T} label="Curated for you" icon={<Star size={14} />} action="See all" onAction={() => navigate('/discover?tab=courses')} />
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {(curated.length > 0 ? curated : FALLBACK_CURATED).map((c) => (
             <CourseCard
@@ -257,10 +235,6 @@ export function Dashboard() {
             />
           ))}
         </div>
-      </StaggerItem>
-
-      <StaggerItem>
-        <TrendingPanel theme={T} items={trending} onViewAll={() => navigate('/creators')} onSelect={(id) => navigate(`/educator/${id}`)} />
       </StaggerItem>
     </StaggerChildren>
   );
@@ -352,64 +326,6 @@ function CourseCard({
           <span>·</span>
           <Clock size={11} /> {course.duration}
         </div>
-      </div>
-    </Card>
-  );
-}
-
-function formatVideoLabel(videos: string) {
-  return videos.toLowerCase().includes('video') ? videos : `${videos} videos`;
-}
-
-function TrendingPanel({
-  items,
-  onViewAll,
-  onSelect,
-  theme,
-}: {
-  items: TrendingItem[];
-  onViewAll: () => void;
-  onSelect: (id: string) => void;
-  theme: ShellTheme;
-}) {
-  if (items.length === 0) {
-    return <Card className="p-6 text-center text-sm text-muted-foreground">No trending creators yet</Card>;
-  }
-
-  return (
-    <Card className="overflow-hidden">
-      <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-        <TrendingUp size={15} className="text-muted-foreground" />
-        <h2 className="text-sm font-medium">Trending creators</h2>
-      </div>
-      <div className="divide-y divide-border">
-        {items.map((creator, index) => (
-          <button
-            key={creator.id}
-            type="button"
-            onClick={() => onSelect(creator.id)}
-            className="flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-accent/50"
-          >
-            <div className="relative shrink-0">
-              <img src={creator.img} alt={creator.name} className="size-10 rounded-full border border-border object-cover" />
-              <span className="absolute -bottom-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-[var(--brand)] text-[10px] font-medium text-white">
-                {index + 1}
-              </span>
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium">{creator.name}</p>
-              <p className="truncate text-xs text-muted-foreground">{creator.sub}</p>
-              <span className="text-label mt-2 inline-block rounded-md bg-muted px-2 py-0.5 text-muted-foreground">
-                {formatVideoLabel(creator.videos)}
-              </span>
-            </div>
-          </button>
-        ))}
-      </div>
-      <div className="border-t border-border px-4 py-3 text-right">
-        <button type="button" onClick={onViewAll} className="text-xs text-muted-foreground transition-opacity hover:opacity-70">
-          View all creators →
-        </button>
       </div>
     </Card>
   );

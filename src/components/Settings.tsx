@@ -209,7 +209,7 @@ export function Settings() {
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               <a href="/#create" className="block text-muted-foreground hover:text-foreground">How Educator Studio works</a>
-              <a href="/browse-courses" className="block text-muted-foreground hover:text-foreground">Browse courses</a>
+              <a href="/discover?tab=courses" className="block text-muted-foreground hover:text-foreground">Browse courses</a>
             </CardContent>
           </Card>
         </TabsContent>

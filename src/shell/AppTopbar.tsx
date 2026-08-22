@@ -206,7 +206,7 @@ export function AppTopbar({ onOpenMobileNav }: { onOpenMobileNav?: () => void })
             {!hideUpgrade && (
               <DropdownMenuItem onClick={() => navigate('/upgrade')}>Upgrade</DropdownMenuItem>
             )}
-            <DropdownMenuItem onClick={() => navigate('/my-courses')}>My courses</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate('/library')}>Library</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
               Sign out

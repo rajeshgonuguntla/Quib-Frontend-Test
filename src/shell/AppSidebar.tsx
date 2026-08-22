@@ -47,7 +47,12 @@ function NavGroupBlock({
       <p className="text-label mb-1.5 px-3 text-muted-foreground">{label}</p>
       <div className="flex flex-col gap-0.5">
         {items.map((item) => {
-          const badge = item.badgeKey ? String(libraryStats[item.badgeKey] || '0') : undefined;
+          const badgeCount = item.badgeKey === 'total'
+            ? (libraryStats.total || libraryStats.inProgress + libraryStats.saved + libraryStats.completed)
+            : item.badgeKey
+              ? libraryStats[item.badgeKey]
+              : undefined;
+          const badge = badgeCount != null ? String(badgeCount) : undefined;
           return (
             <SidebarNavItem
               key={item.id}
