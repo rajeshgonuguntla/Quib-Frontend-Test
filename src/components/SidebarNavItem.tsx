@@ -1,5 +1,5 @@
-import { useState, type ReactNode } from 'react';
-import type { ShellTheme } from '../utils/shellTheme';
+import type { ReactNode } from 'react';
+import { cn } from './ui/utils';
 
 export type SidebarNavItemData = {
   id: string;
@@ -12,63 +12,36 @@ type SidebarNavItemProps = {
   item: SidebarNavItemData;
   active: boolean;
   onClick: () => void;
-  theme: ShellTheme;
 };
 
-export function SidebarNavItem({ item, active, onClick, theme }: SidebarNavItemProps) {
-  const [hovered, setHovered] = useState(false);
-  const [pressed, setPressed] = useState(false);
-
-  const showHover = hovered && !active;
-  const showPress = pressed;
-
-  const background = active
-    ? theme.accentBg
-    : showPress
-      ? theme.hoverStrong
-      : showHover
-        ? theme.hover
-        : 'transparent';
-
-  const border = active
-    ? `1px solid ${theme.accentBd}`
-    : showHover || showPress
-      ? `1px solid ${theme.border}`
-      : '1px solid transparent';
-
-  const textColor = active ? theme.t1 : showHover || showPress ? theme.t1 : theme.t3;
-  const iconColor = active ? theme.accent : showHover || showPress ? theme.t2 : theme.t4;
-
+export function SidebarNavItem({ item, active, onClick }: SidebarNavItemProps) {
   return (
     <button
       type="button"
       onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => {
-        setHovered(false);
-        setPressed(false);
-      }}
-      onMouseDown={() => setPressed(true)}
-      onMouseUp={() => setPressed(false)}
-      className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm transition-colors duration-150"
-      style={{
-        background,
-        border,
-        color: textColor,
-        fontWeight: active ? 500 : 400,
-      }}
+      className={cn(
+        'relative flex w-full items-center justify-between gap-2.5 py-1.5 pl-3.5 text-left text-[14px] transition-colors duration-150',
+        active ? 'font-bold text-[var(--ink)]' : 'font-medium text-[var(--ink-faint)] hover:text-[var(--ink-soft)]',
+      )}
     >
-      <span className="transition-colors duration-150" style={{ color: iconColor }}>
-        {item.icon}
+      <span
+        className="absolute left-0 top-1/2 w-[3px] -translate-y-1/2 rounded-full bg-[var(--accent)] transition-[height] duration-150"
+        style={{ height: active ? 20 : 0 }}
+      />
+      <span className="flex items-center gap-2.5">
+        <span className="flex size-[17px] shrink-0 items-center justify-center [&_svg]:size-[17px]">
+          {item.icon}
+        </span>
+        {item.label}
       </span>
-      <span className="flex-1">{item.label}</span>
       {item.badge && (
         <span
-          className="rounded-md px-1.5 py-0.5 text-[10px] font-medium tabular-nums"
+          className="rounded-[5px] px-[7px] py-px"
           style={{
-            background: active ? theme.hoverStrong : theme.hover,
-            color: theme.t3,
-            border: `1px solid ${theme.border}`,
+            fontFamily: 'var(--mono)',
+            fontSize: 11,
+            color: active ? 'var(--accent)' : 'var(--ink-faint)',
+            background: active ? 'var(--accent-soft)' : 'var(--fill)',
           }}
         >
           {item.badge}

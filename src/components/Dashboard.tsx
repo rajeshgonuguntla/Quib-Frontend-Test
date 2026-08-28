@@ -1,63 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
-import { ArrowUpRight, Clock, Star, Users } from 'lucide-react';
+import { Play } from 'lucide-react';
 import axios from 'axios';
-import { fetchCourses, fetchEnrollments } from '../api/catalogApi';
+import { fetchEnrollments } from '../api/catalogApi';
 import { useUserProfile } from '../context/UserProfileContext';
 import { getFirstName } from '../utils/userDisplay';
-import { courseToCuratedCard, ytThumb } from '../utils/catalogMap';
-import { useTheme } from './ThemeContext';
-import { getShellTheme, neutralTag, type ShellTheme } from '../utils/shellTheme';
-import { useShell } from '../shell/ShellContext';
-import { StaggerChildren, StaggerItem } from '../shell/motion';
-import { Button } from './ui/button';
-import { Card } from './ui/card';
+import { ytThumb } from '../utils/catalogMap';
 import { StudentMasterInput } from './StudentMasterInput';
-
-const FALLBACK_CURATED = [
-  {
-    id: 1,
-    title: 'Web Development Masterclass',
-    instructor: 'Emma Johnson',
-    tag: 'Web Dev',
-    rating: '4.7',
-    students: '203k',
-    duration: '56h',
-    image: 'https://images.unsplash.com/photo-1593720213428-28a5b9e94613?w=600&q=80',
-  },
-  {
-    id: 2,
-    title: 'Neural Networks from Scratch',
-    instructor: 'Andrej Karpathy',
-    tag: 'AI & ML',
-    rating: '4.9',
-    students: '156k',
-    duration: '12h',
-    image: 'https://images.unsplash.com/photo-1617119895969-f4ea56f5538b?w=600&q=80',
-  },
-  {
-    id: 3,
-    title: 'The Essence of Linear Algebra',
-    instructor: '3Blue1Brown',
-    tag: 'Mathematics',
-    rating: '4.9',
-    students: '430k',
-    duration: '8h',
-    image: 'https://images.unsplash.com/photo-1773999088123-4468344c84ce?w=600&q=80',
-  },
-  {
-    id: 4,
-    title: 'TypeScript from Zero to Hero',
-    instructor: 'Matt Pocock',
-    tag: 'Programming',
-    rating: '4.8',
-    students: '98k',
-    duration: '22h',
-    image: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=600&q=80',
-  },
-];
-
-type CuratedCard = ReturnType<typeof courseToCuratedCard>;
 
 type ProgressItem = {
   id: string;
@@ -74,37 +23,31 @@ type ProgressItem = {
 export function Dashboard() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isDark } = useTheme();
-  const T = getShellTheme(isDark);
   const { profile } = useUserProfile();
-  const { libraryStats } = useShell();
   const firstName = getFirstName(profile);
 
   const [inProgress, setInProgress] = useState<ProgressItem[]>([]);
-  const [curated, setCurated] = useState<CuratedCard[]>([]);
 
   useEffect(() => {
     const incomingPlaylistUrl = location.state?.playlistUrl as string | undefined;
     const incomingVideoUrl = location.state?.youtubeUrl as string | undefined;
+    const startTool = location.state?.startTool as string | undefined;
     if (incomingPlaylistUrl) {
-      navigate('/course-builder', { state: { youtubeUrl: incomingPlaylistUrl }, replace: true });
+      navigate('/course-builder', { state: { youtubeUrl: incomingPlaylistUrl, startTool }, replace: true });
       return;
     }
     if (incomingVideoUrl) {
-      navigate('/course-builder', { state: { youtubeUrl: incomingVideoUrl }, replace: true });
+      navigate('/course-builder', { state: { youtubeUrl: incomingVideoUrl, startTool }, replace: true });
     }
   }, [location.state, navigate]);
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [quizzesRes, courses, enrollments] = await Promise.all([
+        const [quizzesRes, enrollments] = await Promise.all([
           axios.get('/api/quizzes').catch(() => ({ data: [] })),
-          fetchCourses({ category: 'Web Development', limit: 4 }).catch(() => []),
           fetchEnrollments().catch(() => []),
         ]);
-
-        if (courses.length > 0) setCurated(courses.map(courseToCuratedCard));
 
         const quizzes = (quizzesRes.data ?? []) as Array<{
           id: string;
@@ -164,169 +107,121 @@ export function Dashboard() {
     void load();
   }, [location.pathname]);
 
-  const greeting = () => {
-    const h = new Date().getHours();
-    if (h < 12) return 'Good morning';
-    if (h < 17) return 'Good afternoon';
-    return 'Good evening';
-  };
-
-  const coursesInProgress = libraryStats.inProgress + libraryStats.saved;
-
   return (
-    <StaggerChildren className="space-y-8">
-      <StaggerItem>
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-label mb-2 text-muted-foreground">{greeting()}</p>
-            <h1 className="font-serif-display text-2xl tracking-tight sm:text-3xl">
-              {firstName ? `Welcome back, ${firstName}` : 'Welcome back'}
-            </h1>
-            <p className="mt-2 text-sm text-muted-foreground">
-              You have <span className="font-medium text-foreground">{coursesInProgress}</span> course
-              {coursesInProgress === 1 ? '' : 's'} to continue.
-            </p>
-          </div>
-          <Button variant="outline" size="sm" className="hidden sm:inline-flex" onClick={() => navigate('/discover')}>
-            Discover <ArrowUpRight size={14} />
-          </Button>
-        </div>
-      </StaggerItem>
+    <div>
+      <h1
+        className="mb-5"
+        style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-0.015em', color: 'var(--ink)' }}
+      >
+        {firstName ? `Welcome back, ${firstName}` : 'Welcome back'}
+      </h1>
 
-      <StaggerItem>
-        <StudentMasterInput />
-      </StaggerItem>
+      <StudentMasterInput />
 
-      <StaggerItem>
-        <SectionHeader theme={T} label="Continue learning" icon={<Clock size={14} />} action="View all" onAction={() => navigate('/library')} />
-        {inProgress.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No courses or quizzes in progress yet.</p>
-        ) : (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            {inProgress.map((item) => (
-              <ProgressCard
-                key={item.id}
-                theme={T}
-                item={item}
-                onOpen={() =>
-                  item.kind === 'course'
-                    ? navigate(`/course-details/${item.id}`, { state: { from: `${location.pathname}${location.search}` } })
-                    : navigate(`/quiz/${item.id}`)
-                }
-              />
-            ))}
-          </div>
-        )}
-      </StaggerItem>
+      <div className="my-5 h-px bg-[var(--border)]" />
 
-      <StaggerItem>
-        <SectionHeader theme={T} label="Curated for you" icon={<Star size={14} />} action="See all" onAction={() => navigate('/discover?tab=courses')} />
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {(curated.length > 0 ? curated : FALLBACK_CURATED).map((c) => (
-            <CourseCard
-              key={String(c.id)}
-              theme={T}
-              course={c}
-              onOpen={() => {
-                if (typeof c.id === 'string' && c.id.includes('-')) {
-                  navigate(`/course-details/${c.id}`, { state: { from: `${location.pathname}${location.search}` } });
-                }
-              }}
+      <div className="mb-5 flex items-end justify-between">
+        <h2 style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--ink-soft)' }}>
+          Continue learning
+        </h2>
+        <button
+          type="button"
+          onClick={() => navigate('/library?tab=in_progress')}
+          className="flex items-center gap-1 pb-0.5 text-[var(--ink-faint)] transition-colors hover:text-[var(--accent)]"
+          style={{ fontFamily: 'var(--mono)', fontSize: 12 }}
+        >
+          View all
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M5 12h14" />
+            <path d="M13 6l6 6-6 6" />
+          </svg>
+        </button>
+      </div>
+
+      {inProgress.length === 0 ? (
+        <p className="text-[13px] text-[var(--ink-soft)]">No courses or quizzes in progress yet.</p>
+      ) : (
+        <div className="grid grid-cols-1 gap-[18px] md:grid-cols-3">
+          {inProgress.map((item) => (
+            <ProgressCard
+              key={item.id}
+              item={item}
+              onOpen={() =>
+                item.kind === 'course'
+                  ? navigate(`/course-details/${item.id}`, { state: { from: `${location.pathname}${location.search}` } })
+                  : navigate(`/quiz/${item.id}`)
+              }
             />
           ))}
         </div>
-      </StaggerItem>
-    </StaggerChildren>
-  );
-}
-
-function SectionHeader({
-  label,
-  icon,
-  action,
-  onAction,
-  theme,
-}: {
-  label: string;
-  icon?: React.ReactNode;
-  action?: string;
-  onAction?: () => void;
-  theme: ShellTheme;
-}) {
-  return (
-    <div className="mb-4 flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        {icon && <span className="text-muted-foreground">{icon}</span>}
-        <h2 className="text-sm font-medium text-foreground">{label}</h2>
-      </div>
-      {action && onAction && (
-        <button type="button" onClick={onAction} className="text-xs text-muted-foreground transition-opacity hover:opacity-70">
-          {action} →
-        </button>
       )}
     </div>
   );
 }
 
-function ProgressCard({ item, onOpen, theme }: { item: ProgressItem; onOpen: () => void; theme: ShellTheme }) {
-  return (
-    <Card className="group cursor-pointer overflow-hidden transition-colors hover:border-border/80" onClick={onOpen}>
-      <div className="relative aspect-video overflow-hidden">
-        <img src={item.image} alt={item.title} className="h-full w-full object-cover transition-opacity group-hover:opacity-90" />
-        <span className="text-label absolute left-3 top-3 rounded-md bg-black/60 px-2 py-1 text-zinc-200 backdrop-blur-sm">{item.tag}</span>
-        <div className="absolute bottom-0 left-0 right-0 h-px bg-border">
-          <div className="h-full bg-[var(--brand)]" style={{ width: `${item.progress}%` }} />
-        </div>
-      </div>
-      <div className="p-4">
-        <h3 className="truncate text-sm font-medium">{item.title}</h3>
-        <p className="mt-1 text-xs text-muted-foreground">{item.instructor}</p>
-        <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
-          <span>{item.lessons.done} / {item.lessons.total} lessons</span>
-          <span className="font-medium tabular-nums text-foreground">{item.progress}%</span>
-        </div>
-        <div className="mt-2 h-px overflow-hidden rounded-full bg-muted">
-          <div className="h-full bg-[var(--brand)]" style={{ width: `${item.progress}%` }} />
-        </div>
-      </div>
-    </Card>
-  );
+function thumbGlyph(tag: string): string {
+  const t = tag.toLowerCase();
+  if (t.includes('program') || t.includes('python') || t.includes('web')) return '>>>';
+  if (t.includes('quiz')) return '?';
+  return '{ }';
 }
 
-function CourseCard({
-  course,
-  onOpen,
-  theme,
-}: {
-  course: CuratedCard | (typeof FALLBACK_CURATED)[0];
-  onOpen?: () => void;
-  theme: ShellTheme;
-}) {
-  const tag = neutralTag(theme);
+function ProgressCard({ item, onOpen }: { item: ProgressItem; onOpen: () => void }) {
+  const current = item.progress > 0;
   return (
-    <Card
-      role={onOpen ? 'button' : undefined}
-      tabIndex={onOpen ? 0 : undefined}
+    <button
+      type="button"
       onClick={onOpen}
-      onKeyDown={onOpen ? (e) => e.key === 'Enter' && onOpen() : undefined}
-      className="group cursor-pointer overflow-hidden transition-colors hover:border-border/80"
+      className="group overflow-hidden rounded-[13px] border border-[var(--border)] bg-[var(--surface)] text-left transition-[border-color] duration-150 hover:border-[var(--ink-faint)]"
     >
-      <div className="relative aspect-video overflow-hidden">
-        <img src={course.image} alt={course.title} className="h-full w-full object-cover transition-opacity group-hover:opacity-90" />
-        <div className="absolute right-2 top-2 flex items-center gap-1 rounded-md bg-black/65 px-1.5 py-0.5 text-xs tabular-nums text-zinc-100 backdrop-blur-sm">
-          <Star size={10} className="fill-amber-400 text-amber-400" /> {course.rating}
+      <div className="relative flex aspect-[16/10] items-center justify-center overflow-hidden border-b border-[var(--border)] bg-[var(--fill)]">
+        <span
+          className="absolute left-2.5 top-2.5 rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1 uppercase text-[var(--ink-soft)]"
+          style={{ fontFamily: 'var(--mono)', fontSize: 9.5, letterSpacing: '0.05em' }}
+        >
+          {item.tag}
+        </span>
+        <span
+          className="text-[34px] font-medium tracking-[-0.02em] text-[var(--ink-faint)] opacity-50"
+          style={{ fontFamily: 'var(--mono)' }}
+        >
+          {thumbGlyph(item.tag)}
+        </span>
+        <span className="absolute flex size-10 items-center justify-center rounded-full bg-[rgba(10,10,10,0.55)] opacity-0 transition-opacity group-hover:opacity-100">
+          <Play size={14} className="ml-0.5 fill-white text-white" />
+        </span>
+      </div>
+      <div className="px-[15px] pb-4 pt-3.5">
+        <h3 className="mb-1 line-clamp-2 text-[14px] font-bold leading-[1.3] tracking-[-0.01em]">{item.title}</h3>
+        <p className="mb-3 text-xs text-[var(--ink-soft)]">{item.instructor}</p>
+        <div className="mb-1.5 flex items-center justify-between">
+          <span
+            className="text-[var(--ink-faint)] transition-colors group-hover:text-[var(--accent)]"
+            style={{ fontFamily: 'var(--mono)', fontSize: 10.5 }}
+          >
+            {item.lessons.done} / {item.lessons.total} lessons
+          </span>
+          <span
+            style={{
+              fontFamily: 'var(--mono)',
+              fontSize: 10.5,
+              fontWeight: 500,
+              color: current ? 'var(--accent)' : 'var(--ink-soft)',
+            }}
+          >
+            {item.progress}%
+          </span>
+        </div>
+        <div className="h-1 overflow-hidden rounded-full bg-[var(--fill)]">
+          <div
+            className="h-full rounded-full"
+            style={{
+              width: `${Math.max(item.progress, current ? 2 : 0)}%`,
+              background: current ? 'var(--accent)' : 'var(--border)',
+            }}
+          />
         </div>
       </div>
-      <div className="p-3.5">
-        <span className="text-label inline-block rounded-md px-2 py-0.5" style={{ color: tag.color, background: tag.bg }}>{course.tag}</span>
-        <h3 className="mt-2 line-clamp-2 text-sm font-medium leading-snug">{course.title}</h3>
-        <p className="mt-1 text-xs text-muted-foreground">{course.instructor}</p>
-        <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-          <Users size={11} /> {course.students}
-          <span>·</span>
-          <Clock size={11} /> {course.duration}
-        </div>
-      </div>
-    </Card>
+    </button>
   );
 }

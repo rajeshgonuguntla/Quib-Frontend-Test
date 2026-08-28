@@ -108,6 +108,7 @@ export function CourseBuilderFollowupsPage() {
         navigate('/course-details', {
           state: {
             youtubeUrl,
+            startTool: location.state?.startTool,
             generationOptions: options,
             builderBrief: {
               niche,

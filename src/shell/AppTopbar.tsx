@@ -1,76 +1,42 @@
-import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
-import { Bell, BookMarked, Menu, Search } from 'lucide-react';
-import { ThemeToggle } from '../components/ThemeToggle';
+import { Menu, Moon, Sun } from 'lucide-react';
+import { useTheme } from '../components/ThemeContext';
 import { UserAvatar } from '../components/UserAvatar';
 import { useUserProfile } from '../context/UserProfileContext';
-import { searchCourses } from '../api/catalogApi';
-import type { CourseSearchResult } from '../types/catalog';
-import { ytThumb } from '../utils/catalogMap';
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '../components/ui/breadcrumb';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../components/ui/dropdown-menu';
-import { Input } from '../components/ui/input';
 import { Sheet, SheetContent, SheetTrigger } from '../components/ui/sheet';
 import { clearToken } from '../auth';
 import { clearSignInIntent, isAdminAccount } from '../utils/signInIntent';
-import { getDisplayName } from '../utils/userDisplay';
+import { getFirstName } from '../utils/userDisplay';
 import { AppSidebar } from './AppSidebar';
-import { getRouteMeta } from './navConfig';
 
-export function AppTopbar({ onOpenMobileNav }: { onOpenMobileNav?: () => void }) {
+function AppMark() {
+  return (
+    <div
+      className="flex size-[30px] shrink-0 items-center justify-center rounded-lg"
+      style={{ background: 'var(--ink)' }}
+    >
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--bg)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z" />
+        <path d="M12 12l8-4.5M12 12v9M12 12L4 7.5" />
+      </svg>
+    </div>
+  );
+}
+
+export function AppTopbar() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { isDark, toggleTheme } = useTheme();
   const { profile, setProfile } = useUserProfile();
-  const meta = getRouteMeta(location.pathname);
   const hideUpgrade = !profile || isAdminAccount(profile);
-
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<CourseSearchResult[]>([]);
-  const [searchLoading, setSearchLoading] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const searchRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!searchQuery.trim()) {
-      setSearchResults([]);
-      setSearchLoading(false);
-      return;
-    }
-    setSearchLoading(true);
-    const timer = window.setTimeout(() => {
-      searchCourses(searchQuery, 8)
-        .then((results) => {
-          setSearchResults(results);
-          setSearchOpen(true);
-        })
-        .catch(() => setSearchResults([]))
-        .finally(() => setSearchLoading(false));
-    }, 280);
-    return () => window.clearTimeout(timer);
-  }, [searchQuery]);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
-        setSearchOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  const firstName = getFirstName(profile);
 
   const handleSignOut = () => {
     clearToken();
@@ -80,140 +46,88 @@ export function AppTopbar({ onOpenMobileNav }: { onOpenMobileNav?: () => void })
   };
 
   return (
-    <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur-xl sm:px-6">
+    <>
       <Sheet>
         <SheetTrigger asChild>
           <button
             type="button"
-            className="inline-flex size-8 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-accent hover:text-foreground lg:hidden"
+            className="flex size-[34px] items-center justify-center rounded-lg text-[var(--ink-soft)] transition-colors hover:bg-[var(--fill)] hover:text-[var(--ink)] lg:hidden"
             aria-label="Open navigation"
           >
-            <Menu size={16} />
+            <Menu size={17} />
           </button>
         </SheetTrigger>
-        <SheetContent side="left" className="w-[260px] p-0">
-          <AppSidebar pathname={location.pathname} search={location.search} />
+        <SheetContent side="left" className="w-[268px] p-0">
+          <div className="p-4">
+            <AppSidebar pathname={location.pathname} search={location.search} />
+          </div>
         </SheetContent>
       </Sheet>
 
-      <Breadcrumb className="hidden min-w-0 flex-1 sm:block">
-        <BreadcrumbList>
-          {meta.parent && (
-            <>
-              <BreadcrumbItem>
-                <Link to={meta.parent.path} className="transition-colors hover:text-foreground text-muted-foreground">
-                  {meta.parent.label}
-                </Link>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-            </>
-          )}
-          {meta.section && meta.section !== meta.title && (
-            <>
-              <BreadcrumbItem>
-                <span className="text-muted-foreground">{meta.section}</span>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-            </>
-          )}
-          <BreadcrumbItem>
-            <BreadcrumbPage>{meta.title}</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
+      <Link to="/dashboard" className="flex shrink-0 items-center gap-2.5 no-underline">
+        <AppMark />
+        <span
+          className="text-[15px] font-extrabold tracking-[-0.02em] text-[var(--ink)]"
+          style={{ fontFamily: 'Inter, sans-serif' }}
+        >
+          Cuib
+        </span>
+      </Link>
 
-      <div ref={searchRef} className="relative ml-auto hidden max-w-md flex-1 md:block">
-        <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          onFocus={() => searchQuery.trim() && setSearchOpen(true)}
-          placeholder="Search courses, creators…"
-          className="h-8 border-border bg-muted/40 pl-9 text-sm shadow-none"
-        />
-        {searchOpen && searchQuery.trim() && (
-          <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 overflow-hidden rounded-lg border border-border bg-popover shadow-lg">
-            {searchLoading ? (
-              <p className="px-4 py-3 text-xs text-muted-foreground">Searching…</p>
-            ) : searchResults.length === 0 ? (
-              <p className="px-4 py-3 text-xs text-muted-foreground">No courses found.</p>
-            ) : (
-              <div className="max-h-72 overflow-y-auto py-1">
-                {searchResults.map((result) => (
-                  <button
-                    key={result.courseId}
-                    type="button"
-                    onClick={() => {
-                      setSearchOpen(false);
-                      setSearchQuery('');
-                      navigate(`/course-details/${result.courseId}`, {
-                        state: { from: `${location.pathname}${location.search}` },
-                      });
-                    }}
-                    className="flex w-full items-start gap-3 px-3 py-2.5 text-left transition-colors hover:bg-accent"
-                  >
-                    {result.youtubeVideoId ? (
-                      <img src={ytThumb(result.youtubeVideoId)} alt="" className="size-10 shrink-0 rounded object-cover" />
-                    ) : (
-                      <div className="flex size-10 shrink-0 items-center justify-center rounded bg-muted">
-                        <BookMarked size={14} className="text-muted-foreground" />
-                      </div>
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-foreground">{result.title}</p>
-                      <p className="truncate text-xs text-muted-foreground">{result.channelName ?? 'YouTube'}</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+      <div className="flex-1" />
 
-      <div className="flex items-center gap-1.5">
-        {!hideUpgrade && (
-          <Link
-            to="/upgrade"
-            className="hidden rounded-md px-2.5 py-1 text-xs font-medium text-foreground no-underline transition-colors hover:bg-accent sm:inline-flex"
-          >
-            Upgrade
-          </Link>
-        )}
-        <ThemeToggle size="sm" />
+      <div className="flex shrink-0 items-center gap-1.5">
         <button
           type="button"
-          className="relative hidden size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:inline-flex"
-          aria-label="Notifications"
+          onClick={toggleTheme}
+          className="relative flex size-[34px] items-center justify-center rounded-lg text-[var(--ink-soft)] transition-colors hover:bg-[var(--fill)] hover:text-[var(--ink)]"
+          aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
         >
-          <Bell size={15} />
-          <span className="absolute right-2 top-2 size-1.5 rounded-full bg-[var(--brand)]" />
+          {isDark ? <Sun size={17} /> : <Moon size={17} />}
         </button>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button type="button" className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring">
-              <UserAvatar profile={profile} size="md" />
+            <button
+              type="button"
+              className="flex size-[34px] items-center justify-center rounded-full border border-[var(--border)] bg-[var(--fill)] outline-none transition-colors hover:border-[var(--ink-faint)]"
+              aria-label="Account menu"
+            >
+              <UserAvatar profile={profile} size="md" variant="mono" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-52">
-            <DropdownMenuLabel className="font-normal">
-              <p className="text-sm font-medium">{getDisplayName(profile)}</p>
-              <p className="truncate text-xs text-muted-foreground">{profile?.email}</p>
-            </DropdownMenuLabel>
+          <DropdownMenuContent align="end" className="w-[220px] rounded-xl border-[var(--border)] p-2 shadow-[var(--shadow)]">
+            <div className="flex items-center justify-between gap-2.5 rounded-[10px] px-2 py-2">
+              <div className="flex min-w-0 items-center gap-2.5">
+                <UserAvatar profile={profile} size="md" variant="mono" />
+                <div className="min-w-0">
+                  <p className="text-[13px] font-semibold leading-snug">{firstName || 'Account'}</p>
+                  <p className="text-[11px] text-[var(--ink-faint)]">{hideUpgrade ? 'Admin' : 'Free plan'}</p>
+                </div>
+              </div>
+              {!hideUpgrade && (
+                <button
+                  type="button"
+                  onClick={() => navigate('/upgrade')}
+                  className="shrink-0 text-[11px] font-semibold text-[var(--accent)] hover:opacity-65"
+                >
+                  Upgrade
+                </button>
+              )}
+            </div>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => navigate('/settings')}>Settings</DropdownMenuItem>
-            {!hideUpgrade && (
-              <DropdownMenuItem onClick={() => navigate('/upgrade')}>Upgrade</DropdownMenuItem>
-            )}
-            <DropdownMenuItem onClick={() => navigate('/library')}>Library</DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
+            <DropdownMenuItem onClick={() => navigate('/settings')} className="text-[13px]">
+              Settings
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={handleSignOut}
+              className="text-[11.5px] text-[var(--ink-faint)] focus:text-[var(--ink)]"
+            >
               Sign out
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-    </header>
+    </>
   );
 }

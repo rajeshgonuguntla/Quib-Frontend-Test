@@ -29,7 +29,7 @@ import { EducatorProfile } from './components/EducatorProfile';
 import { CourseBuilderFollowupsPage } from './components/CourseBuilderFollowupsPage';
 import { CourseDetails } from './components/CourseDetails';
 import { BrowseCoursesRedirect, CreatorsRedirect, Discover } from './components/Discover';
-import { ProtectedRoute, PublicOnlyRoute } from './auth';
+import { isTokenValid, ProtectedRoute, PublicOnlyRoute } from './auth';
 import { AppShell } from './shell/AppShell';
 import { Component, type ReactNode } from 'react';
 
@@ -60,6 +60,13 @@ class RouteErrorBoundary extends Component<{ children: ReactNode }, { message: s
   }
 }
 
+function GuestHome() {
+  if (isTokenValid()) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  return <LandingPage />;
+}
+
 export default function App() {
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
@@ -68,7 +75,7 @@ export default function App() {
           <UserProfileProvider>
             <RouteErrorBoundary>
             <Routes>
-              <Route path="/" element={<LandingPage />} />
+              <Route path="/" element={<GuestHome />} />
               <Route path="/terms" element={<LegalPage kind="terms" />} />
               <Route path="/privacy" element={<LegalPage kind="privacy" />} />
               <Route element={<PublicOnlyRoute />}>

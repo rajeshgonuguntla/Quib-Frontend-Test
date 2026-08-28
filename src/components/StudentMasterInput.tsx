@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router';
-import { Upload } from 'lucide-react';
+import { ArrowRight, Upload } from 'lucide-react';
 import { getYoutubeUrlValidationError, isYoutubePlaylistUrl } from '../utils/youtubeUrl';
 import {
   STUDENT_UPLOAD_ENABLED,
   STUDENT_YOUTUBE_INPUT_ENABLED,
 } from '../utils/studentInputModes';
-import { Card } from './ui/card';
 import { cn } from './ui/utils';
 
 const PHRASES = [
@@ -16,33 +15,33 @@ const PHRASES = [
   'Paste a YouTube URL',
 ];
 
+export type LearnerStartMode = 'course' | 'notes' | 'flashcards' | 'blanks' | 'quiz';
+
+const TABS: { id: LearnerStartMode; label: string }[] = [
+  { id: 'course', label: 'Start learning' },
+  { id: 'notes', label: 'Get notes' },
+  { id: 'flashcards', label: 'Flashcards' },
+  { id: 'blanks', label: 'Fill in the blanks' },
+  { id: 'quiz', label: 'Take a sample test' },
+];
+
 type StudentMasterInputProps = {
   className?: string;
-  /** Where to send the learner after submit when already signed in. */
   signedIn?: boolean;
 };
 
-function YoutubeGlyph({ className }: { className?: string }) {
+function VideoGlyph() {
   return (
-    <svg viewBox="0 0 24 24" className={className} aria-hidden>
-      <path
-        d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46A2.78 2.78 0 0 0 1.46 6.42 29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58 2.78 2.78 0 0 0 1.95 1.96C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" fill="currentColor" stroke="none" />
+    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <rect x="2" y="5" width="20" height="14" rx="2" />
+      <path d="M10 9l5 3-5 3z" />
     </svg>
   );
 }
 
-/**
- * Compact master input — YouTube icon, typewriter placeholder, upload, Start.
- */
 export function StudentMasterInput({ className, signedIn = true }: StudentMasterInputProps) {
   const navigate = useNavigate();
+  const [mode, setMode] = useState<LearnerStartMode>('course');
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [focused, setFocused] = useState(false);
@@ -107,93 +106,116 @@ export function StudentMasterInput({ className, signedIn = true }: StudentMaster
     if (!signedIn) {
       navigate('/signin', {
         state: isYoutubePlaylistUrl(trimmed)
-          ? { playlistUrl: trimmed }
-          : { youtubeUrl: trimmed },
+          ? { playlistUrl: trimmed, startTool: mode }
+          : { youtubeUrl: trimmed, startTool: mode },
       });
       return;
     }
-    navigate('/course-builder', { state: { youtubeUrl: trimmed } });
+    if (mode === 'quiz') {
+      navigate('/quiz-setup', { state: { youtubeUrl: trimmed } });
+      return;
+    }
+    navigate('/course-builder', { state: { youtubeUrl: trimmed, startTool: mode } });
   };
 
   if (!STUDENT_YOUTUBE_INPUT_ENABLED) return null;
 
   return (
-    <Card className={cn('overflow-hidden p-4 sm:p-5', className)}>
+    <div className={className}>
       <form
         onSubmit={submitYoutube}
         className={cn(
-          'flex h-11 w-full items-stretch overflow-hidden rounded-[10px] border border-border bg-background',
-          'transition-[border-color,box-shadow] focus-within:border-border/80',
-          'focus-within:shadow-[0_0_0_3px_rgba(0,0,0,0.06)] dark:focus-within:shadow-[0_0_0_3px_rgba(255,255,255,0.04)]',
+          'flex flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)]',
+          'shadow-[var(--shadow)] transition-[border-color,box-shadow] duration-150',
+          'focus-within:border-[var(--ink-faint)] focus-within:shadow-[0_0_0_3px_var(--accent-soft)]',
         )}
       >
-        <div className="flex shrink-0 items-center px-3.5 text-muted-foreground/70" aria-hidden>
-          <YoutubeGlyph className="size-[15px]" />
-        </div>
-
-        <div className="relative flex min-w-0 flex-1 items-center overflow-hidden">
-          <input
-            type="url"
-            value={youtubeUrl}
-            onChange={(e) => {
-              setYoutubeUrl(e.target.value);
-              if (error) setError(null);
-            }}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
-            placeholder=" "
-            className="relative z-[1] w-full bg-transparent py-3 text-[13px] text-foreground outline-none caret-foreground placeholder:text-transparent"
-            aria-label="YouTube URL or topic"
-            autoComplete="off"
-          />
-          {showTypewriter && (
-            <div
-              className="pointer-events-none absolute inset-y-0 left-0 z-0 flex items-center gap-0.5 whitespace-nowrap"
-              aria-hidden
-            >
-              <span className="text-[13px] text-muted-foreground/55">{phText}</span>
-              <span className="inline-block h-3.5 w-[1.5px] animate-pulse rounded-sm bg-muted-foreground/55" />
-            </div>
-          )}
-        </div>
-
-        <div className="my-auto h-[22px] w-px shrink-0 bg-border" aria-hidden />
-
-        <button
-          type="button"
-          title={STUDENT_UPLOAD_ENABLED ? 'Upload' : 'Upload coming soon'}
-          disabled={!STUDENT_UPLOAD_ENABLED}
-          onClick={() => STUDENT_UPLOAD_ENABLED && fileRef.current?.click()}
-          className={cn(
-            'flex size-11 shrink-0 items-center justify-center text-muted-foreground/70 transition-colors',
-            'hover:bg-accent/50 hover:text-foreground',
-            'disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-muted-foreground/70',
-          )}
-        >
-          <Upload size={15} strokeWidth={1.8} />
-        </button>
-        {STUDENT_UPLOAD_ENABLED && (
-          <input ref={fileRef} type="file" className="hidden" accept="image/*,audio/*,video/*,.pdf,.txt,.md" />
+        {signedIn && (
+          <div className="flex items-center gap-1 overflow-x-auto px-3 pb-2 pt-2.5 [scrollbar-width:none]">
+            {TABS.map((tab) => {
+              const active = mode === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setMode(tab.id)}
+                  className="shrink-0 rounded-full px-3 py-1.5 text-[11px] transition-colors"
+                  style={{
+                    fontWeight: active ? 700 : 600,
+                    color: active ? 'var(--ink)' : 'var(--ink-faint)',
+                    background: active ? 'var(--fill)' : 'transparent',
+                  }}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
         )}
 
-        <div className="my-auto h-[22px] w-px shrink-0 bg-border" aria-hidden />
+        <div className="flex items-center">
+          <div className="flex shrink-0 items-center justify-center px-3.5 py-0 pl-3.5 text-[var(--ink-faint)]">
+            <VideoGlyph />
+          </div>
 
-        <button
-          type="submit"
-          className="inline-flex h-11 shrink-0 items-center gap-1.5 bg-foreground px-[18px] text-[13px] font-semibold text-background transition-opacity hover:opacity-85"
-        >
-          Start
-          <kbd className="inline-flex size-5 items-center justify-center rounded bg-black/14 text-[11px] font-medium text-background dark:bg-white/20">
-            ↵
-          </kbd>
-        </button>
+          <div className="relative flex min-w-0 flex-1 items-center overflow-hidden">
+            <input
+              type="url"
+              value={youtubeUrl}
+              onChange={(e) => {
+                setYoutubeUrl(e.target.value);
+                if (error) setError(null);
+              }}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
+              placeholder=" "
+              className="relative z-[1] w-full bg-transparent py-[13px] text-[13px] outline-none"
+              style={{
+                fontFamily: 'var(--mono)',
+                color: 'var(--ink)',
+                caretColor: 'var(--accent)',
+              }}
+              aria-label="YouTube URL or topic"
+              autoComplete="off"
+            />
+            {showTypewriter && (
+              <div className="pointer-events-none absolute inset-y-0 left-0 z-0 flex items-center gap-0.5 whitespace-nowrap" aria-hidden>
+                <span className="text-[13px] text-[var(--ink-faint)]" style={{ fontFamily: 'var(--mono)' }}>{phText}</span>
+                <span className="inline-block h-[13px] w-[1.5px] animate-pulse bg-[var(--ink-faint)]" />
+              </div>
+            )}
+          </div>
+
+          <div className="h-[22px] w-px shrink-0 bg-[var(--border)]" aria-hidden />
+
+          <button
+            type="button"
+            title={STUDENT_UPLOAD_ENABLED ? 'Upload' : 'Upload coming soon'}
+            disabled={!STUDENT_UPLOAD_ENABLED}
+            onClick={() => STUDENT_UPLOAD_ENABLED && fileRef.current?.click()}
+            className="flex size-[46px] shrink-0 items-center justify-center text-[var(--ink-faint)] transition-colors hover:bg-[var(--border)] hover:text-[var(--ink)] disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <Upload size={16} strokeWidth={1.8} />
+          </button>
+          {STUDENT_UPLOAD_ENABLED && (
+            <input ref={fileRef} type="file" className="hidden" accept="image/*,audio/*,video/*,.pdf,.txt,.md" />
+          )}
+
+          <button
+            type="submit"
+            className="mx-1.5 inline-flex size-[34px] shrink-0 items-center justify-center rounded-full bg-[var(--ink)] text-[var(--bg)] transition-opacity hover:opacity-[0.82] active:scale-95"
+            aria-label="Start"
+          >
+            <ArrowRight size={15} strokeWidth={2.2} />
+          </button>
+        </div>
       </form>
 
       {error && (
-        <p className="mt-2 text-xs text-[var(--brand)]" role="alert">
+        <p className="mt-2 text-xs text-[var(--accent)]" role="alert">
           {error}
         </p>
       )}
-    </Card>
+    </div>
   );
 }

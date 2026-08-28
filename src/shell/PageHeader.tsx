@@ -18,7 +18,7 @@ export function PageHeader({ label, title, description, actions }: PageHeaderPro
     >
       <div>
         {label && <p className="text-label mb-2 text-muted-foreground">{label}</p>}
-        <h1 className="font-serif-display text-2xl tracking-tight text-foreground sm:text-3xl">{title}</h1>
+        <h1 className="text-[20px] font-bold tracking-[-0.015em] text-[var(--ink)]">{title}</h1>
         {description && <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">{description}</p>}
       </div>
       {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}

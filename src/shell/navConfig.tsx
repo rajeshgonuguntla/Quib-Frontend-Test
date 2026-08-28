@@ -2,13 +2,14 @@ import type { ReactNode } from 'react';
 import {
   BarChart3,
   BookMarked,
-  Compass,
   GraduationCap,
   HelpCircle,
   Home,
+  LineChart,
+  Search,
   Settings,
   Shield,
-  Sparkles,
+  TrendingUp,
 } from 'lucide-react';
 
 export type NavItem = {
@@ -26,50 +27,58 @@ export type NavGroup = {
 
 export const NAV_GROUPS: NavGroup[] = [
   {
-    label: 'Menu',
+    label: '',
     items: [
-      { id: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: <Home size={15} /> },
-      { id: 'discover', label: 'Discover', path: '/discover', icon: <Compass size={15} /> },
-      { id: 'upgrade', label: 'Upgrade', path: '/upgrade', icon: <Sparkles size={15} /> },
-      { id: 'studio', label: 'Studio', path: '/educator-studio', icon: <GraduationCap size={15} /> },
-      { id: 'my-courses-educator', label: 'My courses', path: '/educator-courses', icon: <BookMarked size={15} /> },
-      { id: 'educator-analytics', label: 'Analytics', path: '/educator-analytics', icon: <BarChart3 size={15} /> },
-      { id: 'admin-insights', label: 'Platform insights', path: '/admin/insights', icon: <Shield size={15} /> },
+      { id: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: <Home size={17} /> },
+      { id: 'browse', label: 'Browse', path: '/discover?tab=courses', icon: <Search size={17} /> },
+      { id: 'progress', label: 'Progress', path: '/library?tab=in_progress', icon: <LineChart size={17} /> },
+      { id: 'admin-insights', label: 'Platform insights', path: '/admin/insights', icon: <Shield size={17} /> },
+      { id: 'creators', label: 'Creators', path: '/discover?tab=creators', icon: <TrendingUp size={17} /> },
     ],
   },
   {
-    label: 'Library',
+    label: '',
     items: [
-      { id: 'library', label: 'Library', path: '/library', icon: <BookMarked size={15} />, badgeKey: 'total' },
+      { id: 'settings', label: 'Settings', path: '/settings', icon: <Settings size={17} /> },
+      { id: 'help', label: 'Help', path: '/settings?tab=help', icon: <HelpCircle size={17} /> },
     ],
   },
   {
-    label: 'Account',
+    label: 'Create',
     items: [
-      { id: 'settings', label: 'Settings', path: '/settings', icon: <Settings size={15} /> },
-      { id: 'help', label: 'Help', path: '/settings?tab=help', icon: <HelpCircle size={15} /> },
+      { id: 'studio', label: 'Studio', path: '/educator-studio', icon: <GraduationCap size={17} /> },
+      { id: 'my-courses-educator', label: 'My courses', path: '/educator-courses', icon: <BookMarked size={17} /> },
+      { id: 'educator-analytics', label: 'Analytics', path: '/educator-analytics', icon: <BarChart3 size={17} /> },
     ],
   },
 ];
 
+function discoverTab(search: string): string | null {
+  return new URLSearchParams(search.startsWith('?') ? search.slice(1) : search).get('tab');
+}
+
 export function isNavItemActive(pathname: string, search: string, id: string, path: string): boolean {
   if (id === 'dashboard') return pathname === '/dashboard' || pathname === '/home';
-  if (id === 'discover') {
-    return pathname.startsWith('/discover')
-      || pathname.startsWith('/browse-courses')
-      || pathname.startsWith('/creators')
-      || pathname.startsWith('/educator/');
+  if (id === 'browse') {
+    if (pathname.startsWith('/browse-courses')) return true;
+    if (pathname.startsWith('/discover')) return discoverTab(search) !== 'creators';
+    return false;
   }
-  if (id === 'studio') return pathname.startsWith('/educator-studio');
-  if (id === 'my-courses-educator') return pathname.startsWith('/educator-courses');
-  if (id === 'educator-analytics') return pathname.startsWith('/educator-analytics');
-  if (id === 'admin-insights') return pathname.startsWith('/admin/insights');
-  if (id === 'library') {
+  if (id === 'creators') {
+    return pathname.startsWith('/creators')
+      || pathname.startsWith('/educator/')
+      || (pathname.startsWith('/discover') && discoverTab(search) === 'creators');
+  }
+  if (id === 'progress') {
     return pathname.startsWith('/library')
       || pathname.startsWith('/my-courses')
       || pathname.startsWith('/my-quizzes')
       || pathname.startsWith('/certificates');
   }
+  if (id === 'studio') return pathname.startsWith('/educator-studio');
+  if (id === 'my-courses-educator') return pathname.startsWith('/educator-courses');
+  if (id === 'educator-analytics') return pathname.startsWith('/educator-analytics');
+  if (id === 'admin-insights') return pathname.startsWith('/admin/insights');
   if (id === 'settings') return pathname.startsWith('/settings') && !search.includes('tab=');
   if (id === 'help') return pathname.startsWith('/settings') && search.includes('tab=help');
   if (id === 'upgrade') return pathname.startsWith('/upgrade');
@@ -87,14 +96,14 @@ const ROUTE_META: Record<string, RouteMeta> = {
   '/discover': { title: 'Discover', section: 'Catalog', parent: { label: 'Dashboard', path: '/dashboard' } },
   '/browse-courses': { title: 'Discover', section: 'Catalog', parent: { label: 'Dashboard', path: '/dashboard' } },
   '/creators': { title: 'Discover', section: 'Catalog', parent: { label: 'Dashboard', path: '/dashboard' } },
-  '/library': { title: 'Library', section: 'Library', parent: { label: 'Dashboard', path: '/dashboard' } },
-  '/my-courses': { title: 'Library', section: 'Library', parent: { label: 'Dashboard', path: '/dashboard' } },
-  '/my-quizzes': { title: 'Library', section: 'Library', parent: { label: 'Dashboard', path: '/dashboard' } },
+  '/library': { title: 'Progress', section: 'Library', parent: { label: 'Dashboard', path: '/dashboard' } },
+  '/my-courses': { title: 'Progress', section: 'Library', parent: { label: 'Dashboard', path: '/dashboard' } },
+  '/my-quizzes': { title: 'Progress', section: 'Library', parent: { label: 'Dashboard', path: '/dashboard' } },
   '/certificates': { title: 'Certificates', section: 'Library', parent: { label: 'Dashboard', path: '/dashboard' } },
   '/educator-studio': { title: 'Studio', section: 'Create', parent: { label: 'Dashboard', path: '/dashboard' } },
   '/educator-courses': { title: 'My courses', section: 'Create', parent: { label: 'Dashboard', path: '/dashboard' } },
   '/educator-analytics': { title: 'Analytics', section: 'Insights', parent: { label: 'Dashboard', path: '/dashboard' } },
-  '/admin/insights': { title: 'Platform insights', section: 'Admin', parent: { label: 'Dashboard', path: '/dashboard' } },
+  '/admin/insights': { title: 'Platform Insights', section: 'Admin', parent: { label: 'Dashboard', path: '/dashboard' } },
   '/settings': { title: 'Settings', section: 'Account', parent: { label: 'Dashboard', path: '/dashboard' } },
   '/upgrade': { title: 'Upgrade', section: 'Unlimited', parent: { label: 'Dashboard', path: '/dashboard' } },
   '/upgrade/success': { title: 'Subscription', section: 'Unlimited', parent: { label: 'Upgrade', path: '/upgrade' } },
@@ -107,12 +116,12 @@ export function getRouteMeta(pathname: string): RouteMeta {
     return { title: 'Edit course', section: 'Create', parent: { label: 'My courses', path: '/educator-courses' } };
   }
   if (pathname.startsWith('/educator/')) {
-    return { title: 'Creator', section: 'Discover', parent: { label: 'Discover', path: '/discover?tab=creators' } };
+    return { title: 'Creator', section: 'Discover', parent: { label: 'Creators', path: '/discover?tab=creators' } };
   }
   if (pathname.startsWith('/quiz-setup/')) return ROUTE_META['/quiz-setup']!;
   if (pathname.startsWith('/playlist-setup/')) return ROUTE_META['/playlist-setup']!;
   if (pathname.startsWith('/course-details')) {
-    return { title: 'Course', section: 'Catalog', parent: { label: 'Discover', path: '/discover?tab=courses' } };
+    return { title: 'Course', section: 'Catalog', parent: { label: 'Browse', path: '/discover?tab=courses' } };
   }
   if (pathname.startsWith('/results/')) {
     return { title: 'Results', section: 'Quiz', parent: { label: 'Dashboard', path: '/dashboard' } };
