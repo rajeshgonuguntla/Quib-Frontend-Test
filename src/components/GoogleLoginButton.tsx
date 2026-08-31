@@ -3,9 +3,10 @@ import { GoogleLogin, type CredentialResponse } from '@react-oauth/google';
 import axios from 'axios';
 import { useLocation, useNavigate } from 'react-router';
 import { useUserProfile } from '../context/UserProfileContext';
-import { fetchUserProfileWithToken } from '../api/userApi';
+import { fetchUserProfile, fetchUserProfileWithToken } from '../api/userApi';
 import { fetchOnboarding } from '../api/catalogApi';
-import { clearToken, notifyAuthChanged } from '../auth';
+import { clearLocalSession, clearToken, notifyAuthChanged, setSession } from '../auth';
+import { logClientError } from '../utils/logClientError';
 import { INTERESTS_KEY, EDUCATORS_KEY } from './Onboarding';
 import type { UserProfile } from '../types/userProfile';
 import type { OnboardingState } from '../types/catalog';
@@ -19,9 +20,11 @@ import {
   type SignInIntent,
 } from '../utils/signInIntent';
 import { peekReferralCode, rememberReferralCode } from '../utils/referralCode';
+import { safeAppPath } from '../utils/safeAppPath';
 
 type GoogleAuthResponse = {
-  token: string;
+  token?: string;
+  expiresAt?: number;
   profile?: UserProfile | null;
   onboarding?: OnboardingState | null;
 };
@@ -69,7 +72,7 @@ function GoogleLoginButton({
     }
 
     try {
-      clearToken();
+      clearLocalSession();
 
       const referralCode = peekReferralCode()
         ?? new URLSearchParams(location.search).get('ref')
@@ -82,14 +85,22 @@ function GoogleLoginButton({
       });
 
       const jwt = res.data.token;
-      // Prefer bootstrap payload from auth; fall back for older backends.
+      const expiresAt = res.data.expiresAt;
+      if (typeof expiresAt === 'number') {
+        setSession(expiresAt);
+      } else if (jwt) {
+        localStorage.setItem('token', jwt);
+        notifyAuthChanged();
+      }
+
       let profile = res.data.profile ?? null;
       let onboarding = res.data.onboarding ?? null;
 
       if (!profile || !onboarding) {
-        localStorage.setItem('token', jwt);
         const [fallbackProfile, fallbackOnboarding] = await Promise.all([
-          profile ? Promise.resolve(profile) : fetchUserProfileWithToken(jwt),
+          profile ? Promise.resolve(profile) : jwt
+            ? fetchUserProfileWithToken(jwt)
+            : fetchUserProfile(),
           onboarding ? Promise.resolve(onboarding) : fetchOnboarding().catch(() => null),
         ]);
         profile = fallbackProfile;
@@ -108,15 +119,13 @@ function GoogleLoginButton({
         return;
       }
 
-      localStorage.setItem('token', jwt);
-      notifyAuthChanged();
       setProfile(profile);
 
       const effectiveIntent: SignInIntent =
         CREATOR_FLOW_ENABLED && isEducatorAccount(profile) ? 'creator' : intent;
       setSignInIntent(effectiveIntent);
 
-      let destination = location.state?.returnTo as string | undefined;
+      let destination = safeAppPath(location.state?.returnTo);
 
       if (effectiveIntent === 'student' && destination && isEducatorRoute(destination)) {
         destination = undefined;
@@ -144,7 +153,7 @@ function GoogleLoginButton({
         },
       });
     } catch (error) {
-      console.error('Login Failed', error);
+      logClientError('Login failed', error);
       clearToken();
       setSignInError('Sign-in failed. Please try again.');
     } finally {

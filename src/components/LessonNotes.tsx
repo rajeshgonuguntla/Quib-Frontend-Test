@@ -89,9 +89,9 @@ function renderTextBlock(text: string, theme: NotesTheme) {
         <h3
           key={key++}
           className="text-[0.95rem] font-[600] mt-5 mb-2 first:mt-0"
-          style={{ color: theme.text, fontFamily: 'var(--serif)' }}
+          style={{ color: theme.text, fontFamily: 'Inter, system-ui, sans-serif' }}
         >
-          {line.slice(4).trim()}
+          {formatInline(line.slice(4).trim(), theme)}
         </h3>,
       );
       continue;
@@ -100,8 +100,12 @@ function renderTextBlock(text: string, theme: NotesTheme) {
     if (line.startsWith('## ')) {
       flushList();
       nodes.push(
-        <h2 key={key++} className="text-[1.05rem] font-[600] mt-5 mb-2" style={{ color: theme.text }}>
-          {line.slice(3).trim()}
+        <h2
+          key={key++}
+          className="text-[1.05rem] font-[600] mt-5 mb-2 first:mt-0"
+          style={{ color: theme.text, fontFamily: 'Inter, system-ui, sans-serif' }}
+        >
+          {formatInline(line.slice(3).trim(), theme)}
         </h2>,
       );
       continue;

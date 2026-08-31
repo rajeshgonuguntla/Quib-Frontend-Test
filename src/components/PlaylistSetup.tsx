@@ -4,6 +4,7 @@ import axios from 'axios';
 import { ShellPage } from '../shell/ShellPage';
 import { Youtube, Clock, Play, CheckCircle, AlertCircle, ArrowRight } from 'lucide-react';
 import { parseRawQuizJson, questionsFromRawQuiz } from '../utils/quizParse';
+import { useTheme, getC } from './ThemeContext';
 
 interface QuizResponse {
   quizId?: string;

@@ -16,6 +16,8 @@ import {
   type ModuleQuizResult,
 } from '../api/courseApi';
 import { isTokenValid, useAuthSessionKey } from '../auth';
+import { logClientError } from '../utils/logClientError';
+import { safeAppPath } from '../utils/safeAppPath';
 import { isTrialExhausted } from '../api/billingApi';
 import { useUserProfile } from '../context/UserProfileContext';
 import { useTheme, getC } from './ThemeContext';
@@ -42,6 +44,7 @@ import {
   wasCourseLaunched,
 } from '../utils/courseLaunch';
 import type { CourseGenerationOptions, EditableCourse } from '../types/courseGeneration';
+import { studyToolFromStartMode } from './StudentMasterInput';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -260,6 +263,7 @@ function LearningMode({
   chatSignedIn,
   onChatSignInRequired,
   chatSessionKey,
+  initialStudyTab = 'overview',
 }: {
   course: Course;
   courseId: string;
@@ -272,6 +276,7 @@ function LearningMode({
   chatSignedIn: boolean;
   onChatSignInRequired: () => void;
   chatSessionKey: string;
+  initialStudyTab?: StudyTab;
 }) {
   const { isDark, toggleTheme } = useTheme();
   const C = getC(isDark);
@@ -287,7 +292,7 @@ function LearningMode({
   const [activeLessonId, setActiveLessonId] = useState<string>(firstLessonId);
   const [activeQuizModuleId, setActiveQuizModuleId] = useState<string | null>(null);
   const [activeAssignment, setActiveAssignment] = useState(false);
-  const [studyTab, setStudyTab] = useState<StudyTab>('overview');
+  const [studyTab, setStudyTab] = useState<StudyTab>(initialStudyTab);
   const [submodulesOpen, setSubmodulesOpen] = useState(true);
   const [tutorCollapsed, setTutorCollapsed] = useState(false);
   const [tutorWidth, setTutorWidth] = useState(400);
@@ -319,7 +324,7 @@ function LearningMode({
     try {
       await downloadCoursePdf(course);
     } catch (err) {
-      console.error('Course download failed', err);
+      logClientError('Course download failed', err);
       window.alert('Unable to download the course. Please try again.');
     } finally {
       setDownloadBusy(false);
@@ -1292,7 +1297,9 @@ export function CourseDetails() {
   const videoUrls: string[] | undefined = location.state?.videoUrls;
   const generationOptions: CourseGenerationOptions | undefined = location.state?.generationOptions;
   const courseId: string | undefined = courseIdParam ?? location.state?.courseId;
-  const returnTo: string | undefined = location.state?.from;
+  const startTool: string | undefined = location.state?.startTool;
+  const requestedStudyTool = studyToolFromStartMode(startTool);
+  const returnTo = safeAppPath(location.state?.from);
 
   const handleBack = () => {
     if (returnTo) {
@@ -1331,7 +1338,7 @@ export function CourseDetails() {
     try {
       await downloadCoursePdf(course);
     } catch (err) {
-      console.error('Course download failed', err);
+      logClientError('Course download failed', err);
       window.alert('Unable to download the course. Please try again.');
     } finally {
       setDownloadBusy(false);
@@ -1556,7 +1563,16 @@ export function CourseDetails() {
         // Picture 1 (overview) only before the learner has started — resume in the lesson player.
         const id = data.courseId ?? courseId;
         if (id && isTokenValid()) {
-          if (wasCourseLaunched(id)) {
+          const openStudy = studyToolFromStartMode(location.state?.startTool);
+          if (openStudy) {
+            try {
+              await enrollCourse(id);
+            } catch {
+              /* owner is enrolled on generate; catalog learners may already be enrolled */
+            }
+            markCourseLaunched(id);
+            setLearningMode(true);
+          } else if (wasCourseLaunched(id)) {
             setLearningMode(true);
           } else {
             try {
@@ -1760,6 +1776,7 @@ export function CourseDetails() {
         chatSignedIn={chatSignedIn}
         onChatSignInRequired={handleChatSignIn}
         chatSessionKey={chatSessionKey}
+        initialStudyTab={requestedStudyTool ?? 'overview'}
       />
     );
   }

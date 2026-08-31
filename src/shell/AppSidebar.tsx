@@ -1,16 +1,8 @@
 import { useNavigate } from 'react-router';
-import { ChevronRight } from 'lucide-react';
-import { QuibLogoBadge } from '../components/QuibLogo';
-import { clearToken } from '../auth';
-import { useUserProfile } from '../context/UserProfileContext';
 import { SidebarNavItem } from '../components/SidebarNavItem';
-import { UserAvatar } from '../components/UserAvatar';
-import { getFirstName } from '../utils/userDisplay';
-import { getShellTheme } from '../utils/shellTheme';
-import { useTheme } from '../components/ThemeContext';
-import { ScrollArea } from '../components/ui/scroll-area';
 import { NAV_GROUPS, isNavItemActive, type NavItem } from './navConfig';
-import { clearSignInIntent, filterNavGroups, isEducatorExperience } from '../utils/signInIntent';
+import { filterNavGroups, isEducatorExperience } from '../utils/signInIntent';
+import { useUserProfile } from '../context/UserProfileContext';
 import { useShell } from './ShellContext';
 
 type AppSidebarProps = {
@@ -33,8 +25,6 @@ function NavGroupBlock({
   onNavigate?: () => void;
 }) {
   const navigate = useNavigate();
-  const { isDark } = useTheme();
-  const T = getShellTheme(isDark);
   const { libraryStats } = useShell();
 
   const go = (path: string) => {
@@ -43,9 +33,21 @@ function NavGroupBlock({
   };
 
   return (
-    <div className="mb-5">
-      <p className="text-label mb-1.5 px-3 text-muted-foreground">{label}</p>
-      <div className="flex flex-col gap-0.5">
+    <div className={label ? 'mt-6 shrink-0' : 'flex min-h-0 flex-1 flex-col'}>
+      {label ? (
+        <p
+          className="mb-2 px-2.5 uppercase"
+          style={{
+            fontFamily: 'var(--mono)',
+            fontSize: 10,
+            letterSpacing: '0.06em',
+            color: 'var(--ink-faint)',
+          }}
+        >
+          {label}
+        </p>
+      ) : null}
+      <div className={label ? 'flex flex-col gap-1.5' : 'flex flex-1 flex-col justify-between'}>
         {items.map((item) => {
           const badgeCount = item.badgeKey === 'total'
             ? (libraryStats.total || libraryStats.inProgress + libraryStats.saved + libraryStats.completed)
@@ -56,7 +58,6 @@ function NavGroupBlock({
           return (
             <SidebarNavItem
               key={item.id}
-              theme={T}
               item={{ ...item, badge }}
               active={isNavItemActive(pathname, search, item.id, item.path)}
               onClick={() => go(item.path)}
@@ -69,65 +70,22 @@ function NavGroupBlock({
 }
 
 export function AppSidebar({ pathname, search, onNavigate }: AppSidebarProps) {
-  const navigate = useNavigate();
-  const { profile, setProfile } = useUserProfile();
-  const firstName = getFirstName(profile);
-  const navGroups = filterNavGroups(NAV_GROUPS, isEducatorExperience(profile), profile);
-
-  const handleSignOut = () => {
-    clearToken();
-    clearSignInIntent();
-    setProfile(null);
-    navigate('/signin');
-    onNavigate?.();
-  };
+  const { profile } = useUserProfile();
+  const navGroups = filterNavGroups(NAV_GROUPS, isEducatorExperience(profile), profile)
+    .filter((group) => group.items.length > 0);
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex h-14 shrink-0 items-center gap-3 border-b border-border px-4">
-        <QuibLogoBadge size={28} className="size-7 shrink-0" />
-        <div>
-          <span className="text-sm font-semibold tracking-tight text-foreground">Cuib</span>
-          <span className="text-label -mt-0.5 block text-muted-foreground">Platform</span>
-        </div>
-      </div>
-
-      <ScrollArea className="flex-1 px-2 py-4">
-        {navGroups.map((group) => (
-          <NavGroupBlock
-            key={group.label}
-            label={group.label}
-            items={group.items}
-            pathname={pathname}
-            search={search}
-            onNavigate={onNavigate}
-          />
-        ))}
-      </ScrollArea>
-
-      <div className="shrink-0 border-t border-border p-3">
-        <button
-          type="button"
-          onClick={() => { navigate('/settings'); onNavigate?.(); }}
-          className="flex w-full items-center gap-3 rounded-md px-2 py-2 text-left transition-colors hover:bg-accent"
-        >
-          <UserAvatar profile={profile} size="sm" />
-          <div className="min-w-0 flex-1">
-            <div className="truncate text-sm font-medium leading-none text-foreground">
-              {firstName || (profile ? 'Account' : 'Loading…')}
-            </div>
-            <div className="truncate text-xs text-muted-foreground">{profile?.email ?? 'Account'}</div>
-          </div>
-          <ChevronRight size={13} className="shrink-0 text-muted-foreground" />
-        </button>
-        <button
-          type="button"
-          onClick={handleSignOut}
-          className="mt-2 w-full rounded-md border border-border py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-        >
-          Sign out
-        </button>
-      </div>
+    <div className="flex h-full min-h-0 flex-col">
+      {navGroups.map((group) => (
+        <NavGroupBlock
+          key={group.label || group.items[0]?.id || 'menu'}
+          label={group.label}
+          items={group.items}
+          pathname={pathname}
+          search={search}
+          onNavigate={onNavigate}
+        />
+      ))}
     </div>
   );
 }

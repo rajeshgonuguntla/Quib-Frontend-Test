@@ -2,8 +2,10 @@ import { Navigate, Outlet, useLocation } from 'react-router';
 import { useEffect, useState } from 'react';
 import { useUserProfile } from './context/UserProfileContext';
 import { INTERESTS_KEY } from './components/Onboarding';
+import { safeAppPath } from './utils/safeAppPath';
 
 const TOKEN_KEY = 'token';
+const SESSION_EXP_KEY = 'cuib_session_exp';
 const AUTH_CHANGED_EVENT = 'quib-auth-changed';
 
 type JwtPayload = {
@@ -12,6 +14,13 @@ type JwtPayload = {
 
 function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
+}
+
+function sessionExp(): number | null {
+  const raw = localStorage.getItem(SESSION_EXP_KEY);
+  if (!raw) return null;
+  const exp = Number(raw);
+  return Number.isFinite(exp) ? exp : null;
 }
 
 /** Fires when login/logout changes the stored token (fresh chat sessions). */
@@ -23,7 +32,10 @@ export function notifyAuthChanged(): void {
 
 /** Changes on login, logout, or token swap — use as React key to reset ephemeral UI state. */
 export function useAuthSessionKey(): string {
-  const read = () => localStorage.getItem(TOKEN_KEY) ?? 'guest';
+  const read = () =>
+    localStorage.getItem(SESSION_EXP_KEY)
+    ?? localStorage.getItem(TOKEN_KEY)
+    ?? 'guest';
   const [sessionKey, setSessionKey] = useState(read);
 
   useEffect(() => {
@@ -39,8 +51,23 @@ export function useAuthSessionKey(): string {
   return sessionKey;
 }
 
-export function clearToken(): void {
+/** Drop JS session flags. Does not wait on the logout request (avoids racing a new login cookie). */
+export function clearLocalSession(): void {
   localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(SESSION_EXP_KEY);
+  notifyAuthChanged();
+}
+
+export function clearToken(): void {
+  clearLocalSession();
+  void import('axios').then(({ default: axios }) =>
+    axios.post('/api/auth/logout').catch(() => undefined),
+  );
+}
+
+export function setSession(expiresAtEpochSeconds: number): void {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.setItem(SESSION_EXP_KEY, String(expiresAtEpochSeconds));
   notifyAuthChanged();
 }
 
@@ -67,6 +94,12 @@ function parseJwtPayload(token: string): JwtPayload | null {
 }
 
 export function isTokenValid(): boolean {
+  const exp = sessionExp();
+  const now = Math.floor(Date.now() / 1000);
+  if (exp != null) {
+    return exp > now;
+  }
+
   const token = getToken();
   if (!token) {
     return false;
@@ -77,17 +110,11 @@ export function isTokenValid(): boolean {
     return false;
   }
 
-  // Require exp to exist and be in the future for protected pages.
   if (typeof payload.exp !== 'number') {
     return false;
   }
 
-  const now = Math.floor(Date.now() / 1000);
-  if (payload.exp <= now) {
-    return false;
-  }
-
-  return true;
+  return payload.exp > now;
 }
 
 export function ProtectedRoute() {
@@ -95,8 +122,8 @@ export function ProtectedRoute() {
 
   if (!isTokenValid()) {
     clearToken();
-    const returnTo = `${location.pathname}${location.search}${location.hash}`;
-    return <Navigate to="/signin" replace state={{ returnTo }} />;
+    const returnTo = safeAppPath(`${location.pathname}${location.search}${location.hash}`);
+    return <Navigate to="/signin" replace state={returnTo ? { returnTo } : undefined} />;
   }
 
   return <Outlet />;

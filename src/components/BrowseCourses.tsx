@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Search } from 'lucide-react';
-import { fetchCourses } from '../api/catalogApi';
+import { fetchCourses, searchCourses } from '../api/catalogApi';
 import { CONTENT_LANGUAGES } from '../types/courseGeneration';
-import type { CatalogCourseSummary } from '../types/catalog';
+import type { CatalogCourseSummary, CourseSearchResult } from '../types/catalog';
 import { courseToCuratedCard } from '../utils/catalogMap';
 import { coursePriceLabel } from '../utils/coursePrice';
 import { PageHeader } from '../shell/PageHeader';
@@ -13,30 +13,53 @@ import { Card } from './ui/card';
 import { Badge } from './ui/badge';
 import { Skeleton } from './ui/skeleton';
 
+function searchHitToSummary(r: CourseSearchResult): CatalogCourseSummary {
+  return {
+    courseId: r.courseId,
+    title: r.title,
+    category: r.category ?? '',
+    channelName: r.channelName,
+    youtubeVideoId: r.youtubeVideoId,
+    durationLabel: r.durationLabel,
+    playlistUrl: r.playlistUrl,
+  };
+}
+
 export function BrowseCourses({ embedded = false }: { embedded?: boolean }) {
   const navigate = useNavigate();
   const [courses, setCourses] = useState<CatalogCourseSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [language, setLanguage] = useState('');
 
   useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedQuery(query.trim()), 280);
+    return () => window.clearTimeout(timer);
+  }, [query]);
+
+  useEffect(() => {
     setLoading(true);
-    fetchCourses({ limit: 100, language: language || undefined })
+    const load = debouncedQuery
+      ? searchCourses(debouncedQuery, 40).then((hits) => hits.map(searchHitToSummary))
+      : fetchCourses({ limit: 100, language: language || undefined });
+    load
       .then(setCourses)
       .catch(() => setCourses([]))
       .finally(() => setLoading(false));
-  }, [language]);
+  }, [language, debouncedQuery]);
 
-  const filtered = courses.filter((c) => {
-    if (!query.trim()) return true;
-    const q = query.toLowerCase();
-    return c.title?.toLowerCase().includes(q)
-      || c.category?.toLowerCase().includes(q)
-      || c.channelName?.toLowerCase().includes(q)
-      || c.ownerDisplayName?.toLowerCase().includes(q)
-      || c.educatorChannelTitle?.toLowerCase().includes(q);
-  });
+  const filtered = debouncedQuery
+    ? courses
+    : courses.filter((c) => {
+        if (!query.trim()) return true;
+        const q = query.toLowerCase();
+        return c.title?.toLowerCase().includes(q)
+          || c.category?.toLowerCase().includes(q)
+          || c.channelName?.toLowerCase().includes(q)
+          || c.ownerDisplayName?.toLowerCase().includes(q)
+          || c.educatorChannelTitle?.toLowerCase().includes(q);
+      });
 
   return (
     <div>
@@ -54,7 +77,7 @@ export function BrowseCourses({ embedded = false }: { embedded?: boolean }) {
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by title, category, or educator…"
+            placeholder="Search by title, creator, or playlist…"
             className="pl-9"
           />
         </div>

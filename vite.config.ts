@@ -59,12 +59,22 @@ import { defineConfig } from 'vitest/config';
     server: {
       port: 3000,
       open: true,
+      headers: {
+        'X-Frame-Options': 'DENY',
+        'Content-Security-Policy': "frame-ancestors 'none'",
+      },
       proxy: {
         '/api': {
           target: apiTarget,
           changeOrigin: true,
           secure: false,
         },
+      },
+    },
+    preview: {
+      headers: {
+        'X-Frame-Options': 'DENY',
+        'Content-Security-Policy': "frame-ancestors 'none'",
       },
     },
     test: {

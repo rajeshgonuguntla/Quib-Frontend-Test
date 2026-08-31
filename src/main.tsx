@@ -7,6 +7,7 @@
   axios.defaults.baseURL =
     import.meta.env.VITE_API_BASE_URL ||
     (import.meta.env.PROD ? 'https://quib-app-backend-944587700647.europe-west1.run.app' : '');
+  axios.defaults.withCredentials = true;
 
   axios.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
@@ -15,13 +16,14 @@
       rawUrl,
       config.baseURL || axios.defaults.baseURL || window.location.origin,
     );
-    const isGoogleAuthEndpoint = resolvedUrl.pathname.startsWith('/api/auth/google');
+    const isAuthCookieEndpoint = resolvedUrl.pathname.startsWith('/api/auth/google')
+      || resolvedUrl.pathname.startsWith('/api/auth/logout');
 
     const existingAuth =
       (typeof config.headers?.get === 'function' ? config.headers.get('Authorization') : null)
       ?? (config.headers as Record<string, string> | undefined)?.Authorization;
 
-  if (token && !isGoogleAuthEndpoint && !existingAuth) {
+  if (token && !isAuthCookieEndpoint && !existingAuth) {
     if (config.headers?.set) {
       config.headers.set('Authorization', `Bearer ${token}`);
     } else {

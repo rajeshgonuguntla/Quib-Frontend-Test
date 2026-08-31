@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { Check, Sparkles } from 'lucide-react';
-import { createUnlimitedCheckout, fetchBillingMe, isTrialExhausted } from '../api/billingApi';
+import { createUnlimitedCheckout, fetchBillingMe, hasPaidSubscription, isTrialExhausted } from '../api/billingApi';
 import { formatPriceCents } from '../utils/formatPrice';
 import { useUserProfile } from '../context/UserProfileContext';
 import { isAdminAccount } from '../utils/signInIntent';
@@ -30,7 +30,7 @@ export function Upgrade() {
     fetchBillingMe()
       .then((me) => {
         if (mounted) {
-          setAlreadyUnlimited(!!me.status && ['active', 'trialing', 'past_due'].includes(me.status));
+          setAlreadyUnlimited(hasPaidSubscription(me));
         }
       })
       .catch(() => undefined);

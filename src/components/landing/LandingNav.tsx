@@ -2,6 +2,7 @@ import { Link } from 'react-router';
 import { ThemeToggle } from '../ThemeToggle';
 import { QuibLogo } from '../QuibLogo';
 import { motion } from 'framer-motion';
+import { isTokenValid, useAuthSessionKey } from '../../auth';
 
 type LandingNavProps = {
   isDark: boolean;
@@ -11,6 +12,9 @@ type LandingNavProps = {
 const SHOW_GOVERNMENTS_NAV = false;
 
 export function LandingNav({ isDark }: LandingNavProps) {
+  const sessionKey = useAuthSessionKey();
+  const signedIn = sessionKey !== 'guest' && isTokenValid();
+
   return (
     <motion.nav
       initial={{ opacity: 0, y: -12 }}
@@ -49,15 +53,26 @@ export function LandingNav({ isDark }: LandingNavProps) {
 
       <div className="flex items-center gap-2">
         <ThemeToggle size="sm" />
-        <Link to="/signin" className="hidden text-sm text-[var(--landing-muted)] no-underline transition-colors hover:text-[var(--landing-fg)] sm:inline">
-          Log in
-        </Link>
-        <Link
-          to="/signin"
-          className="rounded-md bg-[var(--landing-fg)] px-3.5 py-1.5 text-sm font-medium text-[var(--landing-bg)] no-underline transition-opacity hover:opacity-90"
-        >
-          Sign up
-        </Link>
+        {signedIn ? (
+          <Link
+            to="/dashboard"
+            className="rounded-md bg-[var(--landing-fg)] px-3.5 py-1.5 text-sm font-medium text-[var(--landing-bg)] no-underline transition-opacity hover:opacity-90"
+          >
+            Dashboard
+          </Link>
+        ) : (
+          <>
+            <Link to="/signin" className="hidden text-sm text-[var(--landing-muted)] no-underline transition-colors hover:text-[var(--landing-fg)] sm:inline">
+              Log in
+            </Link>
+            <Link
+              to="/signin"
+              className="rounded-md bg-[var(--landing-fg)] px-3.5 py-1.5 text-sm font-medium text-[var(--landing-bg)] no-underline transition-opacity hover:opacity-90"
+            >
+              Sign up
+            </Link>
+          </>
+        )}
       </div>
     </motion.nav>
   );

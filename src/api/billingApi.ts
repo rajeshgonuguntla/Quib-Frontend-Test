@@ -25,6 +25,36 @@ export type ReferralStatus = {
   referred: { displayName: string; createdAt: string; complimentaryUntil?: string | null }[];
 };
 
+const PAID_STATUSES = new Set(['active', 'trialing', 'past_due']);
+
+/** Stripe subscription currently grants Unlimited — same gate as Upgrade.tsx. */
+export function hasPaidSubscription(me: BillingStatus): boolean {
+  return !!me.status && PAID_STATUSES.has(me.status);
+}
+
+export function hasActiveComplimentary(me: BillingStatus, now = Date.now()): boolean {
+  if (!me.complimentaryUntil) return false;
+  const until = Date.parse(me.complimentaryUntil);
+  return Number.isFinite(until) && until > now;
+}
+
+/** Hide checkout CTAs — paid Stripe or referral complimentary month. */
+export function hidesUpgradeCta(me: BillingStatus): boolean {
+  return hasPaidSubscription(me) || hasActiveComplimentary(me);
+}
+
+export function billingPlanLabel(me: BillingStatus | null, isAdmin: boolean): string {
+  if (isAdmin) return 'Admin';
+  if (!me) return 'Free plan';
+  if (hasPaidSubscription(me)) {
+    if (me.plan === 'annual') return 'Unlimited annual';
+    if (me.plan === 'monthly') return 'Unlimited monthly';
+    return 'Unlimited';
+  }
+  if (hasActiveComplimentary(me)) return 'Unlimited';
+  return 'Free plan';
+}
+
 export function isTrialExhausted(err: unknown): boolean {
   if (!axios.isAxiosError(err) || err.response?.status !== 402) {
     return false;
