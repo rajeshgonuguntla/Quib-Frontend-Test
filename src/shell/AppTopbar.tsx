@@ -95,10 +95,10 @@ export function AppTopbar() {
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              className="flex size-[34px] items-center justify-center rounded-full border border-[var(--border)] bg-[var(--fill)] outline-none transition-colors hover:border-[var(--ink-faint)]"
+              className="flex size-[34px] items-center justify-center overflow-hidden rounded-full border border-[var(--border)] bg-[var(--fill)] outline-none transition-colors hover:border-[var(--ink-faint)]"
               aria-label="Account menu"
             >
-              <UserAvatar profile={profile} size="md" variant="mono" />
+              <UserAvatar profile={profile} size="md" variant="mono" className="size-full" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-[220px] rounded-xl border-[var(--border)] p-2 shadow-[var(--shadow)]">

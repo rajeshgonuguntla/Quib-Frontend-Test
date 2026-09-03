@@ -126,7 +126,7 @@ export function Dashboard() {
         </h2>
         <button
           type="button"
-          onClick={() => navigate('/library?tab=in_progress')}
+          onClick={() => navigate('/discover?tab=courses')}
           className="flex items-center gap-1 pb-0.5 text-[var(--ink-faint)] transition-colors hover:text-[var(--accent)]"
           style={{ fontFamily: 'var(--mono)', fontSize: 12 }}
         >

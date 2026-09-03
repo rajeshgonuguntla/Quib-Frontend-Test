@@ -1,151 +1,142 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router';
-import { Search } from 'lucide-react';
-import { fetchCourses, searchCourses } from '../api/catalogApi';
-import { CONTENT_LANGUAGES } from '../types/courseGeneration';
-import type { CatalogCourseSummary, CourseSearchResult } from '../types/catalog';
-import { courseToCuratedCard } from '../utils/catalogMap';
-import { coursePriceLabel } from '../utils/coursePrice';
-import { PageHeader } from '../shell/PageHeader';
-import { StaggerChildren, StaggerItem } from '../shell/motion';
-import { Input } from './ui/input';
-import { Card } from './ui/card';
-import { Badge } from './ui/badge';
-import { Skeleton } from './ui/skeleton';
+import { useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router';
+import { fetchCourses, fetchEnrollments } from '../api/catalogApi';
+import type { CatalogCourseSummary, EnrollmentSummary } from '../types/catalog';
+import { BROWSE_FILTERS, matchesBrowseCard } from '../utils/browseFilter';
+import { ytThumb } from '../utils/catalogMap';
+import { CourseCard } from './CourseCard';
 
-function searchHitToSummary(r: CourseSearchResult): CatalogCourseSummary {
-  return {
-    courseId: r.courseId,
-    title: r.title,
-    category: r.category ?? '',
-    channelName: r.channelName,
-    youtubeVideoId: r.youtubeVideoId,
-    durationLabel: r.durationLabel,
-    playlistUrl: r.playlistUrl,
-  };
+function creatorName(c: CatalogCourseSummary): string {
+  return c.educatorChannelTitle || c.ownerDisplayName || c.channelName || 'Educator';
 }
 
-export function BrowseCourses({ embedded = false }: { embedded?: boolean }) {
+export function BrowseCourses() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [courses, setCourses] = useState<CatalogCourseSummary[]>([]);
+  const [enrollments, setEnrollments] = useState<EnrollmentSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
-  const [debouncedQuery, setDebouncedQuery] = useState('');
-  const [language, setLanguage] = useState('');
+  const [filter, setFilter] = useState('all');
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setDebouncedQuery(query.trim()), 280);
-    return () => window.clearTimeout(timer);
-  }, [query]);
-
-  useEffect(() => {
-    setLoading(true);
-    const load = debouncedQuery
-      ? searchCourses(debouncedQuery, 40).then((hits) => hits.map(searchHitToSummary))
-      : fetchCourses({ limit: 100, language: language || undefined });
-    load
-      .then(setCourses)
-      .catch(() => setCourses([]))
-      .finally(() => setLoading(false));
-  }, [language, debouncedQuery]);
-
-  const filtered = debouncedQuery
-    ? courses
-    : courses.filter((c) => {
-        if (!query.trim()) return true;
-        const q = query.toLowerCase();
-        return c.title?.toLowerCase().includes(q)
-          || c.category?.toLowerCase().includes(q)
-          || c.channelName?.toLowerCase().includes(q)
-          || c.ownerDisplayName?.toLowerCase().includes(q)
-          || c.educatorChannelTitle?.toLowerCase().includes(q);
+    let mounted = true;
+    Promise.all([
+      fetchCourses({ limit: 100 }),
+      fetchEnrollments().catch(() => [] as EnrollmentSummary[]),
+    ])
+      .then(([list, enrolled]) => {
+        if (!mounted) return;
+        setCourses(list);
+        setEnrollments(enrolled);
+      })
+      .catch(() => {
+        if (mounted) setCourses([]);
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
       });
+    return () => { mounted = false; };
+  }, []);
+
+  const progressByCourse = useMemo(() => {
+    const map = new Map<string, EnrollmentSummary>();
+    for (const e of enrollments) map.set(e.courseId, e);
+    return map;
+  }, [enrollments]);
+
+  const visible = useMemo(
+    () => courses.filter((c) => matchesBrowseCard({
+      filter,
+      query,
+      category: c.category ?? '',
+      title: c.title ?? '',
+      creator: creatorName(c),
+    })),
+    [courses, filter, query],
+  );
+
+  const clearFilters = () => {
+    setFilter('all');
+    setQuery('');
+  };
 
   return (
-    <div>
-      {!embedded && (
-        <PageHeader
-          label="Courses"
-          title="Browse"
-          description="Published courses from educators on Cuib."
-        />
-      )}
+    <section className="browse-hero">
+      <div className="eyebrow eyebrow-heading">Browse</div>
 
-      <div className="mb-8 flex flex-wrap items-center gap-4">
-        <div className="relative max-w-md flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
+      <div className="browse-toolbar">
+        <div className="search-box browse-search">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+            <circle cx="11" cy="11" r="7" />
+            <path d="M21 21l-4.3-4.3" />
+          </svg>
+          <input
+            type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by title, creator, or playlist…"
-            className="pl-9"
+            placeholder="Search courses, creators..."
+            aria-label="Search courses, creators"
           />
         </div>
-        <select
-          value={language}
-          onChange={(e) => setLanguage(e.target.value)}
-          className="h-9 rounded-md border border-border bg-background px-3 text-sm"
-        >
-          <option value="">All languages</option>
-          {CONTENT_LANGUAGES.map((l) => (
-            <option key={l.value} value={l.value}>{l.label}</option>
-          ))}
-        </select>
       </div>
 
+      <div className="filter-row">
+        {BROWSE_FILTERS.map((chip) => (
+          <button
+            key={chip.id}
+            type="button"
+            className={`filter-chip${filter === chip.id ? ' active' : ''}`}
+            onClick={() => setFilter(chip.id)}
+          >
+            {chip.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="card-divider" />
+
       {loading ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="course-grid">
           {Array.from({ length: 6 }).map((_, i) => (
-            <Card key={i} className="overflow-hidden">
-              <Skeleton className="aspect-video w-full rounded-none" />
-              <div className="space-y-2 p-4">
-                <Skeleton className="h-4 w-16" />
-                <Skeleton className="h-5 w-full" />
-                <Skeleton className="h-4 w-2/3" />
-              </div>
-            </Card>
+            <div key={i} className="course-card" style={{ minHeight: 220, pointerEvents: 'none' }} />
           ))}
         </div>
-      ) : filtered.length === 0 ? (
-        <Card className="py-16 text-center text-sm text-muted-foreground">No published courses yet.</Card>
+      ) : visible.length === 0 ? (
+        <div className="empty-state">
+          <div className="empty-glyph">[ ]</div>
+          <div className="empty-title">No matches</div>
+          <div className="empty-sub">Nothing here fits that filter and search combo. Try clearing one.</div>
+          <button type="button" className="empty-clear" onClick={clearFilters}>Clear filters</button>
+        </div>
       ) : (
-        <StaggerChildren className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((course) => {
-            const card = courseToCuratedCard(course);
+        <div className="course-grid">
+          {visible.map((course) => {
+            const enrolled = progressByCourse.get(course.courseId);
+            const total = enrolled?.lessonCount && enrolled.lessonCount > 0 ? enrolled.lessonCount : 0;
+            const progress = enrolled?.progress ?? 0;
             return (
-              <StaggerItem key={course.courseId}>
-                <Card
-                  className="group cursor-pointer overflow-hidden transition-colors hover:border-border/80"
-                  onClick={() => navigate(`/course-details/${course.courseId}`)}
-                >
-                  <div className="aspect-video overflow-hidden bg-muted">
-                    <img src={card.image} alt="" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]" />
-                  </div>
-                    <div className="p-4">
-                      <div className="flex flex-wrap gap-2">
-                        <Badge variant="muted">{card.tag}</Badge>
-                        {card.language && card.language !== 'en' && (
-                          <Badge variant="outline">{card.language.toUpperCase()}</Badge>
-                        )}
-                        <Badge variant="outline">{coursePriceLabel(course)}</Badge>
-                      </div>
-                      <h2 className="mt-2 text-sm font-medium leading-snug">{card.title}</h2>
-                      <div className="mt-2 flex items-center gap-2">
-                        {card.instructorAvatar ? (
-                          <img src={card.instructorAvatar} alt="" className="size-5 rounded-full object-cover" />
-                        ) : null}
-                        <p className="text-xs text-muted-foreground">{card.instructor}</p>
-                      </div>
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      {course.moduleCount ?? '—'} modules · {course.difficulty ?? 'Mixed'}
-                    </p>
-                  </div>
-                </Card>
-              </StaggerItem>
+              <CourseCard
+                key={course.courseId}
+                item={{
+                  id: course.courseId,
+                  title: course.title,
+                  creator: creatorName(course),
+                  tag: course.category || 'General',
+                  progress,
+                  lessonsDone: total ? Math.round((progress / 100) * total) : 0,
+                  lessonsTotal: total,
+                  current: enrolled?.status === 'in-progress' || progress > 0,
+                  image: course.youtubeVideoId ? ytThumb(course.youtubeVideoId) : undefined,
+                }}
+                onOpen={() => navigate(`/course-details/${course.courseId}`, {
+                  state: { from: `${location.pathname}${location.search}` },
+                })}
+              />
             );
           })}
-        </StaggerChildren>
+        </div>
       )}
-    </div>
+    </section>
   );
 }

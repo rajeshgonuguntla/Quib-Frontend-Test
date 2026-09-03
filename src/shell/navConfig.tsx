@@ -31,7 +31,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { id: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: <Home size={17} /> },
       { id: 'browse', label: 'Browse', path: '/discover?tab=courses', icon: <Search size={17} /> },
-      { id: 'progress', label: 'Progress', path: '/library?tab=in_progress', icon: <LineChart size={17} /> },
+      { id: 'progress', label: 'Progress', path: '/library?tab=all', icon: <LineChart size={17} /> },
       { id: 'admin-insights', label: 'Platform insights', path: '/admin/insights', icon: <Shield size={17} /> },
       { id: 'creators', label: 'Creators', path: '/discover?tab=creators', icon: <TrendingUp size={17} /> },
       { id: 'settings', label: 'Settings', path: '/settings', icon: <Settings size={17} /> },

@@ -1,65 +1,64 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams, Navigate } from 'react-router';
 import axios from 'axios';
-import {
-  BookMarked,
-  Calendar,
-  CheckCircle2,
-  Circle,
-  Clock,
-  FileText,
-  Play,
-} from 'lucide-react';
 import { fetchEnrollments } from '../api/catalogApi';
 import type { EnrollmentSummary } from '../types/catalog';
 import { ytThumb } from '../utils/catalogMap';
 import { useShell } from '../shell/ShellContext';
-import { PageHeader } from '../shell/PageHeader';
-import { StaggerChildren, StaggerItem } from '../shell/motion';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { Card, CardContent } from './ui/card';
-import { Badge } from './ui/badge';
-import { Button } from './ui/button';
-import { Skeleton } from './ui/skeleton';
+import { CourseCard, type CourseCardModel } from './CourseCard';
 
-type LibraryTab = 'in_progress' | 'saved' | 'completed';
+type ProgressTab = 'all' | 'in_progress' | 'saved' | 'completed';
 
 type QuizListItem = {
   id: string;
   title: string;
   status: string;
   score: number | null;
-  date: string;
-  duration: string;
   questions: number;
+  thumbnailUrl?: string;
 };
 
-const TAB_META: Record<LibraryTab, { title: string; description: string }> = {
-  in_progress: {
-    title: 'Library',
-    description: 'Courses you are still working through.',
-  },
-  saved: {
-    title: 'Library',
-    description: 'Quizzes you have generated and saved.',
-  },
-  completed: {
-    title: 'Library',
-    description: 'Courses you have finished.',
-  },
-};
-
-function normalizeTab(raw: string | null): LibraryTab {
-  if (raw === 'saved' || raw === 'completed' || raw === 'in_progress') return raw;
+function normalizeTab(raw: string | null): ProgressTab {
+  if (raw === 'all' || raw === 'saved' || raw === 'completed' || raw === 'in_progress') return raw;
   if (raw === 'quizzes') return 'saved';
-  return 'in_progress';
+  return 'all';
 }
 
-/** Old /my-courses?filter=completed bookmarks → Library tabs. */
 export function MyCoursesRedirect() {
   const [params] = useSearchParams();
   const tab = params.get('filter') === 'completed' ? 'completed' : 'in_progress';
   return <Navigate to={`/library?tab=${tab}`} replace />;
+}
+
+function enrollmentCard(e: EnrollmentSummary): CourseCardModel {
+  const total = e.lessonCount && e.lessonCount > 0 ? e.lessonCount : 0;
+  const progress = e.progress ?? 0;
+  return {
+    id: e.courseId,
+    title: e.title,
+    creator: e.channel || 'Educator',
+    tag: e.category || 'General',
+    progress,
+    lessonsDone: total ? Math.round((progress / 100) * total) : 0,
+    lessonsTotal: total,
+    current: e.status === 'in-progress' || progress > 0,
+    image: e.youtubeVideoId ? ytThumb(e.youtubeVideoId) : undefined,
+  };
+}
+
+function quizCard(q: QuizListItem): CourseCardModel {
+  const progress = q.score ?? (q.status === 'in-progress' ? 40 : 0);
+  return {
+    id: q.id,
+    title: q.title,
+    creator: 'Your library',
+    tag: 'Quiz',
+    progress,
+    lessonsDone: 0,
+    lessonsTotal: q.questions,
+    current: q.status === 'in-progress' || progress > 0,
+    image: q.thumbnailUrl,
+  };
 }
 
 export function Library() {
@@ -90,16 +89,14 @@ export function Library() {
           status: string;
           latestScorePercent?: number;
           questionCount?: number;
-          durationLabel?: string;
-          createdAt?: string;
+          thumbnailUrl?: string;
         }) => ({
           id: q.id,
           title: q.title,
           status: q.status === 'in_progress' ? 'in-progress' : q.status,
           score: q.latestScorePercent ?? null,
-          date: q.createdAt ? new Date(q.createdAt).toLocaleDateString() : '',
-          duration: q.durationLabel ?? '--',
           questions: q.questionCount ?? 0,
+          thumbnailUrl: q.thumbnailUrl,
         }));
         setQuizzes(mapped);
       })
@@ -116,213 +113,79 @@ export function Library() {
     [enrollments],
   );
 
-  const setTab = (next: string) => {
+  const setTab = (next: ProgressTab) => {
     setSearchParams({ tab: next }, { replace: true });
   };
 
-  const meta = TAB_META[tab];
   const counts = {
+    all: enrollments.length,
     in_progress: libraryStats.inProgress || inProgress.length,
     saved: libraryStats.saved || quizzes.length,
     completed: libraryStats.completed || completed.length,
   };
 
+  const loading = tab === 'saved' ? loadingQuizzes : loadingCourses;
+  const cards: { item: CourseCardModel; kind: 'course' | 'quiz'; status?: string }[] =
+    tab === 'saved'
+      ? quizzes.map((q) => ({ item: quizCard(q), kind: 'quiz', status: q.status }))
+      : (tab === 'completed' ? completed : tab === 'in_progress' ? inProgress : enrollments)
+        .map((e) => ({ item: enrollmentCard(e), kind: 'course' as const }));
+
   return (
-    <div>
-      <PageHeader
-        label="Your learning"
-        title={meta.title}
-        description={meta.description}
-      />
+    <section className="browse-hero">
+      <div className="eyebrow eyebrow-heading">Progress</div>
 
-      <Tabs value={tab} onValueChange={setTab} className="mb-8">
-        <TabsList className="h-10 w-full justify-start gap-0.5 overflow-x-auto sm:w-auto">
-          <TabsTrigger value="in_progress" className="gap-1.5 px-3.5">
-            <Circle size={14} />
-            In progress
-            <span className="tabular-nums text-muted-foreground">{counts.in_progress}</span>
-          </TabsTrigger>
-          <TabsTrigger value="saved" className="gap-1.5 px-3.5">
-            <BookMarked size={14} />
-            Saved
-            <span className="tabular-nums text-muted-foreground">{counts.saved}</span>
-          </TabsTrigger>
-          <TabsTrigger value="completed" className="gap-1.5 px-3.5">
-            <CheckCircle2 size={14} />
-            Completed
-            <span className="tabular-nums text-muted-foreground">{counts.completed}</span>
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="in_progress">
-          <CourseList
-            loading={loadingCourses}
-            items={inProgress}
-            empty="No courses in progress."
-            mode="in_progress"
-            onOpen={(id) => navigate(`/course-details/${id}`)}
-          />
-        </TabsContent>
-
-        <TabsContent value="saved">
-          <QuizList
-            loading={loadingQuizzes}
-            items={quizzes}
-            onOpenQuiz={(id) => navigate(`/quiz/${id}`)}
-            onOpenResults={(id) => navigate(`/results/${id}`)}
-            onCreate={() => navigate('/dashboard')}
-          />
-        </TabsContent>
-
-        <TabsContent value="completed">
-          <CourseList
-            loading={loadingCourses}
-            items={completed}
-            empty="No completed courses yet."
-            mode="completed"
-            onOpen={(id) => navigate(`/course-details/${id}`)}
-          />
-        </TabsContent>
-      </Tabs>
-    </div>
-  );
-}
-
-function CourseList({
-  loading,
-  items,
-  empty,
-  mode,
-  onOpen,
-}: {
-  loading: boolean;
-  items: EnrollmentSummary[];
-  empty: string;
-  mode: 'in_progress' | 'completed';
-  onOpen: (courseId: string) => void;
-}) {
-  if (loading) {
-    return (
-      <div className="space-y-2">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Card key={i} className="flex gap-4 p-4">
-            <Skeleton className="aspect-video w-28 shrink-0 rounded-md" />
-            <div className="flex-1 space-y-2 py-1">
-              <Skeleton className="h-4 w-3/4" />
-              <Skeleton className="h-3 w-1/2" />
-              <Skeleton className="h-px w-full" />
-            </div>
-          </Card>
+      <div className="status-tabs">
+        {([
+          ['all', 'All courses', counts.all],
+          ['in_progress', 'In progress', counts.in_progress],
+          ['saved', 'Saved', counts.saved],
+          ['completed', 'Completed', counts.completed],
+        ] as const).map(([id, label, count]) => (
+          <button
+            key={id}
+            type="button"
+            className={`status-tab${tab === id ? ' active' : ''}`}
+            onClick={() => setTab(id)}
+          >
+            {label}
+            <span className="status-tab-count">{count}</span>
+          </button>
         ))}
       </div>
-    );
-  }
 
-  if (items.length === 0) {
-    return <Card className="py-16 text-center text-sm text-muted-foreground">{empty}</Card>;
-  }
+      <div className="card-divider" />
 
-  return (
-    <StaggerChildren className="space-y-2">
-      {items.map((e) => {
-        const thumb = e.youtubeVideoId ? ytThumb(e.youtubeVideoId) : undefined;
-        const pct = Math.round(e.progress ?? 0);
-        return (
-          <StaggerItem key={e.courseId}>
-            <Card
-              className="flex cursor-pointer gap-4 p-4 transition-colors hover:border-border/80"
-              onClick={() => onOpen(e.courseId)}
-            >
-              <div className="aspect-video w-28 shrink-0 overflow-hidden rounded-md bg-muted">
-                {thumb && <img src={thumb} alt="" className="h-full w-full object-cover" />}
-              </div>
-              <div className="min-w-0 flex-1">
-                <h2 className="truncate text-sm font-medium">{e.title}</h2>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {e.channel || e.category} · {mode === 'completed' ? 'Completed' : `${pct}% complete`}
-                </p>
-                {mode !== 'completed' && (
-                  <div className="mt-3 h-px overflow-hidden rounded-full bg-muted">
-                    <div className="h-full bg-[var(--brand)]" style={{ width: `${pct}%` }} />
-                  </div>
-                )}
-              </div>
-            </Card>
-          </StaggerItem>
-        );
-      })}
-    </StaggerChildren>
-  );
-}
-
-function QuizList({
-  loading,
-  items,
-  onOpenQuiz,
-  onOpenResults,
-  onCreate,
-}: {
-  loading: boolean;
-  items: QuizListItem[];
-  onOpenQuiz: (id: string) => void;
-  onOpenResults: (id: string) => void;
-  onCreate: () => void;
-}) {
-  if (loading) {
-    return (
-      <div className="space-y-2">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <Skeleton key={i} className="h-24 w-full rounded-lg" />
-        ))}
-      </div>
-    );
-  }
-
-  if (items.length === 0) {
-    return (
-      <Card className="py-16 text-center">
-        <CardContent>
-          <FileText className="mx-auto mb-3 size-8 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">No saved quizzes yet.</p>
-          <Button className="mt-4" size="sm" onClick={onCreate}>Create quiz</Button>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return (
-    <StaggerChildren className="space-y-2">
-      {items.map((quiz) => (
-        <StaggerItem key={quiz.id}>
-          <Card className="transition-colors hover:border-border/80">
-            <CardContent className="flex gap-4 p-4">
-              <div className="flex size-16 shrink-0 items-center justify-center rounded-md bg-muted">
-                <Play size={20} className="text-muted-foreground" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="mb-1 flex items-start justify-between gap-2">
-                  <h3 className="truncate text-sm font-medium">{quiz.title}</h3>
-                  <Badge variant="muted">{quiz.status.replace('-', ' ')}</Badge>
-                </div>
-                <div className="mb-3 flex flex-wrap gap-3 text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1"><Calendar size={12} />{quiz.date}</span>
-                  <span className="flex items-center gap-1"><Clock size={12} />{quiz.duration}</span>
-                  <span className="flex items-center gap-1"><FileText size={12} />{quiz.questions} questions</span>
-                </div>
-                <div className="flex gap-2">
-                  {quiz.status === 'completed' ? (
-                    <Button size="sm" variant="default" onClick={() => onOpenResults(quiz.id)}>View results</Button>
-                  ) : (
-                    <Button size="sm" onClick={() => onOpenQuiz(quiz.id)}>
-                      {quiz.status === 'in-progress' ? 'Resume' : 'Start'}
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </StaggerItem>
-      ))}
-    </StaggerChildren>
+      {loading ? (
+        <div className="course-grid">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="course-card" style={{ minHeight: 220, pointerEvents: 'none' }} />
+          ))}
+        </div>
+      ) : cards.length === 0 ? (
+        <div className="empty-state">
+          <div className="empty-glyph">[ ]</div>
+          <div className="empty-title">Nothing here yet</div>
+          <div className="empty-sub">Courses will show up here once they&apos;re in progress, saved, or completed.</div>
+        </div>
+      ) : (
+        <div className="course-grid">
+          {cards.map(({ item, kind, status }) => (
+            <CourseCard
+              key={`${kind}-${item.id}`}
+              item={item}
+              onOpen={() => {
+                if (kind === 'quiz') {
+                  if (status === 'completed') navigate(`/results/${item.id}`);
+                  else navigate(`/quiz/${item.id}`);
+                  return;
+                }
+                navigate(`/course-details/${item.id}`);
+              }}
+            />
+          ))}
+        </div>
+      )}
+    </section>
   );
 }

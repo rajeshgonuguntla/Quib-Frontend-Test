@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { UserProfile } from '../types/userProfile';
 import { getAvatarBackgroundColor, getAvatarColorSeed, getAvatarLetter, getInitials } from '../utils/userDisplay';
 
@@ -24,6 +24,21 @@ export function UserAvatar({ profile, size = 'md', className = '', style, varian
   const bg = getAvatarBackgroundColor(getAvatarColorSeed(profile));
   const s = SIZES[size];
 
+  useEffect(() => {
+    setImgFailed(false);
+  }, [avatarUrl]);
+
+  const photo = (
+    <img
+      src={avatarUrl}
+      alt=""
+      referrerPolicy="no-referrer"
+      className={`shrink-0 rounded-full object-cover ${s.box} ${className}`}
+      style={style}
+      onError={() => setImgFailed(true)}
+    />
+  );
+
   if (variant === 'mono') {
     if (showFallback) {
       return (
@@ -44,15 +59,7 @@ export function UserAvatar({ profile, size = 'md', className = '', style, varian
         </div>
       );
     }
-    return (
-      <img
-        src={avatarUrl}
-        alt=""
-        className={`shrink-0 rounded-full object-cover ${s.box} ${className}`}
-        style={style}
-        onError={() => setImgFailed(true)}
-      />
-    );
+    return photo;
   }
 
   if (showFallback) {
@@ -67,13 +74,5 @@ export function UserAvatar({ profile, size = 'md', className = '', style, varian
     );
   }
 
-  return (
-    <img
-      src={avatarUrl}
-      alt=""
-      className={`shrink-0 rounded-full object-cover ${s.box} ${className}`}
-      style={style}
-      onError={() => setImgFailed(true)}
-    />
-  );
+  return photo;
 }
