@@ -2,9 +2,10 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate, useLocation, useParams } from 'react-router';
 import axios from 'axios';
 import {
-  ChevronDown, ChevronRight, ChevronUp,
-  PlayCircle, FileText, CheckCircle, CheckCircle2, Copy, CircleHelp, MessageCircle,
+  ChevronDown, ChevronRight,
+  PlayCircle, FileText, CheckCircle, CheckCircle2, Copy, CircleHelp,
   ArrowLeft, ArrowUpRight, BookOpen, Calendar, Layers, AlertCircle, Globe, Pencil,
+  Download, Loader2, Moon, Sun,
 } from 'lucide-react';
 import { publishCourse, unpublishCourse, deleteCourse } from '../api/catalogApi';
 import {
@@ -15,7 +16,7 @@ import {
   submitModuleQuiz,
   type ModuleQuizResult,
 } from '../api/courseApi';
-import { isTokenValid, useAuthSessionKey } from '../auth';
+import { isTokenValid, useAuthSessionKey, clearToken } from '../auth';
 import { logClientError } from '../utils/logClientError';
 import { safeAppPath } from '../utils/safeAppPath';
 import { isTrialExhausted } from '../api/billingApi';
@@ -24,6 +25,7 @@ import { useTheme, getC } from './ThemeContext';
 import { CourseGenerationLoader } from './CourseGenerationLoader';
 import { CoursePageNav } from './CoursePageNav';
 import { CourseChatWidget } from './CourseChatWidget';
+import { ModuleQuizSecondChance } from './ModuleQuizSecondChance';
 import { EducatorAssistantWidget, type AssistantApplyResult } from './EducatorAssistantWidget';
 import { QuibLogo } from './QuibLogo';
 import { TrialUpgradePrompt } from './TrialUpgradePrompt';
@@ -31,20 +33,34 @@ import { LessonStudyContent } from './LessonNotes';
 import { StudyRailPanel } from './StudyRailPanel';
 import { fetchCourseAssignmentSummary } from '../api/assignmentApi';
 import { CourseAssignmentPanel } from './assignments/ModuleAssignmentPanel';
-import { YoutubeLessonPlayer } from './YoutubeLessonPlayer';
+import { YoutubeLessonPlayer, type YoutubeLessonPlayerHandle } from './YoutubeLessonPlayer';
 import { LessonFeedbackPanel } from './LessonFeedbackPanel';
 import { CourseReviewPanel } from './CourseReviewPanel';
+import { StudentLessonNotesEditor } from './StudentLessonNotesEditor';
+import { LessonTranscriptPanel } from './LessonTranscriptPanel';
 import { updateCourse } from '../api/educatorApi';
 import { buildSavePayloadFromAssistant } from '../utils/courseEditOperations';
 import { downloadCoursePdf } from '../utils/downloadCoursePdf';
-import { numberedLessonTitle, withoutLessonNumberPrefix } from '../utils/lessonTitle';
+import { withoutLessonNumberPrefix } from '../utils/lessonTitle';
 import {
   hasCourseProgress,
   markCourseLaunched,
   wasCourseLaunched,
 } from '../utils/courseLaunch';
+import { isModuleQuizQuestionWrong } from '../utils/quizSecondChance';
 import type { CourseGenerationOptions, EditableCourse } from '../types/courseGeneration';
 import { studyToolFromStartMode } from './StudentMasterInput';
+import { UserAvatar } from './UserAvatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from './ui/dropdown-menu';
+import { clearSignInIntent } from '../utils/signInIntent';
+import { getDisplayName } from '../utils/userDisplay';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -293,11 +309,12 @@ function LearningMode({
   const [activeQuizModuleId, setActiveQuizModuleId] = useState<string | null>(null);
   const [activeAssignment, setActiveAssignment] = useState(false);
   const [studyTab, setStudyTab] = useState<StudyTab>(initialStudyTab);
-  const [submodulesOpen, setSubmodulesOpen] = useState(true);
-  const [tutorCollapsed, setTutorCollapsed] = useState(false);
-  const [tutorWidth, setTutorWidth] = useState(400);
   const [askOpenSignal, setAskOpenSignal] = useState(0);
-  const tutorResize = useRef<{ startX: number; startW: number } | null>(null);
+  const lessonPlayerRef = useRef<YoutubeLessonPlayerHandle | null>(null);
+  const lessonPlayerClock = useRef({
+    getCurrentTime: () => lessonPlayerRef.current?.getCurrentTime() ?? 0,
+    seekTo: (sec: number) => lessonPlayerRef.current?.seekTo(sec),
+  }).current;
   const [previewModuleId, setPreviewModuleId] = useState<string | null>(null);
   const [previewRect, setPreviewRect] = useState<DOMRect | null>(null);
   const previewLeaveTimer = useRef<number | null>(null);
@@ -305,18 +322,15 @@ function LearningMode({
   const [passedModules, setPassedModules] = useState<Set<string>>(new Set());
   const [assignmentPassed, setAssignmentPassed] = useState(false);
   const [hasCourseAssignment, setHasCourseAssignment] = useState(false);
-  const [progressPercent, setProgressPercent] = useState(0);
-  const [progressMeta, setProgressMeta] = useState({
-    totalLessons: 0,
-    totalQuizModules: 0,
-    totalAssignmentModules: 0,
-  });
   const [quizAnswers, setQuizAnswers] = useState<Record<number, number>>({});
   const [quizSubmitted, setQuizSubmitted] = useState(false);
   const [quizResult, setQuizResult] = useState<ModuleQuizResult | null>(null);
   const [quizSubmitError, setQuizSubmitError] = useState<string | null>(null);
+  const [quizRetrying, setQuizRetrying] = useState<Record<number, boolean>>({});
   const [lessonActionError, setLessonActionError] = useState<string | null>(null);
   const [downloadBusy, setDownloadBusy] = useState(false);
+  const [resumeTarget, setResumeTarget] = useState<{ lessonId: string; positionSec: number } | null>(null);
+  const resumeAppliedRef = useRef(false);
 
   const handleDownloadCourse = useCallback(async () => {
     if (downloadBusy) return;
@@ -337,12 +351,6 @@ function LearningMode({
       setCompletedLessons(new Set(progress.completedLessonIds));
       setPassedModules(new Set(progress.passedModuleIds));
       setAssignmentPassed((progress.passedAssignmentModuleIds ?? []).includes('course'));
-      setProgressPercent(progress.progressPercent);
-      setProgressMeta({
-        totalLessons: progress.totalLessons,
-        totalQuizModules: progress.totalQuizModules,
-        totalAssignmentModules: progress.totalAssignmentModules ?? 0,
-      });
     } catch {
       /* progress unavailable until enrolled */
     }
@@ -377,26 +385,63 @@ function LearningMode({
   const activeModule =
     modules.find((m) => m.id === activeModuleId) ?? modules[0];
   const activeQuizModule = modules.find((m) => m.id === activeQuizModuleId);
-  const navBg = isDark ? 'rgba(6,6,8,0.92)' : 'rgba(255,255,255,0.92)';
   const lessonActive = !!activeLesson && !activeQuizModuleId && !activeAssignment;
   const studyTabsEnabled = lessonActive;
   const lessonIndexInModule = activeModule
     ? (activeModule.lessons ?? []).findIndex((l) => l.id === activeLessonId)
     : -1;
   const tutorAvailable = showEducatorAssistant || showCourseChat;
+  const { profile, setProfile } = useUserProfile();
+  const navigate = useNavigate();
 
-  /** Same as the right-rail icon: only open/close the tutor, no new main page. */
   const toggleAskAi = () => {
     if (!tutorAvailable) {
       onChatSignInRequired();
       return;
     }
-    setTutorCollapsed((c) => !c);
-    // Floating FAB is lg:hidden — only toggle it on small screens.
-    if (typeof window !== 'undefined' && window.matchMedia('(max-width: 1023px)').matches) {
-      setAskOpenSignal((n) => n + 1);
-    }
+    setAskOpenSignal((n) => n + 1);
   };
+
+  const handleSignOut = () => {
+    clearToken();
+    clearSignInIntent();
+    setProfile(null);
+    navigate('/signin');
+  };
+
+  const lessonIdsKey = allLessons.map((l) => l.id).join(',');
+
+  useEffect(() => {
+    resumeAppliedRef.current = false;
+    setResumeTarget(null);
+  }, [courseId]);
+
+  useEffect(() => {
+    if (!chatSignedIn || resumeAppliedRef.current) return;
+    let cancelled = false;
+    void fetchCourseProgress(courseId)
+      .then((progress) => {
+        if (cancelled || resumeAppliedRef.current) return;
+        const lessonId = progress.resumeLessonId;
+        if (!lessonId) return;
+        const lesson = allLessons.find((l) => l.id === lessonId);
+        if (!lesson) return;
+        resumeAppliedRef.current = true;
+        const positionSec = Math.max(0, progress.resumePositionSec ?? 0);
+        setResumeTarget({ lessonId, positionSec });
+        if (lesson.moduleId) setActiveModuleId(lesson.moduleId);
+        setActiveLessonId(lessonId);
+        setActiveQuizModuleId(null);
+        setActiveAssignment(false);
+        setStudyTab('overview');
+      })
+      .catch(() => {
+        /* not enrolled */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [courseId, chatSignedIn, lessonIdsKey]);
 
   const openLesson = (id: string) => {
     const lesson = allLessons.find((l) => l.id === id);
@@ -409,6 +454,8 @@ function LearningMode({
     setQuizSubmitted(false);
     setQuizResult(null);
     setQuizSubmitError(null);
+    setQuizRetrying({});
+    setResumeTarget((prev) => (prev?.lessonId === id ? prev : null));
   };
 
   const openQuiz = (moduleId: string) => {
@@ -420,6 +467,7 @@ function LearningMode({
     setQuizSubmitted(false);
     setQuizResult(null);
     setQuizSubmitError(null);
+    setQuizRetrying({});
   };
 
   const openAssignment = () => {
@@ -430,48 +478,7 @@ function LearningMode({
     setQuizSubmitted(false);
     setQuizResult(null);
     setQuizSubmitError(null);
-  };
-
-  type SubStep =
-    | { kind: 'lesson'; id: string; moduleId: string; title: string }
-    | { kind: 'quiz'; moduleId: string; title: string }
-    | { kind: 'assignment'; title: string };
-
-  const subSteps: SubStep[] = [];
-  for (const mod of modules) {
-    for (const lesson of mod.lessons ?? []) {
-      subSteps.push({ kind: 'lesson', id: lesson.id, moduleId: mod.id, title: lesson.title });
-    }
-    if ((mod.quiz?.length ?? 0) > 0) {
-      subSteps.push({ kind: 'quiz', moduleId: mod.id, title: `${mod.title} · Quiz` });
-    }
-  }
-  if (hasCourseAssignment) {
-    subSteps.push({ kind: 'assignment', title: 'Course assignment' });
-  }
-
-  const currentSubStepIndex = (() => {
-    if (activeAssignment) {
-      return subSteps.findIndex((s) => s.kind === 'assignment');
-    }
-    if (activeQuizModuleId) {
-      return subSteps.findIndex((s) => s.kind === 'quiz' && s.moduleId === activeQuizModuleId);
-    }
-    if (activeLessonId) {
-      return subSteps.findIndex((s) => s.kind === 'lesson' && s.id === activeLessonId);
-    }
-    return -1;
-  })();
-
-  const nextSubStep =
-    currentSubStepIndex >= 0 && currentSubStepIndex < subSteps.length - 1
-      ? subSteps[currentSubStepIndex + 1]
-      : null;
-
-  const goToSubStep = (step: SubStep) => {
-    if (step.kind === 'lesson') openLesson(step.id);
-    else if (step.kind === 'quiz') openQuiz(step.moduleId);
-    else openAssignment();
+    setQuizRetrying({});
   };
 
   const selectModule = (moduleId: string) => {
@@ -527,6 +534,7 @@ function LearningMode({
       const result = await submitModuleQuiz(courseId, activeQuizModule.id, payload);
       setQuizResult(result);
       setQuizSubmitted(true);
+      setQuizRetrying({});
       await reloadProgress();
     } catch {
       setQuizSubmitError('Could not submit quiz. Please sign in and try again.');
@@ -542,44 +550,9 @@ function LearningMode({
   const quizScore = quizResult?.score ?? 0;
   const quizTotal = quizResult?.total ?? activeQuizModule?.quiz?.length ?? 0;
   const quizPassed = quizResult?.passed ?? false;
-  const completedCount = completedLessons.size;
-  const totalLessons = progressMeta.totalLessons || allLessons.length;
-  const passedQuizCount = passedModules.size;
-  const passedAssignmentCount = assignmentPassed ? 1 : 0;
-  const totalQuizModules = progressMeta.totalQuizModules
-    || modules.filter((m) => (m.quiz?.length ?? 0) > 0).length;
-  const totalAssignmentModules = progressMeta.totalAssignmentModules
-    || (hasCourseAssignment ? 1 : 0);
-  const progressPct = progressPercent;
   const embedId = activeLesson
     ? getYoutubeEmbedId(activeLesson.videoId, activeLesson.videoUrl, youtubeUrl)
     : '';
-
-  const onTutorResizePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const handle = e.currentTarget;
-    handle.setPointerCapture(e.pointerId);
-    tutorResize.current = { startX: e.clientX, startW: tutorWidth };
-    const max = Math.min(720, Math.floor(window.innerWidth * 0.55));
-    const onMove = (ev: PointerEvent) => {
-      const drag = tutorResize.current;
-      if (!drag) return;
-      const next = Math.round(drag.startW + (drag.startX - ev.clientX));
-      setTutorWidth(Math.min(max, Math.max(280, next)));
-    };
-    const onUp = (ev: PointerEvent) => {
-      tutorResize.current = null;
-      handle.releasePointerCapture(ev.pointerId);
-      handle.removeEventListener('pointermove', onMove);
-      handle.removeEventListener('pointerup', onUp);
-      document.body.style.removeProperty('cursor');
-      document.body.style.removeProperty('user-select');
-    };
-    document.body.style.cursor = 'col-resize';
-    document.body.style.userSelect = 'none';
-    handle.addEventListener('pointermove', onMove);
-    handle.addEventListener('pointerup', onUp);
-  };
 
   const keepModulePreview = () => {
     if (previewLeaveTimer.current != null) {
@@ -607,452 +580,417 @@ function LearningMode({
     ? modules.find((m) => m.id === previewModuleId) ?? null
     : null;
 
+  const lessonNumLabel =
+    lessonIndexInModule >= 0
+      ? `LESSON ${String(lessonIndexInModule + 1).padStart(2, '0')}`
+      : 'LESSON';
+  const moduleKicker = activeModule
+    ? `# MODULE ${modules.findIndex((m) => m.id === activeModule.id) + 1} · ${activeModule.title}`.toUpperCase()
+    : '';
+
   return (
     <div style={{ height: '100vh', overflow: 'hidden', background: C.bg, color: C.text, fontFamily: 'var(--display)' }}>
-      <CoursePageNav
-        C={C}
-        isDark={isDark}
-        toggleTheme={toggleTheme}
-        navBg={navBg}
-        onDownloadCourse={() => void handleDownloadCourse()}
-        downloadBusy={downloadBusy}
-        left={(
-          <>
-            <button onClick={onBack} className="flex items-center gap-1.5 cursor-pointer" style={{ background: 'none', border: 'none', color: C.text2, padding: 0 }}>
-              <ArrowLeft className="w-4 h-4" />
-              <span className="text-[0.82rem]">Course Overview</span>
-            </button>
-            <div style={{ width: 1, height: 16, background: C.border }} />
-            <Link to="/dashboard" className="no-underline" style={{ color: C.text }}>
-              <QuibLogo
-                size={16}
-                wordmarkClassName="text-[1rem] font-[700] tracking-tight"
-                variant={isDark ? 'dark' : 'light'}
-              />
-            </Link>
-          </>
-        )}
-        center={(
-          <div className="flex flex-col items-center gap-1">
-            <span className="text-[0.78rem] font-[500] truncate max-w-xs" style={{ color: C.text }}>{course.title}</span>
-            <div className="flex items-center gap-2">
-              <div className="w-28 h-1 rounded-full overflow-hidden" style={{ background: C.bg2 }}>
-                <div className="h-full rounded-full" style={{ width: `${progressPct}%`, background: C.red }} />
-              </div>
-              <span className="text-[0.68rem]" style={{ color: C.text3 }}>
-                {completedCount}/{totalLessons} lessons · {passedQuizCount}/{totalQuizModules} quizzes
-                {totalAssignmentModules > 0 ? ` · ${passedAssignmentCount}/${totalAssignmentModules} assignments` : ''}
-              </span>
-            </div>
+      {/* Cuib module bar */}
+      <div
+        className="flex items-center gap-6 sm:gap-8 px-4 sm:px-10 shrink-0"
+        style={{
+          paddingTop: 18,
+          paddingBottom: 16,
+          borderBottom: `1px solid ${C.border}`,
+          background: C.bg,
+        }}
+      >
+        <button
+          type="button"
+          onClick={onBack}
+          className="w-9 h-9 rounded-lg flex items-center justify-center cursor-pointer shrink-0"
+          style={{ background: 'transparent', border: 'none', color: C.text2 }}
+          aria-label="Back"
+          title="Back"
+        >
+          <ArrowLeft className="w-4 h-4" />
+        </button>
+
+        <div className="min-w-0 flex-1 overflow-x-auto">
+          <div className="flex items-center gap-1 min-w-max">
+            {modules.map((mod) => {
+              const isActive = activeModule?.id === mod.id;
+              return (
+                <div
+                  key={mod.id}
+                  className="relative"
+                  onMouseEnter={(e) => showModulePreview(mod.id, e.currentTarget)}
+                  onMouseLeave={hideModulePreview}
+                >
+                  <button
+                    type="button"
+                    onClick={() => selectModule(mod.id)}
+                    aria-current={isActive ? 'page' : undefined}
+                    aria-haspopup="menu"
+                    className="flex items-center gap-2 py-2.5 px-1 mr-5 sm:mr-7 text-left cursor-pointer max-w-[260px]"
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: isActive ? C.text : C.text3,
+                      fontWeight: isActive ? 600 : 500,
+                      fontSize: '0.84rem',
+                    }}
+                  >
+                    <span className="truncate">{mod.title}</span>
+                    <ChevronDown
+                      className="w-3 h-3 shrink-0"
+                      style={{ color: isActive ? C.red : C.text3 }}
+                    />
+                  </button>
+                </div>
+              );
+            })}
           </div>
-        )}
-      />
+        </div>
 
-      <div className="flex flex-col overflow-hidden" style={{ paddingTop: 56, height: '100vh', boxSizing: 'border-box' }}>
-        {/* Module tabs + collapsible lesson chips */}
-        <div className="shrink-0" style={{ borderBottom: `1px solid ${C.border}`, background: C.bg1 }}>
-          <div className="flex items-center gap-2 px-3 sm:px-4 pt-3" style={{ paddingBottom: submodulesOpen ? 8 : 12 }}>
-            <div className="min-w-0 flex-1 overflow-x-auto">
-              <div className="flex items-center gap-1 min-w-max">
-                {modules.map((mod, modIdx) => {
-                  const isActive = activeModule?.id === mod.id;
-                  return (
-                    <div
-                      key={mod.id}
-                      className="relative"
-                      onMouseEnter={(e) => showModulePreview(mod.id, e.currentTarget)}
-                      onMouseLeave={hideModulePreview}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => selectModule(mod.id)}
-                        aria-current={isActive ? 'page' : undefined}
-                        aria-haspopup="menu"
-                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-left cursor-pointer max-w-[240px]"
-                        style={{
-                          background: isActive ? (isDark ? 'rgba(225,6,0,0.1)' : 'rgba(225,6,0,0.06)') : 'transparent',
-                          border: 'none',
-                          color: isActive ? C.text : C.text3,
-                        }}
-                      >
-                        <span
-                          className="w-5 h-5 rounded flex items-center justify-center flex-shrink-0 text-[0.65rem] font-[700]"
-                          style={{
-                            background: isActive ? C.red : C.bg2,
-                            color: isActive ? '#fff' : C.text3,
-                            border: isActive ? 'none' : `1px solid ${C.border}`,
-                          }}
-                        >
-                          {modIdx + 1}
-                        </span>
-                        <span className="text-[0.8rem] font-[500] truncate">{mod.title}</span>
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={() => void handleDownloadCourse()}
+            disabled={downloadBusy}
+            className="w-9 h-9 rounded-lg flex items-center justify-center cursor-pointer disabled:opacity-60"
+            style={{ background: 'transparent', border: 'none', color: C.text2 }}
+            aria-label={downloadBusy ? 'Preparing download' : 'Download course'}
+            title="Download"
+          >
+            {downloadBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+          </button>
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className="w-9 h-9 rounded-lg flex items-center justify-center cursor-pointer"
+            style={{ background: 'transparent', border: 'none', color: C.text2 }}
+            aria-label="Toggle theme"
+            title="Toggle theme"
+          >
+            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
+          {chatSignedIn ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button type="button" className="rounded-full outline-none" aria-label="Account menu">
+                  <UserAvatar profile={profile} size="md" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52">
+                <DropdownMenuLabel className="font-normal">
+                  <p className="text-sm font-medium">{getDisplayName(profile)}</p>
+                  <p className="truncate text-xs text-muted-foreground">{profile?.email}</p>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate('/settings')}>Settings</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/library')}>Library</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
+                  Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : null}
+        </div>
+      </div>
 
-            <button
-              type="button"
-              onClick={() => setSubmodulesOpen((v) => !v)}
-              className="w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer shrink-0"
-              style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text2 }}
-              aria-label={submodulesOpen ? 'Collapse lessons' : 'Expand lessons'}
-              aria-expanded={submodulesOpen}
-              title={submodulesOpen ? 'Collapse lessons' : 'Expand lessons'}
-            >
-              {submodulesOpen ? (
-                <ChevronUp className="w-4 h-4" />
+      {previewModule && previewRect && (
+        <ModuleLessonFlyout
+          module={previewModule}
+          origin={previewRect}
+          C={C}
+          isDark={isDark}
+          activeLessonId={activeLessonId}
+          completedLessons={completedLessons}
+          passedModules={passedModules}
+          onOpenLesson={(id) => {
+            keepModulePreview();
+            openLesson(id);
+            setPreviewModuleId(null);
+            setPreviewRect(null);
+          }}
+          onOpenQuiz={(moduleId) => {
+            keepModulePreview();
+            openQuiz(moduleId);
+            setPreviewModuleId(null);
+            setPreviewRect(null);
+          }}
+          onKeepOpen={keepModulePreview}
+          onClose={hideModulePreview}
+        />
+      )}
+
+      {/* Cuib 3-col layout */}
+      <div
+        className={`grid flex-1 min-h-0 overflow-hidden ${
+          tutorAvailable
+            ? 'grid-cols-1 md:grid-cols-[240px_minmax(0,1fr)] lg:grid-cols-[240px_minmax(0,1fr)_300px]'
+            : 'grid-cols-1 md:grid-cols-[240px_minmax(0,1fr)]'
+        }`}
+        style={{ height: 'calc(100vh - 73px)' }}
+      >
+        {/* Left lesson side */}
+        <aside
+          className="hidden md:flex flex-col overflow-y-auto min-h-0"
+          style={{
+            borderRight: `1px solid ${C.border}`,
+            padding: '28px 24px 24px 28px',
+            background: C.bg,
+          }}
+        >
+          {lessonActive && activeLesson ? (
+            <>
+              <p
+                className="text-[0.66rem] font-[500] mb-2.5 tracking-wide"
+                style={{ color: C.text3, fontFamily: 'var(--mono)' }}
+              >
+                {lessonNumLabel}
+              </p>
+              <p className="text-[0.94rem] font-[700] leading-snug mb-2" style={{ color: C.text, letterSpacing: '-0.01em' }}>
+                {withoutLessonNumberPrefix(activeLesson.title)}
+              </p>
+              {activeLesson.duration ? (
+                <p className="text-[0.72rem] mb-9" style={{ color: C.text3, fontFamily: 'var(--mono)' }}>
+                  {activeLesson.duration}
+                </p>
               ) : (
-                <ChevronDown className="w-4 h-4" />
+                <div className="mb-9" />
               )}
-            </button>
+            </>
+          ) : (
+            <div className="mb-9">
+              <p className="text-[0.94rem] font-[700]" style={{ color: C.text }}>
+                {activeAssignment ? 'Course assignment' : 'Module quiz'}
+              </p>
+              <p className="text-[0.72rem] mt-1" style={{ color: C.text3 }}>
+                Study tools unlock when a lesson is selected
+              </p>
+            </div>
+          )}
 
-            <button
-              type="button"
-              onClick={() => nextSubStep && goToSubStep(nextSubStep)}
-              disabled={!nextSubStep}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[0.78rem] font-[600] cursor-pointer shrink-0 disabled:opacity-40 disabled:cursor-default"
-              style={{
-                background: nextSubStep ? C.red : C.bg2,
-                color: nextSubStep ? '#fff' : C.text3,
-                border: nextSubStep ? 'none' : `1px solid ${C.border}`,
-              }}
-              aria-label="Next lesson"
-              title={nextSubStep ? `Next: ${nextSubStep.title}` : 'End of course'}
-            >
-              Next
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
+          <nav className="flex flex-col gap-0.5 mb-9">
+            {STUDY_TABS.map((tab) => {
+              const isActive = studyTabsEnabled && studyTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  disabled={!studyTabsEnabled}
+                  onClick={() => setStudyTab(tab.id)}
+                  aria-current={isActive ? 'page' : undefined}
+                  className="w-full text-left py-2.5 text-[0.84rem] font-[500] cursor-pointer disabled:cursor-default disabled:opacity-45"
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    borderLeft: isActive ? `2px solid ${C.red}` : '2px solid transparent',
+                    paddingLeft: 12,
+                    color: isActive ? C.text : C.text3,
+                    fontWeight: isActive ? 700 : 500,
+                  }}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </nav>
+
+          <div className="mt-auto">
+            {(activeModule?.quiz?.length ?? 0) > 0 && activeModule && (
+              <button
+                type="button"
+                onClick={() => openQuiz(activeModule.id)}
+                className="w-full text-left cursor-pointer pt-4"
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  borderTop: `1px solid ${C.border}`,
+                }}
+              >
+                <p className="text-[0.82rem] font-[700]" style={{ color: C.text }}>Module quiz</p>
+                <p className="text-[0.68rem] mt-1 tracking-wide" style={{ color: C.text3, fontFamily: 'var(--mono)' }}>
+                  {activeModule.quiz.length} QUESTIONS
+                </p>
+              </button>
+            )}
+            {hasCourseAssignment && (
+              <button
+                type="button"
+                onClick={() => openAssignment()}
+                className="w-full text-left cursor-pointer pt-4"
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  borderTop: `1px solid ${C.border}`,
+                }}
+              >
+                <p className="text-[0.82rem] font-[700]" style={{ color: activeAssignment ? C.red : C.text }}>
+                  Course assignment
+                </p>
+                <p className="text-[0.68rem] mt-1 tracking-wide" style={{ color: C.text3, fontFamily: 'var(--mono)' }}>
+                  FINAL
+                </p>
+              </button>
+            )}
           </div>
+        </aside>
 
-          {submodulesOpen && (
-            <div className="overflow-x-auto px-3 sm:px-4 pb-3">
-              <div className="flex items-center gap-2 min-w-max">
-                {(activeModule?.lessons ?? []).map((lesson) => {
-                  const isActive = activeLessonId === lesson.id && !activeQuizModuleId && !activeAssignment;
-                  const isDone = completedLessons.has(lesson.id);
+        {/* Main panel */}
+        <main className="min-w-0 overflow-y-auto min-h-0" style={{ padding: '28px 28px 80px' }}>
+          {lessonActive && (
+            <div className="md:hidden overflow-x-auto mb-4 pb-2" style={{ borderBottom: `1px solid ${C.border}` }}>
+              <div className="flex gap-2 min-w-max">
+                {STUDY_TABS.map((tab) => {
+                  const isActive = studyTab === tab.id;
                   return (
                     <button
-                      key={lesson.id}
+                      key={tab.id}
                       type="button"
-                      onClick={() => openLesson(lesson.id)}
-                      aria-current={isActive ? 'page' : undefined}
-                      className="flex items-center gap-2 px-3 py-2 rounded-full text-left cursor-pointer max-w-[260px]"
+                      onClick={() => setStudyTab(tab.id)}
+                      className="px-3 py-1.5 rounded-full text-[0.72rem] font-[500] cursor-pointer whitespace-nowrap"
                       style={{
-                        background: isActive ? (isDark ? 'rgba(225,6,0,0.08)' : 'rgba(225,6,0,0.05)') : C.bg,
+                        background: isActive ? (isDark ? 'rgba(225,6,0,0.12)' : 'rgba(225,6,0,0.08)') : C.bg1,
                         border: `1px solid ${isActive ? C.red : C.border}`,
                         color: isActive ? C.text : C.text2,
                       }}
                     >
-                      {isDone ? (
-                        <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#22c55e' }} />
-                      ) : lesson.type === 'video' ? (
-                        <PlayCircle className="w-3.5 h-3.5 flex-shrink-0" style={{ color: isActive ? C.red : C.text3 }} />
-                      ) : (
-                        <FileText className="w-3.5 h-3.5 flex-shrink-0" style={{ color: isActive ? C.red : C.text3 }} />
-                      )}
-                      <span className="text-[0.75rem] font-[500] truncate">{lesson.title}</span>
-                      {lesson.duration ? (
-                        <span className="text-[0.65rem] flex-shrink-0" style={{ color: C.text3 }}>{lesson.duration}</span>
-                      ) : null}
+                      {tab.label}
                     </button>
                   );
                 })}
-                {(activeModule?.quiz?.length ?? 0) > 0 && activeModule && (
+                {tutorAvailable && (
                   <button
                     type="button"
-                    onClick={() => openQuiz(activeModule.id)}
-                    aria-current={activeQuizModuleId === activeModule.id ? 'page' : undefined}
-                    className="flex items-center gap-2 px-3 py-2 rounded-full text-left cursor-pointer"
-                    style={{
-                      background: activeQuizModuleId === activeModule.id
-                        ? (isDark ? 'rgba(225,6,0,0.08)' : 'rgba(225,6,0,0.05)')
-                        : C.bg,
-                      border: `1px solid ${activeQuizModuleId === activeModule.id ? C.red : C.border}`,
-                      color: activeQuizModuleId === activeModule.id ? C.text : C.text2,
-                    }}
+                    onClick={toggleAskAi}
+                    className="px-3 py-1.5 rounded-full text-[0.72rem] font-[500] cursor-pointer whitespace-nowrap"
+                    style={{ background: C.bg1, border: `1px solid ${C.border}`, color: C.text2 }}
                   >
-                    {passedModules.has(activeModule.id) ? (
-                      <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#22c55e' }} />
-                    ) : (
-                      <CircleHelp className="w-3.5 h-3.5 flex-shrink-0" style={{ color: activeQuizModuleId === activeModule.id ? C.red : C.text3 }} />
-                    )}
-                    <span className="text-[0.75rem] font-[500]">Module Quiz</span>
-                    <span className="text-[0.65rem] flex-shrink-0" style={{ color: C.text3 }}>
-                      {activeModule.quiz?.length ?? 0}q
-                    </span>
-                  </button>
-                )}
-                {hasCourseAssignment && (
-                  <button
-                    type="button"
-                    onClick={() => openAssignment()}
-                    aria-current={activeAssignment ? 'page' : undefined}
-                    className="flex items-center gap-2 px-3 py-2 rounded-full text-left cursor-pointer"
-                    style={{
-                      background: activeAssignment ? (isDark ? 'rgba(225,6,0,0.08)' : 'rgba(225,6,0,0.05)') : C.bg,
-                      border: `1px solid ${activeAssignment ? C.red : C.border}`,
-                      color: activeAssignment ? C.text : C.text2,
-                    }}
-                  >
-                    {assignmentPassed ? (
-                      <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#22c55e' }} />
-                    ) : (
-                      <FileText className="w-3.5 h-3.5 flex-shrink-0" style={{ color: activeAssignment ? C.red : C.text3 }} />
-                    )}
-                    <span className="text-[0.75rem] font-[500]">Course assignment</span>
+                    Ask AI
                   </button>
                 )}
               </div>
             </div>
           )}
-        </div>
 
-        {previewModule && previewRect && (
-          <ModuleLessonFlyout
-            module={previewModule}
-            origin={previewRect}
-            C={C}
-            isDark={isDark}
-            activeLessonId={activeLessonId}
-            completedLessons={completedLessons}
-            passedModules={passedModules}
-            onOpenLesson={(id) => {
-              keepModulePreview();
-              openLesson(id);
-              setPreviewModuleId(null);
-              setPreviewRect(null);
-            }}
-            onOpenQuiz={(moduleId) => {
-              keepModulePreview();
-              openQuiz(moduleId);
-              setPreviewModuleId(null);
-              setPreviewRect(null);
-            }}
-            onKeepOpen={keepModulePreview}
-            onClose={hideModulePreview}
-          />
-        )}
+          {lessonActive && activeLesson && (
+            <div
+              className="rounded-2xl"
+              style={{
+                background: C.bg,
+                border: `1px solid ${C.border}`,
+                padding: '26px 24px',
+                boxShadow: isDark
+                  ? '0 1px 2px rgba(0,0,0,0.2), 0 6px 24px rgba(0,0,0,0.35)'
+                  : '0 1px 2px rgba(0,0,0,0.03), 0 6px 20px rgba(0,0,0,0.05)',
+              }}
+            >
+              <p
+                className="text-[0.66rem] font-[500] mb-4 tracking-wide"
+                style={{ color: C.text3, fontFamily: 'var(--mono)' }}
+              >
+                <span style={{ color: C.red, fontWeight: 700 }}>#</span>{' '}
+                {moduleKicker.replace(/^#\s*/, '')}
+              </p>
+              <h1
+                className="font-[800] tracking-tight mb-7"
+                style={{
+                  fontFamily: 'var(--display)',
+                  fontSize: 'clamp(1.75rem, 3.2vw, 2.25rem)',
+                  lineHeight: 1.15,
+                  color: C.text,
+                  maxWidth: 720,
+                }}
+              >
+                {withoutLessonNumberPrefix(activeLesson.title)}
+              </h1>
 
-        <div className="relative flex flex-1 min-h-0">
-          {/* Study rail */}
-          <aside
-            className="hidden md:flex flex-col flex-shrink-0 overflow-y-auto"
-            style={{ width: 240, borderRight: `1px solid ${C.border}`, background: C.bg1 }}
-          >
-            {lessonActive && activeLesson ? (
-              <div className="px-4 pt-5 pb-3" style={{ borderBottom: `1px solid ${C.border}` }}>
-                <p className="text-[0.7rem] font-[600]" style={{ color: C.text3 }}>
-                  #{lessonIndexInModule >= 0 ? lessonIndexInModule + 1 : '—'}
-                </p>
-                <p className="text-[0.88rem] font-[600] mt-1 leading-snug" style={{ color: C.text }}>
-                  {withoutLessonNumberPrefix(activeLesson.title)}
-                </p>
-                {activeLesson.duration ? (
-                  <p className="text-[0.7rem] mt-1" style={{ color: C.text3 }}>{activeLesson.duration}</p>
-                ) : null}
-              </div>
-            ) : (
-              <div className="px-4 pt-5 pb-3" style={{ borderBottom: `1px solid ${C.border}` }}>
-                <p className="text-[0.88rem] font-[600]" style={{ color: C.text }}>
-                  {activeAssignment ? 'Course assignment' : 'Module quiz'}
-                </p>
-                <p className="text-[0.72rem] mt-1" style={{ color: C.text3 }}>
-                  Study tools unlock when a lesson is selected
-                </p>
-              </div>
-            )}
-
-            <nav className="flex-1 py-3 px-2 space-y-0.5">
-              {STUDY_TABS.map((tab) => {
-                const isActive = studyTabsEnabled && studyTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    disabled={!studyTabsEnabled}
-                    onClick={() => setStudyTab(tab.id)}
-                    aria-current={isActive ? 'page' : undefined}
-                    className="w-full text-left px-3 py-2.5 rounded-lg text-[0.8rem] font-[500] cursor-pointer disabled:cursor-default disabled:opacity-45"
-                    style={{
-                      background: isActive ? (isDark ? 'rgba(225,6,0,0.12)' : 'rgba(225,6,0,0.08)') : 'transparent',
-                      border: 'none',
-                      borderLeft: isActive ? `2px solid ${C.red}` : '2px solid transparent',
-                      color: isActive ? C.text : C.text2,
-                    }}
-                  >
-                    {tab.label}
-                  </button>
-                );
-              })}
-              {studyTabsEnabled && (
-                <button
-                  type="button"
-                  onClick={toggleAskAi}
-                  className="w-full text-left px-3 py-2.5 rounded-lg text-[0.8rem] font-[500] cursor-pointer"
-                  style={{
-                    background: 'transparent',
-                    border: 'none',
-                    borderLeft: '2px solid transparent',
-                    color: C.text2,
-                  }}
-                >
-                  Ask AI
-                </button>
-              )}
-            </nav>
-
-            {(activeModule?.quiz?.length ?? 0) > 0 && activeModule && (
-              <div className="mt-auto px-3 py-3" style={{ borderTop: `1px solid ${C.border}` }}>
-                <button
-                  type="button"
-                  onClick={() => openQuiz(activeModule.id)}
-                  className="w-full text-left px-3 py-2.5 rounded-lg cursor-pointer"
-                  style={{
-                    background: activeQuizModuleId === activeModule.id
-                      ? (isDark ? 'rgba(225,6,0,0.1)' : 'rgba(225,6,0,0.06)')
-                      : 'transparent',
-                    border: `1px solid ${C.border}`,
-                  }}
-                >
-                  <p className="text-[0.78rem] font-[600]" style={{ color: C.text }}>Module quiz</p>
-                  <p className="text-[0.68rem] mt-0.5" style={{ color: C.text3 }}>
-                    {activeModule.quiz.length} questions
-                  </p>
-                </button>
-              </div>
-            )}
-          </aside>
-
-          {/* Main */}
-          <main
-            className={`flex-1 min-w-0 overflow-y-auto ${
-              tutorCollapsed ? 'cuib-scroll-hidden' : ''
-            }`}
-          >
-            {/* Mobile study tabs */}
-            {lessonActive && (
-              <div className="md:hidden overflow-x-auto px-4 py-2" style={{ borderBottom: `1px solid ${C.border}`, background: C.bg1 }}>
-                <div className="flex gap-2 min-w-max">
-                  {STUDY_TABS.map((tab) => {
-                    const isActive = studyTab === tab.id;
-                    return (
-                      <button
-                        key={tab.id}
-                        type="button"
-                        onClick={() => setStudyTab(tab.id)}
-                        aria-current={isActive ? 'page' : undefined}
-                        className="px-3 py-1.5 rounded-full text-[0.72rem] font-[500] cursor-pointer whitespace-nowrap"
-                        style={{
-                          background: isActive ? (isDark ? 'rgba(225,6,0,0.12)' : 'rgba(225,6,0,0.08)') : C.bg,
-                          border: `1px solid ${isActive ? C.red : C.border}`,
-                          color: isActive ? C.text : C.text2,
-                        }}
-                      >
-                        {tab.label}
-                      </button>
-                    );
-                  })}
-                  <button
-                    type="button"
-                    onClick={toggleAskAi}
-                    className="px-3 py-1.5 rounded-full text-[0.72rem] font-[500] cursor-pointer whitespace-nowrap"
-                    style={{
-                      background: C.bg,
-                      border: `1px solid ${C.border}`,
-                      color: C.text2,
-                    }}
-                  >
-                    Ask AI
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {lessonActive && activeLesson && (
-              <div className="max-w-3xl mx-auto px-6 py-10">
-                <p className="text-[0.7rem] mb-5 uppercase tracking-widest" style={{ color: C.text3, fontFamily: 'var(--mono)' }}>
-                  {activeLesson.moduleTitle}
-                </p>
-                <h1
-                  className="font-[600] tracking-tight"
-                  style={{
-                    fontFamily: 'var(--display)',
-                    fontSize: 'clamp(1.6rem, 3vw, 2.2rem)',
-                    lineHeight: 1.25,
-                    color: C.text,
-                    marginBottom: 12,
-                  }}
-                >
-                  {numberedLessonTitle(lessonIndexInModule, activeLesson.title)}
-                </h1>
-
-                {studyTab === 'overview' && (
-                  <>
-                    <div className="flex items-center gap-3 mb-8">
-                      <span className="text-[0.68rem] font-[500] px-2 py-1 rounded uppercase tracking-wide"
-                        style={{ background: C.redDim, color: C.red, fontFamily: 'var(--mono)' }}>
-                        {activeLesson.type === 'video' ? '▶ Video' : '📄 Reading'}
-                      </span>
-                      <span className="text-[0.75rem]" style={{ color: C.text3 }}>{activeLesson.duration}</span>
+              {studyTab === 'overview' && (
+                <>
+                  <div className="flex items-center gap-2.5 mb-6">
+                    <span className="flex items-center gap-1.5 text-[0.75rem] font-[600]" style={{ color: C.text2 }}>
+                      <PlayCircle className="w-3 h-3" />
+                      {activeLesson.type === 'video' ? 'VIDEO' : 'READING'}
+                      {activeLesson.duration ? ` · ${activeLesson.duration}` : ''}
+                    </span>
+                  </div>
+                  {activeLesson.type === 'video' && embedId ? (
+                    <div
+                      className="w-full rounded-xl overflow-hidden mb-6"
+                      style={{ aspectRatio: '16/8.6', background: C.bg2 }}
+                    >
+                      <YoutubeLessonPlayer
+                        ref={lessonPlayerRef}
+                        videoId={embedId}
+                        title={activeLesson.title}
+                        courseId={courseId}
+                        lessonId={activeLessonId}
+                        trackProgress={chatSignedIn}
+                        startSeconds={
+                          resumeTarget?.lessonId === activeLessonId
+                            ? resumeTarget.positionSec
+                            : 0
+                        }
+                        className="w-full h-full"
+                      />
                     </div>
-                    {activeLesson.type === 'video' && embedId ? (
-                      <div className="w-full rounded-2xl overflow-hidden mb-8"
-                        style={{ border: `1px solid ${C.border}`, aspectRatio: '16/9', background: C.bg2 }}>
-                        <YoutubeLessonPlayer
-                          videoId={embedId}
-                          title={activeLesson.title}
-                          courseId={courseId}
-                          lessonId={activeLessonId}
-                          trackProgress={chatSignedIn}
-                          className="w-full h-full"
-                        />
-                      </div>
-                    ) : activeLesson.type === 'video' ? (
-                      <div className="w-full rounded-2xl p-6 mb-8 text-center text-sm" style={{ background: C.bg1, border: `1px solid ${C.border}`, color: C.text3 }}>
-                        Video player unavailable for this lesson.
-                      </div>
-                    ) : null}
-                    <LessonStudyContent
-                      lesson={activeLesson}
-                      theme={C}
-                      moduleTitle={activeLesson.moduleTitle}
-                      mode="overview"
-                    />
-                    <div className="flex flex-col gap-2">
-                      <div className="flex items-center gap-3">
-                        {completedLessons.has(activeLessonId) ? (
-                          <div className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-[0.82rem] font-[500]"
-                            style={{ background: 'rgba(34,197,94,0.1)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.25)' }}>
-                            <CheckCircle className="w-4 h-4" /> Completed
-                          </div>
-                        ) : (
-                          <button onClick={markComplete} className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-[0.82rem] font-[600] cursor-pointer"
-                            style={{ background: C.red, color: '#fff', border: 'none' }}
-                            onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.9')}
-                            onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}>
-                            Mark Complete & Continue
-                          </button>
-                        )}
-                      </div>
-                      {lessonActionError && (
-                        <p className="text-[0.8rem]" style={{ color: C.red }}>{lessonActionError}</p>
-                      )}
+                  ) : activeLesson.type === 'video' ? (
+                    <div className="w-full rounded-xl p-6 mb-6 text-center text-sm" style={{ background: C.bg1, border: `1px solid ${C.border}`, color: C.text3 }}>
+                      Video player unavailable for this lesson.
                     </div>
-                    <LessonFeedbackPanel
+                  ) : null}
+                  {activeLesson.type === 'video' && embedId && chatSignedIn && (
+                    <LessonTranscriptPanel
                       courseId={courseId}
                       lessonId={activeLessonId}
-                      lessonTitle={activeLesson?.title}
-                      enabled={chatSignedIn}
-                      theme={C}
+                      C={C}
+                      player={lessonPlayerClock}
+                      variant="cuib"
                     />
-                    <CourseReviewPanel courseId={courseId} enabled={chatSignedIn} theme={C} />
-                  </>
-                )}
+                  )}
+                  <LessonStudyContent
+                    lesson={activeLesson}
+                    theme={C}
+                    moduleTitle={activeLesson.moduleTitle}
+                    mode="overview"
+                    variant="cuib"
+                  />
+                  <div className="flex flex-col gap-2 mt-6">
+                    <div className="flex items-center gap-3">
+                      {completedLessons.has(activeLessonId) ? (
+                        <div className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-[0.82rem] font-[500]"
+                          style={{ background: 'rgba(34,197,94,0.1)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.25)' }}>
+                          <CheckCircle className="w-4 h-4" /> Completed
+                        </div>
+                      ) : (
+                        <button onClick={markComplete} className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-[0.82rem] font-[600] cursor-pointer"
+                          style={{ background: C.red, color: '#fff', border: 'none' }}>
+                          Mark Complete & Continue
+                        </button>
+                      )}
+                    </div>
+                    {lessonActionError && (
+                      <p className="text-[0.8rem]" style={{ color: C.red }}>{lessonActionError}</p>
+                    )}
+                  </div>
+                  <LessonFeedbackPanel
+                    courseId={courseId}
+                    lessonId={activeLessonId}
+                    lessonTitle={activeLesson?.title}
+                    enabled={chatSignedIn}
+                    theme={C}
+                  />
+                  <CourseReviewPanel courseId={courseId} enabled={chatSignedIn} theme={C} />
+                </>
+              )}
 
-                {studyTab === 'notes' && (
+              {studyTab === 'notes' && (
+                <div className="space-y-6">
+                  <StudentLessonNotesEditor
+                    courseId={courseId}
+                    lessonId={activeLessonId}
+                    C={C}
+                    player={lessonPlayerClock}
+                  />
                   <StudyRailPanel
                     courseId={courseId}
                     lessonId={activeLessonId}
@@ -1061,40 +999,42 @@ function LearningMode({
                     isDark={isDark}
                     fallbackNotes={activeLesson.notes}
                   />
-                )}
+                </div>
+              )}
 
-                {(studyTab === 'flashcards' || studyTab === 'blanks' || studyTab === 'exam') && (
-                  <StudyRailPanel
-                    courseId={courseId}
-                    lessonId={activeLessonId}
-                    tool={studyTab}
-                    theme={C}
-                    isDark={isDark}
-                    seedFlashcards={activeLesson.flashcards}
-                    seedBlanks={activeLesson.blanks}
-                  />
-                )}
-              </div>
-            )}
+              {(studyTab === 'flashcards' || studyTab === 'blanks' || studyTab === 'exam') && (
+                <StudyRailPanel
+                  courseId={courseId}
+                  lessonId={activeLessonId}
+                  tool={studyTab}
+                  theme={C}
+                  isDark={isDark}
+                  seedFlashcards={activeLesson.flashcards}
+                  seedBlanks={activeLesson.blanks}
+                />
+              )}
+            </div>
+          )}
 
-            {activeQuizModule && (
-              <div className="max-w-3xl mx-auto px-6 py-10">
-                <p className="text-[0.7rem] mb-4 uppercase tracking-widest" style={{ color: C.text3, fontFamily: 'var(--mono)' }}>{activeQuizModule.title}</p>
-                <h1
-                  className="font-[600] tracking-tight"
-                  style={{
-                    fontFamily: 'var(--display)',
-                    fontSize: 'clamp(1.6rem, 3vw, 2.2rem)',
-                    lineHeight: 1.25,
-                    color: C.text,
-                    marginBottom: 8,
-                  }}
-                >
-                  Module Quiz
-                </h1>
-                <p className="text-[0.85rem] mb-8" style={{ color: C.text2 }}>{activeQuizModule.quiz.length} questions · Test your understanding</p>
-                <div className="space-y-5 mb-8">
-                  {activeQuizModule.quiz.map((q, qi) => (
+          {activeQuizModule && (
+            <div
+              className="rounded-2xl"
+              style={{
+                background: C.bg,
+                border: `1px solid ${C.border}`,
+                padding: '26px 24px',
+              }}
+            >
+              <p className="text-[0.7rem] mb-4 uppercase tracking-widest" style={{ color: C.text3, fontFamily: 'var(--mono)' }}>{activeQuizModule.title}</p>
+              <h1 className="font-[800] tracking-tight mb-2" style={{ fontSize: 'clamp(1.6rem, 3vw, 2.1rem)', color: C.text }}>Module Quiz</h1>
+              <p className="text-[0.85rem] mb-8" style={{ color: C.text2 }}>{activeQuizModule.quiz.length} questions · Test your understanding</p>
+              <div className="space-y-5 mb-8">
+                {activeQuizModule.quiz.map((q, qi) => {
+                  const retrying = !!quizRetrying[qi];
+                  const canPick = !quizSubmitted || retrying;
+                  const showReveal = quizSubmitted && !retrying;
+                  const missed = isModuleQuizQuestionWrong(quizResult?.questionResults, qi);
+                  return (
                     <div key={qi} className="rounded-2xl p-6" style={{ background: C.bg1, border: `1px solid ${C.border}` }}>
                       <p className="text-[0.875rem] font-[500] mb-4 leading-relaxed" style={{ color: C.text }}>
                         <span style={{ color: C.red, fontFamily: 'var(--mono)', fontSize: '0.72rem', marginRight: 8 }}>Q{qi + 1}</span>
@@ -1104,179 +1044,175 @@ function LearningMode({
                         {q.options.map((opt, oi) => {
                           const selected = quizAnswers[qi] === oi;
                           const correctAnswer = correctAnswerForQuestion(qi);
-                          const correct = quizSubmitted && correctAnswer != null && oi === correctAnswer;
-                          const wrong = quizSubmitted && selected && correctAnswer != null && oi !== correctAnswer;
+                          const correct = showReveal && correctAnswer != null && oi === correctAnswer;
+                          const wrong = showReveal && selected && correctAnswer != null && oi !== correctAnswer;
+                          const retryCorrect = retrying && selected && correctAnswer != null && oi === correctAnswer;
+                          const retryWrong = retrying && selected && correctAnswer != null && oi !== correctAnswer;
                           return (
-                            <button key={oi} onClick={() => !quizSubmitted && setQuizAnswers((prev) => ({ ...prev, [qi]: oi }))}
+                            <button key={oi} onClick={() => {
+                              if (!canPick) return;
+                              setQuizAnswers((prev) => ({ ...prev, [qi]: oi }));
+                              if (retrying && correctAnswer != null && oi === correctAnswer) {
+                                setQuizRetrying((prev) => ({ ...prev, [qi]: false }));
+                              }
+                            }}
                               className="w-full text-left px-4 py-3 rounded-xl text-[0.82rem] transition-all"
-                              style={{ background: correct ? 'rgba(34,197,94,0.12)' : wrong ? 'rgba(225,6,0,0.1)' : selected ? isDark ? 'rgba(225,6,0,0.1)' : 'rgba(225,6,0,0.06)' : isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.025)', border: `1px solid ${correct ? 'rgba(34,197,94,0.35)' : wrong ? 'rgba(225,6,0,0.3)' : selected ? C.red : C.border}`, color: correct ? '#22c55e' : wrong ? C.red : C.text2, cursor: quizSubmitted ? 'default' : 'pointer' }}>
+                              style={{ background: (correct || retryCorrect) ? 'rgba(34,197,94,0.12)' : (wrong || retryWrong) ? 'rgba(225,6,0,0.1)' : selected ? isDark ? 'rgba(225,6,0,0.1)' : 'rgba(225,6,0,0.06)' : isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.025)', border: `1px solid ${(correct || retryCorrect) ? 'rgba(34,197,94,0.35)' : (wrong || retryWrong) ? 'rgba(225,6,0,0.3)' : selected ? C.red : C.border}`, color: (correct || retryCorrect) ? '#22c55e' : (wrong || retryWrong) ? C.red : C.text2, cursor: canPick ? 'pointer' : 'default' }}>
                               <span className="font-[600] mr-2" style={{ fontFamily: 'var(--mono)', fontSize: '0.72rem' }}>{String.fromCharCode(65 + oi)}.</span>
                               {opt}
                             </button>
                           );
                         })}
                       </div>
-                    </div>
-                  ))}
-                </div>
-                {!quizSubmitted ? (
-                  <div className="space-y-3">
-                    {quizSubmitError && (
-                      <p className="text-[0.82rem]" style={{ color: C.red }}>{quizSubmitError}</p>
-                    )}
-                    <button onClick={handleQuizSubmit}
-                    disabled={Object.keys(quizAnswers).length < activeQuizModule.quiz.length}
-                    className="px-8 py-3 rounded-lg text-[0.875rem] font-[600] cursor-pointer transition-all"
-                    style={{ background: Object.keys(quizAnswers).length === activeQuizModule.quiz.length ? C.red : C.bg2, color: Object.keys(quizAnswers).length === activeQuizModule.quiz.length ? '#fff' : C.text3, border: 'none', boxShadow: Object.keys(quizAnswers).length === activeQuizModule.quiz.length ? '0 4px 16px rgba(225,6,0,0.25)' : 'none' }}>
-                    Submit Quiz
-                  </button>
-                  </div>
-                ) : (
-                  <div className="rounded-2xl p-6" style={{ background: quizPassed ? 'rgba(34,197,94,0.08)' : 'rgba(225,6,0,0.06)', border: `1px solid ${quizPassed ? 'rgba(34,197,94,0.25)' : 'rgba(225,6,0,0.2)'}` }}>
-                    <div className="flex items-center gap-4">
-                      <div className="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0"
-                        style={{ background: quizPassed ? 'rgba(34,197,94,0.15)' : C.redDim, border: `1px solid ${quizPassed ? 'rgba(34,197,94,0.3)' : 'rgba(225,6,0,0.2)'}` }}>
-                        <span className="font-[600] tabular-nums" style={{ fontFamily: 'var(--display)', fontSize: '1.1rem', color: quizPassed ? '#22c55e' : C.red }}>{quizScore}/{quizTotal}</span>
-                      </div>
-                      <div>
-                        <p className="font-[600] text-[0.95rem]" style={{ color: C.text }}>{quizPassed ? 'Great work!' : 'Keep going'}</p>
-                        <p className="text-[0.8rem] mt-0.5" style={{ color: C.text2 }}>
-                          {quizPassed
-                            ? 'You passed this module. Move on to the next one.'
-                            : `You got ${quizScore} of ${quizTotal} correct (${Math.round((quizScore / Math.max(quizTotal, 1)) * 100)}%). You need 70% to pass.`}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {activeAssignment && (
-              <CourseAssignmentPanel
-                courseId={courseId}
-                C={C}
-                isDark={isDark}
-                onSubmitted={() => void reloadProgress()}
-              />
-            )}
-
-            {!activeLesson && !activeQuizModuleId && !activeAssignment && (
-              <div className="max-w-3xl mx-auto px-6 py-10 text-center">
-                <p className="text-[0.9rem] mb-4" style={{ color: C.text2 }}>
-                  {allLessons.length === 0
-                    ? 'This course has no lessons yet.'
-                    : 'Select a lesson, quiz, or assignment from the strips above.'}
-                </p>
-              </div>
-            )}
-          </main>
-
-          {/* Right rail — collapse + drag-resize (desktop); FAB on small screens */}
-          {(showEducatorAssistant || showCourseChat) && (
-            <>
-              {tutorCollapsed ? (
-                <button
-                  type="button"
-                  onClick={() => setTutorCollapsed(false)}
-                  className="hidden lg:flex absolute z-20 w-8 h-8 rounded-lg items-center justify-center cursor-pointer"
-                  style={{
-                    top: 12,
-                    right: 12,
-                    background: C.red,
-                    color: '#fff',
-                    border: 'none',
-                  }}
-                  aria-label="Expand assistant"
-                  title="Open assistant"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                </button>
-              ) : (
-                <div className="hidden lg:flex min-h-0 flex-shrink-0">
-                  <div
-                    role="separator"
-                    aria-orientation="vertical"
-                    aria-label="Resize assistant panel"
-                    onPointerDown={onTutorResizePointerDown}
-                    className="w-2 flex-shrink-0 cursor-col-resize flex items-center justify-center"
-                    style={{ background: C.bg1, borderLeft: `1px solid ${C.border}` }}
-                    title="Drag to resize"
-                  >
-                    <div
-                      className="w-1 h-10 rounded-full"
-                      style={{ background: C.red, opacity: 0.85 }}
-                    />
-                  </div>
-                  <aside
-                    className="flex flex-col min-h-0"
-                    style={{
-                      width: tutorWidth,
-                      background: C.bg,
-                    }}
-                  >
-                    <div className="h-full min-h-0 flex-1 flex flex-col">
-                      {showEducatorAssistant ? (
-                        <EducatorAssistantWidget
-                          key={chatSessionKey}
-                          variant="panel"
+                      {quizSubmitted && missed && (
+                        <ModuleQuizSecondChance
                           courseId={courseId}
-                          courseTitle={course.title}
-                          sessionKey={chatSessionKey}
-                          onPreviewChange={onEducatorApplyUpdate}
-                          onApproveAndSave={onEducatorApproveAndSave}
-                          onCollapse={() => setTutorCollapsed(true)}
-                          openSignal={askOpenSignal}
-                        />
-                      ) : (
-                        <CourseChatWidget
-                          key={chatSessionKey}
-                          courseId={courseId}
-                          courseTitle={course.title}
-                          lessonId={activeLessonId || undefined}
-                          moduleId={activeQuizModuleId || undefined}
-                          signedIn={chatSignedIn}
-                          onSignInRequired={onChatSignInRequired}
-                          sessionKey={chatSessionKey}
-                          variant="panel"
-                          onCollapse={() => setTutorCollapsed(true)}
-                          openSignal={askOpenSignal}
+                          moduleId={activeQuizModule.id}
+                          question={q.question}
+                          options={q.options}
+                          C={C}
+                          onRetry={() => {
+                            setQuizRetrying((prev) => ({ ...prev, [qi]: true }));
+                            setQuizAnswers((prev) => {
+                              const next = { ...prev };
+                              delete next[qi];
+                              return next;
+                            });
+                          }}
                         />
                       )}
+                      {retrying && (
+                        <p className="mt-3 text-[0.75rem]" style={{ color: C.text3 }}>
+                          Practice retry — pick again. Official quiz score above stays the same.
+                        </p>
+                      )}
                     </div>
-                  </aside>
+                  );
+                })}
+              </div>
+              {!quizSubmitted ? (
+                <div className="space-y-3">
+                  {quizSubmitError && (
+                    <p className="text-[0.82rem]" style={{ color: C.red }}>{quizSubmitError}</p>
+                  )}
+                  <button onClick={handleQuizSubmit}
+                    disabled={Object.keys(quizAnswers).length < activeQuizModule.quiz.length}
+                    className="px-8 py-3 rounded-lg text-[0.875rem] font-[600] cursor-pointer transition-all"
+                    style={{ background: Object.keys(quizAnswers).length === activeQuizModule.quiz.length ? C.red : C.bg2, color: Object.keys(quizAnswers).length === activeQuizModule.quiz.length ? '#fff' : C.text3, border: 'none' }}>
+                    Submit Quiz
+                  </button>
+                </div>
+              ) : (
+                <div className="rounded-2xl p-6" style={{ background: quizPassed ? 'rgba(34,197,94,0.08)' : 'rgba(225,6,0,0.06)', border: `1px solid ${quizPassed ? 'rgba(34,197,94,0.25)' : 'rgba(225,6,0,0.2)'}` }}>
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0"
+                      style={{ background: quizPassed ? 'rgba(34,197,94,0.15)' : C.redDim, border: `1px solid ${quizPassed ? 'rgba(34,197,94,0.3)' : 'rgba(225,6,0,0.2)'}` }}>
+                      <span className="font-[600] tabular-nums" style={{ fontSize: '1.1rem', color: quizPassed ? '#22c55e' : C.red }}>{quizScore}/{quizTotal}</span>
+                    </div>
+                    <div>
+                      <p className="font-[600] text-[0.95rem]" style={{ color: C.text }}>{quizPassed ? 'Great work!' : 'Keep going'}</p>
+                      <p className="text-[0.8rem] mt-0.5" style={{ color: C.text2 }}>
+                        {quizPassed
+                          ? 'You passed this module. Move on to the next one.'
+                          : `You got ${quizScore} of ${quizTotal} correct (${Math.round((quizScore / Math.max(quizTotal, 1)) * 100)}%). You need 70% to pass.`}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               )}
-              <div className="lg:hidden">
-                {showEducatorAssistant ? (
-                  <EducatorAssistantWidget
-                    key={`${chatSessionKey}-mobile`}
-                    courseId={courseId}
-                    courseTitle={course.title}
-                    sessionKey={chatSessionKey}
-                    onPreviewChange={onEducatorApplyUpdate}
-                    onApproveAndSave={onEducatorApproveAndSave}
-                    openSignal={askOpenSignal}
-                  />
-                ) : (
-                  <CourseChatWidget
-                    key={`${chatSessionKey}-mobile`}
-                    courseId={courseId}
-                    courseTitle={course.title}
-                    lessonId={activeLessonId || undefined}
-                    moduleId={activeQuizModuleId || undefined}
-                    signedIn={chatSignedIn}
-                    onSignInRequired={onChatSignInRequired}
-                    sessionKey={chatSessionKey}
-                    variant="floating"
-                    openSignal={askOpenSignal}
-                  />
-                )}
-              </div>
-            </>
+            </div>
+          )}
+
+          {activeAssignment && (
+            <CourseAssignmentPanel
+              courseId={courseId}
+              C={C}
+              isDark={isDark}
+              onSubmitted={() => void reloadProgress()}
+            />
+          )}
+
+          {!activeLesson && !activeQuizModuleId && !activeAssignment && (
+            <div className="text-center py-10">
+              <p className="text-[0.9rem]" style={{ color: C.text2 }}>
+                {allLessons.length === 0
+                  ? 'This course has no lessons yet.'
+                  : 'Select a lesson from a module tab above.'}
+              </p>
+            </div>
+          )}
+        </main>
+
+        {/* Right assistant — always visible on desktop */}
+        {tutorAvailable && (
+          <aside
+            className="hidden lg:flex flex-col min-h-0 overflow-hidden"
+            style={{
+              borderLeft: `1px solid ${C.border}`,
+              padding: '28px 24px 20px',
+              background: C.bg,
+            }}
+          >
+            {showEducatorAssistant ? (
+              <EducatorAssistantWidget
+                key={chatSessionKey}
+                variant="panel"
+                courseId={courseId}
+                courseTitle={course.title}
+                sessionKey={chatSessionKey}
+                onPreviewChange={onEducatorApplyUpdate}
+                onApproveAndSave={onEducatorApproveAndSave}
+                openSignal={askOpenSignal}
+                chrome="cuib"
+              />
+            ) : (
+              <CourseChatWidget
+                key={chatSessionKey}
+                courseId={courseId}
+                courseTitle={course.title}
+                lessonId={activeLessonId || undefined}
+                moduleId={activeQuizModuleId || undefined}
+                signedIn={chatSignedIn}
+                onSignInRequired={onChatSignInRequired}
+                sessionKey={chatSessionKey}
+                variant="panel"
+                openSignal={askOpenSignal}
+                chrome="cuib"
+              />
+            )}
+          </aside>
+        )}
+      </div>
+
+      {/* Mobile FAB */}
+      {tutorAvailable && (
+        <div className="lg:hidden">
+          {showEducatorAssistant ? (
+            <EducatorAssistantWidget
+              key={`${chatSessionKey}-mobile`}
+              courseId={courseId}
+              courseTitle={course.title}
+              sessionKey={chatSessionKey}
+              onPreviewChange={onEducatorApplyUpdate}
+              onApproveAndSave={onEducatorApproveAndSave}
+              openSignal={askOpenSignal}
+            />
+          ) : (
+            <CourseChatWidget
+              key={`${chatSessionKey}-mobile`}
+              courseId={courseId}
+              courseTitle={course.title}
+              lessonId={activeLessonId || undefined}
+              moduleId={activeQuizModuleId || undefined}
+              signedIn={chatSignedIn}
+              onSignInRequired={onChatSignInRequired}
+              sessionKey={chatSessionKey}
+              variant="floating"
+              openSignal={askOpenSignal}
+            />
           )}
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -2071,37 +2007,14 @@ export function CourseDetails() {
       </div>
 
       {showEducatorAssistant && resolvedCourseId && (
-        <>
-          <aside
-            className="hidden lg:flex flex-col flex-shrink-0 min-h-0"
-            style={{
-              width: 400,
-              height: 'calc(100vh - 56px)',
-              borderLeft: `1px solid ${C.border}`,
-              background: C.bg,
-            }}
-          >
-            <EducatorAssistantWidget
-              key={chatSessionKey}
-              variant="panel"
-              courseId={resolvedCourseId}
-              courseTitle={course.title}
-              sessionKey={chatSessionKey}
-              onPreviewChange={handleEducatorApplyUpdate}
-              onApproveAndSave={handleEducatorApproveAndSave}
-            />
-          </aside>
-          <div className="lg:hidden">
-            <EducatorAssistantWidget
-              key={`${chatSessionKey}-mobile`}
-              courseId={resolvedCourseId}
-              courseTitle={course.title}
-              sessionKey={chatSessionKey}
-              onPreviewChange={handleEducatorApplyUpdate}
-              onApproveAndSave={handleEducatorApproveAndSave}
-            />
-          </div>
-        </>
+        <EducatorAssistantWidget
+          key={chatSessionKey}
+          courseId={resolvedCourseId}
+          courseTitle={course.title}
+          sessionKey={chatSessionKey}
+          onPreviewChange={handleEducatorApplyUpdate}
+          onApproveAndSave={handleEducatorApproveAndSave}
+        />
       )}
       </div>
     </div>

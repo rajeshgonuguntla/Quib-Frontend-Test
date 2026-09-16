@@ -1,9 +1,10 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import { recordWatchProgress } from '../api/courseApi';
 
 type YTPlayer = {
   getCurrentTime: () => number;
   getDuration: () => number;
+  seekTo: (seconds: number, allowSeekAhead: boolean) => void;
   destroy: () => void;
 };
 
@@ -59,6 +60,11 @@ function loadYoutubeApi(): Promise<void> {
 
 const HEARTBEAT_MS = 20_000;
 
+export type YoutubeLessonPlayerHandle = {
+  getCurrentTime: () => number;
+  seekTo: (sec: number) => void;
+};
+
 type YoutubeLessonPlayerProps = {
   videoId: string;
   title: string;
@@ -66,24 +72,48 @@ type YoutubeLessonPlayerProps = {
   lessonId: string;
   /** When false, renders player without sending telemetry (anonymous / preview). */
   trackProgress: boolean;
+  /** Seek here once when the player is ready (resume-from-left-off). */
+  startSeconds?: number;
   className?: string;
   style?: React.CSSProperties;
 };
 
-export function YoutubeLessonPlayer({
-  videoId,
-  title,
-  courseId,
-  lessonId,
-  trackProgress,
-  className,
-  style,
-}: YoutubeLessonPlayerProps) {
+export const YoutubeLessonPlayer = forwardRef<YoutubeLessonPlayerHandle, YoutubeLessonPlayerProps>(
+  function YoutubeLessonPlayer(
+    {
+      videoId,
+      title,
+      courseId,
+      lessonId,
+      trackProgress,
+      startSeconds = 0,
+      className,
+      style,
+    },
+    ref,
+  ) {
   const containerId = useRef(`yt-player-${lessonId}-${Math.random().toString(36).slice(2, 9)}`);
   const playerRef = useRef<YTPlayer | null>(null);
   const sessionIdRef = useRef<string | undefined>();
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sendingRef = useRef(false);
+
+  useImperativeHandle(ref, () => ({
+    getCurrentTime: () => {
+      try {
+        return playerRef.current?.getCurrentTime?.() ?? 0;
+      } catch {
+        return 0;
+      }
+    },
+    seekTo: (sec: number) => {
+      try {
+        playerRef.current?.seekTo?.(Math.max(0, sec), true);
+      } catch {
+        /* player may not be ready */
+      }
+    },
+  }));
 
   const clearHeartbeat = () => {
     if (heartbeatRef.current) {
@@ -127,8 +157,18 @@ export function YoutubeLessonPlayer({
           rel: 0,
           modestbranding: 1,
           playsinline: 1,
+          ...(startSeconds > 0 ? { start: Math.floor(startSeconds) } : {}),
         },
         events: {
+          onReady: () => {
+            if (startSeconds > 0) {
+              try {
+                playerRef.current?.seekTo(Math.floor(startSeconds), true);
+              } catch {
+                /* ignore */
+              }
+            }
+          },
           onStateChange: (event) => {
             const player = playerRef.current;
             if (!player || !trackProgress) return;
@@ -162,7 +202,7 @@ export function YoutubeLessonPlayer({
       playerRef.current = null;
       sessionIdRef.current = undefined;
     };
-  }, [videoId, courseId, lessonId, trackProgress]);
+  }, [videoId, courseId, lessonId, trackProgress, startSeconds]);
 
   return (
     <div
@@ -172,4 +212,4 @@ export function YoutubeLessonPlayer({
       style={style}
     />
   );
-}
+});

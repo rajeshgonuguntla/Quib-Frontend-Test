@@ -15,12 +15,16 @@ export async function sendCourseChat(
   options?: {
     lessonId?: string;
     moduleId?: string;
+    mode?: 'simplify';
+    history?: CourseChatMessage[];
   },
 ): Promise<CourseChatResponse> {
   const res = await axios.post<CourseChatResponse>(`/api/courses/${courseId}/chat`, {
     message,
     lessonId: options?.lessonId,
     moduleId: options?.moduleId,
+    mode: options?.mode,
+    history: options?.history,
   });
   return res.data;
 }

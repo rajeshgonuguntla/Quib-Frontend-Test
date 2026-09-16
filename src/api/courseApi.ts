@@ -11,6 +11,8 @@ export interface CourseProgress {
   passedQuizModules: number;
   totalAssignmentModules?: number;
   passedAssignmentModules?: number;
+  resumeLessonId?: string | null;
+  resumePositionSec?: number;
 }
 
 export async function enrollCourse(courseId: string): Promise<void> {

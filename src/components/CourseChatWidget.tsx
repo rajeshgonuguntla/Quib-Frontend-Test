@@ -4,6 +4,7 @@ import axios from 'axios';
 import { sendCourseChat, type CourseChatMessage } from '../api/courseChatApi';
 import { useTheme, getC } from './ThemeContext';
 import { LessonNotes } from './LessonNotes';
+import { QuibLogo } from './QuibLogo';
 
 interface CourseChatWidgetProps {
   courseId: string;
@@ -20,6 +21,8 @@ interface CourseChatWidgetProps {
   onCollapse?: () => void;
   /** Bump to toggle the floating chat open/closed (left-nav Ask AI). */
   openSignal?: number;
+  /** `cuib` = match cuib-app-merged lesson assistant chrome. */
+  chrome?: 'default' | 'cuib';
 }
 
 function getChatError(err: unknown): string {
@@ -50,8 +53,10 @@ export function CourseChatWidget({
   variant = 'floating',
   onCollapse,
   openSignal = 0,
+  chrome = 'default',
 }: CourseChatWidgetProps) {
   const isPanel = variant === 'panel';
+  const isCuib = chrome === 'cuib' && isPanel;
   const { isDark } = useTheme();
   const C = getC(isDark);
   const [open, setOpen] = useState(isPanel);
@@ -79,8 +84,8 @@ export function CourseChatWidget({
     }
   }, [open, isPanel, messages, loading]);
 
-  const sendMessage = async () => {
-    const text = input.trim();
+  const sendMessage = async (rawText?: string, mode?: 'simplify') => {
+    const text = (rawText ?? input).trim();
     if (!text || loading) return;
 
     if (!signedIn) {
@@ -89,21 +94,20 @@ export function CourseChatWidget({
     }
 
     const userMessage: CourseChatMessage = { role: 'user', content: text };
+    const history = messages.slice(-8);
     setMessages((prev) => [...prev, userMessage]);
-    setInput('');
+    if (rawText == null) setInput('');
     setLoading(true);
     setError(null);
 
-    const tryChat = async () => {
+    try {
       const res = await sendCourseChat(courseId, text, {
         lessonId,
         moduleId,
+        mode,
+        history: mode === 'simplify' ? history : undefined,
       });
       setMessages((prev) => [...prev, { role: 'assistant', content: res.reply }]);
-    };
-
-    try {
-      await tryChat();
     } catch (err) {
       // ponytail: do not silent-enroll here — Start Learning is the enroll gate.
       setMessages((prev) => prev.slice(0, -1));
@@ -111,6 +115,10 @@ export function CourseChatWidget({
     } finally {
       setLoading(false);
     }
+  };
+
+  const askForSimplerExplanation = () => {
+    void sendMessage("I don't understand — please explain more simply with easier examples.", 'simplify');
   };
 
   const panelBg = isDark ? 'rgba(12,12,16,0.98)' : 'rgba(255,255,255,0.98)';
@@ -134,81 +142,130 @@ export function CourseChatWidget({
             }
       }
     >
-      <div
-        className="flex shrink-0 items-center justify-between gap-2 px-4 py-3"
-        style={{ borderBottom: `1px solid ${C.border}`, background: C.bg1 }}
-      >
-        <div className="min-w-0 flex-1 overflow-hidden pr-2">
-          <p className="text-[0.85rem] font-[600] truncate" style={{ color: C.text }}>
-            Course tutor
-          </p>
-          <p className="text-[0.7rem] truncate" style={{ color: C.text3 }}>
-            {courseTitle}
+      {isCuib ? (
+        <div className="shrink-0 mb-1">
+          <div className="flex items-center gap-2.5 mb-1">
+            <div
+              className="w-[26px] h-[26px] rounded-md flex items-center justify-center shrink-0"
+              style={{ background: C.text }}
+            >
+              <QuibLogo size={14} showWordmark={false} variant={isDark ? 'dark' : 'light'} />
+            </div>
+            <h4 className="text-[0.875rem] font-[700] tracking-tight" style={{ color: C.text }}>
+              Course assistant
+            </h4>
+          </div>
+          <p
+            className="text-[0.68rem] mb-5 truncate"
+            style={{ color: C.text3, fontFamily: 'var(--mono)' }}
+          >
+            {courseTitle.toUpperCase()}
           </p>
         </div>
-        {(isPanel && onCollapse) || !isPanel ? (
-          <button
-            type="button"
-            onClick={() => (isPanel ? onCollapse?.() : setOpen(false))}
-            className="w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer shrink-0"
-            style={{ background: C.red, color: '#fff', border: 'none' }}
-            aria-label={isPanel ? 'Collapse course tutor' : 'Close chat'}
-            title={isPanel ? 'Collapse tutor' : 'Close'}
-          >
-            {isPanel ? <ChevronsRight className="w-4 h-4" /> : <X className="w-4 h-4" />}
-          </button>
-        ) : null}
-      </div>
+      ) : (
+        <div
+          className="flex shrink-0 items-center justify-between gap-2 px-4 py-3"
+          style={{ borderBottom: `1px solid ${C.border}`, background: C.bg1 }}
+        >
+          <div className="min-w-0 flex-1 overflow-hidden pr-2">
+            <p className="text-[0.85rem] font-[600] truncate" style={{ color: C.text }}>
+              Course tutor
+            </p>
+            <p className="text-[0.7rem] truncate" style={{ color: C.text3 }}>
+              {courseTitle}
+            </p>
+          </div>
+          {(isPanel && onCollapse) || !isPanel ? (
+            <button
+              type="button"
+              onClick={() => (isPanel ? onCollapse?.() : setOpen(false))}
+              className="w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer shrink-0"
+              style={{ background: C.red, color: '#fff', border: 'none' }}
+              aria-label={isPanel ? 'Collapse course tutor' : 'Close chat'}
+              title={isPanel ? 'Collapse tutor' : 'Close'}
+            >
+              {isPanel ? <ChevronsRight className="w-4 h-4" /> : <X className="w-4 h-4" />}
+            </button>
+          ) : null}
+        </div>
+      )}
 
       <div
         ref={scrollRef}
-        className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-4 py-4 space-y-3"
+        className={`min-h-0 flex-1 overflow-y-auto overscroll-y-contain space-y-3 ${isCuib ? 'px-0 py-0' : 'px-4 py-4'}`}
         style={{ background: C.bg }}
       >
         {messages.length === 0 && (
           <div
-            className="rounded-xl px-4 py-3 text-[0.8rem] leading-relaxed"
-            style={{ background: C.bg1, border: `1px solid ${C.border}`, color: C.text2 }}
+            className="text-[0.78rem] leading-relaxed"
+            style={{
+              background: C.bg2,
+              color: C.text,
+              borderRadius: '14px 14px 14px 4px',
+              padding: '10px 13px',
+              maxWidth: '88%',
+              border: isCuib ? 'none' : `1px solid ${C.border}`,
+            }}
           >
             {signedIn
-              ? 'Hi! Ask me anything about this course — I\'m here to help.'
+              ? "Hey! I'm here to help with this lesson — ask me to explain a concept, quiz you, or dig into anything you're stuck on."
               : 'Sign in to chat with your course tutor.'}
           </div>
         )}
         {messages.map((msg, idx) => (
-          <div
-            key={`${msg.role}-${idx}`}
-            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-          >
-            <div
-              className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-[0.82rem] leading-relaxed ${
-                msg.role === 'user'
-                  ? 'whitespace-pre-wrap'
-                  : '[&_p]:mb-1.5 [&_p:last-child]:mb-0 [&_ul]:mb-1.5 [&_ul:last-child]:mb-0 [&_pre]:mb-2 [&_h2]:mt-2 [&_h3]:mt-2 [&_.lesson-notes]:text-[0.82rem]'
-              }`}
-              style={{
-                background: msg.role === 'user' ? C.red : C.bg1,
-                color: msg.role === 'user' ? '#fff' : C.text,
-                border: msg.role === 'user' ? 'none' : `1px solid ${C.border}`,
-              }}
-            >
-              {msg.role === 'assistant' ? (
-                <LessonNotes
-                  content={msg.content}
-                  theme={{
-                    text: C.text,
-                    text2: C.text2,
-                    text3: C.text3,
-                    border: C.border,
-                    bg1: C.bg1,
-                    bg2: C.bg2,
-                    red: C.red,
-                  }}
-                />
-              ) : (
-                msg.content
-              )}
+          <div key={`${msg.role}-${idx}`} className="space-y-2">
+            <div className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <div
+                className={`max-w-[88%] px-3.5 py-2.5 text-[0.78rem] leading-relaxed ${
+                  msg.role === 'user'
+                    ? 'whitespace-pre-wrap'
+                    : '[&_p]:mb-1.5 [&_p:last-child]:mb-0 [&_ul]:mb-1.5 [&_ul:last-child]:mb-0 [&_pre]:mb-2 [&_h2]:mt-2 [&_h3]:mt-2 [&_.lesson-notes]:text-[0.82rem]'
+                }`}
+                style={{
+                  background: isCuib ? C.bg2 : msg.role === 'user' ? C.red : C.bg1,
+                  color: isCuib ? C.text : msg.role === 'user' ? '#fff' : C.text,
+                  border: isCuib || msg.role === 'user' ? 'none' : `1px solid ${C.border}`,
+                  borderRadius:
+                    msg.role === 'user' ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
+                }}
+              >
+                {msg.role === 'assistant' ? (
+                  <LessonNotes
+                    content={msg.content}
+                    theme={{
+                      text: C.text,
+                      text2: C.text2,
+                      text3: C.text3,
+                      border: C.border,
+                      bg1: C.bg1,
+                      bg2: C.bg2,
+                      red: C.red,
+                    }}
+                  />
+                ) : (
+                  msg.content
+                )}
+              </div>
             </div>
+            {msg.role === 'assistant'
+              && idx === messages.length - 1
+              && !loading
+              && signedIn && (
+              <div className="flex justify-start">
+                <button
+                  type="button"
+                  onClick={askForSimplerExplanation}
+                  className="rounded-lg px-3 py-1.5 text-[0.72rem] font-[500] cursor-pointer"
+                  style={{
+                    background: C.bg2,
+                    border: `1px solid ${C.border}`,
+                    color: C.text2,
+                  }}
+                >
+                  I don&apos;t understand
+                </button>
+              </div>
+            )}
           </div>
         ))}
         {loading && (
@@ -220,44 +277,80 @@ export function CourseChatWidget({
       </div>
 
       {error && (
-        <p className="shrink-0 px-4 pb-2 text-[0.75rem]" style={{ color: C.red }}>
+        <p className={`shrink-0 pb-2 text-[0.75rem] ${isCuib ? 'px-0' : 'px-4'}`} style={{ color: C.red }}>
           {error}
         </p>
       )}
 
-      <div
-        className="flex shrink-0 items-end gap-2 px-3 py-3"
-        style={{ borderTop: `1px solid ${C.border}`, background: C.bg1 }}
-      >
-        <textarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              void sendMessage();
-            }
-          }}
-          rows={2}
-          placeholder={signedIn ? 'Ask a question about this course…' : 'Sign in to ask a question…'}
-          className="flex-1 resize-none rounded-xl px-3 py-2 text-[0.82rem] outline-none"
+      {isCuib ? (
+        <div
+          className="flex shrink-0 items-center gap-2 mt-4"
           style={{
             background: C.bg2,
             border: `1px solid ${C.border}`,
-            color: C.text,
+            borderRadius: 999,
+            padding: '6px 6px 6px 14px',
           }}
-        />
-        <button
-          type="button"
-          onClick={() => void sendMessage()}
-          disabled={!input.trim() || loading}
-          className="w-10 h-10 rounded-xl flex items-center justify-center cursor-pointer disabled:opacity-50"
-          style={{ background: C.red, color: '#fff', border: 'none' }}
-          aria-label="Send message"
         >
-          <Send className="w-4 h-4" />
-        </button>
-      </div>
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                void sendMessage();
+              }
+            }}
+            placeholder={signedIn ? 'Ask a question about this lesson…' : 'Sign in to ask…'}
+            className="flex-1 min-w-0 border-none bg-transparent text-[0.82rem] outline-none"
+            style={{ color: C.text }}
+          />
+          <button
+            type="button"
+            onClick={() => void sendMessage()}
+            disabled={!input.trim() || loading}
+            className="w-[30px] h-[30px] rounded-full flex items-center justify-center cursor-pointer disabled:opacity-50 shrink-0"
+            style={{ background: C.text, color: C.bg, border: 'none' }}
+            aria-label="Send message"
+          >
+            <Send className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      ) : (
+        <div
+          className="flex shrink-0 items-end gap-2 px-3 py-3"
+          style={{ borderTop: `1px solid ${C.border}`, background: C.bg1 }}
+        >
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                void sendMessage();
+              }
+            }}
+            rows={2}
+            placeholder={signedIn ? 'Ask a question about this course…' : 'Sign in to ask a question…'}
+            className="flex-1 resize-none rounded-xl px-3 py-2 text-[0.82rem] outline-none"
+            style={{
+              background: C.bg2,
+              border: `1px solid ${C.border}`,
+              color: C.text,
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => void sendMessage()}
+            disabled={!input.trim() || loading}
+            className="w-10 h-10 rounded-xl flex items-center justify-center cursor-pointer disabled:opacity-50"
+            style={{ background: C.red, color: '#fff', border: 'none' }}
+            aria-label="Send message"
+          >
+            <Send className="w-4 h-4" />
+          </button>
+        </div>
+      )}
     </div>
   );
 

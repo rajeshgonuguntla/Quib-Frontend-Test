@@ -167,6 +167,7 @@ export function LessonStudyContent({
   theme,
   moduleTitle,
   mode = 'all',
+  variant = 'default',
 }: {
   lesson: {
     title: string;
@@ -180,9 +181,11 @@ export function LessonStudyContent({
   moduleTitle?: string;
   /** `overview` = summary/concepts/takeaway; `notes` = study notes only; `all` = everything. */
   mode?: 'all' | 'overview' | 'notes';
+  variant?: 'default' | 'cuib';
 }) {
   const showOverview = mode === 'all' || mode === 'overview';
   const showNotes = mode === 'all' || mode === 'notes';
+  const isCuib = variant === 'cuib';
 
   const hasOverview =
     !!lesson.summary?.trim() ||
@@ -203,7 +206,7 @@ export function LessonStudyContent({
       );
     }
     return (
-      <div className="rounded-2xl p-6 mb-8" style={{ background: theme.bg1, border: `1px solid ${theme.border}` }}>
+      <div className={isCuib ? 'mb-6' : 'rounded-2xl p-6 mb-8'} style={isCuib ? undefined : { background: theme.bg1, border: `1px solid ${theme.border}` }}>
         <p className="text-[0.875rem] leading-relaxed" style={{ color: theme.text2, lineHeight: 1.8 }}>
           This lesson covers <strong style={{ color: theme.text }}>{lesson.title}</strong>
           {moduleTitle ? (
@@ -214,6 +217,43 @@ export function LessonStudyContent({
           ) : null}
           . Follow along with the {lesson.type === 'video' ? 'video' : 'reading material'} and note the key concepts.
         </p>
+      </div>
+    );
+  }
+
+  const takeaways = [
+    ...(lesson.keyConcepts ?? []),
+    ...(lesson.takeaway?.trim() ? [lesson.takeaway.trim()] : []),
+  ];
+
+  if (isCuib && showOverview && !showNotes) {
+    return (
+      <div className="space-y-8 mb-6 mt-6">
+        {lesson.summary?.trim() ? (
+          <div>
+            <p className="text-[0.66rem] uppercase tracking-wide mb-3.5" style={{ color: theme.text3, fontFamily: 'var(--mono)', fontWeight: 500 }}>
+              Summary
+            </p>
+            <p className="text-[0.875rem] leading-relaxed" style={{ color: theme.text2, lineHeight: 1.7 }}>
+              {lesson.summary}
+            </p>
+          </div>
+        ) : null}
+        {takeaways.length > 0 ? (
+          <div>
+            <p className="text-[0.66rem] uppercase tracking-wide mb-3.5" style={{ color: theme.text3, fontFamily: 'var(--mono)', fontWeight: 500 }}>
+              Key takeaways
+            </p>
+            <ul className="space-y-2.5 list-none pl-0">
+              {takeaways.map((item, i) => (
+                <li key={i} className="flex gap-2.5 text-[0.875rem] leading-relaxed" style={{ color: theme.text2 }}>
+                  <span style={{ color: theme.red }}>•</span>
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
       </div>
     );
   }
