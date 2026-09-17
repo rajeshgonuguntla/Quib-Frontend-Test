@@ -22,6 +22,8 @@ declare global {
         elementId: string,
         config: {
           videoId: string;
+          width?: string | number;
+          height?: string | number;
           playerVars?: Record<string, string | number>;
           events?: {
             onReady?: () => void;
@@ -42,17 +44,28 @@ function loadYoutubeApi(): Promise<void> {
     return Promise.resolve();
   }
   if (!youtubeApiPromise) {
-    youtubeApiPromise = new Promise((resolve) => {
+    youtubeApiPromise = new Promise((resolve, reject) => {
       const previous = window.onYouTubeIframeAPIReady;
+      const timeout = window.setTimeout(() => {
+        reject(new Error('YouTube IFrame API load timed out'));
+      }, 12_000);
       window.onYouTubeIframeAPIReady = () => {
+        window.clearTimeout(timeout);
         previous?.();
         resolve();
       };
       if (!document.querySelector('script[src*="youtube.com/iframe_api"]')) {
         const tag = document.createElement('script');
         tag.src = 'https://www.youtube.com/iframe_api';
+        tag.onerror = () => {
+          window.clearTimeout(timeout);
+          reject(new Error('YouTube IFrame API failed to load'));
+        };
         document.head.appendChild(tag);
       }
+    }).catch((err) => {
+      youtubeApiPromise = null;
+      throw err;
     });
   }
   return youtubeApiPromise;
@@ -145,14 +158,38 @@ export const YoutubeLessonPlayer = forwardRef<YoutubeLessonPlayerHandle, Youtube
 
   useEffect(() => {
     let cancelled = false;
+    const iframeFallbackRef = { used: false };
 
     const setup = async () => {
-      await loadYoutubeApi();
+      try {
+        await loadYoutubeApi();
+      } catch {
+        if (cancelled) return;
+        // CSP / network can block iframe_api — plain embed still plays.
+        iframeFallbackRef.used = true;
+        const el = document.getElementById(containerId.current);
+        if (el) {
+          const start = startSeconds > 0 ? `?start=${Math.floor(startSeconds)}` : '';
+          el.innerHTML = '';
+          const iframe = document.createElement('iframe');
+          iframe.title = title;
+          iframe.src = `https://www.youtube.com/embed/${encodeURIComponent(videoId)}${start}`;
+          iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+          iframe.allowFullscreen = true;
+          iframe.style.width = '100%';
+          iframe.style.height = '100%';
+          iframe.style.border = '0';
+          el.appendChild(iframe);
+        }
+        return;
+      }
       if (cancelled || !window.YT?.Player) return;
 
       playerRef.current?.destroy();
       playerRef.current = new window.YT.Player(containerId.current, {
         videoId,
+        width: '100%',
+        height: '100%',
         playerVars: {
           rel: 0,
           modestbranding: 1,
@@ -198,18 +235,24 @@ export const YoutubeLessonPlayer = forwardRef<YoutubeLessonPlayerHandle, Youtube
     return () => {
       cancelled = true;
       clearHeartbeat();
-      playerRef.current?.destroy();
+      if (!iframeFallbackRef.used) {
+        try {
+          playerRef.current?.destroy();
+        } catch {
+          /* ignore */
+        }
+      }
       playerRef.current = null;
       sessionIdRef.current = undefined;
     };
-  }, [videoId, courseId, lessonId, trackProgress, startSeconds]);
+  }, [videoId, courseId, lessonId, trackProgress, startSeconds, title]);
 
   return (
     <div
       id={containerId.current}
       title={title}
       className={className}
-      style={style}
+      style={{ width: '100%', height: '100%', minHeight: 200, ...style }}
     />
   );
 });
