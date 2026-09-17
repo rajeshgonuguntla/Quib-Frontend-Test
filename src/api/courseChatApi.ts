@@ -9,6 +9,23 @@ export interface CourseChatResponse {
   reply: string;
 }
 
+export interface CourseChatThread {
+  messages: CourseChatMessage[];
+}
+
+export async function fetchCourseChatThread(courseId: string): Promise<CourseChatMessage[]> {
+  const res = await axios.get<CourseChatThread>(`/api/courses/${courseId}/chat`);
+  const messages = res.data?.messages;
+  if (!Array.isArray(messages)) return [];
+  return messages.filter(
+    (m): m is CourseChatMessage =>
+      !!m
+      && (m.role === 'user' || m.role === 'assistant')
+      && typeof m.content === 'string'
+      && m.content.trim().length > 0,
+  );
+}
+
 export async function sendCourseChat(
   courseId: string,
   message: string,

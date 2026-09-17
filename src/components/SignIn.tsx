@@ -107,7 +107,8 @@ export function SignIn() {
   const [studentLoginBlocked, setStudentLoginBlocked] = useState<string | null>(null);
   const pendingUrl =
     (location.state?.youtubeUrl as string | undefined) ||
-    (location.state?.playlistUrl as string | undefined);
+    (location.state?.playlistUrl as string | undefined) ||
+    (location.state?.prompt as string | undefined);
 
   useEffect(() => {
     rememberReferralCode(new URLSearchParams(location.search).get('ref'));

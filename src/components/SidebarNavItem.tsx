@@ -20,13 +20,13 @@ export function SidebarNavItem({ item, active, onClick }: SidebarNavItemProps) {
       type="button"
       onClick={onClick}
       className={cn(
-        'relative flex w-full items-center justify-between gap-2.5 py-1.5 pl-3.5 text-left text-[14px] transition-colors duration-150',
-        active ? 'font-bold text-[var(--ink)]' : 'font-medium text-[var(--ink-faint)] hover:text-[var(--ink-soft)]',
+        'relative flex w-full items-center justify-between gap-2.5 rounded-md py-[7px] pl-3.5 pr-1 text-left text-[13px] transition-colors duration-150',
+        active ? 'font-semibold text-[var(--ink)]' : 'font-medium text-[var(--ink-faint)] hover:bg-[var(--fill)] hover:text-[var(--ink-soft)]',
       )}
     >
       <span
-        className="absolute left-0 top-1/2 w-[3px] -translate-y-1/2 rounded-full bg-[var(--accent)] transition-[height] duration-150"
-        style={{ height: active ? 20 : 0 }}
+        className="absolute left-0 top-1/2 w-[2px] -translate-y-1/2 rounded-full bg-[var(--accent)] transition-[height] duration-150"
+        style={{ height: active ? 14 : 0 }}
       />
       <span className="flex items-center gap-2.5">
         <span className="flex size-[17px] shrink-0 items-center justify-center [&_svg]:size-[17px]">

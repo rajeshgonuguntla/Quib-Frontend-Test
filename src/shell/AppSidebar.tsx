@@ -11,14 +11,14 @@ type AppSidebarProps = {
   onNavigate?: () => void;
 };
 
-function NavGroupBlock({
-  label,
+const FOOTER_NAV_IDS = new Set(['settings', 'help']);
+
+function NavList({
   items,
   pathname,
   search,
   onNavigate,
 }: {
-  label: string;
   items: NavItem[];
   pathname: string;
   search: string;
@@ -33,38 +33,23 @@ function NavGroupBlock({
   };
 
   return (
-    <div className={label ? 'mt-6 shrink-0' : 'flex min-h-0 flex-1 flex-col'}>
-      {label ? (
-        <p
-          className="mb-2 px-2.5 uppercase"
-          style={{
-            fontFamily: 'var(--mono)',
-            fontSize: 10,
-            letterSpacing: '0.06em',
-            color: 'var(--ink-faint)',
-          }}
-        >
-          {label}
-        </p>
-      ) : null}
-      <div className={label ? 'flex flex-col gap-1.5' : 'flex flex-1 flex-col justify-between'}>
-        {items.map((item) => {
-          const badgeCount = item.badgeKey === 'total'
-            ? (libraryStats.total || libraryStats.inProgress + libraryStats.saved + libraryStats.completed)
-            : item.badgeKey
-              ? libraryStats[item.badgeKey]
-              : undefined;
-          const badge = badgeCount != null ? String(badgeCount) : undefined;
-          return (
-            <SidebarNavItem
-              key={item.id}
-              item={{ ...item, badge }}
-              active={isNavItemActive(pathname, search, item.id, item.path)}
-              onClick={() => go(item.path)}
-            />
-          );
-        })}
-      </div>
+    <div className="flex flex-col gap-px">
+      {items.map((item) => {
+        const badgeCount = item.badgeKey === 'total'
+          ? (libraryStats.total || libraryStats.inProgress + libraryStats.saved + libraryStats.completed)
+          : item.badgeKey
+            ? libraryStats[item.badgeKey]
+            : undefined;
+        const badge = badgeCount != null ? String(badgeCount) : undefined;
+        return (
+          <SidebarNavItem
+            key={item.id}
+            item={{ ...item, badge }}
+            active={isNavItemActive(pathname, search, item.id, item.path)}
+            onClick={() => go(item.path)}
+          />
+        );
+      })}
     </div>
   );
 }
@@ -74,18 +59,51 @@ export function AppSidebar({ pathname, search, onNavigate }: AppSidebarProps) {
   const navGroups = filterNavGroups(NAV_GROUPS, isEducatorExperience(profile), profile)
     .filter((group) => group.items.length > 0);
 
+  const primaryItems: NavItem[] = [];
+  const createItems: NavItem[] = [];
+  const footerItems: NavItem[] = [];
+
+  for (const group of navGroups) {
+    if (group.label === 'Create') {
+      createItems.push(...group.items);
+      continue;
+    }
+    for (const item of group.items) {
+      if (FOOTER_NAV_IDS.has(item.id)) footerItems.push(item);
+      else primaryItems.push(item);
+    }
+  }
+
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      {navGroups.map((group) => (
-        <NavGroupBlock
-          key={group.label || group.items[0]?.id || 'menu'}
-          label={group.label}
-          items={group.items}
-          pathname={pathname}
-          search={search}
-          onNavigate={onNavigate}
-        />
-      ))}
-    </div>
+    <nav className="flex h-full min-h-0 flex-col" aria-label="Main">
+      <div className="shrink-0">
+        <NavList items={primaryItems} pathname={pathname} search={search} onNavigate={onNavigate} />
+        {createItems.length > 0 ? (
+          <div className="mt-5">
+            <p
+              className="mb-1 px-2.5 uppercase"
+              style={{
+                fontFamily: 'var(--mono)',
+                fontSize: 10,
+                letterSpacing: '0.06em',
+                color: 'var(--ink-faint)',
+              }}
+            >
+              Create
+            </p>
+            <NavList items={createItems} pathname={pathname} search={search} onNavigate={onNavigate} />
+          </div>
+        ) : null}
+      </div>
+
+      {footerItems.length > 0 ? (
+        <div
+          className="mt-auto shrink-0 pt-4"
+          style={{ borderTop: '1px solid var(--border)' }}
+        >
+          <NavList items={footerItems} pathname={pathname} search={search} onNavigate={onNavigate} />
+        </div>
+      ) : null}
+    </nav>
   );
 }

@@ -167,13 +167,17 @@ export function QuizSetup() {
   const { id } = useParams();
   const location = useLocation();
   const youtubeUrl = location.state?.youtubeUrl || sessionStorage.getItem('youtubeUrl') || '';
+  const promptRequest =
+    (location.state?.prompt as string | undefined) || sessionStorage.getItem('quizPrompt') || '';
+  const examType =
+    (location.state?.examType as string | undefined) || sessionStorage.getItem('quizExamType') || 'custom';
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState(0);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [setupError, setSetupError] = useState<string | null>(null);
   const [videoMeta, setVideoMeta] = useState<QuizMeta>({
     title: 'Generated Quiz',
-    channelName: 'Unknown Channel',
+    channelName: promptRequest ? 'Custom practice' : 'Unknown Channel',
     videoLength: '--:--',
     youtubeUrl,
   });
@@ -184,7 +188,7 @@ export function QuizSetup() {
     channel: videoMeta.channelName,
     duration: videoMeta.videoLength,
     thumbnail: getYoutubeThumbnail(videoMeta.youtubeUrl),
-    transcriptStatus: 'available',
+    transcriptStatus: promptRequest ? 'prompt' : 'available',
     questionCount,
     difficulty: location.state?.difficulty || 'medium',
     estimatedTime: `${Math.ceil(questionCount * 1.5)} minutes`,
@@ -219,8 +223,54 @@ export function QuizSetup() {
           return;
         }
 
+        if (promptRequest.trim()) {
+          const response = await axios.post('/api/quiz/generate-from-prompt', {
+            prompt: promptRequest.trim(),
+            examType,
+            config: {
+              difficulty: location.state?.difficulty || 'medium',
+              questionCount: location.state?.questionCount || 10,
+              timedExam: location.state?.timedExam || false,
+              questionTypes: location.state?.questionTypes,
+            },
+          });
+
+          const parsedQuestions = response.data.questions?.length
+            ? mapApiQuestionsToFrontend(response.data.questions)
+            : extractQuestionsFromResponse(response.data);
+          const parsedMeta: QuizMeta = {
+            title: response.data.videoTitle?.trim() || 'Practice quiz',
+            channelName: response.data.channelName?.trim() || 'Custom practice',
+            videoLength: response.data.videoLength?.trim() || '--:--',
+            youtubeUrl: '',
+          };
+
+          if (!isMounted) return;
+
+          if (parsedQuestions.length === 0) {
+            setSetupError('Quiz was generated but no valid questions were found in the response.');
+            setLoading(false);
+            clearInterval(interval);
+            return;
+          }
+
+          setQuestions(parsedQuestions);
+          setVideoMeta(parsedMeta);
+          sessionStorage.setItem('generatedQuestions', JSON.stringify(parsedQuestions));
+          sessionStorage.setItem('generatedVideoMeta', JSON.stringify(parsedMeta));
+          if (response.data.quizId) {
+            sessionStorage.setItem('currentQuizId', response.data.quizId);
+            if (id === 'new' || !id) {
+              navigate(`/quiz-setup/${response.data.quizId}`, { replace: true, state: location.state });
+            }
+          }
+          setProgress(100);
+          setLoading(false);
+          return;
+        }
+
         if (!youtubeUrl) {
-          setSetupError('YouTube URL is missing. Please go back and paste the video URL again.');
+          setSetupError('Add a topic or YouTube URL from the dashboard to generate a sample test.');
           setLoading(false);
           clearInterval(interval);
           return;
@@ -283,19 +333,29 @@ export function QuizSetup() {
       isMounted = false;
       clearInterval(interval);
     };
-  }, [youtubeUrl, id]);
+  }, [youtubeUrl, promptRequest, examType, id]);
 
   useEffect(() => {
     if (youtubeUrl) {
       sessionStorage.setItem('youtubeUrl', youtubeUrl);
     }
-  }, [youtubeUrl]);
+    if (promptRequest) {
+      sessionStorage.setItem('quizPrompt', promptRequest);
+      sessionStorage.setItem('quizExamType', examType);
+    }
+  }, [youtubeUrl, promptRequest, examType]);
 
-  const steps = [
-    { label: 'Fetching transcript', completed: progress >= 33 },
-    { label: 'Analyzing content', completed: progress >= 66 },
-    { label: 'Generating questions', completed: progress >= 100 }
-  ];
+  const steps = promptRequest
+    ? [
+        { label: 'Reading your request', completed: progress >= 33 },
+        { label: 'Building practice questions', completed: progress >= 66 },
+        { label: 'Ready to start', completed: progress >= 100 },
+      ]
+    : [
+        { label: 'Fetching transcript', completed: progress >= 33 },
+        { label: 'Analyzing content', completed: progress >= 66 },
+        { label: 'Generating questions', completed: progress >= 100 },
+      ];
 
   if (loading) {
     return (

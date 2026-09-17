@@ -31,7 +31,24 @@ export function Dashboard() {
   useEffect(() => {
     const incomingPlaylistUrl = location.state?.playlistUrl as string | undefined;
     const incomingVideoUrl = location.state?.youtubeUrl as string | undefined;
+    const incomingPrompt = location.state?.prompt as string | undefined;
     const startTool = location.state?.startTool as string | undefined;
+    const examType = location.state?.examType as string | undefined;
+    if (incomingPrompt) {
+      navigate('/quiz-setup', {
+        state: { prompt: incomingPrompt, examType, startTool: 'quiz' },
+        replace: true,
+      });
+      return;
+    }
+    if (incomingVideoUrl && startTool === 'quiz') {
+      navigate('/quiz-setup', { state: { youtubeUrl: incomingVideoUrl }, replace: true });
+      return;
+    }
+    if (incomingPlaylistUrl && startTool === 'quiz') {
+      navigate('/playlist-setup/new', { state: { playlistUrl: incomingPlaylistUrl }, replace: true });
+      return;
+    }
     if (incomingPlaylistUrl) {
       navigate('/course-builder', { state: { youtubeUrl: incomingPlaylistUrl, startTool }, replace: true });
       return;

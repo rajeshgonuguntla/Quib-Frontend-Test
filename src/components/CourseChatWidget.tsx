@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { MessageCircle, Send, X, Loader2, ChevronsRight } from 'lucide-react';
 import axios from 'axios';
-import { sendCourseChat, type CourseChatMessage } from '../api/courseChatApi';
+import {
+  fetchCourseChatThread,
+  sendCourseChat,
+  type CourseChatMessage,
+} from '../api/courseChatApi';
 import { useTheme, getC } from './ThemeContext';
 import { LessonNotes } from './LessonNotes';
 import { QuibLogo } from './QuibLogo';
@@ -13,7 +17,7 @@ interface CourseChatWidgetProps {
   moduleId?: string;
   signedIn: boolean;
   onSignInRequired?: () => void;
-  /** Changes on login/logout/refresh — forces a fresh in-memory chat (never persisted). */
+  /** Changes on login/logout — reloads the persisted per-user thread. */
   sessionKey: string;
   /** `panel` = docked full-height column on the lesson page; `floating` = FAB overlay. */
   variant?: 'floating' | 'panel';
@@ -63,16 +67,48 @@ export function CourseChatWidget({
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<CourseChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingThread, setLoadingThread] = useState(false);
   const [error, setError] = useState(null as string | null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const resumeOpenedRef = useRef(false);
 
-  // In-memory only — reset when course or auth session changes (refresh/login/tab = new mount).
+  // Load persisted thread for this user+course (Finding 5).
   useEffect(() => {
-    setMessages([]);
     setInput('');
     setError(null);
+    resumeOpenedRef.current = false;
     if (!isPanel) setOpen(false);
-  }, [courseId, sessionKey, isPanel]);
+
+    if (!signedIn || !courseId) {
+      setMessages([]);
+      setLoadingThread(false);
+      return;
+    }
+
+    let cancelled = false;
+    setLoadingThread(true);
+    setMessages([]);
+    void fetchCourseChatThread(courseId)
+      .then((thread) => {
+        if (cancelled) return;
+        setMessages(thread);
+        // Reopen floating tutor when returning to an existing conversation.
+        if (!isPanel && thread.length > 0 && !resumeOpenedRef.current) {
+          resumeOpenedRef.current = true;
+          setOpen(true);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setMessages([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingThread(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [courseId, sessionKey, signedIn, isPanel]);
 
   useEffect(() => {
     if (!isPanel && openSignal > 0) setOpen((prev) => !prev);
@@ -82,7 +118,7 @@ export function CourseChatWidget({
     if ((open || isPanel) && scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [open, isPanel, messages, loading]);
+  }, [open, isPanel, messages, loading, loadingThread]);
 
   const sendMessage = async (rawText?: string, mode?: 'simplify') => {
     const text = (rawText ?? input).trim();
@@ -107,6 +143,7 @@ export function CourseChatWidget({
         mode,
         history: mode === 'simplify' ? history : undefined,
       });
+      // Server auto-saves the exchange; keep local UI in sync.
       setMessages((prev) => [...prev, { role: 'assistant', content: res.reply }]);
     } catch (err) {
       // ponytail: do not silent-enroll here — Start Learning is the enroll gate.
@@ -195,7 +232,13 @@ export function CourseChatWidget({
         className={`min-h-0 flex-1 overflow-y-auto overscroll-y-contain space-y-3 ${isCuib ? 'px-0 py-0' : 'px-4 py-4'}`}
         style={{ background: C.bg }}
       >
-        {messages.length === 0 && (
+        {loadingThread && messages.length === 0 && (
+          <div className="flex items-center gap-2 text-[0.78rem]" style={{ color: C.text3 }}>
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Restoring chat…
+          </div>
+        )}
+        {!loadingThread && messages.length === 0 && (
           <div
             className="text-[0.78rem] leading-relaxed"
             style={{

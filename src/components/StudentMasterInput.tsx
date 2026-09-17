@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router';
 import { ArrowRight, Upload } from 'lucide-react';
-import { getYoutubeUrlValidationError, isYoutubePlaylistUrl } from '../utils/youtubeUrl';
+import {
+  getYoutubeUrlValidationError,
+  isYoutubePlaylistUrl,
+  isYoutubeVideoUrl,
+} from '../utils/youtubeUrl';
 import {
   STUDENT_UPLOAD_ENABLED,
   STUDENT_YOUTUBE_INPUT_ENABLED,
@@ -15,7 +19,15 @@ const PHRASES = [
   'Paste a YouTube URL',
 ];
 
+const QUIZ_PHRASES = [
+  'SAT math: linear equations',
+  'GRE verbal: analogies',
+  'Test me on photosynthesis',
+  'Or paste a YouTube URL',
+];
+
 export type LearnerStartMode = 'course' | 'notes' | 'flashcards' | 'blanks' | 'quiz';
+export type SampleExamType = 'custom' | 'sat' | 'gre';
 
 /** Maps dashboard tool tabs onto lesson study-tool APIs. Quiz is a separate generate path. */
 export function studyToolFromStartMode(mode: string | undefined): 'notes' | 'flashcards' | 'blanks' | null {
@@ -25,10 +37,13 @@ export function studyToolFromStartMode(mode: string | undefined): 'notes' | 'fla
 
 const TABS: { id: LearnerStartMode; label: string }[] = [
   { id: 'course', label: 'Start learning' },
-  { id: 'notes', label: 'Get notes' },
-  { id: 'flashcards', label: 'Flashcards' },
-  { id: 'blanks', label: 'Fill in the blanks' },
   { id: 'quiz', label: 'Take a sample test' },
+];
+
+const EXAM_TYPES: { id: SampleExamType; label: string }[] = [
+  { id: 'custom', label: 'Custom' },
+  { id: 'sat', label: 'SAT' },
+  { id: 'gre', label: 'GRE' },
 ];
 
 type StudentMasterInputProps = {
@@ -48,7 +63,8 @@ function VideoGlyph() {
 export function StudentMasterInput({ className, signedIn = true }: StudentMasterInputProps) {
   const navigate = useNavigate();
   const [mode, setMode] = useState<LearnerStartMode>('course');
-  const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [examType, setExamType] = useState<SampleExamType>('custom');
+  const [inputValue, setInputValue] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [focused, setFocused] = useState(false);
   const [phText, setPhText] = useState('');
@@ -57,7 +73,13 @@ export function StudentMasterInput({ className, signedIn = true }: StudentMaster
   const activeRef = useRef(true);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const showTypewriter = !focused && !youtubeUrl.trim();
+  const isQuizMode = mode === 'quiz';
+  const showTypewriter = !focused && !inputValue.trim();
+  const phrases = isQuizMode ? QUIZ_PHRASES : PHRASES;
+
+  useEffect(() => {
+    phraseIdx.current = 0;
+  }, [isQuizMode]);
 
   useEffect(() => {
     if (!showTypewriter) {
@@ -75,7 +97,7 @@ export function StudentMasterInput({ className, signedIn = true }: StudentMaster
 
     const loop = async () => {
       while (activeRef.current) {
-        const phrase = PHRASES[phraseIdx.current % PHRASES.length]!;
+        const phrase = phrases[phraseIdx.current % phrases.length]!;
         for (let i = 0; i <= phrase.length; i++) {
           if (!activeRef.current) return;
           setPhText(phrase.slice(0, i));
@@ -89,7 +111,7 @@ export function StudentMasterInput({ className, signedIn = true }: StudentMaster
           await wait(30);
         }
         await wait(200);
-        phraseIdx.current = (phraseIdx.current + 1) % PHRASES.length;
+        phraseIdx.current = (phraseIdx.current + 1) % phrases.length;
       }
     };
 
@@ -98,31 +120,58 @@ export function StudentMasterInput({ className, signedIn = true }: StudentMaster
       activeRef.current = false;
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [showTypewriter]);
+  }, [showTypewriter, phrases]);
 
-  const submitYoutube = (e?: FormEvent) => {
+  const submitInput = (e?: FormEvent) => {
     e?.preventDefault();
-    const validationError = getYoutubeUrlValidationError(youtubeUrl);
+    const trimmed = inputValue.trim();
+
+    if (isQuizMode) {
+      const isYt = isYoutubePlaylistUrl(trimmed) || isYoutubeVideoUrl(trimmed);
+      if (isYt) {
+        setError(null);
+        if (!signedIn) {
+          navigate('/signin', {
+            state: isYoutubePlaylistUrl(trimmed)
+              ? { playlistUrl: trimmed, startTool: mode }
+              : { youtubeUrl: trimmed, startTool: mode },
+          });
+          return;
+        }
+        if (isYoutubePlaylistUrl(trimmed)) {
+          navigate('/playlist-setup/new', { state: { playlistUrl: trimmed } });
+          return;
+        }
+        navigate('/quiz-setup', { state: { youtubeUrl: trimmed } });
+        return;
+      }
+
+      if (trimmed.length < 8) {
+        setError('Describe what you want to be tested on (or paste a YouTube URL).');
+        return;
+      }
+      setError(null);
+      const promptState = { prompt: trimmed, examType, startTool: 'quiz' as const };
+      if (!signedIn) {
+        navigate('/signin', { state: promptState });
+        return;
+      }
+      navigate('/quiz-setup', { state: promptState });
+      return;
+    }
+
+    const validationError = getYoutubeUrlValidationError(inputValue);
     if (validationError) {
       setError(validationError);
       return;
     }
     setError(null);
-    const trimmed = youtubeUrl.trim();
     if (!signedIn) {
       navigate('/signin', {
         state: isYoutubePlaylistUrl(trimmed)
           ? { playlistUrl: trimmed, startTool: mode }
           : { youtubeUrl: trimmed, startTool: mode },
       });
-      return;
-    }
-    if (mode === 'quiz') {
-      if (isYoutubePlaylistUrl(trimmed)) {
-        navigate('/playlist-setup/new', { state: { playlistUrl: trimmed } });
-        return;
-      }
-      navigate('/quiz-setup', { state: { youtubeUrl: trimmed } });
       return;
     }
     navigate('/course-builder', { state: { youtubeUrl: trimmed, startTool: mode } });
@@ -133,7 +182,7 @@ export function StudentMasterInput({ className, signedIn = true }: StudentMaster
   return (
     <div className={className}>
       <form
-        onSubmit={submitYoutube}
+        onSubmit={submitInput}
         className={cn(
           'flex flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)]',
           'shadow-[var(--shadow)] transition-[border-color,box-shadow] duration-150',
@@ -163,6 +212,30 @@ export function StudentMasterInput({ className, signedIn = true }: StudentMaster
           </div>
         )}
 
+        {signedIn && isQuizMode && (
+          <div className="flex items-center gap-1 overflow-x-auto px-3 pb-1 [scrollbar-width:none]">
+            {EXAM_TYPES.map((opt) => {
+              const active = examType === opt.id;
+              return (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => setExamType(opt.id)}
+                  className="shrink-0 rounded-full px-2.5 py-1 text-[10px] transition-colors"
+                  style={{
+                    fontWeight: active ? 700 : 600,
+                    color: active ? 'var(--ink)' : 'var(--ink-faint)',
+                    background: active ? 'var(--accent-soft)' : 'transparent',
+                    border: active ? '1px solid var(--border)' : '1px solid transparent',
+                  }}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         <div className="flex items-center">
           <div className="flex shrink-0 items-center justify-center px-3.5 py-0 pl-3.5 text-[var(--ink-faint)]">
             <VideoGlyph />
@@ -170,10 +243,10 @@ export function StudentMasterInput({ className, signedIn = true }: StudentMaster
 
           <div className="relative flex min-w-0 flex-1 items-center overflow-hidden">
             <input
-              type="url"
-              value={youtubeUrl}
+              type="text"
+              value={inputValue}
               onChange={(e) => {
-                setYoutubeUrl(e.target.value);
+                setInputValue(e.target.value);
                 if (error) setError(null);
               }}
               onFocus={() => setFocused(true)}
@@ -185,7 +258,7 @@ export function StudentMasterInput({ className, signedIn = true }: StudentMaster
                 color: 'var(--ink)',
                 caretColor: 'var(--accent)',
               }}
-              aria-label="YouTube URL or topic"
+              aria-label={isQuizMode ? 'Test topic or YouTube URL' : 'YouTube URL or topic'}
               autoComplete="off"
             />
             {showTypewriter && (
