@@ -1,7 +1,12 @@
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { sendCourseChat } from '../api/courseChatApi';
-import { buildQuizHelpMessage, type QuizHelpKind } from '../utils/quizSecondChance';
+import {
+  buildQuizHelpMessage,
+  parseSimilarPracticeQuestion,
+  type QuizHelpKind,
+  type SimilarPracticeQuestion,
+} from '../utils/quizSecondChance';
 
 type Theme = {
   text: string;
@@ -18,6 +23,9 @@ interface ModuleQuizSecondChanceProps {
   question: string;
   options: string[];
   C: Theme;
+  onRetry: () => void;
+  /** Swap the missed question UI for a similar practice question. */
+  onSimilarQuestion: (practice: SimilarPracticeQuestion) => void;
 }
 
 const ACTIONS: { kind: QuizHelpKind | 'retry'; label: string }[] = [
@@ -34,8 +42,9 @@ export function ModuleQuizSecondChance({
   options,
   C,
   onRetry,
-}: ModuleQuizSecondChanceProps & { onRetry: () => void }) {
-  const [help, setHelp] = useState<{ kind: QuizHelpKind; text: string } | null>(null);
+  onSimilarQuestion,
+}: ModuleQuizSecondChanceProps) {
+  const [help, setHelp] = useState<{ kind: Exclude<QuizHelpKind, 'similar'>; text: string } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -46,6 +55,16 @@ export function ModuleQuizSecondChance({
       const res = await sendCourseChat(courseId, buildQuizHelpMessage(kind, question, options), {
         moduleId,
       });
+      if (kind === 'similar') {
+        const practice = parseSimilarPracticeQuestion(res.reply);
+        if (!practice) {
+          setError('Could not build a practice question. Try again.');
+          return;
+        }
+        setHelp(null);
+        onSimilarQuestion(practice);
+        return;
+      }
       setHelp({ kind, text: res.reply });
     } catch {
       setError('Could not load help. Try again in a moment.');

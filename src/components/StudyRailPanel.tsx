@@ -1,6 +1,6 @@
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import axios from 'axios';
-import { Loader2, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Loader2, RotateCcw, ChevronLeft, ChevronRight, Flag } from 'lucide-react';
 import {
   generateLessonStudyTool,
   type LessonStudyToolResponse,
@@ -275,6 +275,9 @@ function BlanksQuiz({ items, C, isDark }: { items: StudyBlank[]; C: Theme; isDar
     return acc + (a && a === expected ? 1 : 0);
   }, 0);
 
+  const cardBg = isDark ? C.bg1 : '#ffffff';
+  const inputBg = isDark ? C.bg2 : '#ffffff';
+
   return (
     <div className="space-y-4">
       {items.map((item, i) => {
@@ -282,9 +285,21 @@ function BlanksQuiz({ items, C, isDark }: { items: StudyBlank[]; C: Theme; isDar
         const ok = submitted && user.trim().toLowerCase() === item.answer.trim().toLowerCase();
         const bad = submitted && !ok;
         return (
-          <div key={i} className="rounded-2xl p-5" style={{ background: C.bg1, border: `1px solid ${C.border}` }}>
-            <p className="text-[0.875rem] mb-3 leading-relaxed" style={{ color: C.text }}>
-              <span style={{ color: C.red, fontFamily: 'var(--mono)', fontSize: '0.72rem', marginRight: 8 }}>Q{i + 1}</span>
+          <div
+            key={i}
+            className="rounded-2xl p-5"
+            style={{
+              background: cardBg,
+              border: `1px solid ${C.border}`,
+            }}
+          >
+            <p
+              className={`text-[0.875rem] mb-3 leading-relaxed ${isDark ? '' : 'font-[700]'}`}
+              style={{ color: C.text }}
+            >
+              <span style={{ color: C.red, fontFamily: 'var(--mono)', fontSize: '0.72rem', marginRight: 8 }}>
+                Q{i + 1}
+              </span>
               {item.sentence}
             </p>
             {item.hint?.trim() && !submitted && (
@@ -297,7 +312,7 @@ function BlanksQuiz({ items, C, isDark }: { items: StudyBlank[]; C: Theme; isDar
               placeholder="Your answer"
               className="w-full rounded-xl px-3 py-2.5 text-[0.85rem] outline-none"
               style={{
-                background: C.bg2,
+                background: inputBg,
                 border: `1px solid ${ok ? 'rgba(34,197,94,0.45)' : bad ? 'rgba(225,6,0,0.4)' : C.border}`,
                 color: C.text,
               }}
@@ -338,6 +353,199 @@ function BlanksQuiz({ items, C, isDark }: { items: StudyBlank[]; C: Theme; isDar
 }
 
 function ExamQuiz({ questions, C, isDark }: { questions: StudyExamQuestion[]; C: Theme; isDark: boolean }) {
+  if (!isDark) {
+    return <ExamQuizGreStyle questions={questions} C={C} />;
+  }
+  return <ExamQuizListStyle questions={questions} C={C} isDark />;
+}
+
+/** Light-mode GRE/SAT style — one question at a time. */
+function ExamQuizGreStyle({ questions, C }: { questions: StudyExamQuestion[]; C: Theme }) {
+  const [answers, setAnswers] = useState<Record<number, number>>({});
+  const [index, setIndex] = useState(0);
+  const [submitted, setSubmitted] = useState(false);
+  const [flagged, setFlagged] = useState<Record<number, boolean>>({});
+
+  const total = questions.length;
+  const q = questions[index];
+  const selected = q ? answers[index] : undefined;
+  const hasAnswer = selected != null;
+  const allAnswered = questions.every((_, i) => answers[i] != null);
+  const score = questions.reduce((acc, question, i) => acc + (answers[i] === question.correctAnswerIndex ? 1 : 0), 0);
+  const progressPct = total > 0 ? ((index + 1) / total) * 100 : 0;
+
+  if (!q) return null;
+
+  if (submitted) {
+    return (
+      <div className="rounded-2xl p-6" style={{ background: '#ffffff', border: `1px solid ${C.border}` }}>
+        <p className="font-[600] text-[0.95rem]" style={{ color: C.text }}>
+          {score}/{total} correct ({Math.round((score / Math.max(total, 1)) * 100)}%)
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            setSubmitted(false);
+            setAnswers({});
+            setIndex(0);
+            setFlagged({});
+          }}
+          className="mt-3 text-[0.8rem] underline cursor-pointer"
+          style={{ background: 'none', border: 'none', color: C.text2 }}
+        >
+          Retake
+        </button>
+      </div>
+    );
+  }
+
+  const selectedText = selected != null ? q.options[selected] : undefined;
+
+  return (
+    <div className="rounded-2xl overflow-hidden" style={{ background: '#ffffff', border: `1px solid ${C.border}` }}>
+      <div className="px-6 pt-5 pb-6">
+        <div className="flex items-center justify-between mb-8">
+          <span
+            className="inline-flex items-center rounded-full px-3 py-1 text-[0.65rem] font-[600] tracking-[0.06em] uppercase"
+            style={{ background: C.bg1, color: C.text3, border: `1px solid ${C.border}` }}
+          >
+            Multiple choice
+          </span>
+          <button
+            type="button"
+            aria-label={flagged[index] ? 'Unflag question' : 'Flag question'}
+            aria-pressed={!!flagged[index]}
+            onClick={() => setFlagged((prev) => ({ ...prev, [index]: !prev[index] }))}
+            className="inline-flex size-9 items-center justify-center rounded-lg cursor-pointer"
+            style={{
+              background: flagged[index] ? 'rgba(225,6,0,0.08)' : 'transparent',
+              border: `1px solid ${flagged[index] ? C.red : C.border}`,
+              color: flagged[index] ? C.red : C.text3,
+            }}
+          >
+            <Flag className="w-4 h-4" />
+          </button>
+        </div>
+
+        <p className="text-[1.25rem] leading-[1.55] font-[500] mb-8" style={{ color: C.text }}>
+          {renderExamStem(q.question, selectedText, C.red)}
+        </p>
+
+        <div className="space-y-3">
+          {q.options.map((opt, oi) => {
+            const isSelected = selected === oi;
+            return (
+              <button
+                key={oi}
+                type="button"
+                onClick={() => setAnswers((prev) => ({ ...prev, [index]: oi }))}
+                className="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-xl text-[0.95rem] cursor-pointer"
+                style={{
+                  background: isSelected ? 'rgba(225,6,0,0.04)' : '#ffffff',
+                  border: `1px solid ${isSelected ? C.red : C.border}`,
+                  color: C.text,
+                }}
+              >
+                <span
+                  className="inline-flex size-[18px] shrink-0 items-center justify-center rounded-full"
+                  style={{
+                    border: `2px solid ${isSelected ? C.red : C.border}`,
+                    background: isSelected ? C.red : 'transparent',
+                  }}
+                  aria-hidden
+                >
+                  {isSelected ? <span className="size-1.5 rounded-full bg-white" /> : null}
+                </span>
+                {opt}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div
+        className="flex flex-wrap items-center justify-between gap-4 px-6 py-4"
+        style={{ borderTop: `1px solid ${C.border}` }}
+      >
+        <div className="flex items-center gap-3 min-w-[140px] flex-1">
+          <div className="h-1 flex-1 max-w-[160px] rounded-full overflow-hidden" style={{ background: C.bg2 }}>
+            <div className="h-full rounded-full" style={{ width: `${progressPct}%`, background: C.red }} />
+          </div>
+          <span className="text-[0.8rem] tabular-nums whitespace-nowrap" style={{ color: C.text2, fontFamily: 'var(--mono)' }}>
+            {index + 1} / {total}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            disabled={index === 0}
+            onClick={() => setIndex((i) => Math.max(0, i - 1))}
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[0.82rem] font-[600] cursor-pointer disabled:opacity-40"
+            style={{ background: '#ffffff', border: `1px solid ${C.border}`, color: C.text }}
+          >
+            <ChevronLeft className="w-4 h-4" /> Previous
+          </button>
+          {index < total - 1 ? (
+            <button
+              type="button"
+              disabled={!hasAnswer}
+              onClick={() => setIndex((i) => Math.min(total - 1, i + 1))}
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[0.82rem] font-[600] cursor-pointer disabled:opacity-40"
+              style={{
+                background: hasAnswer ? C.red : '#ffffff',
+                border: `1px solid ${hasAnswer ? C.red : C.border}`,
+                color: hasAnswer ? '#fff' : C.text,
+              }}
+            >
+              Next <ChevronRight className="w-4 h-4" />
+            </button>
+          ) : (
+            <button
+              type="button"
+              disabled={!allAnswered}
+              onClick={() => setSubmitted(true)}
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[0.82rem] font-[600] cursor-pointer disabled:opacity-40"
+              style={{
+                background: allAnswered ? C.red : '#ffffff',
+                border: `1px solid ${allAnswered ? C.red : C.border}`,
+                color: allAnswered ? '#fff' : C.text,
+              }}
+            >
+              Submit
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function renderExamStem(question: string, selectedOption: string | undefined, accent: string): ReactNode {
+  const blankRe = /_{2,}|……|\u2026{1,}/;
+  if (selectedOption && blankRe.test(question)) {
+    const parts = question.split(blankRe);
+    const nodes: ReactNode[] = [];
+    parts.forEach((part, i) => {
+      nodes.push(<span key={`t-${i}`}>{part}</span>);
+      if (i < parts.length - 1) {
+        nodes.push(
+          <span
+            key={`b-${i}`}
+            className="font-[600]"
+            style={{ color: accent, borderBottom: `2px solid ${accent}`, paddingBottom: 1 }}
+          >
+            {selectedOption}
+          </span>,
+        );
+      }
+    });
+    return nodes;
+  }
+  return question;
+}
+
+/** Dark-mode list layout (unchanged). */
+function ExamQuizListStyle({ questions, C, isDark }: { questions: StudyExamQuestion[]; C: Theme; isDark: boolean }) {
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [submitted, setSubmitted] = useState(false);
 

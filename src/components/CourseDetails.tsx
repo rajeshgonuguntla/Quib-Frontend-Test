@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, type PointerEvent as ReactPointerEvent } from 'react';
 import { Link, useNavigate, useLocation, useParams } from 'react-router';
 import axios from 'axios';
 import {
@@ -34,7 +34,6 @@ import { StudyRailPanel } from './StudyRailPanel';
 import { fetchCourseAssignmentSummary } from '../api/assignmentApi';
 import { CourseAssignmentPanel } from './assignments/ModuleAssignmentPanel';
 import { YoutubeLessonPlayer, type YoutubeLessonPlayerHandle } from './YoutubeLessonPlayer';
-import { LessonFeedbackPanel } from './LessonFeedbackPanel';
 import { CourseReviewPanel } from './CourseReviewPanel';
 import { StudentLessonNotesEditor } from './StudentLessonNotesEditor';
 import { LessonTranscriptPanel } from './LessonTranscriptPanel';
@@ -47,7 +46,7 @@ import {
   markCourseLaunched,
   wasCourseLaunched,
 } from '../utils/courseLaunch';
-import { isModuleQuizQuestionWrong } from '../utils/quizSecondChance';
+import { isModuleQuizQuestionWrong, type SimilarPracticeQuestion } from '../utils/quizSecondChance';
 import type { CourseGenerationOptions, EditableCourse } from '../types/courseGeneration';
 import { studyToolFromStartMode } from './StudentMasterInput';
 import { UserAvatar } from './UserAvatar';
@@ -267,6 +266,30 @@ function ModuleLessonFlyout({
 
 // ─── Learning Mode ─────────────────────────────────────────────────────────────
 
+const ASSISTANT_PANEL_MIN = 260;
+const ASSISTANT_PANEL_MAX = 520;
+const ASSISTANT_PANEL_DEFAULT = 300;
+const ASSISTANT_PANEL_WIDTH_KEY = 'cuib_assistant_panel_width';
+
+function readAssistantPanelWidth(): number {
+  try {
+    const raw = localStorage.getItem(ASSISTANT_PANEL_WIDTH_KEY);
+    const n = raw ? Number(raw) : ASSISTANT_PANEL_DEFAULT;
+    if (!Number.isFinite(n)) return ASSISTANT_PANEL_DEFAULT;
+    return Math.min(ASSISTANT_PANEL_MAX, Math.max(ASSISTANT_PANEL_MIN, Math.round(n)));
+  } catch {
+    return ASSISTANT_PANEL_DEFAULT;
+  }
+}
+
+function writeAssistantPanelWidth(width: number) {
+  try {
+    localStorage.setItem(ASSISTANT_PANEL_WIDTH_KEY, String(width));
+  } catch {
+    /* ignore quota / private mode */
+  }
+}
+
 function LearningMode({
   course,
   courseId,
@@ -327,10 +350,49 @@ function LearningMode({
   const [quizResult, setQuizResult] = useState<ModuleQuizResult | null>(null);
   const [quizSubmitError, setQuizSubmitError] = useState<string | null>(null);
   const [quizRetrying, setQuizRetrying] = useState<Record<number, boolean>>({});
+  const [similarPractice, setSimilarPractice] = useState<Record<number, SimilarPracticeQuestion>>({});
   const [lessonActionError, setLessonActionError] = useState<string | null>(null);
   const [downloadBusy, setDownloadBusy] = useState(false);
   const [resumeTarget, setResumeTarget] = useState<{ lessonId: string; positionSec: number } | null>(null);
   const resumeAppliedRef = useRef(false);
+  const [assistantWidth, setAssistantWidth] = useState(() => readAssistantPanelWidth());
+  const assistantResizeRef = useRef<{ startX: number; startWidth: number } | null>(null);
+
+  const handleAssistantResizePointerDown = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    const handle = event.currentTarget;
+    handle.setPointerCapture(event.pointerId);
+    assistantResizeRef.current = { startX: event.clientX, startWidth: assistantWidth };
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }, [assistantWidth]);
+
+  const handleAssistantResizePointerMove = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    const drag = assistantResizeRef.current;
+    if (!drag) return;
+    // Left edge: drag left → wider panel, drag right → narrower
+    const next = Math.min(
+      ASSISTANT_PANEL_MAX,
+      Math.max(ASSISTANT_PANEL_MIN, drag.startWidth + (drag.startX - event.clientX)),
+    );
+    setAssistantWidth(next);
+  }, []);
+
+  const handleAssistantResizePointerUp = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!assistantResizeRef.current) return;
+    assistantResizeRef.current = null;
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    try {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    } catch {
+      /* already released */
+    }
+    setAssistantWidth((width) => {
+      writeAssistantPanelWidth(width);
+      return width;
+    });
+  }, []);
 
   const handleDownloadCourse = useCallback(async () => {
     if (downloadBusy) return;
@@ -455,6 +517,7 @@ function LearningMode({
     setQuizResult(null);
     setQuizSubmitError(null);
     setQuizRetrying({});
+    setSimilarPractice({});
     setResumeTarget((prev) => (prev?.lessonId === id ? prev : null));
   };
 
@@ -468,6 +531,7 @@ function LearningMode({
     setQuizResult(null);
     setQuizSubmitError(null);
     setQuizRetrying({});
+    setSimilarPractice({});
   };
 
   const openAssignment = () => {
@@ -479,6 +543,7 @@ function LearningMode({
     setQuizResult(null);
     setQuizSubmitError(null);
     setQuizRetrying({});
+    setSimilarPractice({});
   };
 
   const selectModule = (moduleId: string) => {
@@ -535,6 +600,7 @@ function LearningMode({
       setQuizResult(result);
       setQuizSubmitted(true);
       setQuizRetrying({});
+      setSimilarPractice({});
       await reloadProgress();
     } catch {
       setQuizSubmitError('Could not submit quiz. Please sign in and try again.');
@@ -542,6 +608,10 @@ function LearningMode({
   };
 
   const correctAnswerForQuestion = (questionIndex: number): number | undefined => {
+    const practice = similarPractice[questionIndex];
+    if (practice && practice.correctIndex != null && practice.correctIndex >= 0) {
+      return practice.correctIndex;
+    }
     const fromResult = quizResult?.questionResults?.find((r) => r.questionIndex === questionIndex)?.correctAnswer;
     if (fromResult != null && fromResult >= 0) return fromResult;
     return undefined;
@@ -725,10 +795,13 @@ function LearningMode({
       <div
         className={`grid flex-1 min-h-0 overflow-hidden ${
           tutorAvailable
-            ? 'grid-cols-1 md:grid-cols-[240px_minmax(0,1fr)] lg:grid-cols-[240px_minmax(0,1fr)_300px]'
+            ? 'grid-cols-1 md:grid-cols-[240px_minmax(0,1fr)] lg:grid-cols-[240px_minmax(0,1fr)_var(--assistant-w)]'
             : 'grid-cols-1 md:grid-cols-[240px_minmax(0,1fr)]'
         }`}
-        style={{ height: 'calc(100vh - 73px)' }}
+        style={{
+          height: 'calc(100vh - 73px)',
+          ['--assistant-w' as string]: `${assistantWidth}px`,
+        }}
       >
         {/* Left lesson side */}
         <aside
@@ -972,13 +1045,6 @@ function LearningMode({
                       <p className="text-[0.8rem]" style={{ color: C.red }}>{lessonActionError}</p>
                     )}
                   </div>
-                  <LessonFeedbackPanel
-                    courseId={courseId}
-                    lessonId={activeLessonId}
-                    lessonTitle={activeLesson?.title}
-                    enabled={chatSignedIn}
-                    theme={C}
-                  />
                   <CourseReviewPanel courseId={courseId} enabled={chatSignedIn} theme={C} />
                 </>
               )}
@@ -1030,18 +1096,37 @@ function LearningMode({
               <p className="text-[0.85rem] mb-8" style={{ color: C.text2 }}>{activeQuizModule.quiz.length} questions · Test your understanding</p>
               <div className="space-y-5 mb-8">
                 {activeQuizModule.quiz.map((q, qi) => {
+                  const practice = similarPractice[qi];
+                  const displayQuestion = practice?.question ?? q.question;
+                  const displayOptions = practice?.options ?? q.options;
                   const retrying = !!quizRetrying[qi];
                   const canPick = !quizSubmitted || retrying;
                   const showReveal = quizSubmitted && !retrying;
                   const missed = isModuleQuizQuestionWrong(quizResult?.questionResults, qi);
                   return (
-                    <div key={qi} className="rounded-2xl p-6" style={{ background: C.bg1, border: `1px solid ${C.border}` }}>
-                      <p className="text-[0.875rem] font-[500] mb-4 leading-relaxed" style={{ color: C.text }}>
-                        <span style={{ color: C.red, fontFamily: 'var(--mono)', fontSize: '0.72rem', marginRight: 8 }}>Q{qi + 1}</span>
-                        {q.question}
-                      </p>
+                    <div key={qi} className="rounded-2xl p-6" style={{ background: isDark ? C.bg1 : '#ffffff', border: `1px solid ${C.border}` }}>
+                      {isDark ? (
+                        <p className="text-[0.875rem] font-[500] mb-4 leading-relaxed" style={{ color: C.text }}>
+                          <span style={{ color: C.red, fontFamily: 'var(--mono)', fontSize: '0.72rem', marginRight: 8 }}>
+                            {practice ? 'Practice' : `Q${qi + 1}`}
+                          </span>
+                          {displayQuestion}
+                        </p>
+                      ) : (
+                        <div className="mb-4">
+                          <p
+                            className="mb-2"
+                            style={{ color: C.red, fontFamily: 'var(--mono)', fontSize: '0.72rem', fontWeight: 600 }}
+                          >
+                            {practice ? 'Practice' : String(qi + 1).padStart(2, '0')}
+                          </p>
+                          <p className="text-[0.875rem] font-[700] leading-relaxed" style={{ color: C.text }}>
+                            {displayQuestion}
+                          </p>
+                        </div>
+                      )}
                       <div className="space-y-2">
-                        {q.options.map((opt, oi) => {
+                        {displayOptions.map((opt, oi) => {
                           const selected = quizAnswers[qi] === oi;
                           const correctAnswer = correctAnswerForQuestion(qi);
                           const correct = showReveal && correctAnswer != null && oi === correctAnswer;
@@ -1057,14 +1142,14 @@ function LearningMode({
                               }
                             }}
                               className="w-full text-left px-4 py-3 rounded-xl text-[0.82rem] transition-all"
-                              style={{ background: (correct || retryCorrect) ? 'rgba(34,197,94,0.12)' : (wrong || retryWrong) ? 'rgba(225,6,0,0.1)' : selected ? isDark ? 'rgba(225,6,0,0.1)' : 'rgba(225,6,0,0.06)' : isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.025)', border: `1px solid ${(correct || retryCorrect) ? 'rgba(34,197,94,0.35)' : (wrong || retryWrong) ? 'rgba(225,6,0,0.3)' : selected ? C.red : C.border}`, color: (correct || retryCorrect) ? '#22c55e' : (wrong || retryWrong) ? C.red : C.text2, cursor: canPick ? 'pointer' : 'default' }}>
+                              style={{ background: (correct || retryCorrect) ? 'rgba(34,197,94,0.12)' : (wrong || retryWrong) ? 'rgba(225,6,0,0.1)' : selected ? isDark ? 'rgba(225,6,0,0.1)' : 'rgba(225,6,0,0.06)' : isDark ? 'rgba(255,255,255,0.03)' : '#ffffff', border: `1px solid ${(correct || retryCorrect) ? 'rgba(34,197,94,0.35)' : (wrong || retryWrong) ? 'rgba(225,6,0,0.3)' : selected ? C.red : C.border}`, color: (correct || retryCorrect) ? '#22c55e' : (wrong || retryWrong) ? C.red : C.text2, cursor: canPick ? 'pointer' : 'default' }}>
                               <span className="font-[600] mr-2" style={{ fontFamily: 'var(--mono)', fontSize: '0.72rem' }}>{String.fromCharCode(65 + oi)}.</span>
                               {opt}
                             </button>
                           );
                         })}
                       </div>
-                      {quizSubmitted && missed && (
+                      {quizSubmitted && missed && !practice && (
                         <ModuleQuizSecondChance
                           courseId={courseId}
                           moduleId={activeQuizModule.id}
@@ -1072,6 +1157,20 @@ function LearningMode({
                           options={q.options}
                           C={C}
                           onRetry={() => {
+                            setSimilarPractice((prev) => {
+                              const next = { ...prev };
+                              delete next[qi];
+                              return next;
+                            });
+                            setQuizRetrying((prev) => ({ ...prev, [qi]: true }));
+                            setQuizAnswers((prev) => {
+                              const next = { ...prev };
+                              delete next[qi];
+                              return next;
+                            });
+                          }}
+                          onSimilarQuestion={(nextPractice) => {
+                            setSimilarPractice((prev) => ({ ...prev, [qi]: nextPractice }));
                             setQuizRetrying((prev) => ({ ...prev, [qi]: true }));
                             setQuizAnswers((prev) => {
                               const next = { ...prev };
@@ -1083,7 +1182,9 @@ function LearningMode({
                       )}
                       {retrying && (
                         <p className="mt-3 text-[0.75rem]" style={{ color: C.text3 }}>
-                          Practice retry — pick again. Official quiz score above stays the same.
+                          {practice
+                            ? 'Similar practice question — pick an answer. Official quiz score above stays the same.'
+                            : 'Practice retry — pick again. Official quiz score above stays the same.'}
                         </p>
                       )}
                     </div>
@@ -1146,13 +1247,50 @@ function LearningMode({
         {/* Right assistant — always visible on desktop */}
         {tutorAvailable && (
           <aside
-            className="hidden lg:flex flex-col min-h-0 overflow-hidden"
+            className="relative hidden lg:flex flex-col min-h-0 overflow-hidden"
             style={{
               borderLeft: `1px solid ${C.border}`,
               padding: '28px 24px 20px',
               background: C.bg,
             }}
           >
+            <div
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Resize course assistant"
+              aria-valuemin={ASSISTANT_PANEL_MIN}
+              aria-valuemax={ASSISTANT_PANEL_MAX}
+              aria-valuenow={assistantWidth}
+              tabIndex={0}
+              onPointerDown={handleAssistantResizePointerDown}
+              onPointerMove={handleAssistantResizePointerMove}
+              onPointerUp={handleAssistantResizePointerUp}
+              onPointerCancel={handleAssistantResizePointerUp}
+              onKeyDown={(event) => {
+                if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+                event.preventDefault();
+                const step = event.shiftKey ? 24 : 12;
+                const delta = event.key === 'ArrowLeft' ? step : -step;
+                setAssistantWidth((width) => {
+                  const next = Math.min(
+                    ASSISTANT_PANEL_MAX,
+                    Math.max(ASSISTANT_PANEL_MIN, width + delta),
+                  );
+                  writeAssistantPanelWidth(next);
+                  return next;
+                });
+              }}
+              className="group absolute inset-y-0 left-0 z-20 w-3 -translate-x-1/2 cursor-col-resize touch-none"
+            >
+              <span
+                className="pointer-events-none absolute inset-y-0 left-1/2 w-px -translate-x-1/2 transition-colors group-hover:bg-[var(--accent)] group-focus-visible:bg-[var(--accent)]"
+                style={{ background: C.border }}
+              />
+              <span
+                className="pointer-events-none absolute left-1/2 top-1/2 h-8 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100 group-active:opacity-100"
+                style={{ background: C.red }}
+              />
+            </div>
             {showEducatorAssistant ? (
               <EducatorAssistantWidget
                 key={chatSessionKey}
@@ -1675,7 +1813,7 @@ export function CourseDetails() {
 
   // ── Learning Mode ──
   const chatSessionKey = `${resolvedCourseId ?? 'course'}-${authSessionKey}`;
-  // Ask tutor only after Start Learning — never on the pre-launch overview.
+  // Creators (owner + educator) keep the editing assistant; learners get Q&A chat.
   const showEducatorAssistant = chatSignedIn && isOwner && isEducator && !!resolvedCourseId;
   const showCourseChat = learningMode && !!resolvedCourseId && !showEducatorAssistant;
   const handleEducatorApplyUpdate = (result: AssistantApplyResult) => {

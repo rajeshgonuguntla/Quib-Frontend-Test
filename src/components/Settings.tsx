@@ -179,16 +179,14 @@ export function Settings() {
         <button type="button" className="settings-link" onClick={handleSignOut}>Sign out</button>
       </div>
 
-      {extra === 'help' && (
-        <>
-          <div className="card-divider" />
-          <div className="settings-section">
-            <div className="settings-section-title">Help</div>
-            <a className="settings-link" href="mailto:support@cuib.ai">support@cuib.ai</a>
-            <Link className="settings-link" to="/discover?tab=courses">Browse courses</Link>
-          </div>
-        </>
-      )}
+      <div className="card-divider" />
+
+      <div className="settings-section">
+        <div className="settings-section-title">Help</div>
+        <a className="settings-link" href="mailto:support@cuib.ai">support@cuib.ai</a>
+        <Link className="settings-link" to="/discover?tab=courses">Browse courses</Link>
+      </div>
+
       {extra === 'billing' && (
         <>
           <div className="card-divider" />

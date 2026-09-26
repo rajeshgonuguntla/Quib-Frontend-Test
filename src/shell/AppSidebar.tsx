@@ -1,9 +1,10 @@
 import { useNavigate } from 'react-router';
 import { SidebarNavItem } from '../components/SidebarNavItem';
 import { NAV_GROUPS, isNavItemActive, type NavItem } from './navConfig';
-import { filterNavGroups, isEducatorExperience } from '../utils/signInIntent';
+import { filterNavGroups, isEducatorExperience, isAdminAccount } from '../utils/signInIntent';
 import { useUserProfile } from '../context/UserProfileContext';
 import { useShell } from './ShellContext';
+import { billingPlanLabel, hidesUpgradeCta } from '../api/billingApi';
 
 type AppSidebarProps = {
   pathname: string;
@@ -11,7 +12,7 @@ type AppSidebarProps = {
   onNavigate?: () => void;
 };
 
-const FOOTER_NAV_IDS = new Set(['settings', 'help']);
+const FOOTER_NAV_IDS = new Set(['settings']);
 
 function NavList({
   items,
@@ -50,6 +51,32 @@ function NavList({
           />
         );
       })}
+    </div>
+  );
+}
+
+function SidebarUpgradeChip({ onNavigate }: { onNavigate?: () => void }) {
+  const navigate = useNavigate();
+  const { profile } = useUserProfile();
+  const { billing } = useShell();
+  if (!profile || isAdminAccount(profile)) return null;
+  if (billing && hidesUpgradeCta(billing)) return null;
+
+  return (
+    <div className="cuib-upgrade-chip mt-3">
+      <span className="text-[12.5px] font-semibold text-[var(--ink-soft)]">
+        {billingPlanLabel(billing, false)}
+      </span>
+      <button
+        type="button"
+        onClick={() => {
+          navigate('/upgrade');
+          onNavigate?.();
+        }}
+        className="rounded-full bg-[var(--accent)] px-4 py-[9px] text-[12.5px] font-bold text-white transition-opacity hover:opacity-[0.88] active:scale-95"
+      >
+        Upgrade
+      </button>
     </div>
   );
 }
@@ -96,14 +123,15 @@ export function AppSidebar({ pathname, search, onNavigate }: AppSidebarProps) {
         ) : null}
       </div>
 
-      {footerItems.length > 0 ? (
-        <div
-          className="mt-auto shrink-0 pt-4"
-          style={{ borderTop: '1px solid var(--border)' }}
-        >
+      <div
+        className="mt-auto shrink-0 pt-4"
+        style={{ borderTop: '1px solid var(--border)' }}
+      >
+        {footerItems.length > 0 ? (
           <NavList items={footerItems} pathname={pathname} search={search} onNavigate={onNavigate} />
-        </div>
-      ) : null}
+        ) : null}
+        <SidebarUpgradeChip onNavigate={onNavigate} />
+      </div>
     </nav>
   );
 }

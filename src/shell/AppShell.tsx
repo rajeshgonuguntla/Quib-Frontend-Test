@@ -11,7 +11,8 @@ import { isAdminAccount } from '../utils/signInIntent';
 import { billingPlanLabel, hidesUpgradeCta } from '../api/billingApi';
 import { useShell } from './ShellContext';
 
-function UpgradeFab() {
+/** Mobile-only — desktop upgrade chip lives in the sidebar under Settings. */
+function MobileUpgradeFab() {
   const navigate = useNavigate();
   const { profile } = useUserProfile();
   const { billing } = useShell();
@@ -73,7 +74,7 @@ export function AppShell() {
           </main>
         </div>
 
-        {!educatorWorkspace && <UpgradeFab />}
+        {!educatorWorkspace && <MobileUpgradeFab />}
       </div>
     </ShellProvider>
   );

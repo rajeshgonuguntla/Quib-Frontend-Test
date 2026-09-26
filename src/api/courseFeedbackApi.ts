@@ -6,22 +6,6 @@ export interface CourseReview {
   updatedAt: string;
 }
 
-export interface LessonComment {
-  id: string;
-  body: string;
-  authorName: string;
-  isOwner: boolean;
-  answered: boolean;
-  educatorReply: string | null;
-  createdAt: string;
-}
-
-export interface LessonReaction {
-  value: number;
-  thumbsUp: number;
-  thumbsDown: number;
-}
-
 export async function submitCourseReview(
   courseId: string,
   rating: number,
@@ -36,60 +20,6 @@ export async function submitCourseReview(
 
 export async function fetchMyCourseReview(courseId: string): Promise<CourseReview | null> {
   const { data } = await axios.get<CourseReview | null>(`/api/courses/${courseId}/reviews/mine`);
-  return data;
-}
-
-export async function postLessonComment(
-  courseId: string,
-  lessonId: string,
-  body: string,
-): Promise<LessonComment> {
-  const { data } = await axios.post<LessonComment>(
-    `/api/courses/${courseId}/lessons/${lessonId}/comments`,
-    { body },
-  );
-  return data;
-}
-
-export async function fetchLessonComments(
-  courseId: string,
-  lessonId: string,
-): Promise<LessonComment[]> {
-  const { data } = await axios.get<LessonComment[]>(
-    `/api/courses/${courseId}/lessons/${lessonId}/comments`,
-  );
-  return data ?? [];
-}
-
-export async function setLessonReaction(
-  courseId: string,
-  lessonId: string,
-  value: -1 | 0 | 1,
-): Promise<LessonReaction> {
-  const { data } = await axios.post<LessonReaction>(
-    `/api/courses/${courseId}/lessons/${lessonId}/reaction`,
-    { value },
-  );
-  return data;
-}
-
-export interface ContentFlagReport {
-  id: string;
-  courseId: string;
-  lessonId: string | null;
-  reason: string | null;
-  status: string;
-  createdAt?: string;
-}
-
-export async function reportOutdatedContent(
-  courseId: string,
-  payload: { lessonId?: string; reason: string },
-): Promise<ContentFlagReport> {
-  const { data } = await axios.post<ContentFlagReport>(
-    `/api/courses/${courseId}/content-flags`,
-    payload,
-  );
   return data;
 }
 

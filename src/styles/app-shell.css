@@ -88,14 +88,15 @@
 }
 
 .cuib-app .cuib-upgrade-fab {
-  position: fixed;
-  bottom: 24px;
-  left: 24px;
-  z-index: 50;
+  display: none;
+}
+
+.cuib-app .cuib-upgrade-chip {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
-  padding: 6px 6px 6px 16px;
+  padding: 6px 6px 6px 12px;
   border-radius: 999px;
   background: var(--surface);
   border: 1px solid var(--border);
@@ -109,6 +110,20 @@
     padding: 16px 16px 32px;
   }
   .cuib-app .cuib-sidebar { display: none; }
+  .cuib-app .cuib-upgrade-fab {
+    position: fixed;
+    bottom: 24px;
+    left: 24px;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 6px 6px 16px;
+    border-radius: 999px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+  }
 }
 
 .cuib-app .font-serif-display {

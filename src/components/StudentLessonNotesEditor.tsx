@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react';
 import {
   Bold,
   Code2,
@@ -12,10 +12,9 @@ import {
   Underline,
   Undo2,
   Sigma,
-  Clock,
 } from 'lucide-react';
 import { fetchMyLessonNotes, saveMyLessonNotes } from '../api/studentNotesApi';
-import { noteTimestampHtml, parseNoteTimestampHref } from '../utils/noteTimestamps';
+import { parseNoteTimestampHref } from '../utils/noteTimestamps';
 
 type Theme = {
   text: string;
@@ -39,17 +38,109 @@ type Props = {
   player?: LessonPlayerClock | null;
 };
 
+type ToolbarState = {
+  bold: boolean;
+  italic: boolean;
+  underline: boolean;
+  strikeThrough: boolean;
+  unorderedList: boolean;
+  orderedList: boolean;
+  heading: boolean;
+  quote: boolean;
+  code: boolean;
+  font: string;
+};
+
+const DEFAULT_TOOLBAR: ToolbarState = {
+  bold: false,
+  italic: false,
+  underline: false,
+  strikeThrough: false,
+  unorderedList: false,
+  orderedList: false,
+  heading: false,
+  quote: false,
+  code: false,
+  font: 'sans-serif',
+};
+
+function normalizeFont(raw: string | null | undefined): string {
+  const v = (raw ?? '').replace(/['"]/g, '').trim().toLowerCase();
+  if (!v) return 'sans-serif';
+  if (v.includes('mono') || v.includes('courier') || v.includes('consolas')) return 'monospace';
+  if (v.includes('serif') && !v.includes('sans')) return 'serif';
+  if (v.includes('sans') || v.includes('arial') || v.includes('helvetica') || v.includes('system')) {
+    return 'sans-serif';
+  }
+  return 'sans-serif';
+}
+
+function blockTagAtSelection(editor: HTMLElement | null): string {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0 || !editor) return '';
+  let node: Node | null = sel.anchorNode;
+  if (node?.nodeType === Node.TEXT_NODE) node = node.parentElement;
+  while (node && node !== editor) {
+    if (node instanceof HTMLElement) {
+      const tag = node.tagName.toLowerCase();
+      if (tag === 'h2' || tag === 'blockquote' || tag === 'pre' || tag === 'p' || tag === 'li' || tag === 'div') {
+        return tag;
+      }
+    }
+    node = node.parentNode;
+  }
+  return '';
+}
+
+/** Apply a contentEditable command; formatBlock needs <tag> for cross-browser support. */
 function runCmd(command: string, value?: string) {
   // ponytail: browser execCommand covers the QA toolbar without a TipTap dependency.
+  if (command === 'formatBlock' && value) {
+    const tag = value.replace(/[<>]/g, '');
+    if (!document.execCommand('formatBlock', false, `<${tag}>`)) {
+      document.execCommand('formatBlock', false, tag);
+    }
+    return;
+  }
   document.execCommand(command, false, value);
 }
 
 export function StudentLessonNotesEditor({ courseId, lessonId, C, player }: Props) {
   const editorRef = useRef<HTMLDivElement>(null);
+  const savedRange = useRef<Range | null>(null);
   const [status, setStatus] = useState<'idle' | 'loading' | 'saving' | 'saved' | 'error'>('loading');
   const [error, setError] = useState<string | null>(null);
+  const [toolbar, setToolbar] = useState<ToolbarState>(DEFAULT_TOOLBAR);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const loadedFor = useRef<string>('');
+
+  const syncToolbar = useCallback(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0 || !editor.contains(sel.anchorNode)) {
+      return;
+    }
+    const block = blockTagAtSelection(editor);
+    let font = 'sans-serif';
+    try {
+      font = normalizeFont(document.queryCommandValue('fontName'));
+    } catch {
+      /* ignore */
+    }
+    setToolbar({
+      bold: document.queryCommandState('bold'),
+      italic: document.queryCommandState('italic'),
+      underline: document.queryCommandState('underline'),
+      strikeThrough: document.queryCommandState('strikeThrough'),
+      unorderedList: document.queryCommandState('insertUnorderedList'),
+      orderedList: document.queryCommandState('insertOrderedList'),
+      heading: block === 'h2',
+      quote: block === 'blockquote',
+      code: block === 'pre',
+      font,
+    });
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -57,6 +148,7 @@ export function StudentLessonNotesEditor({ courseId, lessonId, C, player }: Prop
     loadedFor.current = key;
     setStatus('loading');
     setError(null);
+    setToolbar(DEFAULT_TOOLBAR);
     void fetchMyLessonNotes(courseId, lessonId)
       .then((note) => {
         if (cancelled || loadedFor.current !== key) return;
@@ -76,6 +168,12 @@ export function StudentLessonNotesEditor({ courseId, lessonId, C, player }: Prop
     };
   }, [courseId, lessonId]);
 
+  useEffect(() => {
+    const onSelectionChange = () => syncToolbar();
+    document.addEventListener('selectionchange', onSelectionChange);
+    return () => document.removeEventListener('selectionchange', onSelectionChange);
+  }, [syncToolbar]);
+
   const scheduleSave = () => {
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
@@ -94,23 +192,50 @@ export function StudentLessonNotesEditor({ courseId, lessonId, C, player }: Prop
     }, 700);
   };
 
-  const focusEditor = () => editorRef.current?.focus();
+  const saveSelection = () => {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+    const range = sel.getRangeAt(0);
+    if (!editorRef.current?.contains(range.commonAncestorContainer)) return;
+    savedRange.current = range.cloneRange();
+  };
 
-  const insertTimestamp = () => {
-    focusEditor();
-    const sec = Math.floor(player?.getCurrentTime?.() ?? 0);
-    runCmd('insertHTML', noteTimestampHtml(sec));
+  const restoreSelection = () => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    editor.focus();
+    const range = savedRange.current;
+    const sel = window.getSelection();
+    if (!sel) return;
+    if (range && editor.contains(range.commonAncestorContainer)) {
+      sel.removeAllRanges();
+      sel.addRange(range);
+      return;
+    }
+    const fallback = document.createRange();
+    fallback.selectNodeContents(editor);
+    fallback.collapse(false);
+    sel.removeAllRanges();
+    sel.addRange(fallback);
+  };
+
+  const withEditorSelection = (fn: () => void) => {
+    restoreSelection();
+    fn();
+    saveSelection();
+    syncToolbar();
     scheduleSave();
   };
 
   const insertMath = () => {
-    focusEditor();
+    saveSelection();
     const latex = window.prompt('Equation (LaTeX or plain math)', 'x^2');
     if (latex == null) return;
     const safe = latex.replace(/</g, '').trim();
     if (!safe) return;
-    runCmd('insertHTML', `<code style="font-family:var(--mono)">$${safe}$</code>&nbsp;`);
-    scheduleSave();
+    withEditorSelection(() => {
+      runCmd('insertHTML', `<code style="font-family:var(--mono)">$${safe}$</code>&nbsp;`);
+    });
   };
 
   const onEditorClick = (e: MouseEvent<HTMLDivElement>) => {
@@ -125,20 +250,26 @@ export function StudentLessonNotesEditor({ courseId, lessonId, C, player }: Prop
     }
   };
 
-  const btn = (label: string, onClick: () => void, icon?: ReactNode) => (
+  const btn = (label: string, active: boolean, onClick: () => void, icon?: ReactNode) => (
     <button
       key={label}
       type="button"
       title={label}
       aria-label={label}
-      onMouseDown={(e) => e.preventDefault()}
+      aria-pressed={active}
+      onMouseDown={(e) => {
+        e.preventDefault();
+        saveSelection();
+      }}
       onClick={() => {
-        focusEditor();
-        onClick();
-        scheduleSave();
+        withEditorSelection(onClick);
       }}
       className="h-8 min-w-8 px-2 rounded-md inline-flex items-center justify-center text-[0.72rem] cursor-pointer"
-      style={{ background: C.bg2, border: `1px solid ${C.border}`, color: C.text2 }}
+      style={{
+        background: active ? 'rgba(225,6,0,0.12)' : C.bg2,
+        border: `1px solid ${active ? C.red : C.border}`,
+        color: active ? C.red : C.text2,
+      }}
     >
       {icon ?? label}
     </button>
@@ -147,35 +278,39 @@ export function StudentLessonNotesEditor({ courseId, lessonId, C, player }: Prop
   return (
     <div className="rounded-2xl overflow-hidden" style={{ background: C.bg1, border: `1px solid ${C.border}` }}>
       <div className="flex flex-wrap items-center gap-1.5 px-3 py-2" style={{ borderBottom: `1px solid ${C.border}` }}>
-        {btn('Undo', () => runCmd('undo'), <Undo2 className="w-3.5 h-3.5" />)}
-        {btn('Redo', () => runCmd('redo'), <Redo2 className="w-3.5 h-3.5" />)}
+        {btn('Undo', false, () => runCmd('undo'), <Undo2 className="w-3.5 h-3.5" />)}
+        {btn('Redo', false, () => runCmd('redo'), <Redo2 className="w-3.5 h-3.5" />)}
         <select
           aria-label="Font"
           className="h-8 rounded-md px-2 text-[0.72rem] cursor-pointer"
-          style={{ background: C.bg2, border: `1px solid ${C.border}`, color: C.text2 }}
-          defaultValue="sans-serif"
-          onMouseDown={(e) => e.preventDefault()}
+          style={{
+            background: C.bg2,
+            border: `1px solid ${C.border}`,
+            color: C.text2,
+            fontFamily: toolbar.font,
+          }}
+          value={toolbar.font}
+          onMouseDown={() => saveSelection()}
+          onFocus={() => saveSelection()}
           onChange={(e) => {
-            focusEditor();
-            runCmd('fontName', e.target.value);
-            scheduleSave();
+            const next = e.target.value;
+            withEditorSelection(() => runCmd('fontName', next));
           }}
         >
-          <option value="sans-serif">Sans Serif</option>
-          <option value="serif">Serif</option>
-          <option value="monospace">Mono</option>
+          <option value="sans-serif" style={{ fontFamily: 'sans-serif' }}>Sans Serif</option>
+          <option value="serif" style={{ fontFamily: 'serif' }}>Serif</option>
+          <option value="monospace" style={{ fontFamily: 'monospace' }}>Mono</option>
         </select>
-        {btn('Bold', () => runCmd('bold'), <Bold className="w-3.5 h-3.5" />)}
-        {btn('Italic', () => runCmd('italic'), <Italic className="w-3.5 h-3.5" />)}
-        {btn('Underline', () => runCmd('underline'), <Underline className="w-3.5 h-3.5" />)}
-        {btn('Strikethrough', () => runCmd('strikeThrough'), <Strikethrough className="w-3.5 h-3.5" />)}
-        {btn('Heading', () => runCmd('formatBlock', 'h2'), <Heading2 className="w-3.5 h-3.5" />)}
-        {btn('Bulleted list', () => runCmd('insertUnorderedList'), <List className="w-3.5 h-3.5" />)}
-        {btn('Numbered list', () => runCmd('insertOrderedList'), <ListOrdered className="w-3.5 h-3.5" />)}
-        {btn('Quote', () => runCmd('formatBlock', 'blockquote'), <Quote className="w-3.5 h-3.5" />)}
-        {btn('Code block', () => runCmd('formatBlock', 'pre'), <Code2 className="w-3.5 h-3.5" />)}
-        {btn('Equation', insertMath, <Sigma className="w-3.5 h-3.5" />)}
-        {btn('Insert timestamp', insertTimestamp, <Clock className="w-3.5 h-3.5" />)}
+        {btn('Bold', toolbar.bold, () => runCmd('bold'), <Bold className="w-3.5 h-3.5" />)}
+        {btn('Italic', toolbar.italic, () => runCmd('italic'), <Italic className="w-3.5 h-3.5" />)}
+        {btn('Underline', toolbar.underline, () => runCmd('underline'), <Underline className="w-3.5 h-3.5" />)}
+        {btn('Strikethrough', toolbar.strikeThrough, () => runCmd('strikeThrough'), <Strikethrough className="w-3.5 h-3.5" />)}
+        {btn('Heading', toolbar.heading, () => runCmd('formatBlock', toolbar.heading ? 'p' : 'h2'), <Heading2 className="w-3.5 h-3.5" />)}
+        {btn('Bulleted list', toolbar.unorderedList, () => runCmd('insertUnorderedList'), <List className="w-3.5 h-3.5" />)}
+        {btn('Numbered list', toolbar.orderedList, () => runCmd('insertOrderedList'), <ListOrdered className="w-3.5 h-3.5" />)}
+        {btn('Quote', toolbar.quote, () => runCmd('formatBlock', toolbar.quote ? 'p' : 'blockquote'), <Quote className="w-3.5 h-3.5" />)}
+        {btn('Code block', toolbar.code, () => runCmd('formatBlock', toolbar.code ? 'p' : 'pre'), <Code2 className="w-3.5 h-3.5" />)}
+        {btn('Equation', false, insertMath, <Sigma className="w-3.5 h-3.5" />)}
         <span className="ml-auto text-[0.7rem]" style={{ color: C.text3 }}>
           {status === 'loading' && 'Loading…'}
           {status === 'saving' && 'Saving…'}
@@ -190,9 +325,21 @@ export function StudentLessonNotesEditor({ courseId, lessonId, C, player }: Prop
         suppressContentEditableWarning
         role="textbox"
         aria-label="Lesson notes editor"
-        className="min-h-[220px] max-h-[480px] overflow-y-auto px-4 py-3 text-[0.875rem] leading-relaxed outline-none"
+        className="min-h-[220px] max-h-[480px] overflow-y-auto px-4 py-3 text-[0.875rem] leading-relaxed outline-none [&_h2]:text-[1.15rem] [&_h2]:font-bold [&_blockquote]:border-l-2 [&_blockquote]:border-current [&_blockquote]:pl-3 [&_blockquote]:opacity-90 [&_blockquote]:italic [&_pre]:rounded-md [&_pre]:bg-black/5 [&_pre]:px-3 [&_pre]:py-2 [&_pre]:font-mono [&_pre]:text-[0.8rem] dark:[&_pre]:bg-white/5"
         style={{ color: C.text2 }}
-        onInput={scheduleSave}
+        onInput={() => {
+          saveSelection();
+          syncToolbar();
+          scheduleSave();
+        }}
+        onKeyUp={() => {
+          saveSelection();
+          syncToolbar();
+        }}
+        onMouseUp={() => {
+          saveSelection();
+          syncToolbar();
+        }}
         onClick={onEditorClick}
       />
     </div>

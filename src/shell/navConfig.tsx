@@ -3,7 +3,6 @@ import {
   BarChart3,
   BookMarked,
   GraduationCap,
-  HelpCircle,
   Home,
   LineChart,
   Search,
@@ -35,7 +34,6 @@ export const NAV_GROUPS: NavGroup[] = [
       { id: 'admin-insights', label: 'Platform insights', path: '/admin/insights', icon: <Shield size={17} /> },
       { id: 'creators', label: 'Creators', path: '/discover?tab=creators', icon: <TrendingUp size={17} /> },
       { id: 'settings', label: 'Settings', path: '/settings', icon: <Settings size={17} /> },
-      { id: 'help', label: 'Help', path: '/settings?tab=help', icon: <HelpCircle size={17} /> },
     ],
   },
   {
@@ -74,8 +72,7 @@ export function isNavItemActive(pathname: string, search: string, id: string, pa
   if (id === 'my-courses-educator') return pathname.startsWith('/educator-courses');
   if (id === 'educator-analytics') return pathname.startsWith('/educator-analytics');
   if (id === 'admin-insights') return pathname.startsWith('/admin/insights');
-  if (id === 'settings') return pathname.startsWith('/settings') && !search.includes('tab=');
-  if (id === 'help') return pathname.startsWith('/settings') && search.includes('tab=help');
+  if (id === 'settings') return pathname.startsWith('/settings');
   if (id === 'upgrade') return pathname.startsWith('/upgrade');
   return pathname === path;
 }
