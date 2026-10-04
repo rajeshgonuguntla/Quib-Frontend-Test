@@ -555,7 +555,15 @@
   flex-direction: column;
   overflow: hidden;
 }
+.cuib-app.cuib-chat-active .dash-thread-in {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
 .cuib-app .dash-thread {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
 }

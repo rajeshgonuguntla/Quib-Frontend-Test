@@ -178,11 +178,8 @@ export function Dashboard() {
 
       <div
         ref={composerRef}
-        className={cn('relative z-10', chatting && 'shrink-0 bg-[var(--bg)] pt-2')}
+        className={cn('relative z-10', chatting && 'shrink-0 border-t border-[var(--border)] bg-[var(--bg)] pt-3')}
       >
-        {chatting && (
-          <div className="pointer-events-none absolute inset-x-0 -top-8 h-8 bg-gradient-to-b from-transparent to-[var(--bg)]" />
-        )}
         <StudentMasterInput onQuestion={askQuestion} followUp={chatting} />
       </div>
 

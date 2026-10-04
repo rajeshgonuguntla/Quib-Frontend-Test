@@ -94,7 +94,7 @@ function AssistantAnswer({
     timerRef.current = null;
   }, [visible, text.length]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!started) return;
     onGrowRef.current();
     if (visible < text.length || finishedRef.current) return;
@@ -134,7 +134,6 @@ export function DashboardThread({
   onAnswer: (announcement: string) => void;
 }) {
   const threadRef = useRef<HTMLDivElement>(null);
-
   const stickToBottom = () => {
     const el = threadRef.current;
     if (!el) return;
@@ -144,6 +143,17 @@ export function DashboardThread({
   useLayoutEffect(() => {
     stickToBottom();
   }, [turns]);
+
+  useEffect(() => {
+    const scroller = threadRef.current;
+    const content = scroller?.firstElementChild;
+    if (!scroller || !content) return;
+    const observer = new ResizeObserver(() => {
+      scroller.scrollTop = scroller.scrollHeight;
+    });
+    observer.observe(content);
+    return () => observer.disconnect();
+  }, [turns.length]);
 
   return (
     <div className="dash-thread-in flex min-h-0 flex-1 flex-col">
@@ -169,7 +179,7 @@ export function DashboardThread({
         role="region"
         aria-label="Conversation"
       >
-        <div className="flex flex-col gap-8 pb-4">
+        <div className="flex flex-col gap-8 pb-6">
           {turns.map((turn) => (
             <article key={turn.id} className="flex flex-col gap-[18px]">
               <div className="flex justify-end">
