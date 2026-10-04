@@ -1,9 +1,10 @@
 import { motion } from 'framer-motion';
 import type { ReactNode } from 'react';
 
-export function PageTransition({ children }: { children: ReactNode }) {
+export function PageTransition({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <motion.div
+      className={className}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -6 }}

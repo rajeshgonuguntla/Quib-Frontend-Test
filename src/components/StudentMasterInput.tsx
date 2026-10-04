@@ -2,15 +2,11 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router';
 import { ArrowRight, Upload } from 'lucide-react';
 import {
-  getYoutubeUrlValidationError,
-  isYoutubePlaylistUrl,
-  isYoutubeVideoUrl,
-} from '../utils/youtubeUrl';
-import {
   STUDENT_UPLOAD_ENABLED,
   STUDENT_YOUTUBE_INPUT_ENABLED,
 } from '../utils/studentInputModes';
 import { cn } from './ui/utils';
+import { resolveMasterSubmit } from './masterSubmit';
 
 const PHRASES = [
   'What do you want to master?',
@@ -49,6 +45,10 @@ const EXAM_TYPES: { id: SampleExamType; label: string }[] = [
 type StudentMasterInputProps = {
   className?: string;
   signedIn?: boolean;
+  /** Free-text questions stay on the dashboard and open a conversation. */
+  onQuestion?: (question: string) => void;
+  /** Docked follow-up field: static placeholder instead of the typewriter. */
+  followUp?: boolean;
 };
 
 function VideoGlyph() {
@@ -60,7 +60,7 @@ function VideoGlyph() {
   );
 }
 
-export function StudentMasterInput({ className, signedIn = true }: StudentMasterInputProps) {
+export function StudentMasterInput({ className, signedIn = true, onQuestion, followUp = false }: StudentMasterInputProps) {
   const navigate = useNavigate();
   const [mode, setMode] = useState<LearnerStartMode>('course');
   const [examType, setExamType] = useState<SampleExamType>('custom');
@@ -69,12 +69,14 @@ export function StudentMasterInput({ className, signedIn = true }: StudentMaster
   const [focused, setFocused] = useState(false);
   const [phText, setPhText] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const phraseIdx = useRef(0);
   const activeRef = useRef(true);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isQuizMode = mode === 'quiz';
-  const showTypewriter = !focused && !inputValue.trim();
+  const canSubmit = inputValue.trim().length > 0;
+  const showTypewriter = !followUp && !focused && !inputValue.trim();
   const phrases = isQuizMode ? QUIZ_PHRASES : PHRASES;
 
   useEffect(() => {
@@ -124,57 +126,32 @@ export function StudentMasterInput({ className, signedIn = true }: StudentMaster
 
   const submitInput = (e?: FormEvent) => {
     e?.preventDefault();
-    const trimmed = inputValue.trim();
+    const result = resolveMasterSubmit({
+      value: inputValue,
+      mode,
+      examType,
+      signedIn,
+      questionsEnabled: Boolean(onQuestion),
+    });
 
-    if (isQuizMode) {
-      const isYt = isYoutubePlaylistUrl(trimmed) || isYoutubeVideoUrl(trimmed);
-      if (isYt) {
-        setError(null);
-        if (!signedIn) {
-          navigate('/signin', {
-            state: isYoutubePlaylistUrl(trimmed)
-              ? { playlistUrl: trimmed, startTool: mode }
-              : { youtubeUrl: trimmed, startTool: mode },
-          });
-          return;
-        }
-        if (isYoutubePlaylistUrl(trimmed)) {
-          navigate('/playlist-setup/new', { state: { playlistUrl: trimmed } });
-          return;
-        }
-        navigate('/quiz-setup', { state: { youtubeUrl: trimmed } });
-        return;
-      }
-
-      if (trimmed.length < 8) {
-        setError('Describe what you want to be tested on (or paste a YouTube URL).');
-        return;
-      }
-      setError(null);
-      const promptState = { prompt: trimmed, examType, startTool: 'quiz' as const };
-      if (!signedIn) {
-        navigate('/signin', { state: promptState });
-        return;
-      }
-      navigate('/quiz-setup', { state: promptState });
+    if (result.type === 'blocked') return;
+    if (result.type === 'error') {
+      setError(result.message);
       return;
     }
 
-    const validationError = getYoutubeUrlValidationError(inputValue);
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
     setError(null);
-    if (!signedIn) {
-      navigate('/signin', {
-        state: isYoutubePlaylistUrl(trimmed)
-          ? { playlistUrl: trimmed, startTool: mode }
-          : { youtubeUrl: trimmed, startTool: mode },
+    if (result.type === 'ask') {
+      setInputValue('');
+      onQuestion?.(result.text);
+      requestAnimationFrame(() => {
+        const field = inputRef.current;
+        if (field && document.activeElement !== field) field.focus();
       });
       return;
     }
-    navigate('/course-builder', { state: { youtubeUrl: trimmed, startTool: mode } });
+
+    navigate(result.path, { state: result.state });
   };
 
   if (!STUDENT_YOUTUBE_INPUT_ENABLED) return null;
@@ -243,6 +220,7 @@ export function StudentMasterInput({ className, signedIn = true }: StudentMaster
 
           <div className="relative flex min-w-0 flex-1 items-center overflow-hidden">
             <input
+              ref={inputRef}
               type="text"
               value={inputValue}
               onChange={(e) => {
@@ -251,8 +229,9 @@ export function StudentMasterInput({ className, signedIn = true }: StudentMaster
               }}
               onFocus={() => setFocused(true)}
               onBlur={() => setFocused(false)}
-              placeholder=" "
-              className="relative z-[1] w-full bg-transparent py-[13px] text-[13px] outline-none"
+              placeholder={followUp ? 'Ask a follow-up…' : ' '}
+              enterKeyHint="send"
+              className="relative z-[1] w-full bg-transparent py-[13px] text-[13px] outline-none placeholder:text-[var(--ink-faint)]"
               style={{
                 fontFamily: 'var(--mono)',
                 color: 'var(--ink)',
@@ -286,7 +265,8 @@ export function StudentMasterInput({ className, signedIn = true }: StudentMaster
 
           <button
             type="submit"
-            className="mx-1.5 inline-flex size-[34px] shrink-0 items-center justify-center rounded-full bg-[var(--ink)] text-[var(--bg)] transition-opacity hover:opacity-[0.82] active:scale-95"
+            disabled={!canSubmit}
+            className="mx-1.5 inline-flex size-[34px] shrink-0 items-center justify-center rounded-full bg-[var(--ink)] text-[var(--bg)] transition-opacity hover:opacity-[0.82] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:opacity-40 disabled:active:scale-100"
             aria-label="Start"
           >
             <ArrowRight size={15} strokeWidth={2.2} />

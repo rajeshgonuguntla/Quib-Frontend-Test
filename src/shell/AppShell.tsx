@@ -35,9 +35,42 @@ function MobileUpgradeFab() {
   );
 }
 
+function ShellChrome() {
+  const location = useLocation();
+  const { chatLocked } = useShell();
+  const educatorWorkspace = isEducatorWorkspaceRoute(location.pathname);
+
+  return (
+    <div className={cn('cuib-app min-h-screen', chatLocked && 'cuib-chat-active')}>
+      <header className="cuib-topnav sticky top-0 z-50">
+        <AppTopbar />
+      </header>
+
+      <div className={cn('cuib-shell', educatorWorkspace && '!grid-cols-1')}>
+        {!educatorWorkspace && (
+          <aside className="cuib-sidebar">
+            <AppSidebar pathname={location.pathname} search={location.search} />
+          </aside>
+        )}
+        <main className="cuib-main">
+          <AnimatePresence mode="wait">
+            <PageTransition
+              key={location.pathname}
+              className={chatLocked ? 'flex h-full min-h-0 flex-col' : undefined}
+            >
+              <Outlet />
+            </PageTransition>
+          </AnimatePresence>
+        </main>
+      </div>
+
+      {!educatorWorkspace && <MobileUpgradeFab />}
+    </div>
+  );
+}
+
 export function AppShell() {
   const location = useLocation();
-  const educatorWorkspace = isEducatorWorkspaceRoute(location.pathname);
   const courseEditor = isCourseEditorRoute(location.pathname);
 
   if (courseEditor) {
@@ -54,28 +87,7 @@ export function AppShell() {
 
   return (
     <ShellProvider>
-      <div className="cuib-app min-h-screen">
-        <header className="cuib-topnav sticky top-0 z-50">
-          <AppTopbar />
-        </header>
-
-        <div className={cn('cuib-shell', educatorWorkspace && '!grid-cols-1')}>
-          {!educatorWorkspace && (
-            <aside className="cuib-sidebar">
-              <AppSidebar pathname={location.pathname} search={location.search} />
-            </aside>
-          )}
-          <main className="cuib-main">
-            <AnimatePresence mode="wait">
-              <PageTransition key={location.pathname}>
-                <Outlet />
-              </PageTransition>
-            </AnimatePresence>
-          </main>
-        </div>
-
-        {!educatorWorkspace && <MobileUpgradeFab />}
-      </div>
+      <ShellChrome />
     </ShellProvider>
   );
 }

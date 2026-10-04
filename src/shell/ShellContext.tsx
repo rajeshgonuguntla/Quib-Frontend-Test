@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import { fetchBillingMe, type BillingStatus } from '../api/billingApi';
 import { fetchEnrollmentStats } from '../api/catalogApi';
 import type { EnrollmentStats } from '../types/catalog';
@@ -8,6 +8,9 @@ type ShellContextValue = {
   refreshLibraryStats: () => void;
   billing: BillingStatus | null;
   refreshBilling: () => void;
+  /** Dashboard conversation fills the viewport and docks the ask bar. */
+  chatLocked: boolean;
+  setChatLocked: (locked: boolean) => void;
 };
 
 const defaultStats: EnrollmentStats = { total: 0, inProgress: 0, saved: 0, completed: 0, avgScore: 0 };
@@ -17,11 +20,17 @@ const ShellContext = createContext<ShellContextValue>({
   refreshLibraryStats: () => {},
   billing: null,
   refreshBilling: () => {},
+  chatLocked: false,
+  setChatLocked: () => {},
 });
 
 export function ShellProvider({ children }: { children: ReactNode }) {
   const [libraryStats, setLibraryStats] = useState<EnrollmentStats>(defaultStats);
   const [billing, setBilling] = useState<BillingStatus | null>(null);
+  const [chatLocked, setChatLockedState] = useState(false);
+  const setChatLocked = useCallback((locked: boolean) => {
+    setChatLockedState((current) => (current === locked ? current : locked));
+  }, []);
 
   const refreshLibraryStats = () => {
     fetchEnrollmentStats()
@@ -41,7 +50,7 @@ export function ShellProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <ShellContext.Provider value={{ libraryStats, refreshLibraryStats, billing, refreshBilling }}>
+    <ShellContext.Provider value={{ libraryStats, refreshLibraryStats, billing, refreshBilling, chatLocked, setChatLocked }}>
       {children}
     </ShellContext.Provider>
   );

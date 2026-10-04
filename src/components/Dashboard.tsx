@@ -1,12 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { Play } from 'lucide-react';
 import axios from 'axios';
 import { fetchEnrollments } from '../api/catalogApi';
 import { useUserProfile } from '../context/UserProfileContext';
+import { useShell } from '../shell/ShellContext';
 import { getFirstName } from '../utils/userDisplay';
 import { ytThumb } from '../utils/catalogMap';
+import { generateDashboardAnswer } from './dashboardAnswer';
+import { DashboardThread, useDockFlip, type DashTurn } from './DashboardConversation';
 import { StudentMasterInput } from './StudentMasterInput';
+import { cn } from './ui/utils';
 
 type ProgressItem = {
   id: string;
@@ -27,6 +31,34 @@ export function Dashboard() {
   const firstName = getFirstName(profile);
 
   const [inProgress, setInProgress] = useState<ProgressItem[]>([]);
+  const [turns, setTurns] = useState<DashTurn[]>([]);
+  const [answerAnnouncement, setAnswerAnnouncement] = useState('');
+  const { chatLocked, setChatLocked } = useShell();
+  const chatting = turns.length > 0;
+  const { composerRef, capture } = useDockFlip(chatting, chatLocked);
+
+  useLayoutEffect(() => {
+    setChatLocked(chatting);
+  }, [chatting, setChatLocked]);
+
+  useEffect(() => {
+    return () => setChatLocked(false);
+  }, [setChatLocked]);
+
+  const askQuestion = (question: string) => {
+    if (!chatting) capture();
+    setTurns((prev) => [
+      ...prev,
+      { id: crypto.randomUUID(), question, answer: generateDashboardAnswer(question) },
+    ]);
+  };
+
+  const resetConversation = () => {
+    if (!chatting) return;
+    capture();
+    setAnswerAnnouncement('');
+    setTurns([]);
+  };
 
   useEffect(() => {
     const incomingPlaylistUrl = location.state?.playlistUrl as string | undefined;
@@ -125,52 +157,75 @@ export function Dashboard() {
   }, [location.pathname]);
 
   return (
-    <div>
-      <h1
-        className="mb-5"
-        style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-0.015em', color: 'var(--ink)' }}
-      >
-        {firstName ? `Welcome back, ${firstName}` : 'Welcome back'}
-      </h1>
-
-      <StudentMasterInput />
-
-      <div className="my-5 h-px bg-[var(--border)]" />
-
-      <div className="mb-5 flex items-end justify-between">
-        <h2 style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--ink-soft)' }}>
-          Continue learning
-        </h2>
-        <button
-          type="button"
-          onClick={() => navigate('/discover?tab=courses')}
-          className="flex items-center gap-1 pb-0.5 text-[var(--ink-faint)] transition-colors hover:text-[var(--accent)]"
-          style={{ fontFamily: 'var(--mono)', fontSize: 12 }}
+    <div className={cn(chatting && 'flex min-h-0 flex-1 flex-col overflow-hidden')}>
+      <p className="sr-only" aria-live="polite">{answerAnnouncement}</p>
+      {!chatting && (
+        <h1
+          className="mb-5"
+          style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-0.015em', color: 'var(--ink)' }}
         >
-          View all
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-            <path d="M5 12h14" />
-            <path d="M13 6l6 6-6 6" />
-          </svg>
-        </button>
+          {firstName ? `Welcome back, ${firstName}` : 'Welcome back'}
+        </h1>
+      )}
+
+      {chatting && (
+        <DashboardThread
+          turns={turns}
+          onNewConversation={resetConversation}
+          onAnswer={setAnswerAnnouncement}
+        />
+      )}
+
+      <div
+        ref={composerRef}
+        className={cn('relative z-10', chatting && 'shrink-0 bg-[var(--bg)] pt-2')}
+      >
+        {chatting && (
+          <div className="pointer-events-none absolute inset-x-0 -top-8 h-8 bg-gradient-to-b from-transparent to-[var(--bg)]" />
+        )}
+        <StudentMasterInput onQuestion={askQuestion} followUp={chatting} />
       </div>
 
-      {inProgress.length === 0 ? (
-        <p className="text-[13px] text-[var(--ink-soft)]">No courses or quizzes in progress yet.</p>
-      ) : (
-        <div className="grid grid-cols-1 gap-[18px] md:grid-cols-3">
-          {inProgress.map((item) => (
-            <ProgressCard
-              key={item.id}
-              item={item}
-              onOpen={() =>
-                item.kind === 'course'
-                  ? navigate(`/course-details/${item.id}`, { state: { from: `${location.pathname}${location.search}` } })
-                  : navigate(`/quiz/${item.id}`)
-              }
-            />
-          ))}
-        </div>
+      {!chatting && (
+        <>
+          <div className="my-5 h-px bg-[var(--border)]" />
+
+          <div className="mb-5 flex items-end justify-between">
+            <h2 style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--ink-soft)' }}>
+              Continue learning
+            </h2>
+            <button
+              type="button"
+              onClick={() => navigate('/discover?tab=courses')}
+              className="flex items-center gap-1 pb-0.5 text-[var(--ink-faint)] transition-colors hover:text-[var(--accent)]"
+              style={{ fontFamily: 'var(--mono)', fontSize: 12 }}
+            >
+              View all
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M5 12h14" />
+                <path d="M13 6l6 6-6 6" />
+              </svg>
+            </button>
+          </div>
+
+          {inProgress.length === 0 ? (
+            <p className="text-[13px] text-[var(--ink-soft)]">No courses or quizzes in progress yet.</p>
+          ) : (
+            <div className="grid grid-cols-1 gap-[18px] md:grid-cols-3">
+              {inProgress.map((item) => (
+                <ProgressCard
+                  key={item.id}
+                  item={item}
+                  onOpen={() =>
+                    item.kind === 'course'
+                      ? navigate(`/course-details/${item.id}`, { state: { from: `${location.pathname}${location.search}` } })
+                      : navigate(`/quiz/${item.id}`)
+                  }
+                />
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
