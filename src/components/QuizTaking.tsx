@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useParams, Link, useLocation } from 'react-router';
-import { Award, Clock, Flag, ChevronLeft, ChevronRight, CheckCircle, Sun, Moon } from 'lucide-react';
+import { Clock, Flag, ChevronLeft, ChevronRight, Sun, Moon } from 'lucide-react';
 import { useTheme, getC } from './ThemeContext';
 import { QuibLogo } from './QuibLogo';
 import { fetchQuizDetail, isUuid, submitQuizAttempt } from '../api/quizApi';
@@ -145,9 +145,11 @@ export function QuizTaking() {
     setSubmitting(false);
   }, [submitting, id, answers, videoMeta, questions, navigate, initialTime]);
 
-  submitRef.current = () => {
-    void handleSubmit();
-  };
+  useEffect(() => {
+    submitRef.current = () => {
+      void handleSubmit();
+    };
+  }, [handleSubmit]);
 
   useEffect(() => {
     if (isLoading || questions.length === 0) return;
@@ -205,43 +207,60 @@ export function QuizTaking() {
     );
   }
 
+  const cardBg = isDark ? C.bg1 : '#ffffff';
+  const optionIdleBg = isDark ? C.bg2 : '#ffffff';
+  const typeLabel =
+    questions[currentQuestion].type === 'mcq' ? 'Multiple choice'
+      : questions[currentQuestion].type === 'trueFalse' ? 'True/False'
+        : 'Short answer';
+  const hasAnswer = answers[currentQuestion] != null && answers[currentQuestion] !== '';
+
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: C.bg, color: C.text, fontFamily: "var(--display)" }}>
-      {/* Header */}
-      <header className="px-8 py-4 sticky top-0 z-50" style={{ background: C.bg1, borderBottom: `1px solid ${C.border}` }}>
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <Link to="/dashboard" className="no-underline" style={{ color: C.text }}>
+    <div
+      className="min-h-screen flex flex-col"
+      style={{
+        background: C.bg,
+        color: C.text,
+        fontFamily: "'Inter', system-ui, sans-serif",
+        // Match app-shell tokens — this route sits outside .cuib-app
+        ['--display' as string]: "'Inter', system-ui, sans-serif",
+        ['--mono' as string]: "'IBM Plex Mono', ui-monospace, monospace",
+        ['--serif' as string]: "'Inter', system-ui, sans-serif",
+      }}
+    >
+      <header className="px-6 md:px-8 py-4 sticky top-0 z-50" style={{ background: cardBg, borderBottom: `1px solid ${C.border}` }}>
+        <div className="max-w-3xl mx-auto flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4 min-w-0">
+            <Link to="/dashboard" className="no-underline shrink-0" style={{ color: C.text }}>
               <QuibLogo
                 size={18}
                 wordmarkClassName="text-[1.05rem] font-[700] tracking-tight"
                 variant={isDark ? 'dark' : 'light'}
               />
             </Link>
-            <div className="hidden md:block text-sm" style={{ color: C.text2 }}>
+            <div className="hidden md:block text-sm font-[500] truncate" style={{ color: C.text2 }}>
               {videoMeta.title}
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 font-[500]">
-              <Clock className="w-5 h-5" style={{ color: C.red }} />
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="flex items-center gap-2 font-[500] tabular-nums" style={{ fontFamily: 'var(--mono)' }}>
+              <Clock className="w-4 h-4" style={{ color: C.red }} />
               <span style={{ color: timeLeft < 300 ? '#f97316' : C.text }}>{formatTime(timeLeft)}</span>
             </div>
-            {/* Theme Toggle */}
             <button
+              type="button"
               onClick={toggleTheme}
-              className="w-9 h-9 rounded-lg flex items-center justify-center transition-all"
-              style={{ background: C.bg2, border: `1px solid ${C.border}`, color: C.text2 }}
+              className="w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer"
+              style={{ background: optionIdleBg, border: `1px solid ${C.border}`, color: C.text2 }}
               title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
             >
               {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
             <button
+              type="button"
               onClick={() => setShowSubmitModal(true)}
-              className="px-5 py-2 rounded-lg text-sm font-[600] cursor-pointer transition-all"
-              style={{ background: C.red, border: 'none', color: '#fff', boxShadow: '0 0 20px rgba(225,6,0,0.3)' }}
-              onMouseEnter={(e) => { e.currentTarget.style.boxShadow = '0 0 30px rgba(225,6,0,0.5)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.boxShadow = '0 0 20px rgba(225,6,0,0.3)'; }}
+              className="px-4 py-2 rounded-xl text-[0.82rem] font-[600] cursor-pointer"
+              style={{ background: C.red, border: 'none', color: '#fff' }}
             >
               Submit Quiz
             </button>
@@ -249,54 +268,37 @@ export function QuizTaking() {
         </div>
       </header>
 
-      {/* Progress Bar */}
-      <div className="px-8 py-3" style={{ background: C.bg1, borderBottom: `1px solid ${C.border}` }}>
-        <div className="max-w-7xl mx-auto">
-          <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.07)' }}>
-            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${progress}%`, background: C.red, boxShadow: '0 0 8px rgba(225,6,0,0.4)' }} />
-          </div>
-          <div className="flex items-center justify-between mt-2 text-xs">
-            <span style={{ color: C.text2 }}>Question {currentQuestion + 1} of {questions.length}</span>
-            <span style={{ color: C.text3 }}>{answeredCount} answered • {unansweredCount} remaining</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="flex-1 flex">
-        {/* Question Area */}
-        <div className="flex-1 p-8">
-          <div className="max-w-4xl mx-auto">
-            <div className="rounded-xl p-8 mb-6" style={{ background: C.bg1, border: `1px solid ${C.border}` }}>
-              <div className="flex items-start justify-between mb-8">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-4">
-                    <span className="px-3 py-1 rounded-lg text-xs font-[500]" style={{ background: C.bg2, color: C.text2, border: `1px solid ${C.border}` }}>
-                      {questions[currentQuestion].type === 'mcq' ? 'Multiple Choice' :
-                       questions[currentQuestion].type === 'trueFalse' ? 'True/False' : 'Short Answer'}
-                    </span>
-                    {flagged.has(currentQuestion) && (
-                      <span className="flex items-center gap-1 text-xs font-[500]" style={{ color: '#f97316' }}>
-                        <Flag className="w-3.5 h-3.5 fill-current" /> Flagged
-                      </span>
-                    )}
-                  </div>
-                  <h2 className="text-xl font-[400]" style={{ color: C.text, fontFamily: "var(--serif)" }}>
-                    {questions[currentQuestion].question}
-                  </h2>
-                </div>
-                <button
-                  onClick={toggleFlag}
-                  className="p-2 rounded-lg cursor-pointer transition-colors"
-                  style={{ background: 'transparent', border: 'none', color: flagged.has(currentQuestion) ? '#f97316' : C.text3 }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = C.bg2; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+      <div className="flex-1 p-6 md:p-8">
+        <div className="max-w-3xl mx-auto space-y-4">
+          <div className="rounded-2xl overflow-hidden" style={{ background: cardBg, border: `1px solid ${C.border}` }}>
+            <div className="px-6 pt-5 pb-6">
+              <div className="flex items-center justify-between mb-8">
+                <span
+                  className="inline-flex items-center rounded-full px-3 py-1 text-[0.65rem] font-[600] tracking-[0.06em] uppercase"
+                  style={{ background: isDark ? C.bg2 : C.bg1, color: C.text3, border: `1px solid ${C.border}` }}
                 >
-                  <Flag className={`w-5 h-5 ${flagged.has(currentQuestion) ? 'fill-current' : ''}`} />
+                  {typeLabel}
+                </span>
+                <button
+                  type="button"
+                  onClick={toggleFlag}
+                  aria-label={flagged.has(currentQuestion) ? 'Unflag question' : 'Flag question'}
+                  aria-pressed={flagged.has(currentQuestion)}
+                  className="inline-flex size-9 items-center justify-center rounded-lg cursor-pointer"
+                  style={{
+                    background: flagged.has(currentQuestion) ? 'rgba(225,6,0,0.08)' : 'transparent',
+                    border: `1px solid ${flagged.has(currentQuestion) ? C.red : C.border}`,
+                    color: flagged.has(currentQuestion) ? C.red : C.text3,
+                  }}
+                >
+                  <Flag className={`w-4 h-4 ${flagged.has(currentQuestion) ? 'fill-current' : ''}`} />
                 </button>
               </div>
 
-              {/* Answer Options */}
+              <p className="text-[1.25rem] leading-[1.55] font-[500] mb-8" style={{ color: C.text, fontFamily: 'var(--display)' }}>
+                {questions[currentQuestion].question}
+              </p>
+
               {questions[currentQuestion].type === 'mcq' || questions[currentQuestion].type === 'trueFalse' ? (
                 <div className="space-y-3">
                   {questions[currentQuestion].options?.map((option, index) => {
@@ -304,29 +306,27 @@ export function QuizTaking() {
                     return (
                       <button
                         key={index}
+                        type="button"
                         onClick={() => handleAnswer(option)}
-                        className="w-full p-5 rounded-xl text-left transition-all cursor-pointer"
+                        className="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-xl text-[0.95rem] cursor-pointer"
                         style={{
-                          background: isSelected ? C.redDim : C.bg2,
-                          border: isSelected ? '1px solid rgba(225,6,0,0.3)' : `1px solid ${C.border}`,
+                          background: isSelected ? C.redDim : optionIdleBg,
+                          border: `1px solid ${isSelected ? C.red : C.border}`,
+                          color: C.text,
+                          fontFamily: 'var(--display)',
                         }}
-                        onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.borderColor = C.border2; }}
-                        onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.borderColor = C.border; }}
                       >
-                        <div className="flex items-center gap-4">
-                          <div
-                            className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
-                            style={{
-                              border: isSelected ? 'none' : `2px solid ${C.text3}`,
-                              background: isSelected ? C.red : 'transparent',
-                            }}
-                          >
-                            {isSelected && <CheckCircle className="w-4 h-4 text-white" />}
-                          </div>
-                          <span className="text-sm font-[400]" style={{ color: isSelected ? C.text : C.text2 }}>
-                            {option}
-                          </span>
-                        </div>
+                        <span
+                          className="inline-flex size-[18px] shrink-0 items-center justify-center rounded-full"
+                          style={{
+                            border: `2px solid ${isSelected ? C.red : C.border}`,
+                            background: isSelected ? C.red : 'transparent',
+                          }}
+                          aria-hidden
+                        >
+                          {isSelected ? <span className="size-1.5 rounded-full bg-white" /> : null}
+                        </span>
+                        {option}
                       </button>
                     );
                   })}
@@ -336,100 +336,120 @@ export function QuizTaking() {
                   value={(answers[currentQuestion] as string) || ''}
                   onChange={(e) => handleAnswer(e.target.value)}
                   placeholder="Type your answer here..."
-                  className="w-full h-40 p-4 rounded-xl outline-none resize-none text-sm"
-                  style={{ background: C.bg2, border: `1px solid ${C.border}`, color: C.text }}
+                  className="w-full h-40 p-4 rounded-xl outline-none resize-none text-[0.95rem]"
+                  style={{ background: optionIdleBg, border: `1px solid ${C.border}`, color: C.text, fontFamily: 'var(--display)' }}
                 />
               )}
             </div>
 
-            {/* Navigation */}
-            <div className="flex items-center justify-between">
-              <button
-                onClick={handlePrevious}
-                disabled={currentQuestion === 0}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-[500] cursor-pointer transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                style={{ background: 'transparent', border: `1px solid ${C.border2}`, color: C.text2 }}
-                onMouseEnter={(e) => { if (!e.currentTarget.disabled) { e.currentTarget.style.background = C.bg2; e.currentTarget.style.color = C.text; }}}
-                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = C.text2; }}
-              >
-                <ChevronLeft className="w-4 h-4" /> Previous
-              </button>
-              {currentQuestion === questions.length - 1 ? (
+            <div
+              className="flex flex-wrap items-center justify-between gap-4 px-6 py-4"
+              style={{ borderTop: `1px solid ${C.border}` }}
+            >
+              <div className="flex items-center gap-3 min-w-[140px] flex-1">
+                <div className="h-1 flex-1 max-w-[160px] rounded-full overflow-hidden" style={{ background: C.bg2 }}>
+                  <div className="h-full rounded-full" style={{ width: `${progress}%`, background: C.red }} />
+                </div>
+                <span className="text-[0.8rem] tabular-nums whitespace-nowrap" style={{ color: C.text2, fontFamily: 'var(--mono)' }}>
+                  {currentQuestion + 1} / {questions.length}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
                 <button
-                  onClick={() => setShowSubmitModal(true)}
-                  className="px-6 py-2.5 rounded-lg text-sm font-[600] cursor-pointer"
-                  style={{ background: C.red, border: 'none', color: '#fff', boxShadow: '0 0 20px rgba(225,6,0,0.3)' }}
+                  type="button"
+                  onClick={handlePrevious}
+                  disabled={currentQuestion === 0}
+                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[0.82rem] font-[600] cursor-pointer disabled:opacity-40"
+                  style={{ background: optionIdleBg, border: `1px solid ${C.border}`, color: C.text }}
                 >
-                  Submit Quiz
+                  <ChevronLeft className="w-4 h-4" /> Previous
                 </button>
-              ) : (
-                <button
-                  onClick={handleNext}
-                  className="flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-[600] cursor-pointer transition-all"
-                  style={{ background: C.red, border: 'none', color: '#fff', boxShadow: '0 0 20px rgba(225,6,0,0.3)' }}
-                  onMouseEnter={(e) => { e.currentTarget.style.boxShadow = '0 0 30px rgba(225,6,0,0.5)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.boxShadow = '0 0 20px rgba(225,6,0,0.3)'; }}
-                >
-                  Next <ChevronRight className="w-4 h-4" />
-                </button>
-              )}
+                {currentQuestion === questions.length - 1 ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowSubmitModal(true)}
+                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[0.82rem] font-[600] cursor-pointer"
+                    style={{ background: C.red, border: `1px solid ${C.red}`, color: '#fff' }}
+                  >
+                    Submit
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleNext}
+                    disabled={!hasAnswer}
+                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[0.82rem] font-[600] cursor-pointer disabled:opacity-40"
+                    style={{
+                      background: hasAnswer ? C.red : optionIdleBg,
+                      border: `1px solid ${hasAnswer ? C.red : C.border}`,
+                      color: hasAnswer ? '#fff' : C.text,
+                    }}
+                  >
+                    Next <ChevronRight className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Question Navigator Sidebar */}
-        <aside className="w-72 p-6 overflow-auto" style={{ background: C.bg1, borderLeft: `1px solid ${C.border}` }}>
-          <div className="text-[10px] tracking-[3px] uppercase font-[500] mb-4" style={{ color: C.text3, fontFamily: "var(--mono)" }}>
-            Question Navigator
+          <div className="rounded-2xl px-5 py-4" style={{ background: cardBg, border: `1px solid ${C.border}` }}>
+            <div className="text-[0.65rem] tracking-[0.08em] uppercase font-[600] mb-3" style={{ color: C.text3, fontFamily: 'var(--mono)' }}>
+              Question navigator
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {questions.map((_, index) => {
+                const isCurrent = index === currentQuestion;
+                const isAnswered = !!answers[index];
+                return (
+                  <button
+                    key={index}
+                    type="button"
+                    onClick={() => setCurrentQuestion(index)}
+                    className="size-9 rounded-lg flex items-center justify-center text-[0.75rem] font-[600] cursor-pointer relative tabular-nums"
+                    style={{
+                      background: isCurrent ? C.red : isAnswered ? 'rgba(34,197,94,0.1)' : optionIdleBg,
+                      border: isCurrent ? `1px solid ${C.red}` : isAnswered ? '1px solid rgba(34,197,94,0.25)' : `1px solid ${C.border}`,
+                      color: isCurrent ? '#fff' : isAnswered ? '#22c55e' : C.text3,
+                      fontFamily: 'var(--mono)',
+                    }}
+                  >
+                    {index + 1}
+                    {flagged.has(index) && (
+                      <Flag className="w-2.5 h-2.5 fill-current absolute -top-1 -right-1" style={{ color: C.red }} />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-[0.75rem] mt-3" style={{ color: C.text3 }}>
+              {answeredCount} answered · {unansweredCount} remaining
+            </p>
           </div>
-          <div className="grid grid-cols-5 gap-2">
-            {questions.map((_, index) => {
-              const isCurrent = index === currentQuestion;
-              const isAnswered = !!answers[index];
-              return (
-                <button
-                  key={index}
-                  onClick={() => setCurrentQuestion(index)}
-                  className="aspect-square rounded-lg flex items-center justify-center text-xs font-[500] cursor-pointer transition-all relative"
-                  style={{
-                    background: isCurrent ? C.red : isAnswered ? 'rgba(34,197,94,0.1)' : C.bg2,
-                    border: isCurrent ? 'none' : isAnswered ? '1px solid rgba(34,197,94,0.2)' : `1px solid ${C.border}`,
-                    color: isCurrent ? '#fff' : isAnswered ? '#22c55e' : C.text3,
-                    boxShadow: isCurrent ? '0 0 12px rgba(225,6,0,0.4)' : 'none',
-                  }}
-                >
-                  {index + 1}
-                  {flagged.has(index) && (
-                    <Flag className="w-2.5 h-2.5 fill-current absolute -top-1 -right-1" style={{ color: '#f97316' }} />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </aside>
+        </div>
       </div>
 
-      {/* Submit Modal */}
       {showSubmitModal && (
         <div className="fixed inset-0 flex items-center justify-center z-50 p-6" style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)' }}>
-          <div className="max-w-md w-full rounded-xl p-8" style={{ background: C.bg1, border: `1px solid ${C.border2}`, boxShadow: isDark ? '0 24px 60px rgba(0,0,0,0.6)' : '0 24px 60px rgba(0,0,0,0.15)' }}>
-            <h3 className="text-xl font-[400] mb-3" style={{ color: C.text, fontFamily: "var(--serif)" }}>Submit Quiz?</h3>
+          <div className="max-w-md w-full rounded-2xl p-8" style={{ background: cardBg, border: `1px solid ${C.border}` }}>
+            <h3 className="text-xl font-[600] mb-3" style={{ color: C.text, fontFamily: 'var(--display)' }}>Submit Quiz?</h3>
             <p className="text-sm mb-6" style={{ color: C.text2 }}>
               You have answered {answeredCount} out of {questions.length} questions.
               {unansweredCount > 0 && ` ${unansweredCount} questions remain unanswered.`}
             </p>
             <div className="flex gap-3">
               <button
+                type="button"
                 onClick={() => setShowSubmitModal(false)}
-                className="flex-1 px-4 py-2.5 rounded-lg text-sm font-[500] cursor-pointer"
-                style={{ background: 'transparent', border: `1px solid ${C.border2}`, color: C.text2 }}
+                className="flex-1 px-4 py-2.5 rounded-xl text-sm font-[600] cursor-pointer"
+                style={{ background: optionIdleBg, border: `1px solid ${C.border}`, color: C.text }}
               >
                 Review Answers
               </button>
               <button
+                type="button"
                 onClick={handleSubmit}
-                className="flex-1 px-4 py-2.5 rounded-lg text-sm font-[600] cursor-pointer"
-                style={{ background: C.red, border: 'none', color: '#fff', boxShadow: '0 0 20px rgba(225,6,0,0.3)' }}
+                className="flex-1 px-4 py-2.5 rounded-xl text-sm font-[600] cursor-pointer"
+                style={{ background: C.red, border: 'none', color: '#fff' }}
               >
                 Submit
               </button>

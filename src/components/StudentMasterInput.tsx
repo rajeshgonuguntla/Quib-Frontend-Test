@@ -13,10 +13,9 @@ import {
 import { cn } from './ui/utils';
 
 const PHRASES = [
-  'What do you want to master?',
-  'Ask a question',
-  'Drop a document',
-  'Paste a YouTube URL',
+  'Paste a YouTube URL to create a course',
+  'youtube.com/watch?v=…',
+  'Or a playlist URL (list=…)',
 ];
 
 const QUIZ_PHRASES = [
@@ -36,7 +35,7 @@ export function studyToolFromStartMode(mode: string | undefined): 'notes' | 'fla
 }
 
 const TABS: { id: LearnerStartMode; label: string }[] = [
-  { id: 'course', label: 'Start learning' },
+  { id: 'course', label: 'Create a course' },
   { id: 'quiz', label: 'Take a sample test' },
 ];
 
@@ -258,41 +257,50 @@ export function StudentMasterInput({ className, signedIn = true }: StudentMaster
                 color: 'var(--ink)',
                 caretColor: 'var(--accent)',
               }}
-              aria-label={isQuizMode ? 'Test topic or YouTube URL' : 'YouTube URL or topic'}
+              aria-label={isQuizMode ? 'Test topic or YouTube URL' : 'YouTube URL to create a course'}
               autoComplete="off"
+              inputMode="url"
+              enterKeyHint="go"
             />
             {showTypewriter && (
-              <div className="pointer-events-none absolute inset-y-0 left-0 z-0 flex items-center gap-0.5 whitespace-nowrap" aria-hidden>
-                <span className="text-[13px] text-[var(--ink-faint)]" style={{ fontFamily: 'var(--mono)' }}>{phText}</span>
-                <span className="inline-block h-[13px] w-[1.5px] animate-pulse bg-[var(--ink-faint)]" />
+              <div className="pointer-events-none absolute inset-y-0 left-0 z-0 flex items-center gap-0.5 overflow-hidden whitespace-nowrap" aria-hidden>
+                <span className="truncate text-[13px] text-[var(--ink-faint)]" style={{ fontFamily: 'var(--mono)' }}>{phText}</span>
+                <span className="inline-block h-[13px] w-[1.5px] shrink-0 animate-pulse bg-[var(--ink-faint)]" />
               </div>
             )}
           </div>
 
-          <div className="h-[22px] w-px shrink-0 bg-[var(--border)]" aria-hidden />
-
-          <button
-            type="button"
-            title={STUDENT_UPLOAD_ENABLED ? 'Upload' : 'Upload coming soon'}
-            disabled={!STUDENT_UPLOAD_ENABLED}
-            onClick={() => STUDENT_UPLOAD_ENABLED && fileRef.current?.click()}
-            className="flex size-[46px] shrink-0 items-center justify-center text-[var(--ink-faint)] transition-colors hover:bg-[var(--border)] hover:text-[var(--ink)] disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            <Upload size={16} strokeWidth={1.8} />
-          </button>
           {STUDENT_UPLOAD_ENABLED && (
-            <input ref={fileRef} type="file" className="hidden" accept="image/*,audio/*,video/*,.pdf,.txt,.md" />
+            <>
+              <div className="h-[22px] w-px shrink-0 bg-[var(--border)]" aria-hidden />
+              <button
+                type="button"
+                title="Upload"
+                onClick={() => fileRef.current?.click()}
+                className="flex size-11 shrink-0 items-center justify-center text-[var(--ink-faint)] transition-colors hover:bg-[var(--border)] hover:text-[var(--ink)]"
+              >
+                <Upload size={16} strokeWidth={1.8} />
+              </button>
+              <input ref={fileRef} type="file" className="hidden" accept="image/*,audio/*,video/*,.pdf,.txt,.md" />
+            </>
           )}
 
           <button
             type="submit"
-            className="mx-1.5 inline-flex size-[34px] shrink-0 items-center justify-center rounded-full bg-[var(--ink)] text-[var(--bg)] transition-opacity hover:opacity-[0.82] active:scale-95"
-            aria-label="Start"
+            className="mx-1.5 inline-flex h-10 min-w-10 shrink-0 items-center justify-center gap-1.5 rounded-full bg-[var(--ink)] px-3 text-[var(--bg)] transition-opacity hover:opacity-[0.82] active:scale-95 sm:size-[34px] sm:min-w-0 sm:px-0"
+            aria-label={isQuizMode ? 'Start sample test' : 'Create course'}
           >
+            <span className="text-[12px] font-bold sm:hidden">{isQuizMode ? 'Go' : 'Create'}</span>
             <ArrowRight size={15} strokeWidth={2.2} />
           </button>
         </div>
       </form>
+
+      {!error && !isQuizMode && (
+        <p className="mt-2 text-[11px] leading-snug text-[var(--ink-faint)]">
+          Paste a YouTube video or playlist URL, then tap Create.
+        </p>
+      )}
 
       {error && (
         <p className="mt-2 text-xs text-[var(--accent)]" role="alert">

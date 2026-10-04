@@ -124,7 +124,7 @@ export function PlaylistSetup() {
         return;
       }
 
-      let questions = questionsFromRawQuiz(quiz.quiz);
+      const questions = questionsFromRawQuiz(quiz.quiz);
       if (questions.length === 0) {
         setSetupError(`Failed to load quiz for "${quiz.videoTitle}". Please regenerate the playlist.`);
         return;

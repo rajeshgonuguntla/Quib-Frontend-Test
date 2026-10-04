@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, type PointerEvent as ReactPointerEvent } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, type PointerEvent as ReactPointerEvent } from 'react';
 import { Link, useNavigate, useLocation, useParams } from 'react-router';
 import axios from 'axios';
 import {
@@ -26,7 +26,6 @@ import { CourseGenerationLoader } from './CourseGenerationLoader';
 import { CoursePageNav } from './CoursePageNav';
 import { CourseChatWidget } from './CourseChatWidget';
 import { ModuleQuizSecondChance } from './ModuleQuizSecondChance';
-import { EducatorAssistantWidget, type AssistantApplyResult } from './EducatorAssistantWidget';
 import { QuibLogo } from './QuibLogo';
 import { TrialUpgradePrompt } from './TrialUpgradePrompt';
 import { LessonStudyContent } from './LessonNotes';
@@ -37,8 +36,6 @@ import { YoutubeLessonPlayer, type YoutubeLessonPlayerHandle } from './YoutubeLe
 import { CourseReviewPanel } from './CourseReviewPanel';
 import { StudentLessonNotesEditor } from './StudentLessonNotesEditor';
 import { LessonTranscriptPanel } from './LessonTranscriptPanel';
-import { updateCourse } from '../api/educatorApi';
-import { buildSavePayloadFromAssistant } from '../utils/courseEditOperations';
 import { downloadCoursePdf } from '../utils/downloadCoursePdf';
 import { withoutLessonNumberPrefix } from '../utils/lessonTitle';
 import {
@@ -47,7 +44,7 @@ import {
   wasCourseLaunched,
 } from '../utils/courseLaunch';
 import { isModuleQuizQuestionWrong, type SimilarPracticeQuestion } from '../utils/quizSecondChance';
-import type { CourseGenerationOptions, EditableCourse } from '../types/courseGeneration';
+import type { CourseGenerationOptions } from '../types/courseGeneration';
 import { studyToolFromStartMode } from './StudentMasterInput';
 import { UserAvatar } from './UserAvatar';
 import {
@@ -136,16 +133,6 @@ const getYoutubeEmbedId = (videoId?: string, videoUrl?: string, fallbackUrl?: st
   }
   return '';
 };
-
-function courseToEditable(c: Course): EditableCourse {
-  return {
-    title: c.title,
-    description: c.description,
-    difficulty: c.difficulty,
-    modules: c.modules,
-    playlistVideos: c.playlistVideos,
-  };
-}
 
 function getCourseGenerationError(err: unknown) {
   if (axios.isAxiosError(err)) {
@@ -296,9 +283,6 @@ function LearningMode({
   youtubeUrl,
   onBack,
   showCourseChat,
-  showEducatorAssistant,
-  onEducatorApplyUpdate,
-  onEducatorApproveAndSave,
   chatSignedIn,
   onChatSignInRequired,
   chatSessionKey,
@@ -309,9 +293,6 @@ function LearningMode({
   youtubeUrl: string;
   onBack: () => void;
   showCourseChat: boolean;
-  showEducatorAssistant: boolean;
-  onEducatorApplyUpdate: (result: AssistantApplyResult) => void;
-  onEducatorApproveAndSave: (result: AssistantApplyResult) => Promise<void>;
   chatSignedIn: boolean;
   onChatSignInRequired: () => void;
   chatSessionKey: string;
@@ -334,10 +315,16 @@ function LearningMode({
   const [studyTab, setStudyTab] = useState<StudyTab>(initialStudyTab);
   const [askOpenSignal, setAskOpenSignal] = useState(0);
   const lessonPlayerRef = useRef<YoutubeLessonPlayerHandle | null>(null);
-  const lessonPlayerClock = useRef({
-    getCurrentTime: () => lessonPlayerRef.current?.getCurrentTime() ?? 0,
-    seekTo: (sec: number) => lessonPlayerRef.current?.seekTo(sec),
-  }).current;
+  // Stable facade — methods read the player ref only when called (not during render).
+  const lessonPlayerClock = useMemo(
+    () => ({
+      getCurrentTime: () => lessonPlayerRef.current?.getCurrentTime() ?? 0,
+      seekTo: (sec: number) => {
+        lessonPlayerRef.current?.seekTo(sec);
+      },
+    }),
+    [],
+  );
   const [previewModuleId, setPreviewModuleId] = useState<string | null>(null);
   const [previewRect, setPreviewRect] = useState<DOMRect | null>(null);
   const previewLeaveTimer = useRef<number | null>(null);
@@ -358,16 +345,15 @@ function LearningMode({
   const [assistantWidth, setAssistantWidth] = useState(() => readAssistantPanelWidth());
   const assistantResizeRef = useRef<{ startX: number; startWidth: number } | null>(null);
 
-  const handleAssistantResizePointerDown = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+  const handleAssistantResizePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     event.preventDefault();
-    const handle = event.currentTarget;
-    handle.setPointerCapture(event.pointerId);
+    event.currentTarget.setPointerCapture(event.pointerId);
     assistantResizeRef.current = { startX: event.clientX, startWidth: assistantWidth };
     document.body.style.cursor = 'col-resize';
     document.body.style.userSelect = 'none';
-  }, [assistantWidth]);
+  };
 
-  const handleAssistantResizePointerMove = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+  const handleAssistantResizePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
     const drag = assistantResizeRef.current;
     if (!drag) return;
     // Left edge: drag left → wider panel, drag right → narrower
@@ -376,9 +362,9 @@ function LearningMode({
       Math.max(ASSISTANT_PANEL_MIN, drag.startWidth + (drag.startX - event.clientX)),
     );
     setAssistantWidth(next);
-  }, []);
+  };
 
-  const handleAssistantResizePointerUp = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+  const handleAssistantResizePointerUp = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (!assistantResizeRef.current) return;
     assistantResizeRef.current = null;
     document.body.style.cursor = '';
@@ -392,7 +378,7 @@ function LearningMode({
       writeAssistantPanelWidth(width);
       return width;
     });
-  }, []);
+  };
 
   const handleDownloadCourse = useCallback(async () => {
     if (downloadBusy) return;
@@ -452,7 +438,7 @@ function LearningMode({
   const lessonIndexInModule = activeModule
     ? (activeModule.lessons ?? []).findIndex((l) => l.id === activeLessonId)
     : -1;
-  const tutorAvailable = showEducatorAssistant || showCourseChat;
+  const tutorAvailable = showCourseChat;
   const { profile, setProfile } = useUserProfile();
   const navigate = useNavigate();
 
@@ -1291,53 +1277,8 @@ function LearningMode({
                 style={{ background: C.red }}
               />
             </div>
-            {showEducatorAssistant ? (
-              <EducatorAssistantWidget
-                key={chatSessionKey}
-                variant="panel"
-                courseId={courseId}
-                courseTitle={course.title}
-                sessionKey={chatSessionKey}
-                onPreviewChange={onEducatorApplyUpdate}
-                onApproveAndSave={onEducatorApproveAndSave}
-                openSignal={askOpenSignal}
-                chrome="cuib"
-              />
-            ) : (
-              <CourseChatWidget
-                key={chatSessionKey}
-                courseId={courseId}
-                courseTitle={course.title}
-                lessonId={activeLessonId || undefined}
-                moduleId={activeQuizModuleId || undefined}
-                signedIn={chatSignedIn}
-                onSignInRequired={onChatSignInRequired}
-                sessionKey={chatSessionKey}
-                variant="panel"
-                openSignal={askOpenSignal}
-                chrome="cuib"
-              />
-            )}
-          </aside>
-        )}
-      </div>
-
-      {/* Mobile FAB */}
-      {tutorAvailable && (
-        <div className="lg:hidden">
-          {showEducatorAssistant ? (
-            <EducatorAssistantWidget
-              key={`${chatSessionKey}-mobile`}
-              courseId={courseId}
-              courseTitle={course.title}
-              sessionKey={chatSessionKey}
-              onPreviewChange={onEducatorApplyUpdate}
-              onApproveAndSave={onEducatorApproveAndSave}
-              openSignal={askOpenSignal}
-            />
-          ) : (
             <CourseChatWidget
-              key={`${chatSessionKey}-mobile`}
+              key={chatSessionKey}
               courseId={courseId}
               courseTitle={course.title}
               lessonId={activeLessonId || undefined}
@@ -1345,10 +1286,29 @@ function LearningMode({
               signedIn={chatSignedIn}
               onSignInRequired={onChatSignInRequired}
               sessionKey={chatSessionKey}
-              variant="floating"
+              variant="panel"
               openSignal={askOpenSignal}
+              chrome="cuib"
             />
-          )}
+          </aside>
+        )}
+      </div>
+
+      {/* Mobile FAB */}
+      {tutorAvailable && (
+        <div className="lg:hidden">
+          <CourseChatWidget
+            key={`${chatSessionKey}-mobile`}
+            courseId={courseId}
+            courseTitle={course.title}
+            lessonId={activeLessonId || undefined}
+            moduleId={activeQuizModuleId || undefined}
+            signedIn={chatSignedIn}
+            onSignInRequired={onChatSignInRequired}
+            sessionKey={chatSessionKey}
+            variant="floating"
+            openSignal={askOpenSignal}
+          />
         </div>
       )}
     </div>
@@ -1813,25 +1773,8 @@ export function CourseDetails() {
 
   // ── Learning Mode ──
   const chatSessionKey = `${resolvedCourseId ?? 'course'}-${authSessionKey}`;
-  // Creators (owner + educator) keep the editing assistant; learners get Q&A chat.
-  const showEducatorAssistant = chatSignedIn && isOwner && isEducator && !!resolvedCourseId;
-  const showCourseChat = learningMode && !!resolvedCourseId && !showEducatorAssistant;
-  const handleEducatorApplyUpdate = (result: AssistantApplyResult) => {
-    if (!resolvedCourseId) return;
-    sessionStorage.setItem(
-      `assistant-pending-${resolvedCourseId}`,
-      JSON.stringify({ update: result.courseUpdate, operations: result.operations }),
-    );
-    navigate(`/educator-courses/${resolvedCourseId}/edit`);
-  };
-  const handleEducatorApproveAndSave = async (result: AssistantApplyResult) => {
-    if (!resolvedCourseId || !course) return;
-    const videoIds = course.playlistVideos?.map((v) => v.videoId).filter(Boolean) ?? [];
-    const payload = buildSavePayloadFromAssistant(courseToEditable(course), result, videoIds);
-    await updateCourse(resolvedCourseId, payload);
-    const res = await axios.get(`/api/course/${resolvedCourseId}`);
-    setCourse(res.data as Course);
-  };
+  // Learning view always uses tutor Q&A; plain-language edit assistant lives in CourseEditor only.
+  const showCourseChat = learningMode && !!resolvedCourseId;
   const handleChatSignIn = () => {
     navigate('/signin', { state: { returnTo: `/course-details/${resolvedCourseId}` } });
   };
@@ -1844,9 +1787,6 @@ export function CourseDetails() {
         youtubeUrl={youtubeUrl}
         onBack={() => setLearningMode(false)}
         showCourseChat={showCourseChat}
-        showEducatorAssistant={showEducatorAssistant}
-        onEducatorApplyUpdate={handleEducatorApplyUpdate}
-        onEducatorApproveAndSave={handleEducatorApproveAndSave}
         chatSignedIn={chatSignedIn}
         onChatSignInRequired={handleChatSignIn}
         chatSessionKey={chatSessionKey}
@@ -1930,7 +1870,16 @@ export function CourseDetails() {
       <div className="max-w-4xl mx-auto px-6 md:px-10" style={{ paddingTop: 40 }}>
         {/* Header */}
         <div className="mb-10">
-          <h1 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(2rem, 4vw, 2.8rem)', fontWeight: 400, lineHeight: 1.15, color: C.text, marginBottom: 20 }}>
+          <h1
+            className="font-[800] tracking-tight"
+            style={{
+              fontFamily: 'var(--display)',
+              fontSize: 'clamp(2rem, 4vw, 2.8rem)',
+              lineHeight: 1.15,
+              color: C.text,
+              marginBottom: 20,
+            }}
+          >
             {course.title}
           </h1>
           <p className="text-[0.9rem] leading-relaxed mb-8" style={{ color: C.text2, lineHeight: 1.8, maxWidth: 720 }}>
@@ -2051,7 +2000,10 @@ export function CourseDetails() {
 
         {/* Modules */}
         <div className="flex items-center justify-between mb-6">
-          <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(1.4rem, 2.5vw, 1.8rem)', fontWeight: 400, color: C.text }}>
+          <h2
+            className="font-[800] tracking-tight"
+            style={{ fontFamily: 'var(--display)', fontSize: 'clamp(1.4rem, 2.5vw, 1.8rem)', color: C.text }}
+          >
             Course Modules
           </h2>
           <button onClick={handleStartLearning}
@@ -2144,16 +2096,6 @@ export function CourseDetails() {
       </div>
       </div>
 
-      {showEducatorAssistant && resolvedCourseId && (
-        <EducatorAssistantWidget
-          key={chatSessionKey}
-          courseId={resolvedCourseId}
-          courseTitle={course.title}
-          sessionKey={chatSessionKey}
-          onPreviewChange={handleEducatorApplyUpdate}
-          onApproveAndSave={handleEducatorApproveAndSave}
-        />
-      )}
       </div>
     </div>
   );

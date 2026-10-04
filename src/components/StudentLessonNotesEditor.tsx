@@ -108,6 +108,7 @@ function runCmd(command: string, value?: string) {
 export function StudentLessonNotesEditor({ courseId, lessonId, C, player }: Props) {
   const editorRef = useRef<HTMLDivElement>(null);
   const savedRange = useRef<Range | null>(null);
+  const insertMathRef = useRef<() => void>(() => {});
   const [status, setStatus] = useState<'idle' | 'loading' | 'saving' | 'saved' | 'error'>('loading');
   const [error, setError] = useState<string | null>(null);
   const [toolbar, setToolbar] = useState<ToolbarState>(DEFAULT_TOOLBAR);
@@ -227,17 +228,6 @@ export function StudentLessonNotesEditor({ courseId, lessonId, C, player }: Prop
     scheduleSave();
   };
 
-  const insertMath = () => {
-    saveSelection();
-    const latex = window.prompt('Equation (LaTeX or plain math)', 'x^2');
-    if (latex == null) return;
-    const safe = latex.replace(/</g, '').trim();
-    if (!safe) return;
-    withEditorSelection(() => {
-      runCmd('insertHTML', `<code style="font-family:var(--mono)">$${safe}$</code>&nbsp;`);
-    });
-  };
-
   const onEditorClick = (e: MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement | null;
     const anchor = target?.closest?.('a[href^="#t="], a[data-note-ts]') as HTMLAnchorElement | null;
@@ -249,6 +239,19 @@ export function StudentLessonNotesEditor({ courseId, lessonId, C, player }: Prop
       player?.seekTo?.(sec);
     }
   };
+
+  useEffect(() => {
+    insertMathRef.current = () => {
+      saveSelection();
+      const latex = window.prompt('Equation (LaTeX or plain math)', 'x^2');
+      if (latex == null) return;
+      const safe = latex.replace(/</g, '').trim();
+      if (!safe) return;
+      withEditorSelection(() => {
+        runCmd('insertHTML', `<code style="font-family:var(--mono)">$${safe}$</code>&nbsp;`);
+      });
+    };
+  });
 
   const btn = (label: string, active: boolean, onClick: () => void, icon?: ReactNode) => (
     <button
@@ -310,7 +313,24 @@ export function StudentLessonNotesEditor({ courseId, lessonId, C, player }: Prop
         {btn('Numbered list', toolbar.orderedList, () => runCmd('insertOrderedList'), <ListOrdered className="w-3.5 h-3.5" />)}
         {btn('Quote', toolbar.quote, () => runCmd('formatBlock', toolbar.quote ? 'p' : 'blockquote'), <Quote className="w-3.5 h-3.5" />)}
         {btn('Code block', toolbar.code, () => runCmd('formatBlock', toolbar.code ? 'p' : 'pre'), <Code2 className="w-3.5 h-3.5" />)}
-        {btn('Equation', false, insertMath, <Sigma className="w-3.5 h-3.5" />)}
+        <button
+          type="button"
+          title="Equation"
+          aria-label="Equation"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            saveSelection();
+          }}
+          onClick={() => insertMathRef.current()}
+          className="h-8 min-w-8 px-2 rounded-md inline-flex items-center justify-center text-[0.72rem] cursor-pointer"
+          style={{
+            background: C.bg2,
+            border: `1px solid ${C.border}`,
+            color: C.text2,
+          }}
+        >
+          <Sigma className="w-3.5 h-3.5" />
+        </button>
         <span className="ml-auto text-[0.7rem]" style={{ color: C.text3 }}>
           {status === 'loading' && 'Loading…'}
           {status === 'saving' && 'Saving…'}

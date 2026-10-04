@@ -10,6 +10,8 @@ type AppSidebarProps = {
   pathname: string;
   search: string;
   onNavigate?: () => void;
+  /** `drawer` = mobile sheet — keep Settings in normal flow (mt-auto was pushing it off-screen). */
+  layout?: 'sidebar' | 'drawer';
 };
 
 const FOOTER_NAV_IDS = new Set(['settings']);
@@ -81,8 +83,9 @@ function SidebarUpgradeChip({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-export function AppSidebar({ pathname, search, onNavigate }: AppSidebarProps) {
+export function AppSidebar({ pathname, search, onNavigate, layout = 'sidebar' }: AppSidebarProps) {
   const { profile } = useUserProfile();
+  const isDrawer = layout === 'drawer';
   const navGroups = filterNavGroups(NAV_GROUPS, isEducatorExperience(profile), profile)
     .filter((group) => group.items.length > 0);
 
@@ -96,13 +99,17 @@ export function AppSidebar({ pathname, search, onNavigate }: AppSidebarProps) {
       continue;
     }
     for (const item of group.items) {
-      if (FOOTER_NAV_IDS.has(item.id)) footerItems.push(item);
+      // Drawer: keep Settings with primary links so it isn't stuck below the fold.
+      if (!isDrawer && FOOTER_NAV_IDS.has(item.id)) footerItems.push(item);
       else primaryItems.push(item);
     }
   }
 
   return (
-    <nav className="flex h-full min-h-0 flex-col" aria-label="Main">
+    <nav
+      className={isDrawer ? 'flex flex-col' : 'flex h-full min-h-0 flex-col'}
+      aria-label="Main"
+    >
       <div className="shrink-0">
         <NavList items={primaryItems} pathname={pathname} search={search} onNavigate={onNavigate} />
         {createItems.length > 0 ? (
@@ -124,7 +131,7 @@ export function AppSidebar({ pathname, search, onNavigate }: AppSidebarProps) {
       </div>
 
       <div
-        className="mt-auto shrink-0 pt-4"
+        className={isDrawer ? 'mt-4 shrink-0 pt-4' : 'mt-auto shrink-0 pt-4'}
         style={{ borderTop: '1px solid var(--border)' }}
       >
         {footerItems.length > 0 ? (

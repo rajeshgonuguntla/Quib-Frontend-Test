@@ -66,11 +66,17 @@ export function StudyRailPanel({
   const [data, setData] = useState<LessonStudyToolResponse | null>(
     () => resolveStudyToolData(courseId, lessonId, tool, seedFlashcards, seedBlanks),
   );
+  // Remount interactive tools after regenerate so score/submit/card index cannot stick.
+  const [toolEpoch, setToolEpoch] = useState(0);
+  // Length fingerprint — avoids re-running on new array identity from parent re-renders
+  // (that was resetting the deck back to the course seed after a successful regenerate).
+  const seedKey = `${seedFlashcards?.length ?? 0}:${seedBlanks?.length ?? 0}`;
 
   useEffect(() => {
     setError(null);
     setData(resolveStudyToolData(courseId, lessonId, tool, seedFlashcards, seedBlanks));
-  }, [courseId, lessonId, tool, seedFlashcards, seedBlanks]);
+    setToolEpoch(0);
+  }, [courseId, lessonId, tool, seedKey]); // seed arrays via seedKey — not referential identity
 
   const generate = async () => {
     setLoading(true);
@@ -79,6 +85,7 @@ export function StudyRailPanel({
       const res = await generateLessonStudyTool(courseId, lessonId, tool);
       writeCachedStudyTool(courseId, lessonId, tool, res);
       setData(res);
+      setToolEpoch((n) => n + 1);
     } catch (err) {
       setError(getError(err));
     } finally {
@@ -120,10 +127,12 @@ export function StudyRailPanel({
         <p className="text-[0.8rem]" style={{ color: C.red }}>{error}</p>
       )}
 
-      {loading && !data && (
+      {loading && (
         <div className="rounded-2xl p-8 flex flex-col items-center gap-3" style={{ background: C.bg1, border: `1px solid ${C.border}` }}>
           <Loader2 className="w-6 h-6 animate-spin" style={{ color: C.red }} />
-          <p className="text-[0.85rem]" style={{ color: C.text2 }}>Building {title.toLowerCase()}…</p>
+          <p className="text-[0.85rem]" style={{ color: C.text2 }}>
+            {data ? `Regenerating ${title.toLowerCase()}…` : `Building ${title.toLowerCase()}…`}
+          </p>
         </div>
       )}
 
@@ -147,22 +156,22 @@ export function StudyRailPanel({
         </div>
       )}
 
-      {data?.type === 'notes' && data.notes?.markdown && (
+      {!loading && data?.type === 'notes' && data.notes?.markdown && (
         <div className="rounded-2xl p-6" style={{ background: C.bg1, border: `1px solid ${C.border}` }}>
           <LessonNotes content={data.notes.markdown} theme={C} />
         </div>
       )}
 
-      {data?.type === 'flashcards' && data.flashcards && (
-        <FlashcardDeck cards={data.flashcards} C={C} />
+      {!loading && data?.type === 'flashcards' && data.flashcards && data.flashcards.length > 0 && (
+        <FlashcardDeck key={toolEpoch} cards={data.flashcards} C={C} />
       )}
 
-      {data?.type === 'blanks' && data.blanks && (
-        <BlanksQuiz items={data.blanks} C={C} isDark={isDark} />
+      {!loading && data?.type === 'blanks' && data.blanks && data.blanks.length > 0 && (
+        <BlanksQuiz key={toolEpoch} items={data.blanks} C={C} isDark={isDark} />
       )}
 
-      {data?.type === 'exam' && data.exam && (
-        <ExamQuiz questions={data.exam} C={C} isDark={isDark} />
+      {!loading && data?.type === 'exam' && data.exam && data.exam.length > 0 && (
+        <ExamQuiz key={toolEpoch} questions={data.exam} C={C} isDark={isDark} />
       )}
     </div>
   );
@@ -352,20 +361,15 @@ function BlanksQuiz({ items, C, isDark }: { items: StudyBlank[]; C: Theme; isDar
   );
 }
 
+/** One question at a time (light target) — same structure in dark; only theme tokens differ. */
 function ExamQuiz({ questions, C, isDark }: { questions: StudyExamQuestion[]; C: Theme; isDark: boolean }) {
-  if (!isDark) {
-    return <ExamQuizGreStyle questions={questions} C={C} />;
-  }
-  return <ExamQuizListStyle questions={questions} C={C} isDark />;
-}
-
-/** Light-mode GRE/SAT style — one question at a time. */
-function ExamQuizGreStyle({ questions, C }: { questions: StudyExamQuestion[]; C: Theme }) {
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [index, setIndex] = useState(0);
   const [submitted, setSubmitted] = useState(false);
   const [flagged, setFlagged] = useState<Record<number, boolean>>({});
 
+  const cardBg = isDark ? C.bg1 : '#ffffff';
+  const optionIdleBg = isDark ? C.bg2 : '#ffffff';
   const total = questions.length;
   const q = questions[index];
   const selected = q ? answers[index] : undefined;
@@ -378,7 +382,7 @@ function ExamQuizGreStyle({ questions, C }: { questions: StudyExamQuestion[]; C:
 
   if (submitted) {
     return (
-      <div className="rounded-2xl p-6" style={{ background: '#ffffff', border: `1px solid ${C.border}` }}>
+      <div className="rounded-2xl p-6" style={{ background: cardBg, border: `1px solid ${C.border}` }}>
         <p className="font-[600] text-[0.95rem]" style={{ color: C.text }}>
           {score}/{total} correct ({Math.round((score / Math.max(total, 1)) * 100)}%)
         </p>
@@ -402,12 +406,12 @@ function ExamQuizGreStyle({ questions, C }: { questions: StudyExamQuestion[]; C:
   const selectedText = selected != null ? q.options[selected] : undefined;
 
   return (
-    <div className="rounded-2xl overflow-hidden" style={{ background: '#ffffff', border: `1px solid ${C.border}` }}>
+    <div className="rounded-2xl overflow-hidden" style={{ background: cardBg, border: `1px solid ${C.border}` }}>
       <div className="px-6 pt-5 pb-6">
         <div className="flex items-center justify-between mb-8">
           <span
             className="inline-flex items-center rounded-full px-3 py-1 text-[0.65rem] font-[600] tracking-[0.06em] uppercase"
-            style={{ background: C.bg1, color: C.text3, border: `1px solid ${C.border}` }}
+            style={{ background: isDark ? C.bg2 : C.bg1, color: C.text3, border: `1px solid ${C.border}` }}
           >
             Multiple choice
           </span>
@@ -441,7 +445,7 @@ function ExamQuizGreStyle({ questions, C }: { questions: StudyExamQuestion[]; C:
                 onClick={() => setAnswers((prev) => ({ ...prev, [index]: oi }))}
                 className="w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-xl text-[0.95rem] cursor-pointer"
                 style={{
-                  background: isSelected ? 'rgba(225,6,0,0.04)' : '#ffffff',
+                  background: isSelected ? C.redDim : optionIdleBg,
                   border: `1px solid ${isSelected ? C.red : C.border}`,
                   color: C.text,
                 }}
@@ -481,7 +485,7 @@ function ExamQuizGreStyle({ questions, C }: { questions: StudyExamQuestion[]; C:
             disabled={index === 0}
             onClick={() => setIndex((i) => Math.max(0, i - 1))}
             className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[0.82rem] font-[600] cursor-pointer disabled:opacity-40"
-            style={{ background: '#ffffff', border: `1px solid ${C.border}`, color: C.text }}
+            style={{ background: optionIdleBg, border: `1px solid ${C.border}`, color: C.text }}
           >
             <ChevronLeft className="w-4 h-4" /> Previous
           </button>
@@ -492,7 +496,7 @@ function ExamQuizGreStyle({ questions, C }: { questions: StudyExamQuestion[]; C:
               onClick={() => setIndex((i) => Math.min(total - 1, i + 1))}
               className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[0.82rem] font-[600] cursor-pointer disabled:opacity-40"
               style={{
-                background: hasAnswer ? C.red : '#ffffff',
+                background: hasAnswer ? C.red : optionIdleBg,
                 border: `1px solid ${hasAnswer ? C.red : C.border}`,
                 color: hasAnswer ? '#fff' : C.text,
               }}
@@ -506,7 +510,7 @@ function ExamQuizGreStyle({ questions, C }: { questions: StudyExamQuestion[]; C:
               onClick={() => setSubmitted(true)}
               className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[0.82rem] font-[600] cursor-pointer disabled:opacity-40"
               style={{
-                background: allAnswered ? C.red : '#ffffff',
+                background: allAnswered ? C.red : optionIdleBg,
                 border: `1px solid ${allAnswered ? C.red : C.border}`,
                 color: allAnswered ? '#fff' : C.text,
               }}
@@ -544,85 +548,3 @@ function renderExamStem(question: string, selectedOption: string | undefined, ac
   return question;
 }
 
-/** Dark-mode list layout (unchanged). */
-function ExamQuizListStyle({ questions, C, isDark }: { questions: StudyExamQuestion[]; C: Theme; isDark: boolean }) {
-  const [answers, setAnswers] = useState<Record<number, number>>({});
-  const [submitted, setSubmitted] = useState(false);
-
-  const score = questions.reduce((acc, q, i) => acc + (answers[i] === q.correctAnswerIndex ? 1 : 0), 0);
-
-  return (
-    <div className="space-y-5">
-      {questions.map((q, qi) => (
-        <div key={qi} className="rounded-2xl p-6" style={{ background: C.bg1, border: `1px solid ${C.border}` }}>
-          <p className="text-[0.875rem] font-[500] mb-4 leading-relaxed" style={{ color: C.text }}>
-            <span style={{ color: C.red, fontFamily: 'var(--mono)', fontSize: '0.72rem', marginRight: 8 }}>Q{qi + 1}</span>
-            {q.question}
-          </p>
-          <div className="space-y-2">
-            {q.options.map((opt, oi) => {
-              const selected = answers[qi] === oi;
-              const correct = submitted && oi === q.correctAnswerIndex;
-              const wrong = submitted && selected && oi !== q.correctAnswerIndex;
-              return (
-                <button
-                  key={oi}
-                  type="button"
-                  onClick={() => !submitted && setAnswers((prev) => ({ ...prev, [qi]: oi }))}
-                  className="w-full text-left px-4 py-3 rounded-xl text-[0.82rem]"
-                  style={{
-                    background: correct
-                      ? 'rgba(34,197,94,0.12)'
-                      : wrong
-                        ? 'rgba(225,6,0,0.1)'
-                        : selected
-                          ? isDark ? 'rgba(225,6,0,0.1)' : 'rgba(225,6,0,0.06)'
-                          : isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.025)',
-                    border: `1px solid ${correct ? 'rgba(34,197,94,0.35)' : wrong ? 'rgba(225,6,0,0.3)' : selected ? C.red : C.border}`,
-                    color: correct ? '#22c55e' : wrong ? C.red : C.text2,
-                    cursor: submitted ? 'default' : 'pointer',
-                  }}
-                >
-                  <span className="font-[600] mr-2" style={{ fontFamily: 'var(--mono)', fontSize: '0.72rem' }}>
-                    {String.fromCharCode(65 + oi)}.
-                  </span>
-                  {opt}
-                </button>
-              );
-            })}
-          </div>
-          {submitted && q.explanation?.trim() && (
-            <p className="text-[0.78rem] mt-3 leading-relaxed" style={{ color: C.text2 }}>
-              {q.explanation}
-            </p>
-          )}
-        </div>
-      ))}
-      {!submitted ? (
-        <button
-          type="button"
-          disabled={Object.keys(answers).length < questions.length}
-          onClick={() => setSubmitted(true)}
-          className="px-8 py-3 rounded-lg text-[0.875rem] font-[600] cursor-pointer disabled:opacity-50"
-          style={{ background: C.red, color: '#fff', border: 'none' }}
-        >
-          Submit exam
-        </button>
-      ) : (
-        <div className="rounded-2xl p-6" style={{ background: score >= Math.ceil(questions.length * 0.7) ? 'rgba(34,197,94,0.08)' : 'rgba(225,6,0,0.06)', border: `1px solid ${score >= Math.ceil(questions.length * 0.7) ? 'rgba(34,197,94,0.25)' : 'rgba(225,6,0,0.2)'}` }}>
-          <p className="font-[600] text-[0.95rem]" style={{ color: C.text }}>
-            {score}/{questions.length} correct ({Math.round((score / Math.max(questions.length, 1)) * 100)}%)
-          </p>
-          <button
-            type="button"
-            onClick={() => { setSubmitted(false); setAnswers({}); }}
-            className="mt-3 text-[0.8rem] underline cursor-pointer"
-            style={{ background: 'none', border: 'none', color: C.text2 }}
-          >
-            Retake
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
