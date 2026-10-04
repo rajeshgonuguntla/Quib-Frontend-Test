@@ -3,6 +3,7 @@ import {
   isYoutubePlaylistUrl,
   isYoutubeVideoUrl,
 } from '../utils/youtubeUrl';
+import { isStandardizedExamRequest, resolveExamType } from './examRequest';
 
 export type MasterStartMode = 'course' | 'notes' | 'flashcards' | 'blanks' | 'quiz';
 export type MasterExamType = 'custom' | 'sat' | 'gre';
@@ -15,9 +16,23 @@ export type MasterSubmitResult =
 
 const QUIZ_TOO_SHORT = 'Describe what you want to be tested on (or paste a YouTube URL).';
 
+function quizPromptResult(
+  trimmed: string,
+  examType: MasterExamType,
+  signedIn: boolean,
+): MasterSubmitResult {
+  if (trimmed.length < 8) {
+    return { type: 'error', message: QUIZ_TOO_SHORT };
+  }
+  const state = { prompt: trimmed, examType: resolveExamType(trimmed, examType), startTool: 'quiz' };
+  if (!signedIn) return { type: 'navigate', path: '/signin', state };
+  return { type: 'navigate', path: '/quiz-setup', state };
+}
+
 /**
  * Decide what the dashboard ask bar should do with the current value.
  * YouTube links and sample-test prompts keep their existing navigation.
+ * A GRE or SAT test request opens quiz setup even from Start learning.
  * Other text can open an in-page conversation when questions are enabled.
  */
 export function resolveMasterSubmit(input: {
@@ -42,22 +57,20 @@ export function resolveMasterSubmit(input: {
           path: '/signin',
           state: playlist
             ? { playlistUrl: trimmed, startTool: mode }
-            : { youtubeUrl: trimmed, startTool: mode },
+            : { youtubeUrl: trimmed, startTool: mode, examType: resolveExamType(trimmed, examType) },
         };
       }
       if (playlist) {
         return { type: 'navigate', path: '/playlist-setup/new', state: { playlistUrl: trimmed } };
       }
-      return { type: 'navigate', path: '/quiz-setup', state: { youtubeUrl: trimmed } };
+      return {
+        type: 'navigate',
+        path: '/quiz-setup',
+        state: { youtubeUrl: trimmed, examType: resolveExamType(trimmed, examType) },
+      };
     }
 
-    if (trimmed.length < 8) {
-      return { type: 'error', message: QUIZ_TOO_SHORT };
-    }
-
-    const state = { prompt: trimmed, examType, startTool: 'quiz' };
-    if (!signedIn) return { type: 'navigate', path: '/signin', state };
-    return { type: 'navigate', path: '/quiz-setup', state };
+    return quizPromptResult(trimmed, examType, signedIn);
   }
 
   if (!getYoutubeUrlValidationError(trimmed)) {
@@ -76,6 +89,10 @@ export function resolveMasterSubmit(input: {
       path: '/course-builder',
       state: { youtubeUrl: trimmed, startTool: mode },
     };
+  }
+
+  if (isStandardizedExamRequest(trimmed)) {
+    return quizPromptResult(trimmed, examType, signedIn);
   }
 
   if (input.questionsEnabled) {

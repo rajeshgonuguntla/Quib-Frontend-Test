@@ -102,6 +102,56 @@ describe('resolveMasterSubmit', () => {
     });
   });
 
+  it('sends a GRE request from Start learning to GRE quiz setup', () => {
+    expect(resolveMasterSubmit({
+      value: 'generate a gre test',
+      mode: 'course',
+      examType: 'custom',
+      signedIn: true,
+      questionsEnabled: true,
+    })).toEqual({
+      type: 'navigate',
+      path: '/quiz-setup',
+      state: { prompt: 'generate a gre test', examType: 'gre', startTool: 'quiz' },
+    });
+  });
+
+  it('keeps a general GRE question in the conversation', () => {
+    expect(resolveMasterSubmit({
+      value: 'What is the GRE?',
+      mode: 'course',
+      examType: 'custom',
+      signedIn: true,
+      questionsEnabled: true,
+    })).toEqual({ type: 'ask', text: 'What is the GRE?' });
+  });
+
+  it('uses GRE when the prompt names it and the chip is still Custom', () => {
+    expect(resolveMasterSubmit({
+      value: 'generate a GRE test',
+      mode: 'quiz',
+      examType: 'custom',
+      signedIn: true,
+    })).toEqual({
+      type: 'navigate',
+      path: '/quiz-setup',
+      state: { prompt: 'generate a GRE test', examType: 'gre', startTool: 'quiz' },
+    });
+  });
+
+  it('keeps the GRE chip when the prompt does not name another exam', () => {
+    expect(resolveMasterSubmit({
+      value: 'verbal analogies practice',
+      mode: 'quiz',
+      examType: 'gre',
+      signedIn: true,
+    })).toEqual({
+      type: 'navigate',
+      path: '/quiz-setup',
+      state: { prompt: 'verbal analogies practice', examType: 'gre', startTool: 'quiz' },
+    });
+  });
+
   it('routes quiz videos and playlists to their existing setup pages', () => {
     expect(resolveMasterSubmit({
       value: video,

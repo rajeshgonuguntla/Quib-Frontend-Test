@@ -74,7 +74,10 @@ export function Dashboard() {
       return;
     }
     if (incomingVideoUrl && startTool === 'quiz') {
-      navigate('/quiz-setup', { state: { youtubeUrl: incomingVideoUrl }, replace: true });
+      navigate('/quiz-setup', {
+        state: { youtubeUrl: incomingVideoUrl, ...(examType ? { examType } : {}) },
+        replace: true,
+      });
       return;
     }
     if (incomingPlaylistUrl && startTool === 'quiz') {

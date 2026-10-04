@@ -5,6 +5,7 @@ import { ShellPage } from '../shell/ShellPage';
 import { Youtube, Clock, FileText, Play, CheckCircle, Award, ArrowRight, Share2, Link2, Copy, Check, AlertCircle } from 'lucide-react';
 import { useTheme, getC } from './ThemeContext';
 import { fetchQuizDetail, isUuid, mapApiQuestionsToFrontend } from '../api/quizApi';
+import { examDisplayTitle, promptForExamGeneration } from './examRequest';
 
 interface Question {
   id: number;
@@ -167,10 +168,13 @@ export function QuizSetup() {
   const { id } = useParams();
   const location = useLocation();
   const youtubeUrl = location.state?.youtubeUrl || sessionStorage.getItem('youtubeUrl') || '';
-  const promptRequest =
-    (location.state?.prompt as string | undefined) || sessionStorage.getItem('quizPrompt') || '';
-  const examType =
-    (location.state?.examType as string | undefined) || sessionStorage.getItem('quizExamType') || 'custom';
+  const incomingPrompt = location.state?.prompt as string | undefined;
+  const incomingExamType = location.state?.examType as string | undefined;
+  const promptRequest = incomingPrompt || sessionStorage.getItem('quizPrompt') || '';
+  // A new prompt carries its own exam type. Stored type is only for refresh, so an older custom quiz cannot replace GRE.
+  const examType = incomingPrompt
+    ? (incomingExamType || 'custom')
+    : (incomingExamType || sessionStorage.getItem('quizExamType') || 'custom');
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState(0);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -225,7 +229,7 @@ export function QuizSetup() {
 
         if (promptRequest.trim()) {
           const response = await axios.post('/api/quiz/generate-from-prompt', {
-            prompt: promptRequest.trim(),
+            prompt: promptForExamGeneration(promptRequest, examType),
             examType,
             config: {
               difficulty: location.state?.difficulty || 'medium',
@@ -239,8 +243,9 @@ export function QuizSetup() {
             ? mapApiQuestionsToFrontend(response.data.questions)
             : extractQuestionsFromResponse(response.data);
           const parsedMeta: QuizMeta = {
-            title: response.data.videoTitle?.trim() || 'Practice quiz',
-            channelName: response.data.channelName?.trim() || 'Custom practice',
+            title: examDisplayTitle(response.data.videoTitle, examType),
+            channelName: response.data.channelName?.trim()
+              || (examType === 'gre' ? 'GRE' : examType === 'sat' ? 'SAT' : 'Custom practice'),
             videoLength: response.data.videoLength?.trim() || '--:--',
             youtubeUrl: '',
           };
