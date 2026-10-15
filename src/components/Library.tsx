@@ -16,6 +16,7 @@ type QuizListItem = {
   score: number | null;
   questions: number;
   thumbnailUrl?: string;
+  examType?: string;
 };
 
 function normalizeTab(raw: string | null): ProgressTab {
@@ -48,11 +49,12 @@ function enrollmentCard(e: EnrollmentSummary): CourseCardModel {
 
 function quizCard(q: QuizListItem): CourseCardModel {
   const progress = q.score ?? (q.status === 'in-progress' ? 40 : 0);
+  const examTag = q.examType ? `${q.examType.toUpperCase()} exam` : 'Quiz';
   return {
     id: q.id,
     title: q.title,
     creator: 'Your library',
-    tag: 'Quiz',
+    tag: examTag,
     progress,
     lessonsDone: 0,
     lessonsTotal: q.questions,
@@ -90,6 +92,7 @@ export function Library() {
           latestScorePercent?: number;
           questionCount?: number;
           thumbnailUrl?: string;
+          examType?: string;
         }) => ({
           id: q.id,
           title: q.title,
@@ -97,6 +100,7 @@ export function Library() {
           score: q.latestScorePercent ?? null,
           questions: q.questionCount ?? 0,
           thumbnailUrl: q.thumbnailUrl,
+          examType: q.examType,
         }));
         setQuizzes(mapped);
       })

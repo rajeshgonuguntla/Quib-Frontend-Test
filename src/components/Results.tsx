@@ -3,7 +3,14 @@ import { useNavigate, useParams, Link, useLocation } from 'react-router';
 import { ChevronDown, ChevronUp, CheckCircle, XCircle, Linkedin, Smile, Sun, Moon, FileText, Download, Share2, Link2, Check, Copy } from 'lucide-react';
 import { useTheme, getC } from './ThemeContext';
 import { QuibLogo } from './QuibLogo';
-import { fetchLatestQuizAttempt, isUuid } from '../api/quizApi';
+import {
+  fetchLatestQuizAttempt,
+  fetchQuizAttempt,
+  fetchQuizAttempts,
+  isUuid,
+  type ApiAttemptSummary,
+  type ApiSectionScore,
+} from '../api/quizApi';
 
 interface Question {
   id: number;
@@ -42,6 +49,7 @@ export function Results() {
   const [loadedResult, setLoadedResult] = useState(location.state?.result);
   const [resultsError, setResultsError] = useState<string | null>(null);
   const [resultsLoading, setResultsLoading] = useState(false);
+  const [attemptHistory, setAttemptHistory] = useState<ApiAttemptSummary[]>([]);
 
   useEffect(() => {
     if (loadedResult || !id || !isUuid(id)) return;
@@ -60,11 +68,26 @@ export function Results() {
     return () => { mounted = false; };
   }, [id, loadedResult]);
 
+  useEffect(() => {
+    if (!id || !isUuid(id)) return;
+    let mounted = true;
+    fetchQuizAttempts(id)
+      .then((rows) => {
+        if (mounted) setAttemptHistory(rows);
+      })
+      .catch(() => {
+        if (mounted) setAttemptHistory([]);
+      });
+    return () => { mounted = false; };
+  }, [id, loadedResult]);
+
   const apiResult = loadedResult as {
     scorePercent?: number;
     correctCount?: number;
     totalCount?: number;
     passed?: boolean;
+    attemptNumber?: number;
+    sectionScores?: ApiSectionScore[];
     questionReview?: Array<{
       sortOrder: number;
       type: string;
@@ -109,19 +132,40 @@ export function Results() {
   const score = apiResult?.scorePercent ?? (totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0);
   const passed = apiResult?.passed ?? score >= 70;
   const shareText = `I scored ${score}% on "${quizTitle}" on Cuib! Can you beat my score?`;
+  const sectionScores = apiResult?.sectionScores ?? [];
 
-  const breakdown = (
-    ['mcq', 'trueFalse', 'shortAnswer'] as Question['type'][]
-  )
-    .map((type) => {
-      const label =
-        type === 'mcq' ? 'Multiple Choice' : type === 'trueFalse' ? 'True / False' : 'Short Answer';
-      const qs = questionReview.filter((_, i) => questions[i]?.type === type);
-      if (qs.length === 0) return null;
-      const correct = qs.filter((q) => q.isCorrect).length;
-      return { topic: label, score: Math.round((correct / qs.length) * 100), total: qs.length };
-    })
-    .filter(Boolean) as { topic: string; score: number; total: number }[];
+  const breakdown = sectionScores.length > 0
+    ? sectionScores.map((s) => ({
+        topic: s.title || s.sectionKey || 'Section',
+        score: s.scorePercent ?? 0,
+        total: s.totalCount ?? 0,
+      }))
+    : (
+        ['mcq', 'trueFalse', 'shortAnswer'] as Question['type'][]
+      )
+        .map((type) => {
+          const label =
+            type === 'mcq' ? 'Multiple Choice' : type === 'trueFalse' ? 'True / False' : 'Short Answer';
+          const qs = questionReview.filter((_, i) => questions[i]?.type === type);
+          if (qs.length === 0) return null;
+          const correct = qs.filter((q) => q.isCorrect).length;
+          return { topic: label, score: Math.round((correct / qs.length) * 100), total: qs.length };
+        })
+        .filter(Boolean) as { topic: string; score: number; total: number }[];
+
+  const loadAttempt = async (attemptId: string) => {
+    if (!id || !isUuid(id)) return;
+    setResultsLoading(true);
+    try {
+      const data = await fetchQuizAttempt(id, attemptId);
+      setLoadedResult(data);
+      setResultsError(null);
+    } catch {
+      setResultsError('Could not load that attempt.');
+    } finally {
+      setResultsLoading(false);
+    }
+  };
 
 
   const handleCopyLink = () => {
@@ -375,10 +419,40 @@ export function Results() {
           )}
         </div>
 
+        {attemptHistory.length > 1 && (
+          <div className="rounded-xl p-6 mb-8" style={{ background: C.bg1, border: `1px solid ${C.border}` }}>
+            <div className="text-[10px] tracking-[3px] uppercase font-[500] mb-4" style={{ color: C.text3, fontFamily: 'var(--mono)' }}>
+              Attempt history
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {attemptHistory.map((a) => {
+                const active =
+                  (loadedResult as { attemptId?: string } | undefined)?.attemptId === a.attemptId;
+                return (
+                  <button
+                    key={a.attemptId}
+                    type="button"
+                    onClick={() => void loadAttempt(a.attemptId)}
+                    className="px-3 py-2 rounded-lg text-sm cursor-pointer"
+                    style={{
+                      background: active ? C.red : C.bg2,
+                      border: `1px solid ${active ? C.red : C.border}`,
+                      color: active ? '#fff' : C.text2,
+                    }}
+                  >
+                    #{a.attemptNumber} · {a.scorePercent}%
+                    {a.passed ? ' · pass' : ''}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Performance Breakdown */}
         <div className="rounded-xl p-8 mb-8" style={{ background: C.bg1, border: `1px solid ${C.border}` }}>
           <div className="text-[10px] tracking-[3px] uppercase font-[500] mb-6" style={{ color: C.text3, fontFamily: "var(--mono)" }}>
-            Performance Breakdown
+            {sectionScores.length > 0 ? 'Section scores' : 'Performance Breakdown'}
           </div>
 
           <div className="space-y-4 mb-6">

@@ -4,7 +4,12 @@ import axios from 'axios';
 import { ShellPage } from '../shell/ShellPage';
 import { Youtube, Clock, FileText, Play, CheckCircle, Award, ArrowRight, Share2, Link2, Copy, Check, AlertCircle } from 'lucide-react';
 import { useTheme, getC } from './ThemeContext';
-import { fetchQuizDetail, isUuid, mapApiQuestionsToFrontend } from '../api/quizApi';
+import {
+  examBlueprintPreview,
+  fetchQuizDetail,
+  isUuid,
+  mapApiQuestionsToFrontend,
+} from '../api/quizApi';
 
 interface Question {
   id: number;
@@ -182,7 +187,10 @@ export function QuizSetup() {
     youtubeUrl,
   });
 
-  const questionCount = questions.length || location.state?.questionCount || 10;
+  const blueprint = promptRequest ? examBlueprintPreview(examType) : null;
+  const questionCount =
+    questions.length ||
+    (blueprint ? blueprint.questions : location.state?.questionCount || 10);
   const quizData = {
     videoTitle: videoMeta.title,
     channel: videoMeta.channelName,
@@ -191,7 +199,11 @@ export function QuizSetup() {
     transcriptStatus: promptRequest ? 'prompt' : 'available',
     questionCount,
     difficulty: location.state?.difficulty || 'medium',
-    estimatedTime: `${Math.ceil(questionCount * 1.5)} minutes`,
+    estimatedTime: blueprint
+      ? `${blueprint.minutes} minutes`
+      : `${Math.ceil(questionCount * 1.5)} minutes`,
+    examType: promptRequest ? examType : undefined,
+    sections: blueprint?.sections,
   };
 
   useEffect(() => {
@@ -207,7 +219,7 @@ export function QuizSetup() {
         if (id && isUuid(id)) {
           const data = await fetchQuizDetail(id, false);
           if (!isMounted) return;
-          const parsedQuestions = mapApiQuestionsToFrontend(data.questions ?? []);
+          const parsedQuestions = mapApiQuestionsToFrontend(data.questions ?? [], data.sections);
           const parsedMeta: QuizMeta = {
             title: data.title ?? 'Generated Quiz',
             channelName: data.channelName ?? 'Unknown Channel',
@@ -218,6 +230,12 @@ export function QuizSetup() {
           setVideoMeta(parsedMeta);
           sessionStorage.setItem('generatedQuestions', JSON.stringify(parsedQuestions));
           sessionStorage.setItem('generatedVideoMeta', JSON.stringify(parsedMeta));
+          if (data.sections) {
+            sessionStorage.setItem('quizSections', JSON.stringify(data.sections));
+          }
+          if (data.examType) {
+            sessionStorage.setItem('quizExamType', data.examType);
+          }
           setProgress(100);
           setLoading(false);
           return;
@@ -229,14 +247,13 @@ export function QuizSetup() {
             examType,
             config: {
               difficulty: location.state?.difficulty || 'medium',
-              questionCount: location.state?.questionCount || 10,
-              timedExam: location.state?.timedExam || false,
+              timedExam: true,
               questionTypes: location.state?.questionTypes,
             },
           });
 
           const parsedQuestions = response.data.questions?.length
-            ? mapApiQuestionsToFrontend(response.data.questions)
+            ? mapApiQuestionsToFrontend(response.data.questions, response.data.sections)
             : extractQuestionsFromResponse(response.data);
           const parsedMeta: QuizMeta = {
             title: response.data.videoTitle?.trim() || 'Practice quiz',
@@ -258,6 +275,12 @@ export function QuizSetup() {
           setVideoMeta(parsedMeta);
           sessionStorage.setItem('generatedQuestions', JSON.stringify(parsedQuestions));
           sessionStorage.setItem('generatedVideoMeta', JSON.stringify(parsedMeta));
+          if (response.data.sections) {
+            sessionStorage.setItem('quizSections', JSON.stringify(response.data.sections));
+          }
+          if (response.data.examType) {
+            sessionStorage.setItem('quizExamType', response.data.examType);
+          }
           if (response.data.quizId) {
             sessionStorage.setItem('currentQuizId', response.data.quizId);
             if (id === 'new' || !id) {
@@ -347,8 +370,9 @@ export function QuizSetup() {
 
   const steps = promptRequest
     ? [
-        { label: 'Reading your request', completed: progress >= 33 },
-        { label: 'Building practice questions', completed: progress >= 66 },
+        { label: 'Planning exam sections', completed: progress >= 20 },
+        { label: 'Generating section questions', completed: progress >= 55 },
+        { label: 'Validating answer keys', completed: progress >= 85 },
         { label: 'Ready to start', completed: progress >= 100 },
       ]
     : [
@@ -359,7 +383,14 @@ export function QuizSetup() {
 
   if (loading) {
     return (
-      <ShellPage title="Preparing Your Quiz" description="This usually takes 20–30 seconds">
+      <ShellPage
+        title="Preparing Your Quiz"
+        description={
+          promptRequest
+            ? `Full ${examType.toUpperCase()} practice exam — this can take several minutes`
+            : 'This usually takes 20–30 seconds'
+        }
+      >
         <div className="max-w-lg space-y-6">
           {/* Progress bar */}
           <div
@@ -439,50 +470,83 @@ export function QuizSetup() {
   return (
     <ShellPage title="Quiz Ready!" description="Review the details below and start when you're ready">
       <div className="space-y-6 max-w-4xl">
-        {/* Video Preview Card */}
+        {/* Prompt exams: title card only. Video embed only for YouTube quizzes. */}
         <div
           className="rounded-xl overflow-hidden"
           style={{ background: C.bg1, border: `1px solid ${C.border}` }}
         >
-          <div className="aspect-video relative" style={{ background: C.bg2 }}>
-            {getYoutubeVideoId(videoMeta.youtubeUrl) ? (
-              <iframe
-                src={`https://www.youtube.com/embed/${getYoutubeVideoId(videoMeta.youtubeUrl)}`}
-                title={quizData.videoTitle}
-                className="w-full h-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                style={{ border: 'none' }}
-              />
-            ) : (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div
-                  className="w-16 h-16 rounded-full flex items-center justify-center"
-                  style={{ background: 'rgba(225,6,0,0.15)', border: '1px solid rgba(225,6,0,0.3)', backdropFilter: 'blur(4px)' }}
-                >
-                  <Play className="w-7 h-7 ml-1" style={{ color: C.red }} />
+          {!promptRequest && (
+            <div className="aspect-video relative" style={{ background: C.bg2 }}>
+              {getYoutubeVideoId(videoMeta.youtubeUrl) ? (
+                <iframe
+                  src={`https://www.youtube.com/embed/${getYoutubeVideoId(videoMeta.youtubeUrl)}`}
+                  title={quizData.videoTitle}
+                  className="w-full h-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  style={{ border: 'none' }}
+                />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div
+                    className="w-16 h-16 rounded-full flex items-center justify-center"
+                    style={{ background: 'rgba(225,6,0,0.15)', border: '1px solid rgba(225,6,0,0.3)', backdropFilter: 'blur(4px)' }}
+                  >
+                    <Play className="w-7 h-7 ml-1" style={{ color: C.red }} />
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
           <div className="p-6">
             <h2 className="text-xl font-[400] mb-3" style={{ color: C.text, fontFamily: "var(--display)" }}>{quizData.videoTitle}</h2>
             <div className="flex flex-wrap items-center gap-5">
-              <span className="flex items-center gap-2 text-sm" style={{ color: C.text2 }}>
-                <Youtube className="w-4 h-4" style={{ color: C.red }} />
-                {quizData.channel}
-              </span>
+              {!promptRequest && (
+                <span className="flex items-center gap-2 text-sm" style={{ color: C.text2 }}>
+                  <Youtube className="w-4 h-4" style={{ color: C.red }} />
+                  {quizData.channel}
+                </span>
+              )}
+              {promptRequest && (
+                <span className="flex items-center gap-2 text-sm" style={{ color: C.text2 }}>
+                  <FileText className="w-4 h-4" style={{ color: C.red }} />
+                  {quizData.channel}
+                </span>
+              )}
               <span className="flex items-center gap-2 text-sm" style={{ color: C.text2 }}>
                 <Clock className="w-4 h-4" />
                 {quizData.duration}
               </span>
               <span className="flex items-center gap-2 text-sm" style={{ color: '#22c55e' }}>
                 <CheckCircle className="w-4 h-4" />
-                Transcript available
+                {promptRequest ? 'Answer keys validated' : 'Transcript available'}
               </span>
+              {quizData.examType && (
+                <span className="flex items-center gap-2 text-sm uppercase tracking-wide" style={{ color: C.text2 }}>
+                  {quizData.examType} practice exam
+                </span>
+              )}
             </div>
           </div>
         </div>
+
+        {quizData.sections && quizData.sections.length > 0 && (
+          <div
+            className="rounded-xl p-6"
+            style={{ background: C.bg1, border: `1px solid ${C.border}` }}
+          >
+            <div className="text-[10px] tracking-[3px] uppercase font-[500] mb-4" style={{ color: C.text3, fontFamily: 'var(--mono)' }}>
+              Sections
+            </div>
+            <ul className="space-y-2">
+              {quizData.sections.map((label) => (
+                <li key={label} className="text-sm" style={{ color: C.text2 }}>
+                  {label}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {/* Quiz Details Grid */}
         <div
@@ -584,7 +648,16 @@ export function QuizSetup() {
           <button
             onClick={() => {
               const quizId = (id && isUuid(id)) ? id : sessionStorage.getItem('currentQuizId') || id;
-              navigate(`/quiz/${quizId}`, { state: { questions, videoMeta, youtubeUrl } });
+              navigate(`/quiz/${quizId}`, {
+                state: {
+                  questions,
+                  videoMeta,
+                  youtubeUrl,
+                  sections: sessionStorage.getItem('quizSections')
+                    ? JSON.parse(sessionStorage.getItem('quizSections')!)
+                    : undefined,
+                },
+              });
             }}
             className="px-8 py-3 rounded-lg text-sm font-[600] cursor-pointer transition-all flex items-center gap-2"
             style={{
