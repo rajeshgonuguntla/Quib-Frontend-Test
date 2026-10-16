@@ -5,12 +5,6 @@ vi.mock('axios', () => ({
   default: { post: vi.fn(() => Promise.resolve()) },
 }));
 
-function buildToken(payload: Record<string, unknown>): string {
-  const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-  const body = btoa(JSON.stringify(payload));
-  return `${header}.${body}.signature`;
-}
-
 describe('auth', () => {
   beforeEach(() => {
     localStorage.clear();
@@ -20,32 +14,23 @@ describe('auth', () => {
     expect(isTokenValid()).toBe(false);
   });
 
-  it('isTokenValid returns false for malformed leftover token', () => {
-    localStorage.setItem('token', 'not-a-jwt');
+  it('isTokenValid returns false for expired session exp', () => {
+    localStorage.setItem('cuib_session_exp', '1');
     expect(isTokenValid()).toBe(false);
   });
 
-  it('isTokenValid returns false for expired leftover token', () => {
-    localStorage.setItem('token', buildToken({ exp: 1 }));
-    expect(isTokenValid()).toBe(false);
-  });
-
-  it('isTokenValid returns false when leftover exp claim is missing', () => {
-    localStorage.setItem('token', buildToken({ sub: 'user@test.com' }));
-    expect(isTokenValid()).toBe(false);
-  });
-
-  it('isTokenValid returns true for leftover token with future exp', () => {
+  it('isTokenValid returns true for future session exp', () => {
     const exp = Math.floor(Date.now() / 1000) + 3600;
-    localStorage.setItem('token', buildToken({ exp }));
+    localStorage.setItem('cuib_session_exp', String(exp));
     expect(isTokenValid()).toBe(true);
   });
 
-  it('setSession stores exp and drops leftover JWT', () => {
+  it('setSession stores exp and never stores a bearer JWT', () => {
     const exp = Math.floor(Date.now() / 1000) + 3600;
-    localStorage.setItem('token', buildToken({ exp }));
+    localStorage.setItem('token', 'leftover-jwt');
     setSession(exp);
     expect(localStorage.getItem('token')).toBeNull();
+    expect(localStorage.getItem('cuib_session_exp')).toBe(String(exp));
     expect(isTokenValid()).toBe(true);
   });
 
@@ -57,7 +42,7 @@ describe('auth', () => {
   });
 
   it('clearLocalSession does not keep a leftover JWT', () => {
-    localStorage.setItem('token', buildToken({ exp: Math.floor(Date.now() / 1000) + 3600 }));
+    localStorage.setItem('token', 'leftover-jwt');
     clearLocalSession();
     expect(localStorage.getItem('token')).toBeNull();
   });

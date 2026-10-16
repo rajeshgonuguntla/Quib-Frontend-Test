@@ -8,34 +8,21 @@ const TOKEN_KEY = 'token';
 const SESSION_EXP_KEY = 'cuib_session_exp';
 const AUTH_CHANGED_EVENT = 'quib-auth-changed';
 
-type JwtPayload = {
-  exp?: number;
-};
-
-function getToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
+// Drop legacy Bearer JWT from dual-auth era (XSS-readable).
+if (typeof localStorage !== 'undefined') {
+  localStorage.removeItem(TOKEN_KEY);
 }
 
-function sessionExp(): number | null {
-  const raw = localStorage.getItem(SESSION_EXP_KEY);
-  if (!raw) return null;
-  const exp = Number(raw);
-  return Number.isFinite(exp) ? exp : null;
-}
-
-/** Fires when login/logout changes the stored token (fresh chat sessions). */
+/** Fires when login/logout changes the stored session (fresh chat sessions). */
 export function notifyAuthChanged(): void {
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new Event(AUTH_CHANGED_EVENT));
   }
 }
 
-/** Changes on login, logout, or token swap — use as React key to reset ephemeral UI state. */
+/** Changes on login, logout, or session swap — use as React key to reset ephemeral UI state. */
 export function useAuthSessionKey(): string {
-  const read = () =>
-    localStorage.getItem(SESSION_EXP_KEY)
-    ?? localStorage.getItem(TOKEN_KEY)
-    ?? 'guest';
+  const read = () => localStorage.getItem(SESSION_EXP_KEY) ?? 'guest';
   const [sessionKey, setSessionKey] = useState(read);
 
   useEffect(() => {
@@ -65,56 +52,26 @@ export function clearToken(): void {
   );
 }
 
+/** Persist session expiry flag only. Auth is the HttpOnly cuib_at cookie (same-origin). */
 export function setSession(expiresAtEpochSeconds: number): void {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.setItem(SESSION_EXP_KEY, String(expiresAtEpochSeconds));
   notifyAuthChanged();
 }
 
-function parseJwtPayload(token: string): JwtPayload | null {
-  try {
-    const parts = token.split('.');
-    if (parts.length !== 3) {
-      return null;
-    }
-
-    const payloadBase64 = parts[1];
-    if (!payloadBase64) {
-      return null;
-    }
-
-    const normalized = payloadBase64.replace(/-/g, '+').replace(/_/g, '/');
-    const padded = normalized + '==='.slice((normalized.length + 3) % 4);
-    const payloadJson = atob(padded);
-
-    return JSON.parse(payloadJson) as JwtPayload;
-  } catch {
-    return null;
-  }
+function sessionExp(): number | null {
+  const raw = localStorage.getItem(SESSION_EXP_KEY);
+  if (!raw) return null;
+  const exp = Number(raw);
+  return Number.isFinite(exp) ? exp : null;
 }
 
 export function isTokenValid(): boolean {
   const exp = sessionExp();
-  const now = Math.floor(Date.now() / 1000);
-  if (exp != null) {
-    return exp > now;
-  }
-
-  const token = getToken();
-  if (!token) {
+  if (exp == null) {
     return false;
   }
-
-  const payload = parseJwtPayload(token);
-  if (!payload) {
-    return false;
-  }
-
-  if (typeof payload.exp !== 'number') {
-    return false;
-  }
-
-  return payload.exp > now;
+  return exp > Math.floor(Date.now() / 1000);
 }
 
 export function ProtectedRoute() {

@@ -3,9 +3,9 @@ import { GoogleLogin, type CredentialResponse } from '@react-oauth/google';
 import axios from 'axios';
 import { useLocation, useNavigate } from 'react-router';
 import { useUserProfile } from '../context/UserProfileContext';
-import { fetchUserProfile, fetchUserProfileWithToken } from '../api/userApi';
+import { fetchUserProfile } from '../api/userApi';
 import { fetchOnboarding } from '../api/catalogApi';
-import { clearLocalSession, clearToken, notifyAuthChanged, setSession } from '../auth';
+import { clearLocalSession, clearToken, setSession } from '../auth';
 import { logClientError } from '../utils/logClientError';
 import { INTERESTS_KEY, EDUCATORS_KEY } from './Onboarding';
 import type { UserProfile } from '../types/userProfile';
@@ -23,7 +23,6 @@ import { peekReferralCode, rememberReferralCode } from '../utils/referralCode';
 import { safeAppPath } from '../utils/safeAppPath';
 
 type GoogleAuthResponse = {
-  token?: string;
   expiresAt?: number;
   profile?: UserProfile | null;
   onboarding?: OnboardingState | null;
@@ -84,23 +83,18 @@ function GoogleLoginButton({
         referralCode,
       });
 
-      const jwt = res.data.token;
       const expiresAt = res.data.expiresAt;
-      if (typeof expiresAt === 'number') {
-        setSession(expiresAt);
-      } else if (jwt) {
-        localStorage.setItem('token', jwt);
-        notifyAuthChanged();
+      if (typeof expiresAt !== 'number') {
+        throw new Error('Login response missing expiresAt');
       }
+      setSession(expiresAt);
 
       let profile = res.data.profile ?? null;
       let onboarding = res.data.onboarding ?? null;
 
       if (!profile || !onboarding) {
         const [fallbackProfile, fallbackOnboarding] = await Promise.all([
-          profile ? Promise.resolve(profile) : jwt
-            ? fetchUserProfileWithToken(jwt)
-            : fetchUserProfile(),
+          profile ? Promise.resolve(profile) : fetchUserProfile(),
           onboarding ? Promise.resolve(onboarding) : fetchOnboarding().catch(() => null),
         ]);
         profile = fallbackProfile;
