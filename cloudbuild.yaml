@@ -40,6 +40,8 @@ steps:
       - ${_SERVICE_NAME}
       - --image=${_AR_HOSTNAME}/${_AR_PROJECT_ID}/${_AR_REPOSITORY}/${_IMAGE_REPO}/${_SERVICE_NAME}:$COMMIT_SHA
       - --region=${_DEPLOY_REGION}
+      # Course/playlist gen is proxied through FE nginx; must match BE request timeout.
+      - --timeout=3600
       - --quiet
     id: Deploy
 
