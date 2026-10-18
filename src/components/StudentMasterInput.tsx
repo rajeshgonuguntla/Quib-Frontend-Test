@@ -259,7 +259,8 @@ export function StudentMasterInput({ className, signedIn = true }: StudentMaster
               }}
               aria-label={isQuizMode ? 'Test topic or YouTube URL' : 'YouTube URL to create a course'}
               autoComplete="off"
-              inputMode="url"
+              // Never use inputMode=url — iOS URL keyboard has no space bar (blocks prompt text).
+              inputMode="text"
               enterKeyHint="go"
             />
             {showTypewriter && (
