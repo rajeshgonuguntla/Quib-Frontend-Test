@@ -47,6 +47,7 @@ import { isModuleQuizQuestionWrong, type SimilarPracticeQuestion } from '../util
 import type { CourseGenerationOptions } from '../types/courseGeneration';
 import { studyToolFromStartMode } from './StudentMasterInput';
 import { UserAvatar } from './UserAvatar';
+import { StudyTabDots } from './StudyTabDots';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -441,14 +442,6 @@ function LearningMode({
   const tutorAvailable = showCourseChat;
   const { profile, setProfile } = useUserProfile();
   const navigate = useNavigate();
-
-  const toggleAskAi = () => {
-    if (!tutorAvailable) {
-      onChatSignInRequired();
-      return;
-    }
-    setAskOpenSignal((n) => n + 1);
-  };
 
   const handleSignOut = () => {
     clearToken();
@@ -896,41 +889,19 @@ function LearningMode({
 
         {/* Main panel */}
         <main className="min-w-0 overflow-y-auto min-h-0" style={{ padding: '28px 28px 80px' }}>
+          <div className="flex min-h-0">
           {lessonActive && (
-            <div className="md:hidden overflow-x-auto mb-4 pb-2" style={{ borderBottom: `1px solid ${C.border}` }}>
-              <div className="flex gap-2 min-w-max">
-                {STUDY_TABS.map((tab) => {
-                  const isActive = studyTab === tab.id;
-                  return (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      onClick={() => setStudyTab(tab.id)}
-                      className="px-3 py-1.5 rounded-full text-[0.72rem] font-[500] cursor-pointer whitespace-nowrap"
-                      style={{
-                        background: isActive ? (isDark ? 'rgba(225,6,0,0.12)' : 'rgba(225,6,0,0.08)') : C.bg1,
-                        border: `1px solid ${isActive ? C.red : C.border}`,
-                        color: isActive ? C.text : C.text2,
-                      }}
-                    >
-                      {tab.label}
-                    </button>
-                  );
-                })}
-                {tutorAvailable && (
-                  <button
-                    type="button"
-                    onClick={toggleAskAi}
-                    className="px-3 py-1.5 rounded-full text-[0.72rem] font-[500] cursor-pointer whitespace-nowrap"
-                    style={{ background: C.bg1, border: `1px solid ${C.border}`, color: C.text2 }}
-                  >
-                    Ask AI
-                  </button>
-                )}
-              </div>
-            </div>
+            <StudyTabDots
+              tabs={STUDY_TABS}
+              value={studyTab}
+              onChange={setStudyTab}
+              accent={C.red}
+              faint={C.text3}
+              ink={C.text}
+              bg={C.bg}
+            />
           )}
-
+          <div className="min-w-0 flex-1">
           {lessonActive && activeLesson && (
             <div
               className="rounded-2xl"
@@ -1228,6 +1199,8 @@ function LearningMode({
               </p>
             </div>
           )}
+          </div>
+          </div>
         </main>
 
         {/* Right assistant — always visible on desktop */}
