@@ -677,7 +677,7 @@ function LearningMode({
           />
         </Link>
 
-        <div className="hidden min-w-0 flex-1 overflow-x-auto md:block">
+        <div className="cuib-module-rail hidden min-w-0 flex-1 overflow-x-auto md:block">
           <div className="flex items-center gap-1 min-w-max">
             {modules.map((mod) => {
               const isActive = activeModule?.id === mod.id;
