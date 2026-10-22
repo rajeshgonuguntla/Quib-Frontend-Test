@@ -921,7 +921,7 @@ function LearningMode({
                 {moduleKicker.replace(/^#\s*/, '')}
               </p>
               <h1
-                className="font-[800] tracking-tight mb-7"
+                className="mb-2 font-[800] tracking-tight"
                 style={{
                   fontFamily: 'var(--display)',
                   fontSize: 'clamp(1.75rem, 3.2vw, 2.25rem)',
@@ -932,12 +932,17 @@ function LearningMode({
               >
                 {withoutLessonNumberPrefix(activeLesson.title)}
               </h1>
+              <div className="mb-7">
+                <StudyToolHeading
+                  key={studyTab}
+                  label={STUDY_TABS.find((tab) => tab.id === studyTab)?.label ?? ''}
+                  accent={C.red}
+                  isDark={isDark}
+                />
+              </div>
 
               {studyTab === 'overview' && (
                 <>
-                  <div className="mb-6">
-                    <StudyToolHeading key="Overview" label="Overview" accent={C.red} isDark={isDark} />
-                  </div>
                   <div className="flex items-center gap-2.5 mb-6">
                     <span className="flex items-center gap-1.5 text-[0.75rem] font-[600]" style={{ color: C.text2 }}>
                       <PlayCircle className="w-3 h-3" />
@@ -1010,7 +1015,6 @@ function LearningMode({
 
               {studyTab === 'notes' && (
                 <div className="space-y-6">
-                  <StudyToolHeading key="Notes" label="Notes" accent={C.red} isDark={isDark} />
                   <StudentLessonNotesEditor
                     courseId={courseId}
                     lessonId={activeLessonId}
