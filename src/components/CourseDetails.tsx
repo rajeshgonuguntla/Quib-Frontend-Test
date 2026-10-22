@@ -4,7 +4,7 @@ import axios from 'axios';
 import {
   ChevronDown, ChevronRight,
   PlayCircle, FileText, CheckCircle, CheckCircle2, Copy, CircleHelp,
-  ArrowLeft, ArrowUpRight, BookOpen, Calendar, Layers, AlertCircle, Globe, Pencil,
+  ArrowUpRight, BookOpen, Calendar, Layers, AlertCircle, Globe, Pencil,
   Download, Loader2, Moon, Sun,
 } from 'lucide-react';
 import { publishCourse, unpublishCourse, deleteCourse } from '../api/catalogApi';
@@ -284,7 +284,6 @@ function LearningMode({
   course,
   courseId,
   youtubeUrl,
-  onBack,
   showCourseChat,
   chatSignedIn,
   onChatSignInRequired,
@@ -294,7 +293,6 @@ function LearningMode({
   course: Course;
   courseId: string;
   youtubeUrl: string;
-  onBack: () => void;
   showCourseChat: boolean;
   chatSignedIn: boolean;
   onChatSignInRequired: () => void;
@@ -666,16 +664,18 @@ function LearningMode({
           background: C.bg,
         }}
       >
-        <button
-          type="button"
-          onClick={onBack}
-          className="w-9 h-9 rounded-lg flex items-center justify-center cursor-pointer shrink-0"
-          style={{ background: 'transparent', border: 'none', color: C.text2 }}
-          aria-label="Back"
-          title="Back"
+        <Link
+          to="/dashboard"
+          className="no-underline shrink-0"
+          style={{ color: C.text }}
+          aria-label="Go to dashboard"
         >
-          <ArrowLeft className="w-4 h-4" />
-        </button>
+          <QuibLogo
+            size={16}
+            wordmarkClassName="text-[1rem] font-[700] tracking-tight"
+            variant={isDark ? 'dark' : 'light'}
+          />
+        </Link>
 
         <div className="hidden min-w-0 flex-1 overflow-x-auto md:block">
           <div className="flex items-center gap-1 min-w-max">
@@ -1692,7 +1692,7 @@ export function CourseDetails() {
           toggleTheme={toggleTheme}
           navBg={navBg}
           left={(
-            <Link to="/dashboard" className="no-underline" style={{ color: C.text }}>
+            <Link to="/dashboard" className="no-underline" style={{ color: C.text }} aria-label="Go to dashboard">
               <QuibLogo
                 size={16}
                 wordmarkClassName="text-[1rem] font-[700] tracking-tight"
@@ -1729,7 +1729,7 @@ export function CourseDetails() {
           toggleTheme={toggleTheme}
           navBg={navBg}
           left={(
-            <Link to="/dashboard" className="no-underline" style={{ color: C.text }}>
+            <Link to="/dashboard" className="no-underline" style={{ color: C.text }} aria-label="Go to dashboard">
               <QuibLogo
                 size={16}
                 wordmarkClassName="text-[1rem] font-[700] tracking-tight"
@@ -1793,7 +1793,6 @@ export function CourseDetails() {
         course={course}
         courseId={resolvedCourseId}
         youtubeUrl={youtubeUrl}
-        onBack={() => setLearningMode(false)}
         showCourseChat={showCourseChat}
         chatSignedIn={chatSignedIn}
         onChatSignInRequired={handleChatSignIn}
@@ -1855,21 +1854,13 @@ export function CourseDetails() {
         onDownloadCourse={() => void handleDownloadCourse()}
         downloadBusy={downloadBusy}
         left={(
-          <>
-            <button onClick={handleBack} className="flex items-center gap-1.5 cursor-pointer"
-              style={{ background: 'none', border: 'none', color: C.text2, padding: 0 }}>
-              <ArrowLeft className="w-4 h-4" />
-              <span className="text-[0.82rem]">Back</span>
-            </button>
-            <div style={{ width: 1, height: 16, background: C.border }} />
-            <Link to="/dashboard" className="no-underline" style={{ color: C.text }}>
-              <QuibLogo
-                size={16}
-                wordmarkClassName="text-[1rem] font-[700] tracking-tight"
-                variant={isDark ? 'dark' : 'light'}
-              />
-            </Link>
-          </>
+          <Link to="/dashboard" className="no-underline" style={{ color: C.text }} aria-label="Go to dashboard">
+            <QuibLogo
+              size={16}
+              wordmarkClassName="text-[1rem] font-[700] tracking-tight"
+              variant={isDark ? 'dark' : 'light'}
+            />
+          </Link>
         )}
       />
 
