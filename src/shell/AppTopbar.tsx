@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
-import { Menu, Moon, Sun, UserRound } from 'lucide-react';
+import { Menu, Moon, Sun, X } from 'lucide-react';
 import { useTheme } from '../components/ThemeContext';
 import { UserAvatar } from '../components/UserAvatar';
 import { useUserProfile } from '../context/UserProfileContext';
@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../components/ui/dropdown-menu';
-import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '../components/ui/sheet';
+import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from '../components/ui/sheet';
 import { billingPlanLabel, hidesUpgradeCta } from '../api/billingApi';
 import { clearToken } from '../auth';
 import { clearSignInIntent, isAdminAccount } from '../utils/signInIntent';
@@ -70,22 +70,37 @@ export function AppTopbar() {
             <Menu size={18} />
           </button>
         </SheetTrigger>
-        <SheetContent side="left" className="flex w-[min(300px,88vw)] flex-col p-0">
+        <SheetContent
+          side="left"
+          showClose={false}
+          overlayClassName="z-[60]"
+          className="z-[60] flex w-[min(300px,88vw)] flex-col p-0"
+        >
           <SheetTitle className="sr-only">Navigation</SheetTitle>
-          <button
-            type="button"
-            onClick={goProfile}
-            className="flex shrink-0 items-center gap-3 border-b border-[var(--border)] px-4 py-4 text-left transition-colors hover:bg-[var(--fill)]"
-          >
-            <UserAvatar profile={profile} size="md" variant="default" />
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-[14px] font-semibold text-[var(--ink)]">
-                {displayName || (profileLoading ? 'Loading…' : 'Your profile')}
-              </p>
-              <p className="text-[12px] text-[var(--ink-soft)]">Profile & settings</p>
-            </div>
-            <UserRound size={16} className="shrink-0 text-[var(--ink-faint)]" aria-hidden />
-          </button>
+          <div className="flex shrink-0 items-center border-b border-[var(--border)]">
+            <button
+              type="button"
+              onClick={goProfile}
+              className="flex min-w-0 flex-1 items-center gap-3 px-4 py-4 text-left transition-colors hover:bg-[var(--fill)]"
+            >
+              <UserAvatar profile={profile} size="md" variant="default" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[14px] font-semibold text-[var(--ink)]">
+                  {displayName || (profileLoading ? 'Loading…' : 'Your profile')}
+                </p>
+                <p className="text-[12px] text-[var(--ink-soft)]">Profile & settings</p>
+              </div>
+            </button>
+            <SheetClose asChild>
+              <button
+                type="button"
+                className="mr-1 flex size-11 shrink-0 items-center justify-center rounded-lg text-[var(--ink-soft)] transition-colors hover:bg-[var(--fill)] hover:text-[var(--ink)]"
+                aria-label="Close navigation"
+              >
+                <X size={18} />
+              </button>
+            </SheetClose>
+          </div>
           <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
             <AppSidebar
               pathname={location.pathname}
