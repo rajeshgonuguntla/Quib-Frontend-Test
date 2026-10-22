@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { MessageCircle, Send, X, Loader2, ChevronsRight } from 'lucide-react';
+import { Send, X, Loader2, ChevronsRight } from 'lucide-react';
 import axios from 'axios';
 import {
   fetchCourseChatThread,
@@ -8,7 +8,7 @@ import {
 } from '../api/courseChatApi';
 import { useTheme, getC } from './ThemeContext';
 import { LessonNotes } from './LessonNotes';
-import { QuibLogo } from './QuibLogo';
+import { QuibLogo, QuibLogoMark } from './QuibLogo';
 
 interface CourseChatWidgetProps {
   courseId: string;
@@ -402,8 +402,15 @@ export function CourseChatWidget({
   }
 
   return (
-    <div className="fixed z-[200] flex flex-col items-end gap-3" style={{ bottom: 24, right: 16 }}>
-      {open && chatPanel}
+    <>
+      {open ? (
+        <div
+          className="fixed z-[200]"
+          style={{ right: 12, bottom: 136, width: 'min(380px, calc(100vw - 2rem))' }}
+        >
+          {chatPanel}
+        </div>
+      ) : null}
 
       <button
         type="button"
@@ -414,20 +421,21 @@ export function CourseChatWidget({
           }
           setOpen((prev) => !prev);
         }}
-        className="flex items-center gap-2 px-4 py-3 rounded-full shadow-lg cursor-pointer transition-transform hover:scale-[1.02]"
+        className="fixed z-[200] grid place-items-center cursor-pointer"
         style={{
-          background: C.red,
-          color: '#fff',
+          right: 0,
+          bottom: 72,
+          width: 44,
+          height: 56,
+          padding: '0 4px 0 10px',
           border: 'none',
-          boxShadow: '0 8px 32px rgba(225,6,0,0.35)',
+          borderRadius: '999px 0 0 999px',
+          background: C.text,
         }}
         aria-label={open ? 'Close course tutor' : 'Open course tutor'}
       >
-        <MessageCircle className="w-5 h-5" />
-        <span className="text-[0.82rem] font-[600] hidden sm:inline">
-          {open ? 'Close tutor' : 'Ask tutor'}
-        </span>
+        <QuibLogoMark size={22} variant={isDark ? 'light' : 'dark'} />
       </button>
-    </div>
+    </>
   );
 }
