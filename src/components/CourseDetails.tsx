@@ -656,7 +656,7 @@ function LearningMode({
     <div style={{ height: '100vh', overflow: 'hidden', background: C.bg, color: C.text, fontFamily: 'var(--display)' }}>
       {/* Cuib module bar */}
       <div
-        className="flex items-center gap-6 sm:gap-8 px-4 sm:px-10 shrink-0"
+        className="cuib-module-bar flex items-center gap-6 sm:gap-8 px-4 sm:px-10 shrink-0"
         style={{
           paddingTop: 18,
           paddingBottom: 16,
@@ -677,7 +677,7 @@ function LearningMode({
           />
         </Link>
 
-        <div className="cuib-module-rail hidden min-w-0 flex-1 overflow-x-auto md:block [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        <div className="cuib-module-rail hidden min-w-0 flex-1 self-stretch overflow-x-auto md:block [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           <div className="flex items-center gap-1 min-w-max">
             {modules.map((mod) => {
               const isActive = activeModule?.id === mod.id;

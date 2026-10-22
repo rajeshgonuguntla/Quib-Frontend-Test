@@ -253,31 +253,31 @@ html .cuib-module-rail::-webkit-scrollbar {
   height: 0;
 }
 
-html .cuib-module-rail:hover {
+html .cuib-module-bar:hover .cuib-module-rail {
   scrollbar-width: thin;
   scrollbar-color: rgba(0, 0, 0, 0.28) transparent;
 }
 
-html.dark .cuib-module-rail:hover {
+html.dark .cuib-module-bar:hover .cuib-module-rail {
   scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
 }
 
-html .cuib-module-rail:hover::-webkit-scrollbar {
+html .cuib-module-bar:hover .cuib-module-rail::-webkit-scrollbar {
   display: block;
   width: 4px;
   height: 4px;
 }
 
-html .cuib-module-rail:hover::-webkit-scrollbar-track {
+html .cuib-module-bar:hover .cuib-module-rail::-webkit-scrollbar-track {
   background: transparent;
 }
 
-html .cuib-module-rail:hover::-webkit-scrollbar-thumb {
+html .cuib-module-bar:hover .cuib-module-rail::-webkit-scrollbar-thumb {
   background: rgba(0, 0, 0, 0.28);
   border-radius: 999px;
 }
 
-html.dark .cuib-module-rail:hover::-webkit-scrollbar-thumb {
+html.dark .cuib-module-bar:hover .cuib-module-rail::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.22);
 }
 
