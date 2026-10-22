@@ -897,8 +897,6 @@ function LearningMode({
               onChange={setStudyTab}
               accent={C.red}
               faint={C.text3}
-              ink={C.text}
-              bg={C.bg}
             />
           )}
           <div className="min-h-full min-w-0 flex-1">
@@ -922,7 +920,7 @@ function LearningMode({
                 {moduleKicker.replace(/^#\s*/, '')}
               </p>
               <h1
-                className="font-[800] tracking-tight mb-7"
+                className="mb-2 font-[800] tracking-tight md:mb-7"
                 style={{
                   fontFamily: 'var(--display)',
                   fontSize: 'clamp(1.75rem, 3.2vw, 2.25rem)',
@@ -933,6 +931,12 @@ function LearningMode({
               >
                 {withoutLessonNumberPrefix(activeLesson.title)}
               </h1>
+              <p
+                className="mb-7 text-[0.72rem] font-[500] tracking-wide md:hidden"
+                style={{ color: C.text3, fontFamily: 'var(--mono)' }}
+              >
+                {STUDY_TABS.find((tab) => tab.id === studyTab)?.label}
+              </p>
 
               {studyTab === 'overview' && (
                 <>

@@ -10,8 +10,6 @@ type Props = {
   onChange: (id: StudyTabId) => void;
   accent: string;
   faint: string;
-  ink: string;
-  bg: string;
 };
 
 function clamp(n: number, a: number, b: number) {
@@ -28,7 +26,7 @@ export function studyIndexFromY(
   return Math.round(clamp(((clientY - top) / height) * (count - 1), 0, count - 1));
 }
 
-export function StudyTabDots({ tabs, value, onChange, accent, faint, ink, bg }: Props) {
+export function StudyTabDots({ tabs, value, onChange, accent, faint }: Props) {
   const clusterRef = useRef<HTMLDivElement>(null);
   const [draft, setDraft] = useState<number | null>(null);
   const index = Math.max(0, tabs.findIndex((t) => t.id === value));
@@ -94,7 +92,7 @@ export function StudyTabDots({ tabs, value, onChange, accent, faint, ink, bg }: 
       onPointerCancel={onPointerUp}
       onKeyDown={onKeyDown}
     >
-      <div ref={clusterRef} className="relative flex flex-col items-center gap-2 py-2">
+      <div ref={clusterRef} className="flex flex-col items-center gap-2 py-2">
         {tabs.map((tab, i) => (
           <span
             key={tab.id}
@@ -107,18 +105,6 @@ export function StudyTabDots({ tabs, value, onChange, accent, faint, ink, bg }: 
             }}
           />
         ))}
-        {draft != null && tabs[shown] && (
-          <span
-            className="pointer-events-none absolute left-[4.75rem] z-50 whitespace-nowrap rounded-md px-3 py-1.5 text-[13px] font-semibold"
-            style={{
-              top: shown * 20,
-              background: ink,
-              color: bg,
-            }}
-          >
-            {tabs[shown].label}
-          </span>
-        )}
       </div>
     </div>
   );
