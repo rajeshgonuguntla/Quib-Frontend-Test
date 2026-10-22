@@ -109,7 +109,7 @@ export function StudyTabDots({ tabs, value, onChange, accent, faint, ink, bg }: 
         ))}
         {draft != null && tabs[shown] && (
           <span
-            className="pointer-events-none absolute left-5 whitespace-nowrap rounded-md px-2 py-1 text-[11px] font-semibold"
+            className="pointer-events-none absolute left-[4.75rem] z-50 whitespace-nowrap rounded-md px-3 py-1.5 text-[13px] font-semibold"
             style={{
               top: shown * 20,
               background: ink,
