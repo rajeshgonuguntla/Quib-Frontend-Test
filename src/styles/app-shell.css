@@ -533,3 +533,13 @@
 @media (prefers-reduced-motion: reduce) {
   .study-tool-heading { animation: none; }
 }
+
+.module-kicker-track {
+  transition: transform 0.28s ease;
+}
+.module-kicker-track.is-dragging {
+  transition: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .module-kicker-track { transition: none; }
+}

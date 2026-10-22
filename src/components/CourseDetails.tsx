@@ -49,6 +49,7 @@ import { studyToolFromStartMode } from './StudentMasterInput';
 import { UserAvatar } from './UserAvatar';
 import { StudyTabDots } from './StudyTabDots';
 import { StudyToolHeading } from './StudyToolHeading';
+import { ModuleKickerNav } from './ModuleKickerNav';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -637,6 +638,21 @@ function LearningMode({
   const moduleKicker = activeModule
     ? `# MODULE ${modules.findIndex((m) => m.id === activeModule.id) + 1} · ${activeModule.title}`.toUpperCase()
     : '';
+  const phoneKicker = (
+    <ModuleKickerNav
+      modules={modules}
+      activeModuleId={activeModule?.id ?? activeModuleId}
+      activeLessonId={activeLessonId}
+      completedLessons={completedLessons}
+      passedModules={passedModules}
+      onSelectModule={selectModule}
+      onOpenLesson={openLesson}
+      onOpenQuiz={openQuiz}
+      accent={C.red}
+      faint={C.text3}
+      ink={C.text2}
+    />
+  );
 
   return (
     <div style={{ height: '100vh', overflow: 'hidden', background: C.bg, color: C.text, fontFamily: 'var(--display)' }}>
@@ -661,7 +677,7 @@ function LearningMode({
           <ArrowLeft className="w-4 h-4" />
         </button>
 
-        <div className="min-w-0 flex-1 overflow-x-auto">
+        <div className="hidden min-w-0 flex-1 overflow-x-auto md:block">
           <div className="flex items-center gap-1 min-w-max">
             {modules.map((mod) => {
               const isActive = activeModule?.id === mod.id;
@@ -697,6 +713,12 @@ function LearningMode({
             })}
           </div>
         </div>
+        <p
+          className="min-w-0 flex-1 truncate text-[0.875rem] font-[600] md:hidden"
+          style={{ color: C.text }}
+        >
+          {course.title}
+        </p>
 
         <div className="flex items-center gap-1.5 shrink-0">
           <button
@@ -913,8 +935,9 @@ function LearningMode({
                 borderColor: C.border,
               }}
             >
+              {phoneKicker}
               <p
-                className="text-[0.66rem] font-[500] mb-4 tracking-wide"
+                className="hidden text-[0.66rem] font-[500] mb-4 tracking-wide md:block"
                 style={{ color: C.text3, fontFamily: 'var(--mono)' }}
               >
                 <span style={{ color: C.red, fontWeight: 700 }}>#</span>{' '}
@@ -1055,6 +1078,7 @@ function LearningMode({
                 borderColor: C.border,
               }}
             >
+              {phoneKicker}
               <p className="text-[0.7rem] mb-4 uppercase tracking-widest" style={{ color: C.text3, fontFamily: 'var(--mono)' }}>{activeQuizModule.title}</p>
               <h1 className="font-[800] tracking-tight mb-2" style={{ fontSize: 'clamp(1.6rem, 3vw, 2.1rem)', color: C.text }}>Module Quiz</h1>
               <p className="text-[0.85rem] mb-8" style={{ color: C.text2 }}>{activeQuizModule.quiz.length} questions · Test your understanding</p>
@@ -1189,20 +1213,29 @@ function LearningMode({
           )}
 
           {activeAssignment && (
-            <CourseAssignmentPanel
-              courseId={courseId}
-              C={C}
-              isDark={isDark}
-              onSubmitted={() => void reloadProgress()}
-            />
+            <div className="min-h-full pl-5 pr-5 pt-5 pb-24 md:p-0">
+              {phoneKicker}
+              <CourseAssignmentPanel
+                courseId={courseId}
+                C={C}
+                isDark={isDark}
+                onSubmitted={() => void reloadProgress()}
+              />
+            </div>
           )}
 
           {!activeLesson && !activeQuizModuleId && !activeAssignment && (
-            <div className="text-center py-10">
-              <p className="text-[0.9rem]" style={{ color: C.text2 }}>
+            <div className="px-5 py-10 md:px-0">
+              {phoneKicker}
+              <p className="text-center text-[0.9rem]" style={{ color: C.text2 }}>
                 {allLessons.length === 0
                   ? 'This course has no lessons yet.'
-                  : 'Select a lesson from a module tab above.'}
+                  : (
+                    <>
+                      <span className="md:hidden">Swipe the module line or open the lesson list.</span>
+                      <span className="hidden md:inline">Select a lesson from a module tab above.</span>
+                    </>
+                  )}
               </p>
             </div>
           )}
