@@ -713,12 +713,7 @@ function LearningMode({
             })}
           </div>
         </div>
-        <p
-          className="min-w-0 flex-1 truncate text-[0.875rem] font-[600] md:hidden"
-          style={{ color: C.text }}
-        >
-          {course.title}
-        </p>
+        <div className="min-w-0 flex-1 md:hidden" aria-hidden="true" />
 
         <div className="flex items-center gap-1.5 shrink-0">
           <button
