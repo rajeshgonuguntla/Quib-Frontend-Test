@@ -888,8 +888,8 @@ function LearningMode({
         </aside>
 
         {/* Main panel */}
-        <main className="min-w-0 overflow-y-auto min-h-0" style={{ padding: '28px 28px 80px' }}>
-          <div className="flex min-h-0">
+        <main className="min-h-0 min-w-0 overflow-y-auto p-0 md:p-7 md:pb-20">
+          <div className="flex min-h-full">
           {lessonActive && (
             <StudyTabDots
               tabs={STUDY_TABS}
@@ -901,17 +901,17 @@ function LearningMode({
               bg={C.bg}
             />
           )}
-          <div className="min-w-0 flex-1">
+          <div className="min-h-full min-w-0 flex-1">
           {lessonActive && activeLesson && (
             <div
-              className="rounded-2xl"
+              className={`min-h-full rounded-none border-0 pl-12 pr-5 pt-5 pb-24 shadow-none md:rounded-2xl md:border md:p-[26px_24px] ${
+                isDark
+                  ? 'md:shadow-[0_1px_2px_rgba(0,0,0,0.2),0_6px_24px_rgba(0,0,0,0.35)]'
+                  : 'md:shadow-[0_1px_2px_rgba(0,0,0,0.03),0_6px_20px_rgba(0,0,0,0.05)]'
+              }`}
               style={{
                 background: C.bg,
-                border: `1px solid ${C.border}`,
-                padding: '26px 24px',
-                boxShadow: isDark
-                  ? '0 1px 2px rgba(0,0,0,0.2), 0 6px 24px rgba(0,0,0,0.35)'
-                  : '0 1px 2px rgba(0,0,0,0.03), 0 6px 20px rgba(0,0,0,0.05)',
+                borderColor: C.border,
               }}
             >
               <p
@@ -1041,11 +1041,10 @@ function LearningMode({
 
           {activeQuizModule && (
             <div
-              className="rounded-2xl"
+              className="min-h-full rounded-none border-0 pl-12 pr-5 pt-5 pb-24 md:rounded-2xl md:border md:p-[26px_24px]"
               style={{
                 background: C.bg,
-                border: `1px solid ${C.border}`,
-                padding: '26px 24px',
+                borderColor: C.border,
               }}
             >
               <p className="text-[0.7rem] mb-4 uppercase tracking-widest" style={{ color: C.text3, fontFamily: 'var(--mono)' }}>{activeQuizModule.title}</p>

@@ -78,51 +78,48 @@ export function StudyTabDots({ tabs, value, onChange, accent, faint, ink, bg }: 
   };
 
   return (
-    <>
-      <div className="w-12 shrink-0 md:hidden" aria-hidden />
-      <div
-        className="fixed left-0 top-1/2 z-20 flex w-12 -translate-y-1/2 flex-col items-center touch-none md:hidden"
-        role="slider"
-        tabIndex={0}
-        aria-orientation="vertical"
-        aria-valuemin={0}
-        aria-valuemax={last}
-        aria-valuenow={shown}
-        aria-valuetext={tabs[shown]?.label}
-        aria-label="Study tools"
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
-        onKeyDown={onKeyDown}
-      >
-        <div ref={clusterRef} className="relative flex flex-col items-center gap-2 py-2">
-          {tabs.map((tab, i) => (
-            <span
-              key={tab.id}
-              className="pointer-events-none rounded-full"
-              style={{
-                width: 12,
-                height: 12,
-                background: i === shown ? accent : 'transparent',
-                border: `1.5px solid ${i === shown ? accent : faint}`,
-              }}
-            />
-          ))}
-          {draft != null && tabs[shown] && (
-            <span
-              className="pointer-events-none absolute left-5 whitespace-nowrap rounded-md px-2 py-1 text-[11px] font-semibold"
-              style={{
-                top: shown * 20,
-                background: ink,
-                color: bg,
-              }}
-            >
-              {tabs[shown].label}
-            </span>
-          )}
-        </div>
+    <div
+      className="fixed left-0 top-1/2 z-40 flex w-12 -translate-y-1/2 flex-col items-center touch-none md:hidden"
+      role="slider"
+      tabIndex={0}
+      aria-orientation="vertical"
+      aria-valuemin={0}
+      aria-valuemax={last}
+      aria-valuenow={shown}
+      aria-valuetext={tabs[shown]?.label}
+      aria-label="Study tools"
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
+      onKeyDown={onKeyDown}
+    >
+      <div ref={clusterRef} className="relative flex flex-col items-center gap-2 py-2">
+        {tabs.map((tab, i) => (
+          <span
+            key={tab.id}
+            className="pointer-events-none rounded-full"
+            style={{
+              width: 12,
+              height: 12,
+              background: i === shown ? accent : 'transparent',
+              border: `1.5px solid ${i === shown ? accent : faint}`,
+            }}
+          />
+        ))}
+        {draft != null && tabs[shown] && (
+          <span
+            className="pointer-events-none absolute left-5 whitespace-nowrap rounded-md px-2 py-1 text-[11px] font-semibold"
+            style={{
+              top: shown * 20,
+              background: ink,
+              color: bg,
+            }}
+          >
+            {tabs[shown].label}
+          </span>
+        )}
       </div>
-    </>
+    </div>
   );
 }
