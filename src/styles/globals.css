@@ -245,6 +245,11 @@ html.dark *::-webkit-scrollbar-thumb {
 html .cuib-module-rail {
   scrollbar-width: none;
   -ms-overflow-style: none;
+  transform: scaleY(-1);
+}
+
+html .cuib-module-rail > * {
+  transform: scaleY(-1);
 }
 
 html .cuib-module-rail::-webkit-scrollbar {
