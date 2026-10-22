@@ -240,17 +240,20 @@ html.dark *::-webkit-scrollbar-thumb {
   height: 0;
 }
 
-/* Desktop module names: hide the bar until hover, then 4px */
-.cuib-module-rail {
+/* Desktop module names: hide the bar until hover, then 4px.
+   Must beat the global *::-webkit-scrollbar { height: 8px } rule. */
+html .cuib-module-rail {
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
 
-.cuib-module-rail::-webkit-scrollbar {
+html .cuib-module-rail::-webkit-scrollbar {
+  display: none;
+  width: 0;
   height: 0;
 }
 
-.cuib-module-rail:hover {
+html .cuib-module-rail:hover {
   scrollbar-width: thin;
   scrollbar-color: rgba(0, 0, 0, 0.28) transparent;
 }
@@ -259,15 +262,17 @@ html.dark .cuib-module-rail:hover {
   scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
 }
 
-.cuib-module-rail:hover::-webkit-scrollbar {
+html .cuib-module-rail:hover::-webkit-scrollbar {
+  display: block;
+  width: 4px;
   height: 4px;
 }
 
-.cuib-module-rail:hover::-webkit-scrollbar-track {
+html .cuib-module-rail:hover::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.cuib-module-rail:hover::-webkit-scrollbar-thumb {
+html .cuib-module-rail:hover::-webkit-scrollbar-thumb {
   background: rgba(0, 0, 0, 0.28);
   border-radius: 999px;
 }
