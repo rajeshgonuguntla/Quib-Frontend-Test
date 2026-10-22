@@ -1302,7 +1302,7 @@ function LearningMode({
         )}
       </div>
 
-      {/* Mobile FAB */}
+      {/* Mobile tutor tag */}
       {tutorAvailable && (
         <div className="lg:hidden">
           <CourseChatWidget
@@ -2096,6 +2096,20 @@ export function CourseDetails() {
       </div>
 
       </div>
+
+      {resolvedCourseId ? (
+        <div className="lg:hidden">
+          <CourseChatWidget
+            key={`${chatSessionKey}-overview`}
+            courseId={resolvedCourseId}
+            courseTitle={course.title}
+            signedIn={chatSignedIn}
+            onSignInRequired={handleChatSignIn}
+            sessionKey={chatSessionKey}
+            variant="floating"
+          />
+        </div>
+      ) : null}
     </div>
   );
 }
