@@ -48,6 +48,7 @@ import type { CourseGenerationOptions } from '../types/courseGeneration';
 import { studyToolFromStartMode } from './StudentMasterInput';
 import { UserAvatar } from './UserAvatar';
 import { StudyTabDots } from './StudyTabDots';
+import { StudyToolHeading } from './StudyToolHeading';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -920,7 +921,7 @@ function LearningMode({
                 {moduleKicker.replace(/^#\s*/, '')}
               </p>
               <h1
-                className="mb-2 font-[800] tracking-tight md:mb-7"
+                className="font-[800] tracking-tight mb-7"
                 style={{
                   fontFamily: 'var(--display)',
                   fontSize: 'clamp(1.75rem, 3.2vw, 2.25rem)',
@@ -931,15 +932,12 @@ function LearningMode({
               >
                 {withoutLessonNumberPrefix(activeLesson.title)}
               </h1>
-              <p
-                className="mb-7 text-[0.72rem] font-[500] tracking-wide md:hidden"
-                style={{ color: C.text3, fontFamily: 'var(--mono)' }}
-              >
-                {STUDY_TABS.find((tab) => tab.id === studyTab)?.label}
-              </p>
 
               {studyTab === 'overview' && (
                 <>
+                  <div className="mb-6">
+                    <StudyToolHeading key="Overview" label="Overview" accent={C.red} isDark={isDark} />
+                  </div>
                   <div className="flex items-center gap-2.5 mb-6">
                     <span className="flex items-center gap-1.5 text-[0.75rem] font-[600]" style={{ color: C.text2 }}>
                       <PlayCircle className="w-3 h-3" />
@@ -1012,6 +1010,7 @@ function LearningMode({
 
               {studyTab === 'notes' && (
                 <div className="space-y-6">
+                  <StudyToolHeading key="Notes" label="Notes" accent={C.red} isDark={isDark} />
                   <StudentLessonNotesEditor
                     courseId={courseId}
                     lessonId={activeLessonId}
@@ -1031,6 +1030,7 @@ function LearningMode({
 
               {(studyTab === 'flashcards' || studyTab === 'blanks' || studyTab === 'exam') && (
                 <StudyRailPanel
+                  key={studyTab}
                   courseId={courseId}
                   lessonId={activeLessonId}
                   tool={studyTab}

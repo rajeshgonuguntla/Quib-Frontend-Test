@@ -11,6 +11,7 @@ import {
 } from '../api/studyRailApi';
 import { resolveStudyToolData, writeCachedStudyTool } from '../utils/studyToolCache';
 import { LessonNotes } from './LessonNotes';
+import { StudyToolHeading } from './StudyToolHeading';
 
 type Theme = {
   text: string;
@@ -103,7 +104,11 @@ export function StudyRailPanel({
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-[0.95rem] font-[600]" style={{ color: C.text }}>{title}</p>
+          {tool === 'notes' ? (
+            <p className="text-[0.95rem] font-[600]" style={{ color: C.text }}>{title}</p>
+          ) : (
+            <StudyToolHeading key={title} label={title} accent={C.red} isDark={isDark} />
+          )}
           <p className="text-[0.75rem] mt-0.5" style={{ color: C.text3 }}>
             {data?.source === 'course'
               ? 'Included with this lesson. Regenerate anytime for a new set from the transcript.'
