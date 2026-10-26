@@ -6,6 +6,31 @@ export interface CourseReview {
   updatedAt: string;
 }
 
+export interface LessonComment {
+  id: string;
+  body: string;
+  authorName?: string | null;
+  isOwner?: boolean;
+  answered?: boolean;
+  educatorReply?: string | null;
+  createdAt?: string | null;
+}
+
+export interface LessonReaction {
+  value: number;
+  thumbsUp: number;
+  thumbsDown: number;
+}
+
+export interface ContentFlag {
+  id: string;
+  courseId?: string;
+  lessonId?: string | null;
+  reason: string;
+  status?: string;
+  createdAt?: string | null;
+}
+
 export async function submitCourseReview(
   courseId: string,
   rating: number,
@@ -32,4 +57,51 @@ export async function replyToLearnerComment(
     `/api/educator/analytics/courses/${courseId}/comments/${commentId}/reply`,
     { reply },
   );
+}
+
+export async function fetchLessonComments(
+  courseId: string,
+  lessonId: string,
+): Promise<LessonComment[]> {
+  const { data } = await axios.get<LessonComment[]>(
+    `/api/courses/${courseId}/lessons/${lessonId}/comments`,
+  );
+  return data ?? [];
+}
+
+export async function postLessonComment(
+  courseId: string,
+  lessonId: string,
+  body: string,
+): Promise<LessonComment> {
+  const { data } = await axios.post<LessonComment>(
+    `/api/courses/${courseId}/lessons/${lessonId}/comments`,
+    { body },
+  );
+  return data;
+}
+
+/** value: 1 up, -1 down, 0 clear */
+export async function setLessonReaction(
+  courseId: string,
+  lessonId: string,
+  value: 1 | 0 | -1,
+): Promise<LessonReaction> {
+  const { data } = await axios.post<LessonReaction>(
+    `/api/courses/${courseId}/lessons/${lessonId}/reaction`,
+    { value },
+  );
+  return data;
+}
+
+export async function reportContentFlag(
+  courseId: string,
+  reason: string,
+  lessonId?: string,
+): Promise<ContentFlag> {
+  const { data } = await axios.post<ContentFlag>(`/api/courses/${courseId}/content-flags`, {
+    reason,
+    lessonId: lessonId || null,
+  });
+  return data;
 }

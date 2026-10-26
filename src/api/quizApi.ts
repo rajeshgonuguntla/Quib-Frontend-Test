@@ -135,14 +135,16 @@ export function examBlueprintPreview(examType: string): { questions: number; min
     };
   }
   if (t === 'gre') {
+    // Objective modules match ExamBlueprint.gre (Sept 2023). AWA 30 min is self-scored, not auto-generated.
     return {
-      questions: 108,
-      minutes: 176,
+      questions: 54,
+      minutes: 118,
       sections: [
-        'Verbal Reasoning 1 (27)',
-        'Verbal Reasoning 2 (27)',
-        'Quantitative Reasoning 1 (27)',
-        'Quantitative Reasoning 2 (27)',
+        'Analytical Writing — Analyze an Issue (30 min, self-score)',
+        'Verbal Reasoning — Section 1 (12 / 18 min)',
+        'Verbal Reasoning — Section 2 (15 / 23 min)',
+        'Quantitative Reasoning — Section 1 (12 / 21 min)',
+        'Quantitative Reasoning — Section 2 (15 / 26 min)',
       ],
     };
   }

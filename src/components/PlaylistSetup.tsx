@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router';
 import axios from 'axios';
 import { ShellPage } from '../shell/ShellPage';
 import { Youtube, Clock, Play, CheckCircle, AlertCircle, ArrowRight } from 'lucide-react';
-import { parseRawQuizJson, questionsFromRawQuiz } from '../utils/quizParse';
+import { isUuid } from '../api/quizApi';
 import { useTheme, getC } from './ThemeContext';
 
 interface QuizResponse {
@@ -124,25 +124,10 @@ export function PlaylistSetup() {
         return;
       }
 
-      const questions = questionsFromRawQuiz(quiz.quiz);
-      if (questions.length === 0) {
-        setSetupError(`Failed to load quiz for "${quiz.videoTitle}". Please regenerate the playlist.`);
-        return;
-      }
-
-      const meta = {
-        title: parseRawQuizJson(quiz.quiz)?.title?.trim() || quiz.videoTitle,
-        channelName: quiz.channelName,
-        videoLength: quiz.videoLength,
-        youtubeUrl: videoUrl,
-      };
-
-      sessionStorage.setItem('playlistResult', JSON.stringify(result));
-      sessionStorage.setItem('playlistCurrentIndex', String(index));
-      sessionStorage.setItem('playlistCompleted', JSON.stringify([...completedQuizzes]));
-      sessionStorage.setItem('generatedQuestions', JSON.stringify(questions));
-      sessionStorage.setItem('generatedVideoMeta', JSON.stringify(meta));
-      navigate(`/quiz/playlist-${index}`, { state: { questions, videoMeta: meta, youtubeUrl: videoUrl } });
+      // ponytail: submit requires a persisted UUID quiz — never open /quiz/playlist-N
+      setSetupError(
+        `Quiz for "${quiz.videoTitle}" was not saved with an id. Regenerate the playlist and try again.`,
+      );
     } catch {
       setSetupError(`Failed to load quiz for "${quiz.videoTitle}". Please try again.`);
     } finally {

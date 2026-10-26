@@ -34,6 +34,7 @@ import { fetchCourseAssignmentSummary } from '../api/assignmentApi';
 import { CourseAssignmentPanel } from './assignments/ModuleAssignmentPanel';
 import { YoutubeLessonPlayer, type YoutubeLessonPlayerHandle } from './YoutubeLessonPlayer';
 import { CourseReviewPanel } from './CourseReviewPanel';
+import { LessonFeedbackPanel } from './LessonFeedbackPanel';
 import { StudentLessonNotesEditor } from './StudentLessonNotesEditor';
 import { LessonTranscriptPanel } from './LessonTranscriptPanel';
 import { downloadCoursePdf } from '../utils/downloadCoursePdf';
@@ -1031,6 +1032,12 @@ function LearningMode({
                       <p className="text-[0.8rem]" style={{ color: C.red }}>{lessonActionError}</p>
                     )}
                   </div>
+                  <LessonFeedbackPanel
+                    courseId={courseId}
+                    lessonId={activeLessonId}
+                    enabled={chatSignedIn}
+                    theme={C}
+                  />
                   <CourseReviewPanel courseId={courseId} enabled={chatSignedIn} theme={C} />
                 </>
               )}
