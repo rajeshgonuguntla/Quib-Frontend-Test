@@ -4,7 +4,7 @@ import axios from 'axios';
 import {
   ChevronDown, ChevronRight,
   PlayCircle, FileText, CheckCircle, CheckCircle2, Copy, CircleHelp,
-  ArrowLeft, ArrowUpRight, BookOpen, Calendar, Layers, AlertCircle, Globe, Pencil,
+  ArrowUpRight, BookOpen, Calendar, Layers, AlertCircle, Globe, Pencil,
   Download, Loader2, Moon, Sun,
 } from 'lucide-react';
 import { publishCourse, unpublishCourse, deleteCourse } from '../api/catalogApi';
@@ -48,6 +48,9 @@ import { isModuleQuizQuestionWrong, type SimilarPracticeQuestion } from '../util
 import type { CourseGenerationOptions } from '../types/courseGeneration';
 import { studyToolFromStartMode } from './StudentMasterInput';
 import { UserAvatar } from './UserAvatar';
+import { StudyTabDots } from './StudyTabDots';
+import { StudyToolHeading } from './StudyToolHeading';
+import { ModuleKickerNav } from './ModuleKickerNav';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -282,7 +285,6 @@ function LearningMode({
   course,
   courseId,
   youtubeUrl,
-  onBack,
   showCourseChat,
   chatSignedIn,
   onChatSignInRequired,
@@ -292,7 +294,6 @@ function LearningMode({
   course: Course;
   courseId: string;
   youtubeUrl: string;
-  onBack: () => void;
   showCourseChat: boolean;
   chatSignedIn: boolean;
   onChatSignInRequired: () => void;
@@ -442,14 +443,6 @@ function LearningMode({
   const tutorAvailable = showCourseChat;
   const { profile, setProfile } = useUserProfile();
   const navigate = useNavigate();
-
-  const toggleAskAi = () => {
-    if (!tutorAvailable) {
-      onChatSignInRequired();
-      return;
-    }
-    setAskOpenSignal((n) => n + 1);
-  };
 
   const handleSignOut = () => {
     clearToken();
@@ -644,12 +637,27 @@ function LearningMode({
   const moduleKicker = activeModule
     ? `# MODULE ${modules.findIndex((m) => m.id === activeModule.id) + 1} · ${activeModule.title}`.toUpperCase()
     : '';
+  const phoneKicker = (
+    <ModuleKickerNav
+      modules={modules}
+      activeModuleId={activeModule?.id ?? activeModuleId}
+      activeLessonId={activeLessonId}
+      completedLessons={completedLessons}
+      passedModules={passedModules}
+      onSelectModule={selectModule}
+      onOpenLesson={openLesson}
+      onOpenQuiz={openQuiz}
+      accent={C.red}
+      faint={C.text3}
+      ink={C.text2}
+    />
+  );
 
   return (
     <div style={{ height: '100vh', overflow: 'hidden', background: C.bg, color: C.text, fontFamily: 'var(--display)' }}>
       {/* Cuib module bar */}
       <div
-        className="flex items-center gap-6 sm:gap-8 px-4 sm:px-10 shrink-0"
+        className="cuib-module-bar flex items-center gap-6 sm:gap-8 px-4 sm:px-10 shrink-0"
         style={{
           paddingTop: 18,
           paddingBottom: 16,
@@ -657,18 +665,20 @@ function LearningMode({
           background: C.bg,
         }}
       >
-        <button
-          type="button"
-          onClick={onBack}
-          className="w-9 h-9 rounded-lg flex items-center justify-center cursor-pointer shrink-0"
-          style={{ background: 'transparent', border: 'none', color: C.text2 }}
-          aria-label="Back"
-          title="Back"
+        <Link
+          to="/dashboard"
+          className="no-underline shrink-0"
+          style={{ color: C.text }}
+          aria-label="Go to dashboard"
         >
-          <ArrowLeft className="w-4 h-4" />
-        </button>
+          <QuibLogo
+            size={16}
+            wordmarkClassName="text-[1rem] font-[700] tracking-tight"
+            variant={isDark ? 'dark' : 'light'}
+          />
+        </Link>
 
-        <div className="min-w-0 flex-1 overflow-x-auto">
+        <div className="cuib-module-rail hidden min-w-0 flex-1 self-stretch overflow-x-auto md:block [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           <div className="flex items-center gap-1 min-w-max">
             {modules.map((mod) => {
               const isActive = activeModule?.id === mod.id;
@@ -704,6 +714,7 @@ function LearningMode({
             })}
           </div>
         </div>
+        <div className="min-w-0 flex-1 md:hidden" aria-hidden="true" />
 
         <div className="flex items-center gap-1.5 shrink-0">
           <button
@@ -896,63 +907,40 @@ function LearningMode({
         </aside>
 
         {/* Main panel */}
-        <main className="min-w-0 overflow-y-auto min-h-0" style={{ padding: '28px 28px 80px' }}>
+        <main className="min-h-0 min-w-0 overflow-y-auto p-0 md:p-7 md:pb-20">
+          <div className="flex min-h-full">
           {lessonActive && (
-            <div className="md:hidden overflow-x-auto mb-4 pb-2" style={{ borderBottom: `1px solid ${C.border}` }}>
-              <div className="flex gap-2 min-w-max">
-                {STUDY_TABS.map((tab) => {
-                  const isActive = studyTab === tab.id;
-                  return (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      onClick={() => setStudyTab(tab.id)}
-                      className="px-3 py-1.5 rounded-full text-[0.72rem] font-[500] cursor-pointer whitespace-nowrap"
-                      style={{
-                        background: isActive ? (isDark ? 'rgba(225,6,0,0.12)' : 'rgba(225,6,0,0.08)') : C.bg1,
-                        border: `1px solid ${isActive ? C.red : C.border}`,
-                        color: isActive ? C.text : C.text2,
-                      }}
-                    >
-                      {tab.label}
-                    </button>
-                  );
-                })}
-                {tutorAvailable && (
-                  <button
-                    type="button"
-                    onClick={toggleAskAi}
-                    className="px-3 py-1.5 rounded-full text-[0.72rem] font-[500] cursor-pointer whitespace-nowrap"
-                    style={{ background: C.bg1, border: `1px solid ${C.border}`, color: C.text2 }}
-                  >
-                    Ask AI
-                  </button>
-                )}
-              </div>
-            </div>
+            <StudyTabDots
+              tabs={STUDY_TABS}
+              value={studyTab}
+              onChange={setStudyTab}
+              accent={C.red}
+              faint={C.text3}
+            />
           )}
-
+          <div className="min-h-full min-w-0 flex-1">
           {lessonActive && activeLesson && (
             <div
-              className="rounded-2xl"
+              className={`min-h-full rounded-none border-0 pl-12 pr-5 pt-5 pb-24 shadow-none md:rounded-2xl md:border md:p-[26px_24px] ${
+                isDark
+                  ? 'md:shadow-[0_1px_2px_rgba(0,0,0,0.2),0_6px_24px_rgba(0,0,0,0.35)]'
+                  : 'md:shadow-[0_1px_2px_rgba(0,0,0,0.03),0_6px_20px_rgba(0,0,0,0.05)]'
+              }`}
               style={{
                 background: C.bg,
-                border: `1px solid ${C.border}`,
-                padding: '26px 24px',
-                boxShadow: isDark
-                  ? '0 1px 2px rgba(0,0,0,0.2), 0 6px 24px rgba(0,0,0,0.35)'
-                  : '0 1px 2px rgba(0,0,0,0.03), 0 6px 20px rgba(0,0,0,0.05)',
+                borderColor: C.border,
               }}
             >
+              {phoneKicker}
               <p
-                className="text-[0.66rem] font-[500] mb-4 tracking-wide"
+                className="hidden text-[0.66rem] font-[500] mb-4 tracking-wide md:block"
                 style={{ color: C.text3, fontFamily: 'var(--mono)' }}
               >
                 <span style={{ color: C.red, fontWeight: 700 }}>#</span>{' '}
                 {moduleKicker.replace(/^#\s*/, '')}
               </p>
               <h1
-                className="font-[800] tracking-tight mb-7"
+                className="mb-2 font-[800] tracking-tight"
                 style={{
                   fontFamily: 'var(--display)',
                   fontSize: 'clamp(1.75rem, 3.2vw, 2.25rem)',
@@ -963,6 +951,14 @@ function LearningMode({
               >
                 {withoutLessonNumberPrefix(activeLesson.title)}
               </h1>
+              <div className="mb-7">
+                <StudyToolHeading
+                  key={studyTab}
+                  label={STUDY_TABS.find((tab) => tab.id === studyTab)?.label ?? ''}
+                  accent={C.red}
+                  isDark={isDark}
+                />
+              </div>
 
               {studyTab === 'overview' && (
                 <>
@@ -1063,6 +1059,7 @@ function LearningMode({
 
               {(studyTab === 'flashcards' || studyTab === 'blanks' || studyTab === 'exam') && (
                 <StudyRailPanel
+                  key={studyTab}
                   courseId={courseId}
                   lessonId={activeLessonId}
                   tool={studyTab}
@@ -1077,13 +1074,13 @@ function LearningMode({
 
           {activeQuizModule && (
             <div
-              className="rounded-2xl"
+              className="min-h-full rounded-none border-0 pl-12 pr-5 pt-5 pb-24 md:rounded-2xl md:border md:p-[26px_24px]"
               style={{
                 background: C.bg,
-                border: `1px solid ${C.border}`,
-                padding: '26px 24px',
+                borderColor: C.border,
               }}
             >
+              {phoneKicker}
               <p className="text-[0.7rem] mb-4 uppercase tracking-widest" style={{ color: C.text3, fontFamily: 'var(--mono)' }}>{activeQuizModule.title}</p>
               <h1 className="font-[800] tracking-tight mb-2" style={{ fontSize: 'clamp(1.6rem, 3vw, 2.1rem)', color: C.text }}>Module Quiz</h1>
               <p className="text-[0.85rem] mb-8" style={{ color: C.text2 }}>{activeQuizModule.quiz.length} questions · Test your understanding</p>
@@ -1218,23 +1215,34 @@ function LearningMode({
           )}
 
           {activeAssignment && (
-            <CourseAssignmentPanel
-              courseId={courseId}
-              C={C}
-              isDark={isDark}
-              onSubmitted={() => void reloadProgress()}
-            />
+            <div className="min-h-full pl-5 pr-5 pt-5 pb-24 md:p-0">
+              {phoneKicker}
+              <CourseAssignmentPanel
+                courseId={courseId}
+                C={C}
+                isDark={isDark}
+                onSubmitted={() => void reloadProgress()}
+              />
+            </div>
           )}
 
           {!activeLesson && !activeQuizModuleId && !activeAssignment && (
-            <div className="text-center py-10">
-              <p className="text-[0.9rem]" style={{ color: C.text2 }}>
+            <div className="px-5 py-10 md:px-0">
+              {phoneKicker}
+              <p className="text-center text-[0.9rem]" style={{ color: C.text2 }}>
                 {allLessons.length === 0
                   ? 'This course has no lessons yet.'
-                  : 'Select a lesson from a module tab above.'}
+                  : (
+                    <>
+                      <span className="md:hidden">Swipe the module line or open the lesson list.</span>
+                      <span className="hidden md:inline">Select a lesson from a module tab above.</span>
+                    </>
+                  )}
               </p>
             </div>
           )}
+          </div>
+          </div>
         </main>
 
         {/* Right assistant — always visible on desktop */}
@@ -1301,7 +1309,7 @@ function LearningMode({
         )}
       </div>
 
-      {/* Mobile FAB */}
+      {/* Mobile tutor tag */}
       {tutorAvailable && (
         <div className="lg:hidden">
           <CourseChatWidget
@@ -1691,7 +1699,7 @@ export function CourseDetails() {
           toggleTheme={toggleTheme}
           navBg={navBg}
           left={(
-            <Link to="/dashboard" className="no-underline" style={{ color: C.text }}>
+            <Link to="/dashboard" className="no-underline" style={{ color: C.text }} aria-label="Go to dashboard">
               <QuibLogo
                 size={16}
                 wordmarkClassName="text-[1rem] font-[700] tracking-tight"
@@ -1728,7 +1736,7 @@ export function CourseDetails() {
           toggleTheme={toggleTheme}
           navBg={navBg}
           left={(
-            <Link to="/dashboard" className="no-underline" style={{ color: C.text }}>
+            <Link to="/dashboard" className="no-underline" style={{ color: C.text }} aria-label="Go to dashboard">
               <QuibLogo
                 size={16}
                 wordmarkClassName="text-[1rem] font-[700] tracking-tight"
@@ -1792,7 +1800,6 @@ export function CourseDetails() {
         course={course}
         courseId={resolvedCourseId}
         youtubeUrl={youtubeUrl}
-        onBack={() => setLearningMode(false)}
         showCourseChat={showCourseChat}
         chatSignedIn={chatSignedIn}
         onChatSignInRequired={handleChatSignIn}
@@ -1854,21 +1861,13 @@ export function CourseDetails() {
         onDownloadCourse={() => void handleDownloadCourse()}
         downloadBusy={downloadBusy}
         left={(
-          <>
-            <button onClick={handleBack} className="flex items-center gap-1.5 cursor-pointer"
-              style={{ background: 'none', border: 'none', color: C.text2, padding: 0 }}>
-              <ArrowLeft className="w-4 h-4" />
-              <span className="text-[0.82rem]">Back</span>
-            </button>
-            <div style={{ width: 1, height: 16, background: C.border }} />
-            <Link to="/dashboard" className="no-underline" style={{ color: C.text }}>
-              <QuibLogo
-                size={16}
-                wordmarkClassName="text-[1rem] font-[700] tracking-tight"
-                variant={isDark ? 'dark' : 'light'}
-              />
-            </Link>
-          </>
+          <Link to="/dashboard" className="no-underline" style={{ color: C.text }} aria-label="Go to dashboard">
+            <QuibLogo
+              size={16}
+              wordmarkClassName="text-[1rem] font-[700] tracking-tight"
+              variant={isDark ? 'dark' : 'light'}
+            />
+          </Link>
         )}
       />
 
@@ -2104,6 +2103,20 @@ export function CourseDetails() {
       </div>
 
       </div>
+
+      {resolvedCourseId ? (
+        <div className="lg:hidden">
+          <CourseChatWidget
+            key={`${chatSessionKey}-overview`}
+            courseId={resolvedCourseId}
+            courseTitle={course.title}
+            signedIn={chatSignedIn}
+            onSignInRequired={handleChatSignIn}
+            sessionKey={chatSessionKey}
+            variant="floating"
+          />
+        </div>
+      ) : null}
     </div>
   );
 }
