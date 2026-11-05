@@ -203,10 +203,11 @@ export function LandingPage() {
               Cubit
             </span>
           </div>
-          <h1 className="text-4xl font-semibold leading-[1.08] tracking-tight text-[var(--landing-fg)] md:text-6xl lg:text-7xl">
-            Personal tutor,
-            <br />
-            whenever you need one.
+          <h1
+            className="mt-5 text-[26px] font-semibold leading-snug tracking-tight text-[var(--landing-fg)] md:text-[32px]"
+            style={{ fontFamily: 'Inter, sans-serif' }}
+          >
+            Your Personal Tutor
           </h1>
           <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-[var(--landing-muted)] md:text-lg">
             Get help with anything you come across in the classroom — explanations, practice, and answers, whenever you need them.
