@@ -164,7 +164,7 @@ function GoogleLoginButton({
         >
           <div
             className="w-10 h-10 rounded-full border-2 border-t-transparent animate-spin"
-            style={{ borderColor: 'rgba(225,6,0,0.35)', borderTopColor: '#e10600' }}
+            style={{ borderColor: 'rgba(255,122,26,0.35)', borderTopColor: '#ff7a1a' }}
           />
           <p className="text-sm font-medium text-white/80">Signing you in…</p>
           <p className="text-xs text-white/45">Almost there</p>

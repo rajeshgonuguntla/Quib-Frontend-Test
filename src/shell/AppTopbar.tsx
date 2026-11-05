@@ -18,18 +18,19 @@ import { clearSignInIntent, isAdminAccount } from '../utils/signInIntent';
 import { getDisplayName, getFirstName } from '../utils/userDisplay';
 import { AppSidebar } from './AppSidebar';
 import { useShell } from './ShellContext';
+import { BRAND_NAME } from '../brand';
+import { CUBIT_LOGO } from '../cubit/subjects';
 
 function AppMark() {
   return (
-    <div
-      className="flex size-[30px] shrink-0 items-center justify-center rounded-lg"
-      style={{ background: 'var(--ink)' }}
-    >
-      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--bg)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-        <path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z" />
-        <path d="M12 12l8-4.5M12 12v9M12 12L4 7.5" />
-      </svg>
-    </div>
+    <img
+      src={CUBIT_LOGO}
+      alt=""
+      width={30}
+      height={30}
+      className="size-[30px] shrink-0 object-contain"
+      aria-hidden
+    />
   );
 }
 
@@ -118,7 +119,7 @@ export function AppTopbar() {
           className="truncate text-[15px] font-extrabold tracking-[-0.02em] text-[var(--ink)]"
           style={{ fontFamily: 'Inter, sans-serif' }}
         >
-          Cuib
+          {BRAND_NAME}
         </span>
       </Link>
 

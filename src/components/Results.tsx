@@ -131,7 +131,7 @@ export function Results() {
   const correctAnswers = apiResult?.correctCount ?? questionReview.filter((q) => q.isCorrect).length;
   const score = apiResult?.scorePercent ?? (totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0);
   const passed = apiResult?.passed ?? score >= 70;
-  const shareText = `I scored ${score}% on "${quizTitle}" on Cuib! Can you beat my score?`;
+  const shareText = `I scored ${score}% on "${quizTitle}" on Cubit! Can you beat my score?`;
   const sectionScores = apiResult?.sectionScores ?? [];
 
   const breakdown = sectionScores.length > 0
@@ -473,8 +473,8 @@ export function Results() {
                         className="h-full rounded-full transition-all duration-500"
                         style={{
                           width: `${item.score}%`,
-                          background: item.score >= 80 ? '#22c55e' : item.score >= 60 ? '#eab308' : C.red,
-                          boxShadow: `0 0 6px ${item.score >= 80 ? 'rgba(34,197,94,0.4)' : item.score >= 60 ? 'rgba(234,179,8,0.4)' : 'rgba(225,6,0,0.4)'}`,
+                          background: item.score >= 80 ? '#22c55e' : item.score >= 60 ? '#eab308' : '#ef4444',
+                          boxShadow: `0 0 6px ${item.score >= 80 ? 'rgba(34,197,94,0.4)' : item.score >= 60 ? 'rgba(234,179,8,0.4)' : 'rgba(239,68,68,0.4)'}`,
                         }}
                       />
                     </div>
@@ -482,7 +482,7 @@ export function Results() {
                   <div
                     className="w-10 h-10 rounded-full flex items-center justify-center"
                     style={{
-                      background: item.score >= 80 ? 'rgba(34,197,94,0.1)' : item.score >= 60 ? 'rgba(234,179,8,0.1)' : 'rgba(225,6,0,0.1)',
+                      background: item.score >= 80 ? 'rgba(34,197,94,0.1)' : item.score >= 60 ? 'rgba(234,179,8,0.1)' : 'rgba(239,68,68,0.1)',
                     }}
                   >
                     {item.score >= 80 ? (
@@ -527,14 +527,14 @@ export function Results() {
                   <div
                     className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
                     style={{
-                      background: q.isCorrect ? 'rgba(34,197,94,0.1)' : 'rgba(225,6,0,0.1)',
-                      border: `1px solid ${q.isCorrect ? 'rgba(34,197,94,0.2)' : 'rgba(225,6,0,0.2)'}`,
+                      background: q.isCorrect ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
+                      border: `1px solid ${q.isCorrect ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)'}`,
                     }}
                   >
                     {q.isCorrect ? (
                       <CheckCircle className="w-5 h-5" style={{ color: '#22c55e' }} />
                     ) : (
-                      <XCircle className="w-5 h-5" style={{ color: C.red }} />
+                      <XCircle className="w-5 h-5" style={{ color: '#ef4444' }} />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -542,7 +542,7 @@ export function Results() {
                       <div>
                         <div className="text-xs font-[500] mb-1.5" style={{ color: C.text3 }}>Question {q.id + 1}</div>
                         <div className="text-sm font-[500] mb-1.5" style={{ color: C.text }}>{q.question}</div>
-                        <div className="text-xs font-[500]" style={{ color: q.isCorrect ? '#22c55e' : C.red }}>
+                        <div className="text-xs font-[500]" style={{ color: q.isCorrect ? '#22c55e' : '#ef4444' }}>
                           {q.isCorrect ? 'Correct' : 'Incorrect'}
                         </div>
                       </div>

@@ -17,7 +17,7 @@ export function Input({ label, className = '', ...props }: InputProps) {
         </label>
       )}
       <input
-        className={`w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#E10600] focus:ring-4 focus:ring-[#E10600]/10 outline-none transition-all ${className}`}
+        className={`w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#e8650a] focus:ring-4 focus:ring-[#e8650a]/10 outline-none transition-all dark:focus:border-[#ff7a1a] dark:focus:ring-[#ff7a1a]/15 ${className}`}
         {...props}
       />
     </div>

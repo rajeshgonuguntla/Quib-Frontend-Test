@@ -12,10 +12,10 @@ Light:
 - `--ink-faint`: `#a3a3a3`
 - `--border`: `#eaeaea`
 - `--fill`: `#f5f5f5`
-- `--accent` / `--brand`: `#c21e3c`
-- `--accent-soft`: `#f8e7eb`
+- `--accent` / `--brand`: `#e8650a`
+- `--accent-soft`: `#fff1e6`
 
-Dark (`.dark .cubit-app`): `--bg` `#0a0a0a`, `--ink` `#fafafa`, `--border` `#232323`, `--fill` `#161616`, same accent.
+Dark (`.dark .cuib-app`): `--bg` `#050505`, `--surface` `#0d0d0d`, `--ink` `#f2f2f2`, `--border` `#1c1c1c`, `--fill` `#141414`, `--accent` / `--brand` `#ff7a1a`.
 
 Type: `--display` / `--serif` Inter, `--mono` IBM Plex Mono.
 

@@ -158,7 +158,7 @@ export function Certificate() {
                   <div className="text-center mb-8">
                     <div className="flex items-center justify-center gap-3 mb-4">
                       <QuibLogoMark size={48} variant="light" />
-                      <span className="text-4xl font-bold text-gray-900">Cuib</span>
+                      <span className="text-4xl font-bold text-gray-900">Cubit</span>
                     </div>
                     <div className="text-lg text-gray-600 tracking-widest">CERTIFICATE OF COMPLETION</div>
                   </div>
@@ -174,7 +174,7 @@ export function Certificate() {
                       {certificateData.courseTitle}
                     </div>
                     <div className="text-gray-600 mb-2">with a score of</div>
-                    <div className="text-4xl font-bold text-[#E10600] mb-8">{certificateData.score}%</div>
+                    <div className="text-4xl font-bold text-[#e8650a] mb-8">{certificateData.score}%</div>
                   </div>
 
                   {/* Footer */}
@@ -185,9 +185,9 @@ export function Certificate() {
                     </div>
 
                     <div className="text-center">
-                      <div className="w-24 h-24 bg-[#E10600] rounded-full flex items-center justify-center mb-2 relative">
+                      <div className="w-24 h-24 bg-[#e8650a] rounded-full flex items-center justify-center mb-2 relative">
                         <Award className="w-14 h-14 text-white" />
-                        <div className="absolute inset-0 border-4 border-[#E10600] rounded-full scale-110" />
+                        <div className="absolute inset-0 border-4 border-[#e8650a] rounded-full scale-110" />
                       </div>
                     </div>
 

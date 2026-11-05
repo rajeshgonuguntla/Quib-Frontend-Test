@@ -22,5 +22,5 @@ export function parseNoteTimestampHref(href: string | null | undefined): number 
 
 export function noteTimestampHtml(sec: number): string {
   const label = formatNoteTimestamp(sec);
-  return `<a href="#t=${sec}" data-note-ts="${sec}" contenteditable="false" style="color:#e10600;text-decoration:underline;font-family:var(--mono);font-size:0.85em;">[${label}]</a>&nbsp;`;
+  return `<a href="#t=${sec}" data-note-ts="${sec}" contenteditable="false" style="color:#ff7a1a;text-decoration:underline;font-family:var(--mono);font-size:0.85em;">[${label}]</a>&nbsp;`;
 }

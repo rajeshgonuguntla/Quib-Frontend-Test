@@ -45,7 +45,7 @@ export function EducatorsCta({ C, navigate }: { C: ThemeColors; navigate: Naviga
         >
           Turn any YouTube video
           <br />
-          <em style={{ fontStyle: 'italic', color: C.red }}>into a course today</em>
+          <span style={{ color: C.red }}>into a course today</span>
         </h2>
         <p style={{ fontSize: '0.95rem', color: C.text2, lineHeight: 1.7, maxWidth: 440, margin: '0 auto 36px' }}>
           Open Educator Studio, connect your channel or paste a URL, and publish when you are ready.

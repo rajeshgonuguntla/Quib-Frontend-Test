@@ -20,27 +20,27 @@ export type ShellTheme = {
   hoverStrong: string;
 };
 
-/** Neutral Vercel/shadcn shell — brand red used sparingly for accents. */
+/** Cubit orange shell tokens — layouts unchanged. */
 export function getShellTheme(isDark: boolean): ShellTheme {
   if (isDark) {
     return {
-      bg: '#000000',
-      sidebar: '#0a0a0a',
-      surface: '#0a0a0a',
-      border: 'rgba(255,255,255,0.08)',
-      borderMd: 'rgba(255,255,255,0.12)',
-      accent: '#E10600',
-      accentBg: 'rgba(225,6,0,0.1)',
-      accentBd: 'rgba(225,6,0,0.22)',
-      accentLt: '#ff4d4d',
+      bg: '#050505',
+      sidebar: '#050505',
+      surface: '#0d0d0d',
+      border: '#1c1c1c',
+      borderMd: 'rgba(255,255,255,0.14)',
+      accent: '#ff7a1a',
+      accentBg: 'rgba(255,122,26,0.12)',
+      accentBd: 'rgba(255,122,26,0.28)',
+      accentLt: '#ff9447',
       green: '#22C55E',
       greenBg: 'rgba(34,197,94,0.08)',
       amber: '#F59E0B',
-      t1: '#ededed',
-      t2: '#a1a1a1',
+      t1: '#f2f2f2',
+      t2: '#8a8a8a',
       t3: '#737373',
-      t4: '#525252',
-      headerBg: 'rgba(0,0,0,0.85)',
+      t4: '#5a5a5a',
+      headerBg: 'rgba(5,5,5,0.88)',
       hover: 'rgba(255,255,255,0.05)',
       hoverStrong: 'rgba(255,255,255,0.08)',
     };
@@ -52,10 +52,10 @@ export function getShellTheme(isDark: boolean): ShellTheme {
     surface: '#ffffff',
     border: 'rgba(0,0,0,0.08)',
     borderMd: 'rgba(0,0,0,0.12)',
-    accent: '#E10600',
-    accentBg: 'rgba(225,6,0,0.06)',
-    accentBd: 'rgba(225,6,0,0.18)',
-    accentLt: '#c00500',
+    accent: '#e8650a',
+    accentBg: 'rgba(232,101,10,0.08)',
+    accentBd: 'rgba(232,101,10,0.22)',
+    accentLt: '#c45508',
     green: '#16a34a',
     greenBg: 'rgba(22,163,74,0.08)',
     amber: '#d97706',
@@ -72,15 +72,15 @@ export function getShellTheme(isDark: boolean): ShellTheme {
 export function getStudioTheme(isDark: boolean) {
   if (isDark) {
     return {
-      bg: '#000000',
-      panel: '#0a0a0a',
+      bg: '#050505',
+      panel: '#0d0d0d',
       panelHover: '#141414',
-      border: 'rgba(255,255,255,0.08)',
-      text: '#ededed',
-      muted: '#737373',
-      accent: '#E10600',
-      accentSoft: 'rgba(225,6,0,0.1)',
-      headerBg: 'rgba(0,0,0,0.85)',
+      border: '#1c1c1c',
+      text: '#f2f2f2',
+      muted: '#8a8a8a',
+      accent: '#ff7a1a',
+      accentSoft: 'rgba(255,122,26,0.12)',
+      headerBg: 'rgba(5,5,5,0.88)',
     };
   }
 
@@ -91,8 +91,8 @@ export function getStudioTheme(isDark: boolean) {
     border: 'rgba(0,0,0,0.08)',
     text: '#0a0a0a',
     muted: '#737373',
-    accent: '#E10600',
-    accentSoft: 'rgba(225,6,0,0.06)',
+    accent: '#e8650a',
+    accentSoft: 'rgba(232,101,10,0.08)',
     headerBg: 'rgba(255,255,255,0.85)',
   };
 }
