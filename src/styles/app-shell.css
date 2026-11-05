@@ -1,4 +1,4 @@
-/* Signed-in app chrome — matches cuib-app-merged.html. Landing stays on its own tokens. */
+/* Signed-in app chrome — Cubit orange theme. Layouts unchanged. Landing stays on its own tokens. */
 
 .cuib-app {
   --bg: #ffffff;
@@ -8,17 +8,17 @@
   --ink-faint: #a3a3a3;
   --border: #eaeaea;
   --fill: #f5f5f5;
-  --accent: #c21e3c;
-  --accent-soft: #f8e7eb;
+  --accent: #e8650a;
+  --accent-soft: #fff1e6;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.03), 0 6px 20px rgba(0, 0, 0, 0.05);
-  --brand: #c21e3c;
+  --brand: #e8650a;
   --background: var(--bg);
   --foreground: var(--ink);
   --card: var(--surface);
   --muted: var(--fill);
   --muted-foreground: var(--ink-soft);
   --secondary: var(--fill);
-  --accent-foreground: var(--ink);
+  --accent-foreground: #ffffff;
   --sidebar: var(--bg);
   --sidebar-border: var(--border);
   --mono: 'IBM Plex Mono', ui-monospace, monospace;
@@ -31,17 +31,17 @@
 }
 
 .dark .cuib-app {
-  --bg: #0a0a0a;
-  --surface: #0a0a0a;
-  --ink: #fafafa;
-  --ink-soft: #9a9a9a;
-  --ink-faint: #6b6b6b;
-  --border: #232323;
-  --fill: #161616;
-  --accent: #c21e3c;
-  --accent-soft: #2a151a;
+  --bg: #050505;
+  --surface: #0d0d0d;
+  --ink: #f2f2f2;
+  --ink-soft: #8a8a8a;
+  --ink-faint: #5a5a5a;
+  --border: #1c1c1c;
+  --fill: #141414;
+  --accent: #ff7a1a;
+  --accent-soft: rgba(255, 122, 26, 0.14);
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 24px rgba(0, 0, 0, 0.5);
-  --brand: #c21e3c;
+  --brand: #ff7a1a;
 }
 
 .cuib-app .cuib-topnav {

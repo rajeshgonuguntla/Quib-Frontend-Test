@@ -23,7 +23,7 @@ Read [CUIB.md](CUIB.md) before judging a diff. Source of truth is `src/styles/ap
 ## Checklist
 
 **Brand**
-- [ ] Uses existing tokens (`--ink`, `--bg`, `--accent` `#c21e3c`, `--border`, `--fill`, Inter / IBM Plex Mono). No second palette.
+- [ ] Uses existing tokens (`--ink`, `--bg`, `--accent` `#ff7a1a` dark / `#e8650a` light, `--border`, `--fill`, Inter / IBM Plex Mono). No second palette.
 - [ ] User-facing name is **Cubit**.
 
 **Components**

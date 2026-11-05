@@ -178,14 +178,14 @@ export function EducatorsHero({ isDark, C, navigate }: EducatorsHeroProps) {
             </motion.span>
           ))}
           <br />
-          <motion.em
+          <motion.span
             initial={{ opacity: 0, scale: 0.92 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.45, type: 'spring', stiffness: 180 }}
-            style={{ fontStyle: 'italic', color: C.red }}
+            style={{ fontStyle: 'normal', color: C.red }}
           >
             a YouTube video
-          </motion.em>
+          </motion.span>
         </h1>
 
         <motion.p
@@ -201,7 +201,7 @@ export function EducatorsHero({ isDark, C, navigate }: EducatorsHeroProps) {
             margin: '0 auto 2rem',
           }}
         >
-          Connect your channel or paste a link in Educator Studio — Cuib generates modules, quizzes, and a course you can publish to the catalog.
+          Connect your channel or paste a link in Educator Studio — Cubit generates modules, quizzes, and a course you can publish to the catalog.
         </motion.p>
 
         <motion.div

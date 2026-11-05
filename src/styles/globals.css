@@ -3,9 +3,9 @@
 :root {
   --font-size: 16px;
   --display: 'Inter', sans-serif;
-  --serif: 'Instrument Serif', Georgia, serif;
+  --serif: 'Inter', system-ui, sans-serif;
   --mono: 'Geist Mono', monospace;
-  --brand: #e10600;
+  --brand: #e8650a;
   --background: #fafafa;
   --foreground: #0a0a0a;
   --card: #ffffff;
@@ -29,7 +29,7 @@
   --font-weight-medium: 500;
   --font-weight-normal: 400;
   --ring: rgba(0, 0, 0, 0.12);
-  --chart-1: #e10600;
+  --chart-1: #e8650a;
   --chart-2: #737373;
   --chart-3: #a3a3a3;
   --chart-4: #525252;
@@ -45,50 +45,51 @@
   --sidebar-ring: rgba(0, 0, 0, 0.12);
   --thumb-shell-from: #e8ebf2;
   --thumb-shell-to: #d4dae6;
-  --accent-glow: rgba(225, 6, 0, 0.14);
+  --accent-glow: rgba(232, 101, 10, 0.14);
   --portal-ring: rgba(0, 0, 0, 0.1);
 }
 
 .dark {
-  --background: #000000;
-  --foreground: #ededed;
-  --card: #0a0a0a;
-  --card-foreground: #ededed;
-  --popover: #0a0a0a;
-  --popover-foreground: #ededed;
-  --primary: #ededed;
-  --primary-foreground: #0a0a0a;
+  --background: #050505;
+  --foreground: #f2f2f2;
+  --card: #0d0d0d;
+  --card-foreground: #f2f2f2;
+  --popover: #0d0d0d;
+  --popover-foreground: #f2f2f2;
+  --primary: #f2f2f2;
+  --primary-foreground: #050505;
   --secondary: #141414;
-  --secondary-foreground: #ededed;
+  --secondary-foreground: #f2f2f2;
   --muted: #141414;
-  --muted-foreground: #737373;
+  --muted-foreground: #8a8a8a;
   --accent: #141414;
-  --accent-foreground: #ededed;
+  --accent-foreground: #f2f2f2;
   --destructive: #dc2626;
   --destructive-foreground: #fca5a5;
-  --border: rgba(255, 255, 255, 0.08);
+  --border: #1c1c1c;
   --input: rgba(255, 255, 255, 0.1);
-  --input-background: #0a0a0a;
+  --input-background: #0d0d0d;
   --ring: rgba(255, 255, 255, 0.12);
   --font-weight-medium: 500;
   --font-weight-normal: 400;
-  --chart-1: #e10600;
-  --chart-2: #737373;
-  --chart-3: #525252;
+  --chart-1: #ff7a1a;
+  --chart-2: #8a8a8a;
+  --chart-3: #5a5a5a;
   --chart-4: #a3a3a3;
   --chart-5: #d4d4d4;
-  --sidebar: #0a0a0a;
-  --sidebar-foreground: #ededed;
-  --sidebar-primary: #ededed;
-  --sidebar-primary-foreground: #0a0a0a;
+  --sidebar: #050505;
+  --sidebar-foreground: #f2f2f2;
+  --sidebar-primary: #f2f2f2;
+  --sidebar-primary-foreground: #050505;
   --sidebar-accent: #141414;
-  --sidebar-accent-foreground: #ededed;
-  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-accent-foreground: #f2f2f2;
+  --sidebar-border: #1c1c1c;
   --sidebar-ring: rgba(255, 255, 255, 0.12);
-  --thumb-shell-from: #0a0a0a;
+  --thumb-shell-from: #0d0d0d;
   --thumb-shell-to: #171717;
-  --accent-glow: rgba(225, 6, 0, 0.1);
+  --accent-glow: rgba(255, 122, 26, 0.12);
   --portal-ring: rgba(255, 255, 255, 0.08);
+  --brand: #ff7a1a;
 }
 
 @theme inline {
@@ -315,8 +316,9 @@ html.dark .cuib-module-bar:hover .cuib-module-rail::-webkit-scrollbar-thumb {
   }
 
   .font-serif-display {
-    font-family: var(--serif);
-    font-weight: 400;
+    font-family: var(--display);
+    font-style: normal;
+    font-weight: 600;
     letter-spacing: -0.02em;
   }
 }

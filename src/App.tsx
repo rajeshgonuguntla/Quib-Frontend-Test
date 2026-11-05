@@ -50,7 +50,7 @@ class RouteErrorBoundary extends Component<{ children: ReactNode }, { message: s
           <button
             type="button"
             onClick={() => window.location.reload()}
-            style={{ background: '#E10600', color: '#fff', border: 'none', padding: '10px 16px', borderRadius: 8, cursor: 'pointer' }}
+            style={{ background: '#ff7a1a', color: '#fff', border: 'none', padding: '10px 16px', borderRadius: 8, cursor: 'pointer' }}
           >
             Reload
           </button>

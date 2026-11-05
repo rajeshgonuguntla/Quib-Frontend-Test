@@ -108,7 +108,7 @@ export function Educators() {
           {Array.from({ length: 12 }).map((_, i) => (
             <motion.span
               key={i}
-              className="absolute size-1 rounded-full bg-[#e10600]"
+              className="absolute size-1 rounded-full bg-[#ff7a1a]"
               style={{ left: `${8 + i * 8}%`, top: `${20 + (i % 3) * 25}%` }}
               animate={{ opacity: [0, 0.8, 0], y: [0, i % 2 === 0 ? -20 : 20] }}
               transition={{ duration: 2.5 + i * 0.2, repeat: Infinity, delay: i * 0.15 }}
@@ -165,20 +165,20 @@ export function Educators() {
               <ul className="list-none space-y-2 p-0 text-[0.82rem]">
                 <li><Link to="/educators#how-it-works" className="no-underline transition-opacity hover:opacity-80" style={{ color: C.text2 }}>How It Works</Link></li>
                 <li><Link to="/" className="no-underline transition-opacity hover:opacity-80" style={{ color: C.text2 }}>Platform</Link></li>
-                <li><a href="mailto:support@cuib.ai" className="no-underline transition-opacity hover:opacity-80" style={{ color: C.text2 }}>Contact</a></li>
+                <li><a href="mailto:support@Cubit.ai" className="no-underline transition-opacity hover:opacity-80" style={{ color: C.text2 }}>Contact</a></li>
               </ul>
             </div>
             <div>
               <h4 className="mb-3 text-[0.82rem] font-[600]" style={{ color: C.text }}>Legal</h4>
               <ul className="list-none space-y-2 p-0 text-[0.82rem]">
-                <li><a href="mailto:support@cuib.ai?subject=Privacy" className="no-underline transition-opacity hover:opacity-80" style={{ color: C.text2 }}>Privacy</a></li>
-                <li><a href="mailto:support@cuib.ai?subject=Terms" className="no-underline transition-opacity hover:opacity-80" style={{ color: C.text2 }}>Terms</a></li>
-                <li><a href="mailto:support@cuib.ai" className="no-underline transition-opacity hover:opacity-80" style={{ color: C.text2 }}>Support</a></li>
+                <li><a href="mailto:support@Cubit.ai?subject=Privacy" className="no-underline transition-opacity hover:opacity-80" style={{ color: C.text2 }}>Privacy</a></li>
+                <li><a href="mailto:support@Cubit.ai?subject=Terms" className="no-underline transition-opacity hover:opacity-80" style={{ color: C.text2 }}>Terms</a></li>
+                <li><a href="mailto:support@Cubit.ai" className="no-underline transition-opacity hover:opacity-80" style={{ color: C.text2 }}>Support</a></li>
               </ul>
             </div>
           </div>
           <div className="pt-8 text-center text-[0.78rem]" style={{ borderTop: `1px solid ${C.border}`, color: C.text3 }}>
-            © 2026 Cuib. All rights reserved.
+            © 2026 Cubit. All rights reserved.
           </div>
         </div>
       </footer>

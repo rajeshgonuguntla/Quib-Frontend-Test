@@ -55,20 +55,22 @@ export function useTheme() {
 }
 
 export function getC(isDark: boolean) {
+  // Cubit orange theme — `red*` keys are the brand accent (legacy name).
+  // Correct / incorrect feedback should use green / #ef4444, not these.
   return isDark
     ? {
-        bg: '#060608',
-        bg1: '#0b0b0e',
-        bg2: '#111115',
-        bg3: '#18181d',
-        border: 'rgba(255,255,255,0.07)',
-        border2: 'rgba(255,255,255,0.12)',
-        text: '#f2f2f0',
+        bg: '#050505',
+        bg1: '#0d0d0d',
+        bg2: '#141414',
+        bg3: '#1a1a1a',
+        border: '#1c1c1c',
+        border2: 'rgba(255,255,255,0.14)',
+        text: '#f2f2f2',
         text2: '#8a8a8a',
-        text3: '#4a4a4a',
-        red: '#E10600',
-        redDim: 'rgba(225,6,0,0.10)',
-        redGlow: 'rgba(225,6,0,0.20)',
+        text3: '#5a5a5a',
+        red: '#ff7a1a',
+        redDim: 'rgba(255,122,26,0.12)',
+        redGlow: 'rgba(255,122,26,0.22)',
       }
     : {
         bg: '#ffffff',
@@ -80,8 +82,8 @@ export function getC(isDark: boolean) {
         text: '#0c0c0e',
         text2: '#525252',
         text3: '#737373',
-        red: '#E10600',
-        redDim: 'rgba(225,6,0,0.07)',
-        redGlow: 'rgba(225,6,0,0.18)',
+        red: '#e8650a',
+        redDim: 'rgba(232,101,10,0.09)',
+        redGlow: 'rgba(232,101,10,0.18)',
       };
 }

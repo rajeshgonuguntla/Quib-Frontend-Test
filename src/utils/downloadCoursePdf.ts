@@ -74,31 +74,24 @@ function slugify(title: string): string {
 }
 
 async function loadQuibLogoPng(): Promise<string> {
-  const res = await fetch('/cube_logo_light.svg');
-  const svg = await res.text();
-  const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
+  const url = '/cubit/cubit-logo.webp';
 
-  try {
-    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-      const el = new Image();
-      el.onload = () => resolve(el);
-      el.onerror = () => reject(new Error('Failed to load Cuib logo'));
-      el.src = url;
-    });
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const el = new Image();
+    el.onload = () => resolve(el);
+    el.onerror = () => reject(new Error('Failed to load Cubit logo'));
+    el.src = url;
+  });
 
-    const canvas = document.createElement('canvas');
-    canvas.width = 256;
-    canvas.height = 256;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) throw new Error('Canvas unavailable');
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-    return canvas.toDataURL('image/png');
-  } finally {
-    URL.revokeObjectURL(url);
-  }
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Canvas unavailable');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL('image/png');
 }
 
 /** Parse inline markdown: **bold**, *italic*, `code`. */
@@ -542,7 +535,7 @@ function addFooter(doc: jsPDF, pageCount: number) {
   }
 }
 
-/** Download a neatly formatted PDF of the course with the Cuib logo top-right. */
+/** Download a neatly formatted PDF of the course with the Cubit logo top-right. */
 export async function downloadCoursePdf(course: DownloadableCourse): Promise<void> {
   const doc = new jsPDF({ unit: 'pt', format: 'a4', orientation: 'portrait' });
   let logoDataUrl: string | null = null;

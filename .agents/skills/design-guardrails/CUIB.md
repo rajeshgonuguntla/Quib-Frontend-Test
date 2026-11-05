@@ -1,6 +1,6 @@
 # Cubit visual and component rules
 
-Dark (`.dark .cubit-app`): `--bg` `#0a0a0a`, `--ink` `#fafafa`, `--border` `#232323`, `--fill` `#161616`, same accent.
+Dark (`.dark .cuib-app`): `--bg` `#050505`, `--surface` `#0d0d0d`, `--ink` `#f2f2f2`, `--border` `#1c1c1c`, `--fill` `#141414`, `--accent` / `--brand` `#ff7a1a`.
 
 ## Brand
 

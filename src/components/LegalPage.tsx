@@ -13,8 +13,8 @@ export function LegalPage({ kind }: { kind: 'terms' | 'privacy' }) {
         <h1 className="text-3xl font-semibold tracking-tight">{title}</h1>
         <p className="mt-6 text-sm leading-relaxed text-[var(--landing-muted)]">
           {kind === 'terms'
-            ? 'Cuib Unlimited is a subscription for course generation. Catalog browse and enroll are free. Monthly charges are non-refundable. Annual subscriptions may request a full refund within 14 days of first payment. Cancel anytime from Settings → Billing. Generate access continues until the end of the paid period if you cancel.'
-            : 'We use your Google account email to create your Cuib login, Stripe to process Unlimited payments, and course-generation providers to turn YouTube URLs into knowledge sets. We do not store full card numbers. See Stripe’s privacy policy for payment processing.'}
+            ? 'Cubit Unlimited is a subscription for course generation. Catalog browse and enroll are free. Monthly charges are non-refundable. Annual subscriptions may request a full refund within 14 days of first payment. Cancel anytime from Settings → Billing. Generate access continues until the end of the paid period if you cancel.'
+            : 'We use your Google account email to create your Cubit login, Stripe to process Unlimited payments, and course-generation providers to turn YouTube URLs into knowledge sets. We do not store full card numbers. See Stripe’s privacy policy for payment processing.'}
         </p>
         <Link to="/" className="mt-8 inline-block text-sm underline">Back to home</Link>
       </article>
