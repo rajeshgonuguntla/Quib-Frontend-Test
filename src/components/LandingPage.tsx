@@ -204,7 +204,7 @@ export function LandingPage() {
             </span>
           </div>
           <h1 className="text-4xl font-semibold leading-[1.08] tracking-tight text-[var(--landing-fg)] md:text-6xl lg:text-7xl">
-            Your own tutor, whenever you need one.
+            Personal tutor, whenever you need one.
           </h1>
           <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-[var(--landing-muted)] md:text-lg">
             Get help with anything you come across in the classroom — explanations, practice, and answers, whenever you need them.
