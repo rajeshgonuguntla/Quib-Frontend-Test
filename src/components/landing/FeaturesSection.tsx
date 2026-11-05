@@ -30,10 +30,10 @@ const FEATURES = [
   {
     id: 'tutor',
     tag: 'Tutor',
-    title: 'Course chat',
-    desc: 'Ask follow-ups while you watch. Answers stay tied to the course and lesson you’re in.',
+    title: 'Personal tutor',
+    desc: 'Ask about anything you come across in class…',
     icon: MessageCircle,
-    accent: '#34d399',
+    accent: '#ff7a1a',
   },
   {
     id: 'levels',
@@ -454,7 +454,7 @@ export function FeaturesSection({ variant = 'default' }: { variant?: 'default' |
     return () => clearInterval(t);
   }, [inView, isHovering]);
 
-  const headline = 'Everything video lessons need';
+  const headline = 'A personal tutor for everything in class';
 
   return (
     <section

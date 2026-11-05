@@ -184,19 +184,30 @@ export function LandingPage() {
             transition={{ duration: 0.7, ease: [0.25, 0.1, 0.25, 1] }}
             className="landing-hero-primary relative z-10 mx-auto w-full max-w-3xl text-center"
           >
-          <img
-            src={CUBIT_LOGO}
-            alt=""
-            width={84}
-            height={84}
-            className="mx-auto size-[72px] object-contain md:size-[84px]"
-          />
+          <div className="mx-auto flex items-center justify-center gap-3">
+            <img
+              src={CUBIT_LOGO}
+              alt="Cubit"
+              width={84}
+              height={84}
+              className="size-[72px] object-contain md:size-[84px]"
+            />
+            <span
+              className="text-[44px] font-semibold leading-none tracking-tight md:text-[54px]"
+              style={{
+                fontFamily: 'Inter, sans-serif',
+                fontWeight: 600,
+                color: isDark ? '#f5f5f5' : 'var(--landing-fg)',
+              }}
+            >
+              Cubit
+            </span>
+          </div>
           <h1 className="text-4xl font-semibold leading-[1.08] tracking-tight text-[var(--landing-fg)] md:text-6xl lg:text-7xl">
-            Meet your Cubit
+            Your own tutor, whenever you need one.
           </h1>
           <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-[var(--landing-muted)] md:text-lg">
-            Paste a video or playlist. Cubit generates the course, the practice material, and a tutor that
-            stays on what you&apos;re watching.
+            Get help with anything you come across in the classroom — explanations, practice, and answers, whenever you need them.
           </p>
 
           <motion.form
@@ -280,7 +291,7 @@ export function LandingPage() {
               </span>
             </Link>
             <p className="mt-2 max-w-xs text-sm leading-relaxed text-[var(--landing-muted)]">
-              AI courses, study tools, and a lesson tutor — built from the videos you already trust.
+              A personal tutor at your disposal — help with anything you come across in the classroom.
             </p>
           </div>
           <div className="flex gap-12">
