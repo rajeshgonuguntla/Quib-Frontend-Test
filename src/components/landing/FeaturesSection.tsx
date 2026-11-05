@@ -462,7 +462,7 @@ export function FeaturesSection({ variant = 'default' }: { variant?: 'default' |
       ref={sectionRef}
       className={`landing-features-section relative overflow-hidden ${
         belowHero
-          ? 'landing-features-below-hero w-full border-t-0 pb-0 pt-0'
+          ? 'landing-features-below-hero w-full border-t-0'
           : 'border-t border-[var(--landing-border)] px-5 py-24 md:px-8 md:py-32'
       }`}
     >

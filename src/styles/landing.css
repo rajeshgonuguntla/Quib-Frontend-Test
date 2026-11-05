@@ -296,10 +296,19 @@
   margin-right: auto;
 }
 
-/* Hero + capabilities vertical rhythm */
+/* Hero fills the first viewport so Capabilities stays below the fold */
 .landing-hero-stack {
-  padding-top: clamp(5.5rem, 12vw, 8rem);
-  padding-bottom: clamp(3rem, 6vw, 5rem);
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  min-height: 100svh;
+  padding-top: 3.5rem; /* fixed LandingNav height */
+  padding-bottom: 1.5rem;
+  box-sizing: border-box;
+}
+
+.landing-hero-viewport {
+  min-height: 0;
 }
 
 .landing-hero-primary {
@@ -311,8 +320,9 @@
 }
 
 .landing-features-below-hero {
-  margin-top: clamp(2.25rem, 4.5vw, 3.25rem);
-  padding-top: 0;
+  margin-top: 0;
+  padding-top: clamp(3rem, 6vw, 5rem);
+  padding-bottom: clamp(3rem, 6vw, 5rem);
   border-top: none;
   position: relative;
   z-index: 10;
