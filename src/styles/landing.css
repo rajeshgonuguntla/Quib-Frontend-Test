@@ -6,8 +6,12 @@
   --landing-muted: #888888;
   --landing-border: rgba(255, 255, 255, 0.1);
   --landing-card: #0a0a0a;
+  --display: 'Inter', system-ui, sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --serif: 'Inter', system-ui, sans-serif;
   background: var(--landing-bg);
   color: var(--landing-fg);
+  font-family: var(--display);
 }
 
 .landing-page.light {
@@ -255,4 +259,97 @@
   display: block;
   width: 100%;
   height: 100%;
+}
+
+.landing-hero-capabilities {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem 0.75rem;
+  margin-top: 1.75rem;
+  max-width: 36rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.landing-hero-capabilities span {
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--landing-muted);
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid var(--landing-border);
+  background: color-mix(in srgb, var(--landing-card) 88%, transparent);
+}
+
+.landing-capabilities-in-features {
+  justify-content: flex-start;
+  margin-top: 0;
+  margin-left: 0;
+  margin-right: 0;
+  max-width: none;
+}
+
+.landing-capabilities-centered {
+  justify-content: center;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Hero + capabilities vertical rhythm */
+.landing-hero-stack {
+  padding-top: clamp(5.5rem, 12vw, 8rem);
+  padding-bottom: clamp(3rem, 6vw, 5rem);
+}
+
+.landing-hero-primary {
+  padding-bottom: 0;
+}
+
+.landing-hero-trust {
+  margin-bottom: 0;
+}
+
+.landing-features-below-hero {
+  margin-top: clamp(2.25rem, 4.5vw, 3.25rem);
+  padding-top: 0;
+  border-top: none;
+  position: relative;
+  z-index: 10;
+}
+
+.landing-features-below-hero::before {
+  content: '';
+  display: block;
+  width: min(100%, 36rem);
+  margin-inline: auto;
+  margin-bottom: clamp(2rem, 4vw, 2.75rem);
+  border-top: 1px solid var(--landing-border);
+}
+
+.landing-features-below-hero .landing-features-grid {
+  opacity: 0.22;
+}
+
+.landing-features-intro {
+  max-width: 28rem;
+  margin-inline: 0;
+  text-align: left;
+}
+
+.landing-features-intro--hero {
+  max-width: 40rem;
+  margin-inline: auto;
+  text-align: center;
+}
+
+.landing-features-grid-wrap {
+  margin-top: clamp(1.75rem, 3.5vw, 2.5rem);
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .landing-features-grid-wrap {
+    gap: 1.25rem;
+  }
 }

@@ -4,7 +4,7 @@ import axios from 'axios';
 import { Button } from './Button';
 import { Card } from './Card';
 import { Award, Download, Copy, Linkedin, CheckCircle, QrCode } from 'lucide-react';
-import { QuibLogo, QuibLogoMark } from './QuibLogo';
+import { CubitLogo, CubitLogoMark } from './CubitLogo';
 import { useUserProfile } from '../context/UserProfileContext';
 import { getCertificateRecipientName } from '../utils/userDisplay';
 
@@ -62,7 +62,7 @@ export function Certificate() {
       score: cert?.scorePercent ?? 0,
       date: issueDate,
       certificateId: code,
-      verificationUrl: code ? `cuib.ai/verify/${code}` : '',
+      verificationUrl: code ? `Cubit.ai/verify/${code}` : '',
     };
   }, [cert, profile]);
 
@@ -116,7 +116,7 @@ export function Certificate() {
       <header className="bg-white border-b border-gray-100 px-8 py-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <QuibLogo size={24} variant="light" wordmarkClassName="text-xl font-bold text-gray-900" />
+            <CubitLogo size={24} variant="light" wordmarkClassName="text-xl font-bold text-gray-900" />
           </div>
           <Button variant="ghost" onClick={() => navigate('/dashboard')}>
             Back to Dashboard
@@ -157,8 +157,8 @@ export function Certificate() {
                   {/* Header */}
                   <div className="text-center mb-8">
                     <div className="flex items-center justify-center gap-3 mb-4">
-                      <QuibLogoMark size={48} variant="light" />
-                      <span className="text-4xl font-bold text-gray-900">Cuib</span>
+                      <CubitLogoMark size={48} variant="light" />
+                      <span className="text-4xl font-bold text-gray-900">Cubit</span>
                     </div>
                     <div className="text-lg text-gray-600 tracking-widest">CERTIFICATE OF COMPLETION</div>
                   </div>

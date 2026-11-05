@@ -14,6 +14,7 @@ import {
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '../components/ui/sheet';
 import { billingPlanLabel, hidesUpgradeCta } from '../api/billingApi';
 import { clearToken } from '../auth';
+import { BRAND_NAME } from '../brand';
 import { clearSignInIntent, isAdminAccount } from '../utils/signInIntent';
 import { getDisplayName, getFirstName } from '../utils/userDisplay';
 import { AppSidebar } from './AppSidebar';
@@ -103,7 +104,7 @@ export function AppTopbar() {
           className="truncate text-[15px] font-extrabold tracking-[-0.02em] text-[var(--ink)]"
           style={{ fontFamily: 'Inter, sans-serif' }}
         >
-          Cuib
+          {BRAND_NAME}
         </span>
       </Link>
 

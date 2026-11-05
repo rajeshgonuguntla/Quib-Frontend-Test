@@ -52,7 +52,7 @@ describe('auth', () => {
   it('clearToken removes session flags', () => {
     setSession(Math.floor(Date.now() / 1000) + 3600);
     clearToken();
-    expect(localStorage.getItem('cuib_session_exp')).toBeNull();
+    expect(localStorage.getItem('cubit_session_exp')).toBeNull();
     expect(isTokenValid()).toBe(false);
   });
 

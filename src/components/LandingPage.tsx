@@ -1,11 +1,10 @@
-import { useState, useEffect, useRef, type ChangeEvent, type FormEvent } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router';
+import { useState, useEffect, useRef, type FormEvent } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
-import { ArrowRight, BookOpen, GraduationCap, Upload } from 'lucide-react';
+import { ArrowRight, BookOpen, GraduationCap } from 'lucide-react';
 import { useTheme } from './ThemeContext';
 import { CubeLoader } from './CubeLoader';
 import { LandingNav } from './landing/LandingNav';
-import { QuibLogo } from './QuibLogo';
 import { PlatformSection } from './landing/PlatformSection';
 import { BentoGrid } from './landing/BentoGrid';
 import { FeaturesSection } from './landing/FeaturesSection';
@@ -15,14 +14,25 @@ import {
   LANDING_COURSE_THUMBNAILS,
   LANDING_STUDIO_TOPICS,
 } from './landing/landingThumbnails';
-import { STUDENT_UPLOAD_ENABLED } from '../utils/studentInputModes';
+import { BRAND_NAME } from '../brand';
+import { CUBIT_LOGO } from '../cubit/subjects';
+
+const LANDING_PHRASES = [
+  'Paste a YouTube URL',
+  'Generate a course from a playlist',
+  'Ask about this lesson',
+  'Make flashcards from the transcript',
+];
 
 function LearnMock() {
   return (
     <div className="p-4 md:p-6">
       <div className="mb-3 flex items-center gap-2 border-b border-[var(--landing-border)] pb-3">
         <BookOpen size={14} className="text-[var(--landing-muted)]" />
-        <span className="font-mono text-xs text-[var(--landing-muted)]">Browse courses</span>
+        <span className="font-mono text-xs text-[var(--landing-muted)]">Discover · AI-enriched catalog</span>
+      </div>
+      <div className="mb-3 rounded-md border border-dashed border-[var(--landing-border)] px-2 py-1.5 font-mono text-[9px] text-[var(--landing-muted)]">
+        Cubit tutor · &ldquo;Summarize module 2 before my quiz&rdquo;
       </div>
       <div className="grid grid-cols-2 gap-2">
         {LANDING_COURSE_THUMBNAILS.map((course, i) => (
@@ -77,7 +87,7 @@ function CreateMock() {
         transition={{ duration: 2, repeat: Infinity }}
         className="mt-3 rounded-md border border-[var(--brand,#e10600)] bg-[rgba(225,6,0,0.08)] px-3 py-2 text-center font-mono text-[10px] text-[var(--landing-fg)]"
       >
-        3 videos selected · Build course
+        AI building modules · quizzes · lesson text
       </motion.div>
     </div>
   );
@@ -87,20 +97,70 @@ export function LandingPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { isDark } = useTheme();
-  const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [query, setQuery] = useState('');
+  const [focused, setFocused] = useState(false);
+  const [phText, setPhText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const phraseIdx = useRef(0);
+  const activeRef = useRef(true);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showTypewriter = !focused && !query.trim();
 
-  const isPlaylistUrl = (url: string) => url.includes('list=');
-
-  const handleGenerate = () => {
-    if (!youtubeUrl.trim()) return;
-    if (isPlaylistUrl(youtubeUrl)) {
-      navigate('/signin', { state: { playlistUrl: youtubeUrl.trim() } });
-    } else {
-      navigate('/signin', { state: { youtubeUrl: youtubeUrl.trim() } });
+  const handleStart = (e: FormEvent) => {
+    e.preventDefault();
+    const value = query.trim();
+    if (!value) {
+      navigate('/signin');
+      return;
     }
+    if (value.includes('list=')) {
+      navigate('/signin', { state: { playlistUrl: value } });
+      return;
+    }
+    navigate('/signin', { state: { youtubeUrl: value } });
   };
+
+  useEffect(() => {
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!showTypewriter || reduced) {
+      activeRef.current = false;
+      if (timerRef.current) clearTimeout(timerRef.current);
+      setPhText(reduced ? LANDING_PHRASES[0]! : '');
+      return;
+    }
+
+    activeRef.current = true;
+    const wait = (ms: number) =>
+      new Promise<void>((resolve) => {
+        timerRef.current = setTimeout(resolve, ms);
+      });
+
+    const loop = async () => {
+      while (activeRef.current) {
+        const phrase = LANDING_PHRASES[phraseIdx.current % LANDING_PHRASES.length]!;
+        for (let i = 0; i <= phrase.length; i++) {
+          if (!activeRef.current) return;
+          setPhText(phrase.slice(0, i));
+          await wait(55);
+        }
+        await wait(1800);
+        if (!activeRef.current) return;
+        for (let i = phrase.length; i >= 0; i--) {
+          if (!activeRef.current) return;
+          setPhText(phrase.slice(0, i));
+          await wait(30);
+        }
+        await wait(200);
+        phraseIdx.current = (phraseIdx.current + 1) % LANDING_PHRASES.length;
+      }
+    };
+
+    void loop();
+    return () => {
+      activeRef.current = false;
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [showTypewriter]);
 
   useEffect(() => {
     if (location.state?.fromSignup) {
@@ -117,84 +177,93 @@ export function LandingPage() {
       <div className="landing-grid-bg pointer-events-none fixed inset-0" />
       <LandingNav isDark={isDark} />
 
-      {/* Hero — Vercel-style minimal */}
-      <section className="relative flex min-h-screen flex-col items-center justify-center px-5 pt-14 text-center md:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, ease: [0.25, 0.1, 0.25, 1] }}
-          className="relative z-10 max-w-3xl"
-        >
-          <p className="landing-mono-label mb-6">Learning infrastructure</p>
+      <section id="ask" className="landing-hero-stack relative px-5 md:px-8">
+        <div className="mx-auto w-full max-w-6xl">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, ease: [0.25, 0.1, 0.25, 1] }}
+            className="landing-hero-primary relative z-10 mx-auto w-full max-w-3xl text-center"
+          >
+          <img
+            src={CUBIT_LOGO}
+            alt=""
+            width={84}
+            height={84}
+            className="mx-auto size-[72px] object-contain md:size-[84px]"
+          />
           <h1 className="text-4xl font-semibold leading-[1.08] tracking-tight text-[var(--landing-fg)] md:text-6xl lg:text-7xl">
-            Turn your YouTube videos into a real course.
+            Meet your Cubit
           </h1>
-          <p className="mx-auto mt-6 max-w-lg text-base leading-relaxed text-[var(--landing-muted)] md:text-lg">
-            Paste a link. Get structured courses, quizzes, and progress — built for learners and creators.
+          <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-[var(--landing-muted)] md:text-lg">
+            Paste a video or playlist. Cubit generates the course, the practice material, and a tutor that
+            stays on what you&apos;re watching.
           </p>
 
           <motion.form
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.6 }}
-            onSubmit={(e: FormEvent) => { e.preventDefault(); handleGenerate(); }}
+            onSubmit={handleStart}
             className="mx-auto mt-10 flex w-full max-w-xl overflow-hidden rounded-lg border border-[var(--landing-border)] bg-[var(--landing-card)]"
           >
-            <input
-              type="text"
-              value={youtubeUrl}
-              onChange={(e) => setYoutubeUrl(e.target.value)}
-              placeholder="Paste a YouTube URL…"
-              className="min-w-0 flex-1 bg-transparent px-4 py-3 font-mono text-sm text-[var(--landing-fg)] outline-none placeholder:text-[var(--landing-muted)]"
-            />
-            {/* ponytail: file upload gated — STUDENT_UPLOAD_ENABLED */}
-            {STUDENT_UPLOAD_ENABLED && (
-              <>
-                <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={(e: ChangeEvent<HTMLInputElement>) => { e.target.value = ''; }} />
-                <button type="button" onClick={() => fileInputRef.current?.click()} className="border-l border-[var(--landing-border)] px-3 text-[var(--landing-muted)] transition-colors hover:text-[var(--landing-fg)]" aria-label="Upload document">
-                  <Upload size={16} />
-                </button>
-              </>
-            )}
-            <button type="submit" className="flex items-center gap-1.5 border-l border-[var(--landing-border)] bg-[var(--landing-fg)] px-5 py-3 text-sm font-medium text-[var(--landing-bg)] transition-opacity hover:opacity-90">
+            <div className="relative min-w-0 flex-1">
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onFocus={() => setFocused(true)}
+                onBlur={() => setFocused(false)}
+                placeholder=" "
+                className="relative z-[1] min-h-11 w-full bg-transparent px-4 text-[16px] text-[var(--landing-fg)] outline-none md:text-sm"
+                style={{ fontFamily: 'var(--mono)' }}
+                inputMode="text"
+                autoComplete="off"
+                aria-label="Paste a YouTube link or ask a learning question"
+              />
+              {showTypewriter && (
+                <div className="pointer-events-none absolute inset-y-0 left-4 right-4 z-0 flex items-center gap-0.5 overflow-hidden whitespace-nowrap" aria-hidden>
+                  <span className="truncate text-[16px] text-[var(--landing-muted)] md:text-sm" style={{ fontFamily: 'var(--mono)' }}>{phText}</span>
+                  <span className="inline-block h-[13px] w-[1.5px] shrink-0 animate-pulse bg-[var(--landing-muted)] motion-reduce:hidden" />
+                </div>
+              )}
+            </div>
+            <button
+              type="submit"
+              className="inline-flex min-h-11 items-center gap-1.5 border-l border-[var(--landing-border)] bg-[var(--landing-fg)] px-5 text-sm font-medium text-[var(--landing-bg)] transition-opacity hover:opacity-90"
+              aria-label="Start with Cubit"
+            >
               Start <ArrowRight size={14} />
             </button>
           </motion.form>
 
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
-            className="landing-mono-label mt-4"
-          >
-            Free to try · No credit card
-          </motion.p>
-        </motion.div>
+          <p className="landing-hero-trust mt-8 text-sm text-[var(--landing-muted)]">Free to try. No credit card.</p>
+          </motion.div>
+
+          <FeaturesSection variant="belowHero" />
+        </div>
       </section>
 
-      {/* Platform blocks — like Vercel Agents / Apps / Platforms */}
       <PlatformSection
         id="learn"
         title="Learn"
-        description="Browse structured courses from top YouTube educators. Track progress, take quizzes, earn certificates."
-        stat="Turn YouTube lessons into courses you can follow, quiz, and complete."
-        features={['Course catalog', 'Progress tracking', 'AI quizzes', 'Certificates']}
+        description="Enroll in AI-structured courses, generate study tools from each lesson, and chat with a tutor grounded in the transcript."
+        stat="Every lesson ships with quizzes, flashcards, notes, and a tutor that knows the material."
+        features={['Course catalog', 'Study rail tools', 'Lesson tutor chat', 'Certificates']}
         mock={<LearnMock />}
       />
 
       <PlatformSection
         id="create"
         title="Create"
-        description="Connect your YouTube channel or paste any URL. Build courses from one video or an entire playlist."
-        stat="Connect your channel or paste a URL — then generate and publish a course."
-        features={['YouTube OAuth', 'Channel video picker', 'URL paste', 'Publish to catalog']}
+        description="Connect YouTube or paste URLs. Cubit drafts modules, assessments, and lesson copy you can edit before publish."
+        stat="One channel or one link — full course generation, not a static playlist embed."
+        features={['YouTube OAuth', 'AI course builder', 'Quiz & module drafts', 'Publish to catalog']}
         mock={<CreateMock />}
         reverse
       />
 
       <BentoGrid />
-
-      <FeaturesSection />
 
       <CtaSection />
 
@@ -202,14 +271,24 @@ export function LandingPage() {
       <footer className="border-t border-[var(--landing-border)] px-5 py-12 md:px-8">
         <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-8 md:flex-row">
           <div>
-            <QuibLogo size={18} wordmarkClassName="text-sm text-[var(--landing-fg)]" />
-            <p className="mt-2 max-w-xs text-sm text-[var(--landing-muted)]">Learn from top YouTube educators with AI-powered courses.</p>
+            <Link to="/" className="flex items-center gap-2 no-underline">
+              <img src={CUBIT_LOGO} alt="" width={30} height={30} className="size-[30px] object-contain" />
+              <span
+                className="text-sm font-semibold tracking-tight text-[var(--landing-fg)]"
+                style={{ fontFamily: 'Inter, sans-serif' }}
+              >
+                {BRAND_NAME}
+              </span>
+            </Link>
+            <p className="mt-2 max-w-xs text-sm leading-relaxed text-[var(--landing-muted)]">
+              AI courses, study tools, and a lesson tutor — built from the videos you already trust.
+            </p>
           </div>
           <div className="flex gap-12">
             {[
               { title: 'Product', links: [{ l: 'Features', h: '/#features' }, { l: 'Sign in', h: '/signin' }] },
               { title: 'Legal', links: [{ l: 'Terms', h: '/terms' }, { l: 'Privacy', h: '/privacy' }] },
-              { title: 'Company', links: [{ l: 'How it works', h: '/#learn' }, { l: 'Support', h: 'mailto:support@cuib.ai' }] },
+              { title: 'Company', links: [{ l: 'How it works', h: '/#learn' }, { l: 'Support', h: 'mailto:support@Cubit.ai' }] },
             ].map((col) => (
               <div key={col.title}>
                 <p className="landing-mono-label mb-3">{col.title}</p>
@@ -226,7 +305,7 @@ export function LandingPage() {
             ))}
           </div>
         </div>
-        <p className="mx-auto mt-10 max-w-6xl text-xs text-[var(--landing-muted)]">© 2026 Cuib. All rights reserved.</p>
+        <p className="mx-auto mt-10 max-w-6xl text-xs text-[var(--landing-muted)]">© 2026 {BRAND_NAME}. All rights reserved.</p>
       </footer>
     </div>
   );

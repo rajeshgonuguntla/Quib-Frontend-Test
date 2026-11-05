@@ -3,12 +3,12 @@ import { useNavigate } from 'react-router';
 import { useTheme, getC } from './ThemeContext';
 import { ThemeToggle } from './ThemeToggle';
 import { Check, ArrowRight } from 'lucide-react';
-import { QuibLogo } from './QuibLogo';
+import { CubitLogo } from './CubitLogo';
 import { fetchInterests, saveOnboarding } from '../api/catalogApi';
 import type { CatalogInterest } from '../types/catalog';
 
-export const INTERESTS_KEY = 'quib_interests';
-export const EDUCATORS_KEY = 'quib_educators';
+export const INTERESTS_KEY = 'cubit_interests';
+export const EDUCATORS_KEY = 'cubit_educators';
 
 interface Interest {
   id: string;
@@ -95,7 +95,7 @@ export function Onboarding() {
 
       <div className="relative z-10 w-full max-w-3xl">
         <div className="text-center mb-10" style={{ color: C.text }}>
-          <QuibLogo
+          <CubitLogo
             size={22}
             wordmarkClassName="text-[1.4rem] font-[700] tracking-tight"
             variant={isDark ? 'dark' : 'light'}

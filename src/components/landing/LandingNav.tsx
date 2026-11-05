@@ -1,8 +1,9 @@
 import { Link } from 'react-router';
 import { ThemeToggle } from '../ThemeToggle';
-import { QuibLogo } from '../QuibLogo';
 import { motion } from 'framer-motion';
 import { isTokenValid, useAuthSessionKey } from '../../auth';
+import { BRAND_NAME } from '../../brand';
+import { CUBIT_LOGO } from '../../cubit/subjects';
 
 type LandingNavProps = {
   isDark: boolean;
@@ -23,17 +24,21 @@ export function LandingNav({ isDark }: LandingNavProps) {
       className="fixed top-0 left-0 right-0 z-[100] flex h-14 items-center justify-between border-b border-[var(--landing-border)] px-5 backdrop-blur-xl md:px-8"
       style={{ background: isDark ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)' }}
     >
-      <Link to="/" className="no-underline">
-        <QuibLogo
-          size={18}
-          wordmarkClassName="text-sm text-[var(--landing-fg)]"
-        />
+      <Link to="/" className="flex items-center gap-2 no-underline">
+        <img src={CUBIT_LOGO} alt="" width={30} height={30} className="size-[30px] shrink-0 object-contain" />
+        <span
+          className="text-sm font-semibold tracking-tight text-[var(--landing-fg)]"
+          style={{ fontFamily: 'Inter, sans-serif' }}
+        >
+          {BRAND_NAME}
+        </span>
       </Link>
 
       <ul className="absolute left-1/2 hidden -translate-x-1/2 list-none gap-8 md:flex">
         {[
           { label: 'Learn', href: '/#learn' },
           { label: 'Create', href: '/#create' },
+          { label: 'Ask', href: '/#ask' },
           { label: 'Features', href: '/#features' },
           ...(SHOW_GOVERNMENTS_NAV ? [{ label: 'Governments', href: '/governments' }] : []),
         ].map((l) => (
@@ -56,7 +61,7 @@ export function LandingNav({ isDark }: LandingNavProps) {
         {signedIn ? (
           <Link
             to="/dashboard"
-            className="rounded-md bg-[var(--landing-fg)] px-3.5 py-1.5 text-sm font-medium text-[var(--landing-bg)] no-underline transition-opacity hover:opacity-90"
+            className="inline-flex min-h-11 items-center rounded-md bg-[var(--landing-fg)] px-3.5 text-sm font-medium text-[var(--landing-bg)] no-underline transition-opacity hover:opacity-90"
           >
             Dashboard
           </Link>
@@ -67,7 +72,7 @@ export function LandingNav({ isDark }: LandingNavProps) {
             </Link>
             <Link
               to="/signin"
-              className="rounded-md bg-[var(--landing-fg)] px-3.5 py-1.5 text-sm font-medium text-[var(--landing-bg)] no-underline transition-opacity hover:opacity-90"
+              className="inline-flex min-h-11 items-center rounded-md bg-[var(--landing-fg)] px-3.5 text-sm font-medium text-[var(--landing-bg)] no-underline transition-opacity hover:opacity-90"
             >
               Sign up
             </Link>

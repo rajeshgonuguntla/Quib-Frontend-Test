@@ -15,9 +15,9 @@ import { useTheme } from '../ThemeContext';
 import { CREATOR_FLOW_ENABLED } from '../../utils/signInIntent';
 
 const MODES = [
-  { label: 'learn', line: 'Paste a YouTube video or playlist URL', hint: 'Sign in · Generate a quiz · Save your progress' },
-  { label: 'browse', line: 'Browse published educator courses', hint: 'Enroll · Follow modules · Track completion' },
-  { label: 'build', line: 'Connect YouTube in Educator Studio', hint: 'Pick videos · Generate a course · Publish to catalog' },
+  { label: 'learn', line: 'Paste a YouTube video or open a published course', hint: 'Generate study tools · Chat with the lesson tutor · Track progress' },
+  { label: 'browse', line: 'Browse educator courses in the catalog', hint: 'Enroll · Follow AI-structured modules · Earn certificates' },
+  { label: 'build', line: 'Connect YouTube in Educator Studio', hint: 'AI drafts the course · Edit modules · Publish to catalog' },
 ] as const;
 
 const FLOATING_WINDOWS = [
@@ -231,7 +231,7 @@ export function CtaSection() {
             transition={{ delay: 0.4, type: 'spring', stiffness: 200 }}
             className="inline-block bg-gradient-to-r from-[var(--landing-fg)] via-[var(--brand,#e10600)] to-[var(--landing-fg)] bg-clip-text text-transparent"
           >
-            Cuib
+            Cubit
           </motion.span>
         </h2>
 
@@ -321,9 +321,9 @@ export function CtaSection() {
           className="mx-auto mt-14 flex max-w-lg flex-wrap justify-center gap-6 border-t border-[var(--landing-border)] pt-8 md:gap-10"
         >
           {[
-            { v: 'YouTube', l: 'Video-first input' },
-            { v: 'AI', l: 'Generated quizzes' },
-            { v: 'Free', l: 'To try today' },
+            { v: 'Generate', l: 'Courses & quizzes' },
+            { v: 'Study', l: 'Tools per lesson' },
+            { v: 'Tutor', l: 'In-course chat' },
           ].map((s, i) => (
             <div key={s.l} className="text-center">
               <motion.p
