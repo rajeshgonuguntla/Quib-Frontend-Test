@@ -6,7 +6,7 @@ import { clearToken } from '../auth';
 import { useUserProfile } from '../context/UserProfileContext';
 import { UserAvatar } from './UserAvatar';
 import { getDisplayName, getFirstName } from '../utils/userDisplay';
-import { QuibLogo } from './QuibLogo';
+import { CubitLogo } from './CubitLogo';
 
 interface DarkLayoutProps {
   children: ReactNode;
@@ -67,7 +67,7 @@ export function DarkLayout({
           <div className="flex items-center h-14">
             {/* Logo */}
             <Link to="/dashboard" className="no-underline mr-8 flex-shrink-0" style={{ color: C.text }}>
-              <QuibLogo
+              <CubitLogo
                 size={18}
                 wordmarkClassName="text-[1.1rem] font-[700] tracking-tight"
                 variant={isDark ? 'dark' : 'light'}

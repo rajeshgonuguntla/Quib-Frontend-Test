@@ -183,7 +183,7 @@ export function Settings() {
 
       <div className="settings-section">
         <div className="settings-section-title">Help</div>
-        <a className="settings-link" href="mailto:support@cuib.ai">support@cuib.ai</a>
+        <a className="settings-link" href="mailto:support@Cubit.ai">support@Cubit.ai</a>
         <Link className="settings-link" to="/discover?tab=courses">Browse courses</Link>
       </div>
 

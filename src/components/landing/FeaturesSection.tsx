@@ -7,45 +7,128 @@ import {
   AnimatePresence,
 } from 'framer-motion';
 import { useRef, useState, useEffect, type MouseEvent, type CSSProperties } from 'react';
-import { Brain, Layers, Linkedin, SlidersHorizontal } from 'lucide-react';
+import { Brain, Layers, Linkedin, MessageCircle, SlidersHorizontal, Sparkles } from 'lucide-react';
 import { useTheme } from '../ThemeContext';
 
 const FEATURES = [
   {
     id: 'ai',
-    tag: 'AI',
+    tag: 'Assess',
     title: 'AI-generated quizzes',
-    desc: 'Quizzes built from the video you paste — not generic filler.',
+    desc: 'Multiple-choice and scored checks built from the lesson transcript — not a generic question bank.',
     icon: Brain,
     accent: '#e10600',
   },
   {
+    id: 'study',
+    tag: 'Study rail',
+    title: 'Flashcards, notes, exams',
+    desc: 'Regenerate flashcards, fill-in blanks, practice exams, and AI notes per lesson anytime.',
+    icon: Sparkles,
+    accent: '#a78bfa',
+  },
+  {
+    id: 'tutor',
+    tag: 'Tutor',
+    title: 'Course chat',
+    desc: 'Ask follow-ups while you watch. Answers stay tied to the course and lesson you’re in.',
+    icon: MessageCircle,
+    accent: '#34d399',
+  },
+  {
     id: 'levels',
-    tag: 'Levels',
+    tag: 'Assess',
     title: 'Difficulty control',
-    desc: 'Easy, medium, or hard — tuned to your audience.',
+    desc: 'Easy, medium, or hard — tuned when educators generate or learners practice.',
     icon: SlidersHorizontal,
     accent: 'levels',
   },
   {
     id: 'modules',
-    tag: 'Modules',
+    tag: 'Structure',
     title: 'Structured courses',
-    desc: 'Videos become modules and lessons you can follow in order.',
+    desc: 'Playlists and channels become ordered modules with timestamp-linked lessons.',
     icon: Layers,
     accent: '#60a5fa',
   },
   {
     id: 'share',
-    tag: 'Share',
+    tag: 'Proof',
     title: 'Certificates',
-    desc: 'Earn a certificate when you pass — download or share your result.',
+    desc: 'Pass the assessments and download or share a verified completion record.',
     icon: Linkedin,
     accent: '#0a66c2',
   },
 ] as const;
 
 const MODULES = ['Intro', 'Core ideas', 'Practice', 'Review'];
+
+function StudyRailVisual({ active }: { active: boolean }) {
+  const tools = ['Flashcards', 'Fill-in blanks', 'Practice exam', 'AI notes'];
+  const [highlight, setHighlight] = useState(0);
+
+  useEffect(() => {
+    if (!active) return;
+    const t = setInterval(() => setHighlight((h) => (h + 1) % tools.length), 1100);
+    return () => clearInterval(t);
+  }, [active, tools.length]);
+
+  return (
+    <div className="flex h-28 flex-col justify-center gap-1.5 rounded-md border border-[var(--landing-border)] bg-[var(--landing-bg)] p-3">
+      <p className="font-mono text-[9px] text-[var(--landing-muted)]">from transcript</p>
+      {tools.map((tool, i) => (
+        <motion.div
+          key={tool}
+          className="rounded px-2 py-0.5 font-mono text-[9px]"
+          animate={
+            active
+              ? {
+                  backgroundColor: highlight === i ? 'rgba(167,139,250,0.15)' : 'transparent',
+                  color: highlight === i ? 'var(--landing-fg)' : 'var(--landing-muted)',
+                }
+              : {}
+          }
+        >
+          {tool}
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
+function TutorVisual({ active }: { active: boolean }) {
+  const [len, setLen] = useState(0);
+  const reply = 'The loss surface is convex when…';
+
+  useEffect(() => {
+    if (!active) {
+      setLen(0);
+      return;
+    }
+    setLen(0);
+    let i = 0;
+    const t = setInterval(() => {
+      i += 1;
+      setLen(i);
+      if (i >= reply.length) clearInterval(t);
+    }, 28);
+    return () => clearInterval(t);
+  }, [active, reply.length]);
+
+  return (
+    <div className="flex h-28 flex-col justify-end rounded-md border border-[var(--landing-border)] bg-[var(--landing-bg)] p-3">
+      <p className="mb-2 self-end rounded-md bg-[var(--landing-card)] px-2 py-1 font-mono text-[8px] text-[var(--landing-muted)]">
+        Why did my quiz miss #3?
+      </p>
+      <p className="rounded-md border border-[var(--landing-border)] px-2 py-1.5 font-mono text-[9px] leading-relaxed text-[var(--landing-fg)]">
+        {reply.slice(0, len)}
+        {active && len < reply.length && (
+          <motion.span animate={{ opacity: [1, 0] }} transition={{ duration: 0.45, repeat: Infinity }}>|</motion.span>
+        )}
+      </p>
+    </div>
+  );
+}
 
 function AiQuizVisual({ active }: { active: boolean }) {
   const question = 'What causes gradient descent to converge?';
@@ -236,6 +319,8 @@ function CertificateVisual({ active }: { active: boolean }) {
 
 const VISUALS = {
   ai: AiQuizVisual,
+  study: StudyRailVisual,
+  tutor: TutorVisual,
   levels: DifficultyVisual,
   modules: ModulesVisual,
   share: CertificateVisual,
@@ -350,25 +435,18 @@ function FeatureCard({
           </motion.h3>
           <p className="mt-1.5 text-sm leading-relaxed text-[var(--landing-muted)]">{feature.desc}</p>
         </div>
-
-        {/* Index marker */}
-        <motion.span
-          className="absolute bottom-3 right-4 font-mono text-[10px] tabular-nums text-[var(--landing-muted)]"
-          animate={{ opacity: active ? 0.9 : 0.25, color: active ? accent : undefined }}
-        >
-          0{index + 1}
-        </motion.span>
       </div>
     </motion.article>
   );
 }
 
-export function FeaturesSection() {
+export function FeaturesSection({ variant = 'default' }: { variant?: 'default' | 'belowHero' }) {
   const { isDark } = useTheme();
   const sectionRef = useRef(null);
   const inView = useInView(sectionRef, { once: true, margin: '-100px' });
   const [activeIndex, setActiveIndex] = useState(0);
   const [isHovering, setIsHovering] = useState(false);
+  const belowHero = variant === 'belowHero';
 
   useEffect(() => {
     if (!inView || isHovering) return;
@@ -376,53 +454,50 @@ export function FeaturesSection() {
     return () => clearInterval(t);
   }, [inView, isHovering]);
 
-  const words = ['Built', 'for', 'comprehension'];
+  const headline = 'Everything video lessons need';
 
   return (
     <section
       id="features"
       ref={sectionRef}
-      className="landing-features-section relative overflow-hidden border-t border-[var(--landing-border)] px-5 py-24 md:px-8 md:py-32"
+      className={`landing-features-section relative overflow-hidden ${
+        belowHero
+          ? 'landing-features-below-hero w-full border-t-0 pb-0 pt-0'
+          : 'border-t border-[var(--landing-border)] px-5 py-24 md:px-8 md:py-32'
+      }`}
     >
       {/* Floating grid lines */}
       <div className="landing-features-grid pointer-events-none absolute inset-0 opacity-40" />
 
-      <div className="relative z-10 mx-auto max-w-6xl">
-        <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+      <div className="relative z-10 mx-auto w-full max-w-6xl">
+        <div className={`landing-features-intro ${belowHero ? 'landing-features-intro--hero' : ''}`}>
           <div>
             <motion.p
-              initial={{ opacity: 0, x: -12 }}
-              animate={inView ? { opacity: 1, x: 0 } : {}}
-              className="landing-mono-label mb-4"
+              initial={{ opacity: 0, y: 8 }}
+              animate={inView ? { opacity: 1, y: 0 } : {}}
+              className={`landing-mono-label ${belowHero ? 'mb-3' : 'mb-4'}`}
             >
               Capabilities
             </motion.p>
-            <h2 className="text-3xl font-semibold tracking-tight md:text-5xl">
-              {words.map((word, i) => (
-                <motion.span
-                  key={word}
-                  initial={{ opacity: 0, y: 20, filter: 'blur(4px)' }}
-                  animate={inView ? { opacity: 1, y: 0, filter: 'blur(0px)' } : {}}
-                  transition={{ delay: 0.1 + i * 0.08, duration: 0.5 }}
-                  className={`mr-2 inline-block ${i === 2 ? 'text-[var(--brand,#e10600)]' : ''}`}
-                >
-                  {word}
-                </motion.span>
-              ))}
-            </h2>
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={inView ? { opacity: 1 } : {}}
-              transition={{ delay: 0.4 }}
-              className="landing-mono-label mt-4 max-w-md"
+            <motion.h2
+              initial={{ opacity: 0, y: 16 }}
+              animate={inView ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.5 }}
+              className={`font-semibold tracking-tight text-[var(--landing-fg)] ${
+                belowHero
+                  ? 'mx-auto max-w-2xl text-2xl leading-snug md:text-3xl'
+                  : 'max-w-md text-3xl md:max-w-lg md:text-4xl'
+              }`}
             >
-              Every feature designed so learners actually understand — not just skim.
-            </motion.p>
+              {headline}
+            </motion.h2>
           </div>
         </div>
 
         <div
-          className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
+          className={`grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 ${
+            belowHero ? 'landing-features-grid-wrap' : 'mt-12'
+          }`}
           style={{ perspective: 1200 }}
         >
           {FEATURES.map((f, i) => (

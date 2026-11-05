@@ -1,6 +1,6 @@
-# Quib Frontend
+# Cubit Frontend
 
-React + Vite SPA for **Quib** — turn YouTube content into AI-generated quizzes and structured courses.
+React + Vite SPA for **Cubit** — turn YouTube content into AI-generated quizzes and structured courses.
 
 **Backend:** `../quiz-app-backend`  
 **Phase 3 planning:** `../docs/PHASE_3_FEASIBILITY.md`

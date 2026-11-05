@@ -1,4 +1,4 @@
-const KEY = 'quib.referralCode';
+const KEY = 'cubit.referralCode';
 
 export function rememberReferralCode(code: string | null | undefined): void {
   const trimmed = code?.trim();

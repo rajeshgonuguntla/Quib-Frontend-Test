@@ -8,7 +8,7 @@ import {
 } from '../api/courseChatApi';
 import { useTheme, getC } from './ThemeContext';
 import { LessonNotes } from './LessonNotes';
-import { QuibLogo, QuibLogoMark } from './QuibLogo';
+import { CubitLogo, CubitLogoMark } from './CubitLogo';
 
 interface CourseChatWidgetProps {
   courseId: string;
@@ -25,8 +25,8 @@ interface CourseChatWidgetProps {
   onCollapse?: () => void;
   /** Bump to toggle the floating chat open/closed (left-nav Ask AI). */
   openSignal?: number;
-  /** `cuib` = match cuib-app-merged lesson assistant chrome. */
-  chrome?: 'default' | 'cuib';
+  /** `Cubit` = match cubit-app-merged lesson assistant chrome. */
+  chrome?: 'default' | 'cubit';
 }
 
 function getChatError(err: unknown): string {
@@ -60,7 +60,7 @@ export function CourseChatWidget({
   chrome = 'default',
 }: CourseChatWidgetProps) {
   const isPanel = variant === 'panel';
-  const isCuib = chrome === 'cuib' && isPanel;
+  const isCubit = chrome === 'cubit' && isPanel;
   const { isDark } = useTheme();
   const C = getC(isDark);
   const [open, setOpen] = useState(isPanel);
@@ -179,14 +179,14 @@ export function CourseChatWidget({
             }
       }
     >
-      {isCuib ? (
+      {isCubit ? (
         <div className="shrink-0 mb-1">
           <div className="flex items-center gap-2.5 mb-1">
             <div
               className="w-[26px] h-[26px] rounded-md flex items-center justify-center shrink-0"
               style={{ background: C.text }}
             >
-              <QuibLogo size={14} showWordmark={false} variant={isDark ? 'dark' : 'light'} />
+              <CubitLogo size={14} showWordmark={false} variant={isDark ? 'dark' : 'light'} />
             </div>
             <h4 className="text-[0.875rem] font-[700] tracking-tight" style={{ color: C.text }}>
               Course assistant
@@ -229,7 +229,7 @@ export function CourseChatWidget({
 
       <div
         ref={scrollRef}
-        className={`min-h-0 flex-1 overflow-y-auto overscroll-y-contain space-y-3 ${isCuib ? 'px-0 py-0' : 'px-4 py-4'}`}
+        className={`min-h-0 flex-1 overflow-y-auto overscroll-y-contain space-y-3 ${isCubit ? 'px-0 py-0' : 'px-4 py-4'}`}
         style={{ background: C.bg }}
       >
         {loadingThread && messages.length === 0 && (
@@ -247,7 +247,7 @@ export function CourseChatWidget({
               borderRadius: '14px 14px 14px 4px',
               padding: '10px 13px',
               maxWidth: '88%',
-              border: isCuib ? 'none' : `1px solid ${C.border}`,
+              border: isCubit ? 'none' : `1px solid ${C.border}`,
             }}
           >
             {signedIn
@@ -265,9 +265,9 @@ export function CourseChatWidget({
                     : '[&_p]:mb-1.5 [&_p:last-child]:mb-0 [&_ul]:mb-1.5 [&_ul:last-child]:mb-0 [&_pre]:mb-2 [&_h2]:mt-2 [&_h3]:mt-2 [&_.lesson-notes]:text-[0.82rem]'
                 }`}
                 style={{
-                  background: isCuib ? C.bg2 : msg.role === 'user' ? C.red : C.bg1,
-                  color: isCuib ? C.text : msg.role === 'user' ? '#fff' : C.text,
-                  border: isCuib || msg.role === 'user' ? 'none' : `1px solid ${C.border}`,
+                  background: isCubit ? C.bg2 : msg.role === 'user' ? C.red : C.bg1,
+                  color: isCubit ? C.text : msg.role === 'user' ? '#fff' : C.text,
+                  border: isCubit || msg.role === 'user' ? 'none' : `1px solid ${C.border}`,
                   borderRadius:
                     msg.role === 'user' ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
                 }}
@@ -320,12 +320,12 @@ export function CourseChatWidget({
       </div>
 
       {error && (
-        <p className={`shrink-0 pb-2 text-[0.75rem] ${isCuib ? 'px-0' : 'px-4'}`} style={{ color: C.red }}>
+        <p className={`shrink-0 pb-2 text-[0.75rem] ${isCubit ? 'px-0' : 'px-4'}`} style={{ color: C.red }}>
           {error}
         </p>
       )}
 
-      {isCuib ? (
+      {isCubit ? (
         <div
           className="flex shrink-0 items-center gap-2 mt-4"
           style={{
@@ -434,7 +434,7 @@ export function CourseChatWidget({
         }}
         aria-label={open ? 'Close course tutor' : 'Open course tutor'}
       >
-        <QuibLogoMark size={22} variant={isDark ? 'light' : 'dark'} />
+        <CubitLogoMark size={22} variant={isDark ? 'light' : 'dark'} />
       </button>
     </>
   );

@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router';
 import { Sun, Moon, ArrowRight, Youtube } from 'lucide-react';
 import { useTheme, getC } from './ThemeContext';
 import { courseGenStateFromYoutubeUrl, getYoutubeUrlValidationError } from '../utils/youtubeUrl';
-import { QuibLogo } from './QuibLogo';
+import { CubitLogo } from './CubitLogo';
 
 const SUGGESTIONS = [
   { label: 'Single video — React Hooks', url: 'https://www.youtube.com/watch?v=TNhaISOUy6Q' },
@@ -50,9 +50,9 @@ export function EducatorCourseBuilder() {
         style={{ height: 60, background: navBg, backdropFilter: 'blur(20px)', borderBottom: `1px solid ${C.border}` }}
       >
         <Link to="/educator-studio" className="no-underline" style={{ color: C.text }}>
-          <QuibLogo
+          <CubitLogo
             size={18}
-            wordmark="Cuib Studio"
+            wordmark="Cubit Studio"
             wordmarkClassName="text-[1.05rem] font-[700] tracking-tight"
             variant={isDark ? 'dark' : 'light'}
           />

@@ -4,13 +4,13 @@ import { Box, Layers, Sparkles } from 'lucide-react';
 import { useTheme } from '../ThemeContext';
 import { TeachMock } from './TeachMock';
 
+const TEACH_FEATURES = ['AI course drafts', 'Timestamp-linked lessons', 'Catalog publish'];
+
 const STUDIO_FILES = [
   { icon: Sparkles, name: 'channel.tsx', colorDark: 'rgba(225, 6, 0, 0.15)', colorLight: 'rgba(225, 6, 0, 0.08)' },
   { icon: Layers, name: 'course.tsx', colorDark: 'rgba(255, 255, 255, 0.06)', colorLight: 'rgba(0, 0, 0, 0.04)' },
   { icon: Box, name: 'quiz.tsx', colorDark: 'rgba(255, 255, 255, 0.06)', colorLight: 'rgba(0, 0, 0, 0.04)' },
 ];
-
-const TEACH_FEATURES = ['Public catalog', 'Module breakdown', 'Quiz generation'];
 
 function StudioCard({ inView }: { inView: boolean }) {
   const { isDark } = useTheme();
@@ -31,7 +31,7 @@ function StudioCard({ inView }: { inView: boolean }) {
           className="mt-2 font-mono text-xs leading-relaxed text-[var(--landing-muted)]"
           animate={{ opacity: hovered ? 1 : 0.75 }}
         >
-          {hovered ? 'Hover to explore the stack →' : 'Turn your YouTube channel into structured courses.'}
+          {hovered ? 'Channel ingest, course outline, and quiz drafts in one stack.' : 'Turn your YouTube channel into AI-structured courses.'}
         </motion.p>
       </div>
 
@@ -104,7 +104,7 @@ export function BentoGrid() {
   return (
     <section id="teach" ref={ref} className="border-t border-[var(--landing-border)] px-5 py-24 md:px-8 md:py-32">
       <div className="mx-auto max-w-6xl">
-        {/* Teach — replaces Cuib branding + Workflows bento cards */}
+        {/* Teach — replaces Cubit branding + Workflows bento cards */}
         <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-12 lg:gap-12">
           <motion.div
             initial={{ opacity: 0, y: 24 }}
@@ -114,7 +114,7 @@ export function BentoGrid() {
           >
             <h2 className="text-3xl font-semibold tracking-tight text-[var(--landing-fg)] md:text-4xl">Teach</h2>
             <p className="landing-mono-label mt-4 max-w-xs leading-relaxed">
-              Publish to the Cuib catalog. Your audience gets modules, assessments, and timestamp-linked lessons.
+              Publish to the Cubit catalog with modules, AI assessments, and lessons tied to video timestamps.
             </p>
           </motion.div>
 
@@ -136,7 +136,7 @@ export function BentoGrid() {
             className="lg:col-span-3"
           >
             <p className="text-lg font-medium leading-snug tracking-tight text-[var(--landing-fg)] md:text-xl">
-              Your content. Structured. Searchable. Shareable.
+              Your videos become searchable courses with generated practice built in.
             </p>
             <div className="mt-8 space-y-3">
               <p className="landing-mono-label">Features</p>
