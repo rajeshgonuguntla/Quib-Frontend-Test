@@ -177,7 +177,7 @@ export function LandingPage() {
       <LandingNav isDark={isDark} />
 
       <section id="ask" className="landing-hero-stack relative px-5 md:px-8">
-        <div className="mx-auto w-full max-w-6xl">
+        <div className="landing-hero-viewport mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center">
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
@@ -251,10 +251,14 @@ export function LandingPage() {
 
           <p className="landing-hero-trust mt-8 text-sm text-[var(--landing-muted)]">Free to try. No credit card.</p>
           </motion.div>
-
-          <FeaturesSection variant="belowHero" />
         </div>
       </section>
+
+      <div className="relative px-5 md:px-8">
+        <div className="mx-auto w-full max-w-6xl">
+          <FeaturesSection variant="belowHero" />
+        </div>
+      </div>
 
       <PlatformSection
         id="learn"
