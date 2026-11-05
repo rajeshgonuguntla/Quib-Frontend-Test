@@ -2,7 +2,7 @@ import { Link } from 'react-router';
 import { ThemeToggle } from '../ThemeToggle';
 import { motion } from 'framer-motion';
 import { isTokenValid, useAuthSessionKey } from '../../auth';
-import { CUBIT_LOGO, LANDING_BRAND_NAME } from '../../cubit/subjects';
+import { CUBIT_LOGO } from '../../cubit/subjects';
 
 type LandingNavProps = {
   isDark: boolean;
@@ -23,14 +23,8 @@ export function LandingNav({ isDark }: LandingNavProps) {
       className="fixed top-0 left-0 right-0 z-[100] flex h-14 items-center justify-between border-b border-[var(--landing-border)] px-5 backdrop-blur-xl md:px-8"
       style={{ background: isDark ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)' }}
     >
-      <Link to="/" className="flex items-center gap-2 no-underline">
-        <img src={CUBIT_LOGO} alt="" width={30} height={30} className="size-[30px] shrink-0 object-contain" />
-        <span
-          className="text-sm font-semibold tracking-tight text-[var(--landing-fg)]"
-          style={{ fontFamily: 'Inter, sans-serif' }}
-        >
-          {LANDING_BRAND_NAME}
-        </span>
+      <Link to="/" className="flex items-center gap-2 no-underline" aria-label="Cubit">
+        <img src={CUBIT_LOGO} alt="Cubit" width={30} height={30} className="size-[30px] shrink-0 object-contain" />
       </Link>
 
       <ul className="absolute left-1/2 hidden -translate-x-1/2 list-none gap-8 md:flex">

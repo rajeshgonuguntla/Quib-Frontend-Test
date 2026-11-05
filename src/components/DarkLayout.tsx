@@ -66,10 +66,10 @@ export function DarkLayout({
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="flex items-center h-14">
             {/* Logo */}
-            <Link to="/dashboard" className="no-underline mr-8 flex-shrink-0" style={{ color: C.text }}>
+            <Link to="/dashboard" className="no-underline mr-8 flex-shrink-0" style={{ color: C.text }} aria-label="Cubit">
               <QuibLogo
                 size={18}
-                wordmarkClassName="text-[1.1rem] font-[700] tracking-tight"
+                showWordmark={false}
                 variant={isDark ? 'dark' : 'light'}
               />
             </Link>

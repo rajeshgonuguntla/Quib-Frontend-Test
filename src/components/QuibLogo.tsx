@@ -24,11 +24,10 @@ export function QuibLogoMark({ size = 20, className }: QuibLogoMarkProps) {
   return (
     <img
       src={CUBIT_LOGO}
-      alt=""
+      alt="Cubit"
       width={size}
       height={size}
       className={cn('object-contain', className)}
-      aria-hidden
     />
   );
 }

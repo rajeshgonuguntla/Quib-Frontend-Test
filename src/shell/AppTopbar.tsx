@@ -18,18 +18,16 @@ import { clearSignInIntent, isAdminAccount } from '../utils/signInIntent';
 import { getDisplayName, getFirstName } from '../utils/userDisplay';
 import { AppSidebar } from './AppSidebar';
 import { useShell } from './ShellContext';
-import { BRAND_NAME } from '../brand';
 import { CUBIT_LOGO } from '../cubit/subjects';
 
 function AppMark() {
   return (
     <img
       src={CUBIT_LOGO}
-      alt=""
+      alt="Cubit"
       width={30}
       height={30}
       className="size-[30px] shrink-0 object-contain"
-      aria-hidden
     />
   );
 }
@@ -113,14 +111,8 @@ export function AppTopbar() {
         </SheetContent>
       </Sheet>
 
-      <Link to="/dashboard" className="flex min-w-0 shrink items-center gap-2 no-underline">
+      <Link to="/dashboard" className="flex min-w-0 shrink items-center gap-2 no-underline" aria-label="Cubit">
         <AppMark />
-        <span
-          className="truncate text-[15px] font-extrabold tracking-[-0.02em] text-[var(--ink)]"
-          style={{ fontFamily: 'Inter, sans-serif' }}
-        >
-          {BRAND_NAME}
-        </span>
       </Link>
 
       <div className="min-w-0 flex-1" />
