@@ -277,7 +277,9 @@ export function CtaSection() {
           transition={{ delay: 0.6 }}
           className="mx-auto mt-5 max-w-md text-sm text-[var(--landing-muted)]"
         >
-          Personal tutor, whenever you need one. Free to try today.
+          Personal tutor,
+          <br />
+          whenever you need one. Free to try today.
         </motion.p>
 
         {/* Magnetic CTA buttons */}
