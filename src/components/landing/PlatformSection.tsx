@@ -42,7 +42,7 @@ export function PlatformSection({ id, title, description, stat, features, mock, 
           className={`lg:col-span-3 ${reverse ? 'lg:order-3' : ''}`}
         >
           <h2 className="text-3xl font-semibold tracking-tight text-[var(--landing-fg)] md:text-4xl">{title}</h2>
-          <p className="landing-mono-label mt-4 max-w-xs leading-relaxed">{description}</p>
+          <p className="mt-4 max-w-xs text-sm leading-relaxed text-[var(--landing-muted)]">{description}</p>
         </motion.div>
 
         <motion.div

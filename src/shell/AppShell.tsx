@@ -20,7 +20,7 @@ function MobileUpgradeFab() {
   if (billing && hidesUpgradeCta(billing)) return null;
 
   return (
-    <div className="cuib-upgrade-fab">
+    <div className="Cubit-upgrade-fab">
       <span className="text-[12.5px] font-semibold text-[var(--ink-soft)]">
         {billingPlanLabel(billing, false)}
       </span>
@@ -43,7 +43,7 @@ export function AppShell() {
   if (courseEditor) {
     return (
       <ShellProvider>
-        <div className="cuib-app flex h-dvh flex-col overflow-hidden">
+        <div className="Cubit-app flex h-dvh flex-col overflow-hidden">
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             <Outlet />
           </div>
@@ -54,18 +54,18 @@ export function AppShell() {
 
   return (
     <ShellProvider>
-      <div className="cuib-app min-h-screen">
-        <header className="cuib-topnav sticky top-0 z-50">
+      <div className="Cubit-app min-h-screen">
+        <header className="Cubit-topnav sticky top-0 z-50">
           <AppTopbar />
         </header>
 
-        <div className={cn('cuib-shell', educatorWorkspace && '!grid-cols-1')}>
+        <div className={cn('Cubit-shell', educatorWorkspace && '!grid-cols-1')}>
           {!educatorWorkspace && (
-            <aside className="cuib-sidebar">
+            <aside className="Cubit-sidebar">
               <AppSidebar pathname={location.pathname} search={location.search} />
             </aside>
           )}
-          <main className="cuib-main">
+          <main className="Cubit-main">
             <AnimatePresence mode="wait">
               <PageTransition key={location.pathname}>
                 <Outlet />

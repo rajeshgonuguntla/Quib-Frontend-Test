@@ -1,5 +1,5 @@
 import { BadgeCheck, Shield, Award, ChevronDown, PlayCircle, CheckCircle2, Download } from 'lucide-react';
-import { QuibLogo } from './QuibLogo';
+import { CubitLogo } from './CubitLogo';
 import { Button } from './ui/button';
 
 interface HeroProps {
@@ -51,7 +51,7 @@ export function Hero({ onSubmit, isLoggedIn, onRequestSignIn, onBlogClick }: Her
 
         <div className="text-center w-full">
           <div className="flex items-center justify-center mb-8">
-            <QuibLogo size={72} variant="light" wordmarkClassName="text-6xl text-gray-900 font-normal" />
+            <CubitLogo size={72} variant="light" wordmarkClassName="text-6xl text-gray-900 font-normal" />
           </div>
 
           {/* Scrolling Text */}

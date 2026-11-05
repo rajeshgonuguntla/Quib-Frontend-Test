@@ -78,7 +78,7 @@ export function EducatorMyCourses() {
       <PageHeader
         label="Create"
         title="My courses"
-        description="Drafts and published courses you have built on Cuib."
+        description="Drafts and published courses you have built on Cubit."
         actions={
           <Button size="sm" onClick={() => navigate('/educator-studio')}>
             <Plus size={14} /> New course

@@ -38,8 +38,8 @@ interface EducatorAssistantWidgetProps {
   onCollapse?: () => void;
   /** Bump to toggle the floating assistant open/closed (left-nav Ask AI). */
   openSignal?: number;
-  /** Visual chrome; `cuib` matches lesson assist layout (panel header already close enough). */
-  chrome?: 'default' | 'cuib';
+  /** Visual chrome; `Cubit` matches lesson assist layout (panel header already close enough). */
+  chrome?: 'default' | 'cubit';
 }
 
 type LoadingPhase = 'idle' | 'routing' | 'local' | 'ai' | 'applying';

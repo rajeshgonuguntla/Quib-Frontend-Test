@@ -5,6 +5,8 @@ const JSON_LINES = [
   '  "title": "Neural Networks",',
   '  "modules": 8,',
   '  "quizzes": 24,',
+  '  "studyTools": ["flashcards", "notes", "exam"],',
+  '  "aiGenerated": true,',
   '  "published": true',
   '}',
 ];

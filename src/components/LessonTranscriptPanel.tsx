@@ -21,7 +21,7 @@ type Props = {
   C: Theme;
   player?: LessonPlayerClock | null;
   enabled?: boolean;
-  variant?: 'default' | 'cuib';
+  variant?: 'default' | 'cubit';
 };
 
 export function LessonTranscriptPanel({
@@ -81,40 +81,40 @@ export function LessonTranscriptPanel({
 
   if (!enabled) return null;
 
-  const isCuib = variant === 'cuib';
+  const isCubit = variant === 'cubit';
 
   return (
     <div
-      className={isCuib ? 'mt-6 pt-5' : 'rounded-2xl overflow-hidden mt-6'}
-      style={isCuib ? { borderTop: `1px solid ${C.border}` } : { background: C.bg1, border: `1px solid ${C.border}` }}
+      className={isCubit ? 'mt-6 pt-5' : 'rounded-2xl overflow-hidden mt-6'}
+      style={isCubit ? { borderTop: `1px solid ${C.border}` } : { background: C.bg1, border: `1px solid ${C.border}` }}
     >
       <div
-        className={`text-[0.66rem] uppercase tracking-wide mb-3.5 ${isCuib ? '' : 'px-4 py-3 border-b'}`}
+        className={`text-[0.66rem] uppercase tracking-wide mb-3.5 ${isCubit ? '' : 'px-4 py-3 border-b'}`}
         style={{
           color: C.text3,
           fontFamily: 'var(--mono)',
           fontWeight: 500,
-          ...(isCuib ? {} : { borderBottom: `1px solid ${C.border}` }),
+          ...(isCubit ? {} : { borderBottom: `1px solid ${C.border}` }),
         }}
       >
         Transcript
       </div>
       {loading && (
-        <div className={`flex items-center gap-2 py-4 text-[0.82rem] ${isCuib ? '' : 'px-4'}`} style={{ color: C.text3 }}>
+        <div className={`flex items-center gap-2 py-4 text-[0.82rem] ${isCubit ? '' : 'px-4'}`} style={{ color: C.text3 }}>
           <Loader2 className="w-4 h-4 animate-spin" />
           Loading transcript…
         </div>
       )}
       {error && !loading && (
-        <p className={`py-3 text-[0.82rem] ${isCuib ? '' : 'px-4'}`} style={{ color: C.text3 }}>{error}</p>
+        <p className={`py-3 text-[0.82rem] ${isCubit ? '' : 'px-4'}`} style={{ color: C.text3 }}>{error}</p>
       )}
       {!loading && !error && cues.length === 0 && (
-        <p className={`py-3 text-[0.82rem] ${isCuib ? '' : 'px-4'}`} style={{ color: C.text3 }}>
+        <p className={`py-3 text-[0.82rem] ${isCubit ? '' : 'px-4'}`} style={{ color: C.text3 }}>
           No timed captions for this video.
         </p>
       )}
       {!loading && cues.length > 0 && (
-        <div ref={listRef} className={`max-h-[190px] overflow-y-auto ${isCuib ? 'pr-3' : 'px-2 py-2 space-y-0.5 max-h-[320px]'}`}>
+        <div ref={listRef} className={`max-h-[190px] overflow-y-auto ${isCubit ? 'pr-3' : 'px-2 py-2 space-y-0.5 max-h-[320px]'}`}>
           {cues.map((cue, idx) => {
             const active = idx === activeIdx;
             return (
@@ -125,10 +125,10 @@ export function LessonTranscriptPanel({
                   lineRefs.current[idx] = el;
                 }}
                 onClick={() => player?.seekTo?.(cue.start)}
-                className={`w-full text-left flex gap-3 cursor-pointer transition-colors ${isCuib ? 'py-1.5' : 'px-3 py-2 rounded-lg'}`}
+                className={`w-full text-left flex gap-3 cursor-pointer transition-colors ${isCubit ? 'py-1.5' : 'px-3 py-2 rounded-lg'}`}
                 style={{
-                  background: !isCuib && active ? C.redDim : 'transparent',
-                  color: active ? (isCuib ? C.text : C.red) : C.text2,
+                  background: !isCubit && active ? C.redDim : 'transparent',
+                  color: active ? (isCubit ? C.text : C.red) : C.text2,
                   border: 'none',
                 }}
               >

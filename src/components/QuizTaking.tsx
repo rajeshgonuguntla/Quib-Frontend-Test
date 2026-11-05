@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate, useParams, Link, useLocation } from 'react-router';
 import { Clock, Flag, ChevronLeft, ChevronRight, Sun, Moon } from 'lucide-react';
 import { useTheme, getC } from './ThemeContext';
-import { QuibLogo } from './QuibLogo';
+import { CubitLogo } from './CubitLogo';
 import {
   buildFrontendSections,
   fetchQuizDetail,
@@ -310,7 +310,7 @@ export function QuizTaking() {
         <div className="max-w-3xl mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-4 min-w-0">
             <Link to="/dashboard" className="no-underline shrink-0" style={{ color: C.text }}>
-              <QuibLogo
+              <CubitLogo
                 size={18}
                 wordmarkClassName="text-[1.05rem] font-[700] tracking-tight"
                 variant={isDark ? 'dark' : 'light'}

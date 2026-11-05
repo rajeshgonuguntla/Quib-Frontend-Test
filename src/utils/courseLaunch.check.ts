@@ -2,9 +2,9 @@ import { hasCourseProgress, markCourseLaunched, wasCourseLaunched } from './cour
 
 // ponytail: assert-based self-check — fails if launch flag / progress detection breaks.
 function check() {
-  const id = '__cuib_launch_selfcheck__';
+  const id = '__cubit_launch_selfcheck__';
   try {
-    localStorage.removeItem(`cuib:course-launched:${id}`);
+    localStorage.removeItem(`cubit:course-launched:${id}`);
   } catch {
     return;
   }
@@ -16,7 +16,7 @@ function check() {
     throw new Error('empty progress should be false');
   }
   try {
-    localStorage.removeItem(`cuib:course-launched:${id}`);
+    localStorage.removeItem(`cubit:course-launched:${id}`);
   } catch {
     /* ignore */
   }

@@ -26,7 +26,7 @@ import { CourseGenerationLoader } from './CourseGenerationLoader';
 import { CoursePageNav } from './CoursePageNav';
 import { CourseChatWidget } from './CourseChatWidget';
 import { ModuleQuizSecondChance } from './ModuleQuizSecondChance';
-import { QuibLogo } from './QuibLogo';
+import { CubitLogo } from './CubitLogo';
 import { TrialUpgradePrompt } from './TrialUpgradePrompt';
 import { LessonStudyContent } from './LessonNotes';
 import { StudyRailPanel } from './StudyRailPanel';
@@ -256,7 +256,7 @@ function ModuleLessonFlyout({
 const ASSISTANT_PANEL_MIN = 260;
 const ASSISTANT_PANEL_MAX = 520;
 const ASSISTANT_PANEL_DEFAULT = 300;
-const ASSISTANT_PANEL_WIDTH_KEY = 'cuib_assistant_panel_width';
+const ASSISTANT_PANEL_WIDTH_KEY = 'cubit_assistant_panel_width';
 
 function readAssistantPanelWidth(): number {
   try {
@@ -646,7 +646,7 @@ function LearningMode({
 
   return (
     <div style={{ height: '100vh', overflow: 'hidden', background: C.bg, color: C.text, fontFamily: 'var(--display)' }}>
-      {/* Cuib module bar */}
+      {/* Cubit module bar */}
       <div
         className="flex items-center gap-6 sm:gap-8 px-4 sm:px-10 shrink-0"
         style={{
@@ -777,7 +777,7 @@ function LearningMode({
         />
       )}
 
-      {/* Cuib 3-col layout */}
+      {/* Cubit 3-col layout */}
       <div
         className={`grid flex-1 min-h-0 overflow-hidden ${
           tutorAvailable
@@ -1003,7 +1003,7 @@ function LearningMode({
                       lessonId={activeLessonId}
                       C={C}
                       player={lessonPlayerClock}
-                      variant="cuib"
+                      variant="cubit"
                     />
                   )}
                   <LessonStudyContent
@@ -1011,7 +1011,7 @@ function LearningMode({
                     theme={C}
                     moduleTitle={activeLesson.moduleTitle}
                     mode="overview"
-                    variant="cuib"
+                    variant="cubit"
                   />
                   <div className="flex flex-col gap-2 mt-6">
                     <div className="flex items-center gap-3">
@@ -1288,7 +1288,7 @@ function LearningMode({
               sessionKey={chatSessionKey}
               variant="panel"
               openSignal={askOpenSignal}
-              chrome="cuib"
+              chrome="cubit"
             />
           </aside>
         )}
@@ -1685,7 +1685,7 @@ export function CourseDetails() {
           navBg={navBg}
           left={(
             <Link to="/dashboard" className="no-underline" style={{ color: C.text }}>
-              <QuibLogo
+              <CubitLogo
                 size={16}
                 wordmarkClassName="text-[1rem] font-[700] tracking-tight"
                 variant={isDark ? 'dark' : 'light'}
@@ -1722,7 +1722,7 @@ export function CourseDetails() {
           navBg={navBg}
           left={(
             <Link to="/dashboard" className="no-underline" style={{ color: C.text }}>
-              <QuibLogo
+              <CubitLogo
                 size={16}
                 wordmarkClassName="text-[1rem] font-[700] tracking-tight"
                 variant={isDark ? 'dark' : 'light'}
@@ -1855,7 +1855,7 @@ export function CourseDetails() {
             </button>
             <div style={{ width: 1, height: 16, background: C.border }} />
             <Link to="/dashboard" className="no-underline" style={{ color: C.text }}>
-              <QuibLogo
+              <CubitLogo
                 size={16}
                 wordmarkClassName="text-[1rem] font-[700] tracking-tight"
                 variant={isDark ? 'dark' : 'light'}

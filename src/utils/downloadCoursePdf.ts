@@ -73,7 +73,7 @@ function slugify(title: string): string {
   return slug || 'course';
 }
 
-async function loadQuibLogoPng(): Promise<string> {
+async function loadCubitLogoPng(): Promise<string> {
   const res = await fetch('/cube_logo_light.svg');
   const svg = await res.text();
   const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
@@ -83,7 +83,7 @@ async function loadQuibLogoPng(): Promise<string> {
     const img = await new Promise<HTMLImageElement>((resolve, reject) => {
       const el = new Image();
       el.onload = () => resolve(el);
-      el.onerror = () => reject(new Error('Failed to load Cuib logo'));
+      el.onerror = () => reject(new Error('Failed to load Cubit logo'));
       el.src = url;
     });
 
@@ -542,12 +542,12 @@ function addFooter(doc: jsPDF, pageCount: number) {
   }
 }
 
-/** Download a neatly formatted PDF of the course with the Cuib logo top-right. */
+/** Download a neatly formatted PDF of the course with the Cubit logo top-right. */
 export async function downloadCoursePdf(course: DownloadableCourse): Promise<void> {
   const doc = new jsPDF({ unit: 'pt', format: 'a4', orientation: 'portrait' });
   let logoDataUrl: string | null = null;
   try {
-    logoDataUrl = await loadQuibLogoPng();
+    logoDataUrl = await loadCubitLogoPng();
   } catch {
     logoDataUrl = null;
   }
@@ -633,5 +633,5 @@ export async function downloadCoursePdf(course: DownloadableCourse): Promise<voi
   });
 
   addFooter(doc, doc.getNumberOfPages());
-  doc.save(`${slugify(course.title)}-cuib-course.pdf`);
+  doc.save(`${slugify(course.title)}-cubit-course.pdf`);
 }
