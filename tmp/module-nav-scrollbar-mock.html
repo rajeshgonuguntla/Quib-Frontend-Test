@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Module nav scrollbar mock</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #ffffff;
+      --ink: #0c0c0e;
+      --ink-soft: #525252;
+      --ink-faint: #737373;
+      --border: rgba(0, 0, 0, 0.11);
+      --red: #e10600;
+      --display: Inter, system-ui, sans-serif;
+      --thumb: rgba(0, 0, 0, 0.28);
+    }
+    html.dark {
+      --bg: #060608;
+      --ink: #f2f2f0;
+      --ink-soft: #8a8a8a;
+      --ink-faint: #4a4a4a;
+      --border: rgba(255, 255, 255, 0.07);
+      --thumb: rgba(255, 255, 255, 0.22);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #1a1a1c;
+      color: var(--ink);
+      font-family: var(--display);
+    }
+    html.dark body { background: #121214; }
+    .stage { padding: 28px 24px 48px; max-width: 1280px; margin: 0 auto; }
+    h1 { margin: 0 0 6px; font-size: 1.15rem; letter-spacing: -0.03em; }
+    .note { margin: 0 0 22px; color: var(--ink-soft); font-size: 0.88rem; }
+    .theme {
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--ink);
+      border-radius: 999px;
+      padding: 8px 14px;
+      font: 600 13px var(--display);
+      cursor: pointer;
+      float: right;
+    }
+
+    .browser {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .caption {
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+      margin: 22px 0 8px;
+      clear: both;
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      padding: 18px 32px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .logo { font-weight: 700; letter-spacing: -0.03em; flex-shrink: 0; }
+    .actions { display: flex; gap: 8px; flex-shrink: 0; }
+    .icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      border: 0; background: transparent; color: var(--ink-soft);
+    }
+    .avatar {
+      width: 32px; height: 32px; border-radius: 999px;
+      background: var(--red); color: #fff; border: 0; font-weight: 700;
+    }
+
+    /* TODAY: always-on 8px bar */
+    .rail-now {
+      flex: 1;
+      min-width: 0;
+      overflow-x: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--thumb) transparent;
+    }
+    .rail-now::-webkit-scrollbar { height: 8px; }
+    .rail-now::-webkit-scrollbar-track { background: transparent; }
+    .rail-now::-webkit-scrollbar-thumb { background: var(--thumb); border-radius: 999px; }
+
+    /* PROPOSED: hidden until hover/focus, 4px */
+    .rail-next {
+      flex: 1;
+      min-width: 0;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .rail-next::-webkit-scrollbar { height: 0; }
+    .rail-next:hover {
+      scrollbar-width: thin;
+      scrollbar-color: var(--thumb) transparent;
+    }
+    .rail-next:hover::-webkit-scrollbar { height: 4px; }
+    .rail-next:hover::-webkit-scrollbar-track { background: transparent; }
+    .rail-next:hover::-webkit-scrollbar-thumb {
+      background: var(--thumb);
+      border-radius: 999px;
+    }
+
+    .mods { display: flex; align-items: center; gap: 0; min-width: max-content; }
+    .mod {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 4px;
+      margin-right: 28px;
+      border: 0;
+      background: transparent;
+      color: var(--ink-faint);
+      font: 500 0.84rem var(--display);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .mod.active { color: var(--ink); font-weight: 600; }
+    .mod .chev { font-size: 10px; color: var(--ink-faint); }
+    .mod.active .chev { color: var(--red); }
+
+    .page { padding: 28px 40px 48px; }
+    .page h2 { margin: 0 0 8px; font-size: 2rem; letter-spacing: -0.04em; }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <button class="theme" type="button" id="theme">Light</button>
+    <h1>Module nav scrollbar — mock only</h1>
+    <p class="note">Hover the module names in the second bar to see a thin scrollbar. Move the pointer off the row (or off the bar) and it disappears.</p>
+
+    <p class="caption">Today — 8px bar always visible</p>
+    <div class="browser">
+      <div class="nav">
+        <div class="logo">Cuib</div>
+        <div class="rail-now">
+          <div class="mods">
+            <button class="mod active" type="button">Foundations of Artificial Intelligence <span class="chev">▾</span></button>
+            <button class="mod" type="button">Supervised Learning - Classification <span class="chev">▾</span></button>
+            <button class="mod" type="button">Supervised Learning - Regression <span class="chev">▾</span></button>
+            <button class="mod" type="button">Unsupervised Learning <span class="chev">▾</span></button>
+            <button class="mod" type="button">Reinforcement Learning &amp; Practical Applications <span class="chev">▾</span></button>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="icon" type="button">↓</button>
+          <button class="icon" type="button">☀</button>
+          <button class="avatar" type="button">R</button>
+        </div>
+      </div>
+      <div class="page">
+        <h2>What is Artificial Intelligence?</h2>
+        <p style="color:var(--ink-soft);font-size:14px">Scrollbar sits under the names even when you are not using it.</p>
+      </div>
+    </div>
+
+    <p class="caption">Proposed — hidden until hover, 4px thin</p>
+    <div class="browser">
+      <div class="nav">
+        <div class="logo">Cuib</div>
+        <div class="rail-next">
+          <div class="mods">
+            <button class="mod active" type="button">Foundations of Artificial Intelligence <span class="chev">▾</span></button>
+            <button class="mod" type="button">Supervised Learning - Classification <span class="chev">▾</span></button>
+            <button class="mod" type="button">Supervised Learning - Regression <span class="chev">▾</span></button>
+            <button class="mod" type="button">Unsupervised Learning <span class="chev">▾</span></button>
+            <button class="mod" type="button">Reinforcement Learning &amp; Practical Applications <span class="chev">▾</span></button>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="icon" type="button">↓</button>
+          <button class="icon" type="button">☀</button>
+          <button class="avatar" type="button">R</button>
+        </div>
+      </div>
+      <div class="page">
+        <h2>What is Artificial Intelligence?</h2>
+        <p style="color:var(--ink-soft);font-size:14px">Hover the names or the thin bar to scroll. Move away from that row and the bar is gone.</p>
+      </div>
+    </div>
+  </div>
+  <script>
+    const html = document.documentElement;
+    document.getElementById('theme').addEventListener('click', () => {
+      const on = !html.classList.contains('dark');
+      html.classList.toggle('dark', on);
+      document.getElementById('theme').textContent = on ? 'Light' : 'Dark';
+    });
+  </script>
+</body>
+</html>

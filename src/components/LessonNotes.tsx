@@ -181,11 +181,11 @@ export function LessonStudyContent({
   moduleTitle?: string;
   /** `overview` = summary/concepts/takeaway; `notes` = study notes only; `all` = everything. */
   mode?: 'all' | 'overview' | 'notes';
-  variant?: 'default' | 'cubit';
+  variant?: 'default' | 'cuib';
 }) {
   const showOverview = mode === 'all' || mode === 'overview';
   const showNotes = mode === 'all' || mode === 'notes';
-  const isCubit = variant === 'cubit';
+  const isCuib = variant === 'cuib';
 
   const hasOverview =
     !!lesson.summary?.trim() ||
@@ -206,7 +206,7 @@ export function LessonStudyContent({
       );
     }
     return (
-      <div className={isCubit ? 'mb-6' : 'rounded-2xl p-6 mb-8'} style={isCubit ? undefined : { background: theme.bg1, border: `1px solid ${theme.border}` }}>
+      <div className={isCuib ? 'mb-6' : 'rounded-2xl p-6 mb-8'} style={isCuib ? undefined : { background: theme.bg1, border: `1px solid ${theme.border}` }}>
         <p className="text-[0.875rem] leading-relaxed" style={{ color: theme.text2, lineHeight: 1.8 }}>
           This lesson covers <strong style={{ color: theme.text }}>{lesson.title}</strong>
           {moduleTitle ? (
@@ -226,7 +226,7 @@ export function LessonStudyContent({
     ...(lesson.takeaway?.trim() ? [lesson.takeaway.trim()] : []),
   ];
 
-  if (isCubit && showOverview && !showNotes) {
+  if (isCuib && showOverview && !showNotes) {
     return (
       <div className="space-y-8 mb-6 mt-6">
         {lesson.summary?.trim() ? (

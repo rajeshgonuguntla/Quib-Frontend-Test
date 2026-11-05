@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link, useLocation } from 'react-router';
 import { ChevronDown, ChevronUp, CheckCircle, XCircle, Linkedin, Smile, Sun, Moon, FileText, Download, Share2, Link2, Check, Copy } from 'lucide-react';
 import { useTheme, getC } from './ThemeContext';
-import { CubitLogo } from './CubitLogo';
+import { QuibLogo } from './QuibLogo';
 import {
   fetchLatestQuizAttempt,
   fetchQuizAttempt,
@@ -131,7 +131,7 @@ export function Results() {
   const correctAnswers = apiResult?.correctCount ?? questionReview.filter((q) => q.isCorrect).length;
   const score = apiResult?.scorePercent ?? (totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0);
   const passed = apiResult?.passed ?? score >= 70;
-  const shareText = `I scored ${score}% on "${quizTitle}" on Cubit! Can you beat my score?`;
+  const shareText = `I scored ${score}% on "${quizTitle}" on Cuib! Can you beat my score?`;
   const sectionScores = apiResult?.sectionScores ?? [];
 
   const breakdown = sectionScores.length > 0
@@ -205,7 +205,7 @@ export function Results() {
       <header className="px-8 py-4 sticky top-0 z-50" style={{ background: C.bg1, borderBottom: `1px solid ${C.border}` }}>
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <Link to="/dashboard" className="no-underline" style={{ color: C.text }}>
-            <CubitLogo
+            <QuibLogo
               size={18}
               wordmarkClassName="text-[1.05rem] font-[700] tracking-tight"
               variant={isDark ? 'dark' : 'light'}

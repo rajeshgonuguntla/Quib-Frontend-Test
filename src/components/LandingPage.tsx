@@ -14,8 +14,7 @@ import {
   LANDING_COURSE_THUMBNAILS,
   LANDING_STUDIO_TOPICS,
 } from './landing/landingThumbnails';
-import { BRAND_NAME } from '../brand';
-import { CUBIT_LOGO } from '../cubit/subjects';
+import { CUBIT_LOGO, LANDING_BRAND_NAME } from '../cubit/subjects';
 
 const LANDING_PHRASES = [
   'Paste a YouTube URL',
@@ -277,7 +276,7 @@ export function LandingPage() {
                 className="text-sm font-semibold tracking-tight text-[var(--landing-fg)]"
                 style={{ fontFamily: 'Inter, sans-serif' }}
               >
-                {BRAND_NAME}
+                {LANDING_BRAND_NAME}
               </span>
             </Link>
             <p className="mt-2 max-w-xs text-sm leading-relaxed text-[var(--landing-muted)]">
@@ -305,7 +304,7 @@ export function LandingPage() {
             ))}
           </div>
         </div>
-        <p className="mx-auto mt-10 max-w-6xl text-xs text-[var(--landing-muted)]">© 2026 {BRAND_NAME}. All rights reserved.</p>
+        <p className="mx-auto mt-10 max-w-6xl text-xs text-[var(--landing-muted)]">© 2026 {LANDING_BRAND_NAME}. All rights reserved.</p>
       </footer>
     </div>
   );

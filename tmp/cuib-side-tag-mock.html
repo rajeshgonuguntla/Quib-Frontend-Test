@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cuib side tag mock</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #ffffff;
+      --ink: #0c0c0e;
+      --ink-soft: #525252;
+      --ink-faint: #737373;
+      --border: rgba(0, 0, 0, 0.11);
+      --fill: #f7f7f8;
+      --red: #e10600;
+      --red-soft: #fde8e6;
+      --stage: #ececec;
+      --phone-edge: #d4d4d4;
+      --display: Inter, system-ui, sans-serif;
+      --mono: "IBM Plex Mono", ui-monospace, monospace;
+      --cube-top: #ffffff;
+      --cube-left: #c8c8c8;
+      --cube-right: #e4e4e4;
+      --cube-stroke: #333333;
+      --tag-bg: #0c0c0e;
+      --tag-cube-top: #ffffff;
+      --tag-cube-left: #c8c8c8;
+      --tag-cube-right: #e4e4e4;
+      --tag-cube-stroke: #333333;
+    }
+    html.dark {
+      --bg: #060608;
+      --ink: #f2f2f0;
+      --ink-soft: #8a8a8a;
+      --ink-faint: #4a4a4a;
+      --border: rgba(255, 255, 255, 0.07);
+      --fill: #111115;
+      --red-soft: rgba(225, 6, 0, 0.18);
+      --stage: #121214;
+      --phone-edge: #2a2a2e;
+      --cube-top: #2a2a2a;
+      --cube-left: #0e0e0e;
+      --cube-right: #1a1a1a;
+      --cube-stroke: #ffffff;
+      --tag-bg: #f2f2f0;
+      --tag-cube-top: #2a2a2a;
+      --tag-cube-left: #0e0e0e;
+      --tag-cube-right: #1a1a1a;
+      --tag-cube-stroke: #333333;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--stage);
+      color: var(--ink);
+      font-family: var(--display);
+    }
+    .stage {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 28px 20px 48px;
+    }
+    .stage-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 22px;
+    }
+    .stage h1 {
+      margin: 0 0 6px;
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+    }
+    .stage p.note {
+      margin: 0;
+      color: var(--ink-soft);
+      font-size: 0.88rem;
+    }
+    .theme-toggle {
+      flex-shrink: 0;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--ink);
+      border-radius: 999px;
+      padding: 8px 14px;
+      font: 600 13px var(--display);
+      cursor: pointer;
+    }
+    .frames {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 28px;
+    }
+    .phone {
+      width: 390px;
+      height: 844px;
+      background: var(--bg);
+      color: var(--ink);
+      border: 1px solid var(--phone-edge);
+      border-radius: 36px;
+      overflow: hidden;
+      position: relative;
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.08);
+    }
+    .phone-label {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+      margin: 0 0 10px;
+    }
+
+    .status {
+      height: 54px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      padding: 0 28px 10px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .lockup {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      font-size: 1rem;
+      letter-spacing: -0.03em;
+    }
+    .nav-actions { display: flex; gap: 8px; }
+    .icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      display: grid;
+      place-items: center;
+      color: var(--ink-soft);
+      font-size: 13px;
+      background: transparent;
+      cursor: pointer;
+    }
+    .avatar {
+      background: var(--red);
+      color: #fff;
+      border: none;
+      font-weight: 700;
+      cursor: default;
+    }
+
+    .kicker {
+      margin: 14px 16px 0;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      color: var(--ink-soft);
+      display: flex;
+      justify-content: space-between;
+    }
+    .kicker b { color: var(--ink); font-weight: 500; }
+
+    .lesson {
+      padding: 18px 20px 96px 28px;
+    }
+    .lesson h2 {
+      margin: 0 0 10px;
+      font-size: 1.7rem;
+      letter-spacing: -0.04em;
+      line-height: 1.15;
+    }
+    .pill {
+      display: inline-block;
+      background: var(--red-soft);
+      color: var(--red);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 999px;
+      margin-bottom: 14px;
+    }
+    .meta {
+      color: var(--ink-faint);
+      font-size: 12px;
+      margin-bottom: 18px;
+    }
+    .summary-label {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      color: var(--ink-faint);
+      margin-bottom: 8px;
+    }
+    .lesson p {
+      margin: 0 0 14px;
+      color: var(--ink-soft);
+      font-size: 14.5px;
+      line-height: 1.55;
+    }
+    .dots {
+      position: absolute;
+      left: 10px;
+      top: 46%;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border);
+      background: transparent;
+    }
+    .dot.on { background: var(--red); border-color: var(--red); }
+
+    .cubit-tag {
+      position: absolute;
+      right: 0;
+      bottom: 72px;
+      z-index: 30;
+      width: 44px;
+      height: 56px;
+      padding: 0 4px 0 10px;
+      border: 0;
+      border-radius: 999px 0 0 999px;
+      background: var(--tag-bg);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+    }
+    .cubit-tag:focus-visible {
+      outline: 2px solid var(--red);
+      outline-offset: 2px;
+    }
+
+    .chat {
+      display: none;
+      position: absolute;
+      right: 10px;
+      bottom: 136px;
+      width: 330px;
+      height: 420px;
+      z-index: 28;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+      overflow: hidden;
+      flex-direction: column;
+    }
+    .phone.open .chat { display: flex; }
+    .chat-head {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      background: var(--fill);
+    }
+    .chat-head strong { display: block; font-size: 13.5px; }
+    .chat-head span { font-size: 11px; color: var(--ink-faint); }
+    .chat-body {
+      flex: 1;
+      padding: 14px;
+      font-size: 13px;
+      line-height: 1.45;
+      color: var(--ink);
+    }
+    .bubble {
+      background: var(--fill);
+      border-radius: 14px 14px 14px 4px;
+      padding: 10px 12px;
+      max-width: 92%;
+    }
+    .chat-input {
+      display: flex;
+      gap: 8px;
+      padding: 10px;
+      border-top: 1px solid var(--border);
+    }
+    .chat-input input {
+      flex: 1;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 12px;
+      font: 16px var(--display);
+      background: var(--fill);
+      color: var(--ink);
+    }
+    .send {
+      width: 40px;
+      height: 40px;
+      border: 0;
+      border-radius: 12px;
+      background: var(--red);
+      color: #fff;
+    }
+
+    .overview-body { padding: 28px 20px 80px; }
+    .overview-body h2 {
+      margin: 0 0 12px;
+      font-size: 1.7rem;
+      letter-spacing: -0.04em;
+      line-height: 1.15;
+    }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 22px; }
+    .chip {
+      border: 1px solid rgba(225, 6, 0, 0.35);
+      color: var(--red);
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-size: 12.5px;
+    }
+    .start {
+      margin-top: 8px;
+      background: var(--red);
+      color: #fff;
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-weight: 700;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <div class="stage-head">
+      <div>
+        <h1>Cuib side tag — mock only</h1>
+        <p class="note">Tap Dark to match the lesson theme. Reverse-D tab: curve in the page, flat edge on the screen.</p>
+      </div>
+      <button class="theme-toggle" type="button" id="theme">Dark</button>
+    </div>
+
+    <div class="frames">
+      <div>
+        <p class="phone-label">Lesson · tap the tag</p>
+        <div class="phone" id="lesson">
+          <div class="status"><span>1:33 PM</span><span>●●●</span></div>
+          <div class="nav">
+            <div class="lockup">
+              <svg class="page-cube" viewBox="80 100 240 237" width="16" height="16" aria-hidden="true">
+                <g transform="translate(200,200)">
+                  <polygon points="0,-100 120,-42 0,17 -120,-42" fill="var(--cube-top)" />
+                  <polygon points="-120,-42 0,17 0,137 -120,78" fill="var(--cube-left)" />
+                  <polygon points="120,-42 0,17 0,137 120,78" fill="var(--cube-right)" />
+                  <polygon points="0,-100 120,-42 0,17 -120,-42" fill="none" stroke="var(--cube-stroke)" stroke-width="1.5" stroke-linejoin="round" />
+                  <polygon points="-120,-42 0,17 0,137 -120,78" fill="none" stroke="var(--cube-stroke)" stroke-width="1.5" stroke-linejoin="round" />
+                  <polygon points="120,-42 0,17 0,137 120,78" fill="none" stroke="var(--cube-stroke)" stroke-width="1.5" stroke-linejoin="round" />
+                  <line x1="0" y1="17" x2="0" y2="137" stroke="var(--cube-stroke)" stroke-width="1.5" />
+                </g>
+              </svg>
+              Cuib
+            </div>
+            <div class="nav-actions">
+              <span class="icon">↓</span>
+              <button class="icon theme-btn" type="button" aria-label="Toggle dark mode">☾</button>
+              <span class="icon avatar">R</span>
+            </div>
+          </div>
+          <div class="kicker"><span>MODULE 1 · <b>FOUNDATIONS OF ARTIFICIAL INTELLIGENCE</b></span><span>▾</span></div>
+          <div class="dots"><span class="dot on"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+          <div class="lesson">
+            <h2>What is Artificial Intelligence?</h2>
+            <span class="pill">Overview</span>
+            <div class="meta">READING · 8 min</div>
+            <div class="summary-label">SUMMARY</div>
+            <p>In this lesson, you will gain a foundational understanding of Artificial Intelligence (AI) by defining what it is and exploring its pervasive presence in our daily lives. You will learn how AI enables computers and systems to perform tasks that typically require human intelligence, such as recognizing faces, understanding speech, and making recommendations.</p>
+            <div class="summary-label">KEY TAKEAWAYS</div>
+            <p>AI is technology enabling computers to perform tasks requiring human intelligence.</p>
+            <p>Everyday applications of AI include facial recognition, voice assistants, and recommendation systems.</p>
+          </div>
+
+          <div class="chat" id="lesson-chat">
+            <div class="chat-head">
+              <strong>Course tutor</strong>
+              <span>AI &amp; Machine Learning Fundamentals</span>
+            </div>
+            <div class="chat-body">
+              <div class="bubble">Ask about this lesson. I can explain a concept, give an example, or quiz you on what you just read.</div>
+            </div>
+            <div class="chat-input">
+              <input type="text" placeholder="Ask about this lesson" />
+              <button class="send" type="button" aria-hidden="true">↑</button>
+            </div>
+          </div>
+
+          <button class="cubit-tag" type="button" aria-label="Open course tutor" data-phone="lesson">
+            <svg viewBox="80 100 240 237" width="28" height="28" aria-hidden="true">
+              <g transform="translate(200,200)">
+                <polygon points="0,-100 120,-42 0,17 -120,-42" fill="var(--tag-cube-top)" />
+                <polygon points="-120,-42 0,17 0,137 -120,78" fill="var(--tag-cube-left)" />
+                <polygon points="120,-42 0,17 0,137 120,78" fill="var(--tag-cube-right)" />
+                <polygon points="0,-100 120,-42 0,17 -120,-42" fill="none" stroke="var(--tag-cube-stroke)" stroke-width="1.5" stroke-linejoin="round" />
+                <polygon points="-120,-42 0,17 0,137 -120,78" fill="none" stroke="var(--tag-cube-stroke)" stroke-width="1.5" stroke-linejoin="round" />
+                <polygon points="120,-42 0,17 0,137 120,78" fill="none" stroke="var(--tag-cube-stroke)" stroke-width="1.5" stroke-linejoin="round" />
+                <line x1="0" y1="17" x2="0" y2="137" stroke="var(--tag-cube-stroke)" stroke-width="1.5" />
+              </g>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div>
+        <p class="phone-label">Course overview · same tag</p>
+        <div class="phone" id="overview">
+          <div class="status"><span>1:33 PM</span><span>●●●</span></div>
+          <div class="nav">
+            <div class="lockup">
+              <svg class="page-cube" viewBox="80 100 240 237" width="16" height="16" aria-hidden="true">
+                <g transform="translate(200,200)">
+                  <polygon points="0,-100 120,-42 0,17 -120,-42" fill="var(--cube-top)" />
+                  <polygon points="-120,-42 0,17 0,137 -120,78" fill="var(--cube-left)" />
+                  <polygon points="120,-42 0,17 0,137 120,78" fill="var(--cube-right)" />
+                  <polygon points="0,-100 120,-42 0,17 -120,-42" fill="none" stroke="var(--cube-stroke)" stroke-width="1.5" stroke-linejoin="round" />
+                  <polygon points="-120,-42 0,17 0,137 -120,78" fill="none" stroke="var(--cube-stroke)" stroke-width="1.5" stroke-linejoin="round" />
+                  <polygon points="120,-42 0,17 0,137 120,78" fill="none" stroke="var(--cube-stroke)" stroke-width="1.5" stroke-linejoin="round" />
+                  <line x1="0" y1="17" x2="0" y2="137" stroke="var(--cube-stroke)" stroke-width="1.5" />
+                </g>
+              </svg>
+              Cuib
+            </div>
+            <div class="nav-actions">
+              <span class="icon">↓</span>
+              <button class="icon theme-btn" type="button" aria-label="Toggle dark mode">☾</button>
+              <span class="icon avatar">R</span>
+            </div>
+          </div>
+          <div class="overview-body">
+            <h2>AI &amp; Machine Learning Fundamentals for Beginners</h2>
+            <p style="color:var(--ink-soft);font-size:14.5px;line-height:1.55;margin:0 0 8px">This course introduces the fundamental concepts of Artificial Intelligence and Machine Learning, exploring their core principles, real-world applications, and different learning paradigms.</p>
+            <div class="chips">
+              <span class="chip">Difficulty Beginner</span>
+              <span class="chip">5 Modules</span>
+              <span class="chip">23 Lessons</span>
+            </div>
+            <button class="start" type="button">Start Learning</button>
+          </div>
+          <div class="chat">
+            <div class="chat-head">
+              <strong>Course tutor</strong>
+              <span>AI &amp; Machine Learning Fundamentals</span>
+            </div>
+            <div class="chat-body">
+              <div class="bubble">Same tutor as the lesson. This mock only changes how you open it.</div>
+            </div>
+            <div class="chat-input">
+              <input type="text" placeholder="Ask about this course" />
+              <button class="send" type="button" aria-hidden="true">↑</button>
+            </div>
+          </div>
+          <button class="cubit-tag" type="button" aria-label="Open course tutor" data-phone="overview">
+            <svg viewBox="80 100 240 237" width="28" height="28" aria-hidden="true">
+              <g transform="translate(200,200)">
+                <polygon points="0,-100 120,-42 0,17 -120,-42" fill="var(--tag-cube-top)" />
+                <polygon points="-120,-42 0,17 0,137 -120,78" fill="var(--tag-cube-left)" />
+                <polygon points="120,-42 0,17 0,137 120,78" fill="var(--tag-cube-right)" />
+                <polygon points="0,-100 120,-42 0,17 -120,-42" fill="none" stroke="var(--tag-cube-stroke)" stroke-width="1.5" stroke-linejoin="round" />
+                <polygon points="-120,-42 0,17 0,137 -120,78" fill="none" stroke="var(--tag-cube-stroke)" stroke-width="1.5" stroke-linejoin="round" />
+                <polygon points="120,-42 0,17 0,137 120,78" fill="none" stroke="var(--tag-cube-stroke)" stroke-width="1.5" stroke-linejoin="round" />
+                <line x1="0" y1="17" x2="0" y2="137" stroke="var(--tag-cube-stroke)" stroke-width="1.5" />
+              </g>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const html = document.documentElement;
+    const themeBtn = document.getElementById('theme');
+    function setDark(on) {
+      html.classList.toggle('dark', on);
+      themeBtn.textContent = on ? 'Light' : 'Dark';
+      document.querySelectorAll('.theme-btn').forEach((b) => {
+        b.textContent = on ? '☀' : '☾';
+      });
+    }
+    themeBtn.addEventListener('click', () => setDark(!html.classList.contains('dark')));
+    document.querySelectorAll('.theme-btn').forEach((b) => {
+      b.addEventListener('click', () => setDark(!html.classList.contains('dark')));
+    });
+    document.querySelectorAll('.cubit-tag').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const phone = document.getElementById(btn.dataset.phone);
+        const open = phone.classList.toggle('open');
+        btn.setAttribute('aria-label', open ? 'Close course tutor' : 'Open course tutor');
+      });
+    });
+  </script>
+</body>
+</html>

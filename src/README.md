@@ -1,14 +1,14 @@
-# Cubit Frontend — Source Overview
+# Quib Frontend — Source Overview
 
 **Last updated:** June 2026
 
-Cubit is an ed-tech web app: learners take AI-generated quizzes and structured courses from YouTube; educators connect a channel or paste URLs to generate and publish courses.
+Quib is an ed-tech web app: learners take AI-generated quizzes and structured courses from YouTube; educators connect a channel or paste URLs to generate and publish courses.
 
 ## Authentication
 
 - **Google OAuth only** (no email/password)
 - JWT stored in `localStorage` (`token`)
-- Sign-in intent: `creator` vs `student` in `localStorage` (`cubit_sign_in_intent`) — controls educator nav visibility
+- Sign-in intent: `creator` vs `student` in `localStorage` (`quib_sign_in_intent`) — controls educator nav visibility
 - `profile.role` from API (`learner`, `educator`, `admin`) — used for publish permissions
 
 ## Routes

@@ -1,6 +1,6 @@
 /** Persist that the learner opened the lesson player for this course. */
 
-const key = (courseId: string) => `Cubit:course-launched:${courseId}`;
+const key = (courseId: string) => `cuib:course-launched:${courseId}`;
 
 export function markCourseLaunched(courseId: string): void {
   try {

@@ -5,7 +5,7 @@ import { Button } from './Button';
 import { Card } from './Card';
 import { Input } from './Input';
 import { Award, Search, CheckCircle, XCircle, Calendar, User, FileText } from 'lucide-react';
-import { CubitLogo } from './CubitLogo';
+import { QuibLogo } from './QuibLogo';
 
 export function Verification() {
   const { certId } = useParams();
@@ -60,7 +60,7 @@ export function Verification() {
       <header className="bg-white border-b border-gray-100 px-8 py-4">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <button onClick={() => navigate('/')} className="flex items-center gap-2">
-            <CubitLogo size={24} variant="light" wordmarkClassName="text-xl font-bold text-gray-900" />
+            <QuibLogo size={24} variant="light" wordmarkClassName="text-xl font-bold text-gray-900" />
           </button>
         </div>
       </header>
@@ -80,7 +80,7 @@ export function Verification() {
           <div className="flex gap-3">
             <Input
               type="text"
-              placeholder="Enter certificate ID (e.g., Cubit-2026-ML-8472)"
+              placeholder="Enter certificate ID (e.g., CUIB-2026-ML-8472)"
               value={searchId}
               onChange={(e) => setSearchId(e.target.value)}
               icon={<Search className="w-5 h-5" />}
@@ -189,9 +189,9 @@ export function Verification() {
               <Award className="w-6 h-6 text-white" />
             </div>
             <div>
-              <div className="font-bold text-blue-900 mb-2">About Cubit Verification</div>
+              <div className="font-bold text-blue-900 mb-2">About Cuib Verification</div>
               <div className="text-sm text-blue-800 leading-relaxed">
-                All Cubit certificates include a unique verification ID. This public verification page 
+                All Cuib certificates include a unique verification ID. This public verification page 
                 allows anyone to confirm the authenticity and validity of a certificate. Each certificate 
                 includes details about the recipient, course, score, and issue date.
               </div>

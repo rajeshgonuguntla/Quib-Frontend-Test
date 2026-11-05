@@ -142,7 +142,7 @@ Professional certificates include:
 - Score and date
 - Unique certificate ID
 - Verification URL and QR code
-- Cubit branding seal
+- Quib branding seal
 - Premium border design
 
 ## 🎓 User Flows

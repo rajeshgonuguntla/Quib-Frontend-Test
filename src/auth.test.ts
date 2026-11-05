@@ -15,13 +15,13 @@ describe('auth', () => {
   });
 
   it('isTokenValid returns false for expired session exp', () => {
-    localStorage.setItem('cubit_session_exp', '1');
+    localStorage.setItem('cuib_session_exp', '1');
     expect(isTokenValid()).toBe(false);
   });
 
   it('isTokenValid returns true for future session exp', () => {
     const exp = Math.floor(Date.now() / 1000) + 3600;
-    localStorage.setItem('cubit_session_exp', String(exp));
+    localStorage.setItem('cuib_session_exp', String(exp));
     expect(isTokenValid()).toBe(true);
   });
 
@@ -30,14 +30,14 @@ describe('auth', () => {
     localStorage.setItem('token', 'leftover-jwt');
     setSession(exp);
     expect(localStorage.getItem('token')).toBeNull();
-    expect(localStorage.getItem('cubit_session_exp')).toBe(String(exp));
+    expect(localStorage.getItem('cuib_session_exp')).toBe(String(exp));
     expect(isTokenValid()).toBe(true);
   });
 
   it('clearToken removes session flags', () => {
     setSession(Math.floor(Date.now() / 1000) + 3600);
     clearToken();
-    expect(localStorage.getItem('cubit_session_exp')).toBeNull();
+    expect(localStorage.getItem('cuib_session_exp')).toBeNull();
     expect(isTokenValid()).toBe(false);
   });
 

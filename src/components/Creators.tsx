@@ -190,7 +190,7 @@ export function Creators({ embedded = false }: { embedded?: boolean }) {
         <PageHeader
           label="Discover"
           title="Creators"
-          description="Explore educators and YouTube channels with courses and quizzes on Cubit."
+          description="Explore educators and YouTube channels with courses and quizzes on Cuib."
         />
       )}
 
@@ -201,7 +201,7 @@ export function Creators({ embedded = false }: { embedded?: boolean }) {
             <h2 className="text-sm font-medium">Trending creators</h2>
           </div>
           {!loadingTrending && trending.length > 0 && (
-            <span className="text-xs text-muted-foreground">Ranked by popularity on Cubit</span>
+            <span className="text-xs text-muted-foreground">Ranked by popularity on Cuib</span>
           )}
         </div>
 

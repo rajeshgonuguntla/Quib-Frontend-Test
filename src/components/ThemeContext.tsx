@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-const THEME_STORAGE_KEY = 'cubit_theme';
+const THEME_STORAGE_KEY = 'quib_theme';
 
 interface ThemeContextValue {
   isDark: boolean;

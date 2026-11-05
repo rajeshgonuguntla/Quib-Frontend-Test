@@ -4,13 +4,13 @@ import { cn } from './ui/utils';
 
 type LogoVariant = 'auto' | 'dark' | 'light';
 
-type CubitLogoMarkProps = {
+type QuibLogoMarkProps = {
   size?: number;
   className?: string;
   variant?: LogoVariant;
 };
 
-type CubitLogoProps = {
+type QuibLogoProps = {
   showWordmark?: boolean;
   wordmark?: string;
   size?: number;
@@ -32,7 +32,7 @@ function cubeColors(dark: boolean) {
 }
 
 /** Cube mark only — scales cleanly in nav bars and compact headers. */
-export function CubitLogoMark({ size = 20, className, variant = 'auto' }: CubitLogoMarkProps) {
+export function QuibLogoMark({ size = 20, className, variant = 'auto' }: QuibLogoMarkProps) {
   const { isDark } = useTheme();
   const dark = resolveDark(variant, isDark);
   const c = cubeColors(dark);
@@ -78,8 +78,8 @@ export function CubitLogoMark({ size = 20, className, variant = 'auto' }: CubitL
   );
 }
 
-/** Full square logo asset — good for favicons and app badges. */
-export function CubitLogoBadge({
+/** Full square logo asset from files.zip — good for favicons and app badges. */
+export function QuibLogoBadge({
   size = 28,
   className,
   variant = 'auto',
@@ -104,17 +104,17 @@ export function CubitLogoBadge({
 }
 
 /** Cube mark with optional wordmark — default branding lockup. */
-export function CubitLogo({
+export function QuibLogo({
   showWordmark = true,
   wordmark = BRAND_NAME,
   size = 20,
   className,
   wordmarkClassName,
   variant = 'auto',
-}: CubitLogoProps) {
+}: QuibLogoProps) {
   return (
     <span className={cn('inline-flex items-center gap-2', className)}>
-      <CubitLogoMark size={size} variant={variant} />
+      <QuibLogoMark size={size} variant={variant} />
       {showWordmark ? (
         <span className={cn('font-semibold tracking-tight', wordmarkClassName)}>{wordmark}</span>
       ) : null}

@@ -3,7 +3,7 @@ import { Link } from 'react-router';
 import { Building2, CheckCircle2, Loader2, Mail, MapPin, Users } from 'lucide-react';
 import { submitGovernmentInquiry } from '../api/governmentsApi';
 import { useTheme, getC } from './ThemeContext';
-import { CubitLogo } from './CubitLogo';
+import { QuibLogo } from './QuibLogo';
 import { ThemeToggle } from './ThemeToggle';
 
 export function Governments() {
@@ -51,7 +51,7 @@ export function Governments() {
         style={{ background: C.bg1, borderColor: C.border }}
       >
         <Link to="/" className="no-underline" style={{ color: C.text }}>
-          <CubitLogo size={18} wordmarkClassName="text-sm font-semibold" />
+          <QuibLogo size={18} wordmarkClassName="text-sm font-semibold" />
         </Link>
         <div className="flex items-center gap-2">
           <ThemeToggle size="sm" />
@@ -70,10 +70,10 @@ export function Governments() {
           For governments
         </p>
         <h1 className="mb-4 text-3xl font-semibold tracking-tight md:text-4xl">
-          Upskilling centers powered by Cubit
+          Upskilling centers powered by Cuib
         </h1>
         <p className="mb-10 max-w-2xl text-base leading-relaxed" style={{ color: C.text2 }}>
-          Partner with Cubit to deliver AI-assisted courses, measurable learner progress, and educator
+          Partner with Cuib to deliver AI-assisted courses, measurable learner progress, and educator
           analytics for public workforce and upskilling programs.
         </p>
 

@@ -1,7 +1,7 @@
 import type { UserProfile } from '../types/userProfile';
 import type { NavGroup } from '../shell/navConfig';
 
-export const SIGN_IN_INTENT_KEY = 'cubit_sign_in_intent';
+export const SIGN_IN_INTENT_KEY = 'quib_sign_in_intent';
 export const CREATOR_HOME_PATH = '/educator-studio?tab=url';
 
 /**
@@ -32,7 +32,7 @@ export function clearSignInIntent(): void {
   localStorage.removeItem(SIGN_IN_INTENT_KEY);
 }
 
-/** Cubit platform administrators only — not educators. */
+/** Cuib platform administrators only — not educators. */
 export function isAdminAccount(profile?: UserProfile | null): boolean {
   return profile?.role === 'admin';
 }

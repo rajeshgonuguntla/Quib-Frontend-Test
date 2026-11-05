@@ -137,7 +137,7 @@ export function SignIn() {
             transition={{ delay: 0.05 }}
             className="mb-10 text-center text-2xl font-semibold tracking-tight text-[var(--landing-fg)] md:text-4xl"
           >
-            {CREATOR_FLOW_ENABLED ? 'Choose how you want to use Cubit' : 'Sign in to Cubit'}
+            {CREATOR_FLOW_ENABLED ? 'Choose how you want to use Cuib' : 'Sign in to Cuib'}
           </motion.h1>
 
           <div className={CREATOR_FLOW_ENABLED ? 'grid gap-6 md:grid-cols-2' : 'mx-auto grid max-w-md gap-6'}>
@@ -197,7 +197,7 @@ export function SignIn() {
             transition={{ delay: 0.35 }}
             className="mx-auto mt-6 max-w-lg text-center text-xs leading-relaxed text-[var(--landing-muted)]"
           >
-            By continuing, you agree to Cubit&apos;s Terms of Service and Privacy Policy.
+            By continuing, you agree to Cuib&apos;s Terms of Service and Privacy Policy.
           </motion.p>
 
           <Link

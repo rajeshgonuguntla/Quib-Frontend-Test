@@ -2,8 +2,7 @@ import { Link } from 'react-router';
 import { ThemeToggle } from '../ThemeToggle';
 import { motion } from 'framer-motion';
 import { isTokenValid, useAuthSessionKey } from '../../auth';
-import { BRAND_NAME } from '../../brand';
-import { CUBIT_LOGO } from '../../cubit/subjects';
+import { CUBIT_LOGO, LANDING_BRAND_NAME } from '../../cubit/subjects';
 
 type LandingNavProps = {
   isDark: boolean;
@@ -30,7 +29,7 @@ export function LandingNav({ isDark }: LandingNavProps) {
           className="text-sm font-semibold tracking-tight text-[var(--landing-fg)]"
           style={{ fontFamily: 'Inter, sans-serif' }}
         >
-          {BRAND_NAME}
+          {LANDING_BRAND_NAME}
         </span>
       </Link>
 

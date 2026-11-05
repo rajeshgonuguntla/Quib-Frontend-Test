@@ -230,12 +230,12 @@ html.dark *::-webkit-scrollbar-thumb {
 }
 
 /* Collapsed tutor FAB sits on the lesson edge — hide the bar, keep scroll */
-.cubit-scroll-hidden {
+.cuib-scroll-hidden {
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
 
-.cubit-scroll-hidden::-webkit-scrollbar {
+.cuib-scroll-hidden::-webkit-scrollbar {
   width: 0;
   height: 0;
 }

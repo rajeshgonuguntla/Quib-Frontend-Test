@@ -65,7 +65,7 @@ function SidebarUpgradeChip({ onNavigate }: { onNavigate?: () => void }) {
   if (billing && hidesUpgradeCta(billing)) return null;
 
   return (
-    <div className="Cubit-upgrade-chip mt-3">
+    <div className="cuib-upgrade-chip mt-3">
       <span className="text-[12.5px] font-semibold text-[var(--ink-soft)]">
         {billingPlanLabel(billing, false)}
       </span>

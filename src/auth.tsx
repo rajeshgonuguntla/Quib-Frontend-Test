@@ -5,8 +5,8 @@ import { INTERESTS_KEY } from './components/Onboarding';
 import { safeAppPath } from './utils/safeAppPath';
 
 const TOKEN_KEY = 'token';
-const SESSION_EXP_KEY = 'cubit_session_exp';
-const AUTH_CHANGED_EVENT = 'cubit-auth-changed';
+const SESSION_EXP_KEY = 'cuib_session_exp';
+const AUTH_CHANGED_EVENT = 'quib-auth-changed';
 
 // Drop legacy Bearer JWT from dual-auth era (XSS-readable).
 if (typeof localStorage !== 'undefined') {

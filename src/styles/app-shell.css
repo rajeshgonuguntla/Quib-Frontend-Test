@@ -1,6 +1,6 @@
-/* Signed-in app chrome — matches cubit-app-merged.html. Landing stays on its own tokens. */
+/* Signed-in app chrome — matches cuib-app-merged.html. Landing stays on its own tokens. */
 
-.cubit-app {
+.cuib-app {
   --bg: #ffffff;
   --surface: #ffffff;
   --ink: #0a0a0a;
@@ -30,7 +30,7 @@
   -webkit-font-smoothing: antialiased;
 }
 
-.dark .cubit-app {
+.dark .cuib-app {
   --bg: #0a0a0a;
   --surface: #0a0a0a;
   --ink: #fafafa;
@@ -44,7 +44,7 @@
   --brand: #c21e3c;
 }
 
-.cubit-app .cubit-topnav {
+.cuib-app .cuib-topnav {
   display: flex;
   align-items: center;
   gap: 24px;
@@ -53,7 +53,7 @@
   background: var(--bg);
 }
 
-.cubit-app .cubit-shell {
+.cuib-app .cuib-shell {
   display: grid;
   grid-template-columns: 268px 1fr;
   gap: 24px;
@@ -61,7 +61,7 @@
   padding: 24px 40px 40px;
 }
 
-.cubit-app .cubit-sidebar {
+.cuib-app .cuib-sidebar {
   position: sticky;
   top: 78px;
   height: calc(100vh - 78px - 24px);
@@ -73,25 +73,25 @@
   flex-direction: column;
 }
 
-.cubit-app .cubit-sidebar > * {
+.cuib-app .cuib-sidebar > * {
   min-height: 0;
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
 }
 
-.cubit-app .cubit-main {
+.cuib-app .cuib-main {
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 24px;
 }
 
-.cubit-app .cubit-upgrade-fab {
+.cuib-app .cuib-upgrade-fab {
   display: none;
 }
 
-.cubit-app .cubit-upgrade-chip {
+.cuib-app .cuib-upgrade-chip {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -104,16 +104,16 @@
 }
 
 @media (max-width: 980px) {
-  .cubit-app .cubit-topnav {
+  .cuib-app .cuib-topnav {
     gap: 10px;
     padding: 10px 12px;
   }
-  .cubit-app .cubit-shell {
+  .cuib-app .cuib-shell {
     grid-template-columns: 1fr;
     padding: 16px 16px 32px;
   }
-  .cubit-app .cubit-sidebar { display: none; }
-  .cubit-app .cubit-upgrade-fab {
+  .cuib-app .cuib-sidebar { display: none; }
+  .cuib-app .cuib-upgrade-fab {
     position: fixed;
     bottom: 24px;
     left: 24px;
@@ -129,14 +129,14 @@
   }
 }
 
-.cubit-app .font-serif-display {
+.cuib-app .font-serif-display {
   font-family: var(--display);
   font-weight: 700;
   letter-spacing: -0.015em;
 }
 
-/* Browse / course cards — from cubit-app-merged.html */
-.cubit-app .search-box {
+/* Browse / course cards — from cuib-app-merged.html */
+.cuib-app .search-box {
   width: 100%;
   max-width: 420px;
   display: flex;
@@ -148,9 +148,9 @@
   padding: 8px 12px;
   transition: border-color 0.15s ease;
 }
-.cubit-app .search-box:focus-within { border-color: var(--ink-faint); }
-.cubit-app .search-box svg { flex-shrink: 0; color: var(--ink-faint); }
-.cubit-app .search-box input {
+.cuib-app .search-box:focus-within { border-color: var(--ink-faint); }
+.cuib-app .search-box svg { flex-shrink: 0; color: var(--ink-faint); }
+.cuib-app .search-box input {
   border: none;
   background: none;
   outline: none;
@@ -159,9 +159,9 @@
   color: var(--ink);
   width: 100%;
 }
-.cubit-app .search-box input::placeholder { color: var(--ink-faint); }
+.cuib-app .search-box input::placeholder { color: var(--ink-faint); }
 
-.cubit-app .eyebrow {
+.cuib-app .eyebrow {
   font-family: var(--mono);
   font-size: 11px;
   letter-spacing: 0.05em;
@@ -169,23 +169,23 @@
   text-transform: uppercase;
   margin-bottom: 10px;
 }
-.cubit-app .eyebrow.eyebrow-heading {
+.cuib-app .eyebrow.eyebrow-heading {
   font-weight: 700;
   font-size: 13px;
   color: var(--ink);
   margin-bottom: 18px;
 }
 
-.cubit-app .browse-hero { padding: 4px 0 2px; }
-.cubit-app .status-tabs {
+.cuib-app .browse-hero { padding: 4px 0 2px; }
+.cuib-app .status-tabs {
   display: flex;
   gap: 22px;
   margin-bottom: 18px;
   overflow-x: auto;
   scrollbar-width: none;
 }
-.cubit-app .status-tabs::-webkit-scrollbar { display: none; }
-.cubit-app .status-tab {
+.cuib-app .status-tabs::-webkit-scrollbar { display: none; }
+.cuib-app .status-tab {
   position: relative;
   display: flex;
   align-items: center;
@@ -201,9 +201,9 @@
   font-family: inherit;
   transition: color 0.14s ease;
 }
-.cubit-app .status-tab:hover { color: var(--ink-soft); }
-.cubit-app .status-tab.active { color: var(--ink); }
-.cubit-app .status-tab-count {
+.cuib-app .status-tab:hover { color: var(--ink-soft); }
+.cuib-app .status-tab.active { color: var(--ink); }
+.cuib-app .status-tab-count {
   font-family: var(--mono);
   font-size: 10.5px;
   font-weight: 500;
@@ -213,21 +213,21 @@
   padding: 1px 6px;
   transition: color 0.14s ease, background 0.14s ease;
 }
-.cubit-app .status-tab.active .status-tab-count { color: var(--accent); background: var(--accent-soft); }
-.cubit-app .browse-toolbar {
+.cuib-app .status-tab.active .status-tab-count { color: var(--accent); background: var(--accent-soft); }
+.cuib-app .browse-toolbar {
   display: flex;
   align-items: center;
   gap: 10px;
   margin-bottom: 16px;
   flex-wrap: wrap;
 }
-.cubit-app .browse-search { flex: 1; min-width: 220px; max-width: 420px; }
-.cubit-app .filter-row {
+.cuib-app .browse-search { flex: 1; min-width: 220px; max-width: 420px; }
+.cuib-app .filter-row {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
-.cubit-app .filter-chip {
+.cuib-app .filter-chip {
   font-family: var(--mono);
   font-size: 11.5px;
   letter-spacing: 0.02em;
@@ -239,23 +239,23 @@
   cursor: pointer;
   transition: background 0.14s ease, border-color 0.14s ease, color 0.14s ease;
 }
-.cubit-app .filter-chip:hover { background: var(--fill); color: var(--ink); }
-.cubit-app .filter-chip.active {
+.cuib-app .filter-chip:hover { background: var(--fill); color: var(--ink); }
+.cuib-app .filter-chip.active {
   border-color: var(--ink);
   color: var(--bg);
   background: var(--ink);
   font-weight: 600;
 }
 
-.cubit-app .card-divider { height: 1px; background: var(--border); margin: 20px 0; }
+.cuib-app .card-divider { height: 1px; background: var(--border); margin: 20px 0; }
 
-.cubit-app .course-grid {
+.cuib-app .course-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 18px;
 }
 
-.cubit-app button.course-card {
+.cuib-app button.course-card {
   display: block;
   width: 100%;
   font: inherit;
@@ -263,7 +263,7 @@
   color: inherit;
   cursor: pointer;
 }
-.cubit-app .course-card {
+.cuib-app .course-card {
   position: relative;
   border: 1px solid var(--border);
   border-radius: 13px;
@@ -271,10 +271,10 @@
   transition: border-color 0.15s ease, transform 0.15s ease;
   background: var(--surface);
 }
-.cubit-app .course-card:hover { border-color: var(--ink-faint); }
-.cubit-app .course-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.cuib-app .course-card:hover { border-color: var(--ink-faint); }
+.cuib-app .course-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-.cubit-app .thumb {
+.cuib-app .thumb {
   aspect-ratio: 16 / 10;
   width: 100%;
   background: var(--fill);
@@ -285,7 +285,7 @@
   border-bottom: 1px solid var(--border);
   overflow: hidden;
 }
-.cubit-app .thumb-img {
+.cuib-app .thumb-img {
   position: absolute;
   inset: 0;
   z-index: 0;
@@ -294,7 +294,7 @@
   object-fit: cover;
   display: block;
 }
-.cubit-app .thumb-glyph {
+.cuib-app .thumb-glyph {
   font-family: var(--mono);
   font-size: 34px;
   font-weight: 500;
@@ -302,7 +302,7 @@
   opacity: 0.5;
   letter-spacing: -0.02em;
 }
-.cubit-app .thumb-tag {
+.cuib-app .thumb-tag {
   position: absolute;
   top: 10px;
   left: 10px;
@@ -317,7 +317,7 @@
   padding: 4px 8px;
   border-radius: 6px;
 }
-.cubit-app .thumb-play {
+.cuib-app .thumb-play {
   position: absolute;
   z-index: 2;
   width: 40px;
@@ -330,12 +330,12 @@
   opacity: 0;
   transition: opacity 0.15s ease, transform 0.15s ease;
 }
-.cubit-app .course-card:hover .thumb-play { opacity: 1; }
-.cubit-app .thumb-play:hover { transform: scale(1.06); }
-.cubit-app .thumb-play svg { width: 14px; height: 14px; color: #fff; margin-left: 2px; }
+.cuib-app .course-card:hover .thumb-play { opacity: 1; }
+.cuib-app .thumb-play:hover { transform: scale(1.06); }
+.cuib-app .thumb-play svg { width: 14px; height: 14px; color: #fff; margin-left: 2px; }
 
-.cubit-app .course-body { padding: 14px 15px 16px; }
-.cubit-app .course-title {
+.cuib-app .course-body { padding: 14px 15px 16px; }
+.cuib-app .course-title {
   font-size: 14px;
   font-weight: 700;
   letter-spacing: -0.01em;
@@ -346,53 +346,53 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-.cubit-app .course-creator { font-size: 12px; color: var(--ink-soft); margin-bottom: 12px; }
-.cubit-app .progress-row {
+.cuib-app .course-creator { font-size: 12px; color: var(--ink-soft); margin-bottom: 12px; }
+.cuib-app .progress-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 6px;
 }
-.cubit-app .progress-lessons {
+.cuib-app .progress-lessons {
   font-family: var(--mono);
   font-size: 10.5px;
   color: var(--ink-faint);
   transition: color 0.15s ease;
 }
-.cubit-app .course-card:hover .progress-lessons { color: var(--accent); }
-.cubit-app .progress-pct {
+.cuib-app .course-card:hover .progress-lessons { color: var(--accent); }
+.cuib-app .progress-pct {
   font-family: var(--mono);
   font-size: 10.5px;
   font-weight: 500;
   color: var(--ink-soft);
 }
-.cubit-app .progress-track {
+.cuib-app .progress-track {
   height: 4px;
   border-radius: 999px;
   background: var(--fill);
   overflow: hidden;
 }
-.cubit-app .progress-fill {
+.cuib-app .progress-fill {
   height: 100%;
   background: var(--border);
   border-radius: 999px;
 }
-.cubit-app .course-card.current .progress-fill { background: var(--accent); }
-.cubit-app .course-card.current .progress-pct { color: var(--accent); }
+.cuib-app .course-card.current .progress-fill { background: var(--accent); }
+.cuib-app .course-card.current .progress-pct { color: var(--accent); }
 
-.cubit-app .empty-state {
+.cuib-app .empty-state {
   padding: 52px 20px 44px;
   text-align: center;
 }
-.cubit-app .empty-glyph {
+.cuib-app .empty-glyph {
   font-family: var(--mono);
   font-size: 20px;
   color: var(--ink-faint);
   margin-bottom: 14px;
 }
-.cubit-app .empty-title { font-weight: 700; font-size: 15px; margin-bottom: 6px; }
-.cubit-app .empty-sub { font-size: 13px; color: var(--ink-soft); margin-bottom: 18px; }
-.cubit-app .empty-clear {
+.cuib-app .empty-title { font-weight: 700; font-size: 15px; margin-bottom: 6px; }
+.cuib-app .empty-sub { font-size: 13px; color: var(--ink-soft); margin-bottom: 18px; }
+.cuib-app .empty-clear {
   font-size: 12.5px;
   font-weight: 600;
   color: var(--accent);
@@ -403,22 +403,22 @@
   cursor: pointer;
   transition: background 0.14s ease;
 }
-.cubit-app .empty-clear:hover { background: var(--fill); }
+.cuib-app .empty-clear:hover { background: var(--fill); }
 
-.cubit-app .settings-section { padding: 4px 0; }
-.cubit-app .settings-section-title { font-size: 15px; font-weight: 700; margin-bottom: 16px; }
-.cubit-app .settings-row {
+.cuib-app .settings-section { padding: 4px 0; }
+.cuib-app .settings-section-title { font-size: 15px; font-weight: 700; margin-bottom: 16px; }
+.cuib-app .settings-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
   padding: 10px 0;
 }
-.cubit-app .settings-row-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
-.cubit-app .settings-row-text { min-width: 0; }
-.cubit-app .settings-row-label { font-size: 13.5px; font-weight: 600; color: var(--ink); }
-.cubit-app .settings-row-sub { font-size: 12px; color: var(--ink-faint); margin-top: 2px; }
-.cubit-app .av {
+.cuib-app .settings-row-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.cuib-app .settings-row-text { min-width: 0; }
+.cuib-app .settings-row-label { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+.cuib-app .settings-row-sub { font-size: 12px; color: var(--ink-faint); margin-top: 2px; }
+.cuib-app .av {
   width: 34px;
   height: 34px;
   border-radius: 50%;
@@ -430,20 +430,20 @@
   flex-shrink: 0;
   overflow: hidden;
 }
-.cubit-app .av img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.cubit-app .av .initials {
+.cuib-app .av img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cuib-app .av .initials {
   font-family: var(--mono);
   font-size: 12px;
   font-weight: 600;
   color: var(--ink-soft);
   letter-spacing: -0.02em;
 }
-.cubit-app .settings-avatar { width: 40px; height: 40px; }
-.cubit-app .settings-avatar .initials { font-size: 13px; }
-.cubit-app .user-info { min-width: 0; }
-.cubit-app .user-info .uname { font-size: 13px; font-weight: 600; line-height: 1.3; }
-.cubit-app .user-info .plan-free { font-size: 11px; color: var(--ink-faint); }
-.cubit-app .settings-btn {
+.cuib-app .settings-avatar { width: 40px; height: 40px; }
+.cuib-app .settings-avatar .initials { font-size: 13px; }
+.cuib-app .user-info { min-width: 0; }
+.cuib-app .user-info .uname { font-size: 13px; font-weight: 600; line-height: 1.3; }
+.cuib-app .user-info .plan-free { font-size: 11px; color: var(--ink-faint); }
+.cuib-app .settings-btn {
   flex-shrink: 0;
   padding: 8px 14px;
   border-radius: 8px;
@@ -456,9 +456,9 @@
   font-family: inherit;
   transition: background 0.14s ease, border-color 0.14s ease;
 }
-.cubit-app .settings-btn:hover { background: var(--fill); border-color: var(--ink-faint); }
-.cubit-app .settings-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.cubit-app .settings-link {
+.cuib-app .settings-btn:hover { background: var(--fill); border-color: var(--ink-faint); }
+.cuib-app .settings-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.cuib-app .settings-link {
   display: block;
   padding: 9px 0;
   font-size: 11.5px;
@@ -472,20 +472,20 @@
   width: 100%;
   text-decoration: none;
 }
-.cubit-app .settings-link:hover { color: var(--ink); }
-.cubit-app .settings-edit {
+.cuib-app .settings-link:hover { color: var(--ink); }
+.cuib-app .settings-edit {
   display: grid;
   gap: 12px;
   padding: 4px 0 12px;
 }
-.cubit-app .settings-edit label {
+.cuib-app .settings-edit label {
   display: block;
   font-size: 11.5px;
   font-weight: 600;
   color: var(--ink-faint);
   margin-bottom: 6px;
 }
-.cubit-app .settings-edit input {
+.cuib-app .settings-edit input {
   width: 100%;
   border: 1px solid var(--border);
   background: var(--surface);
@@ -495,10 +495,10 @@
   font-size: 13px;
   font-family: inherit;
 }
-.cubit-app .settings-edit input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
-.cubit-app .settings-edit input[readonly] { opacity: 0.6; }
-.cubit-app .settings-edit-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
-.cubit-app .upgrade-fab-cta {
+.cuib-app .settings-edit input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.cuib-app .settings-edit input[readonly] { opacity: 0.6; }
+.cuib-app .settings-edit-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+.cuib-app .upgrade-fab-cta {
   font-family: inherit;
   font-size: 12.5px;
   font-weight: 700;
@@ -512,15 +512,15 @@
   flex-shrink: 0;
   transition: opacity 0.15s ease, transform 0.1s ease;
 }
-.cubit-app .upgrade-fab-cta:hover { opacity: 0.88; }
-.cubit-app .upgrade-fab-cta:active { transform: scale(0.96); }
+.cuib-app .upgrade-fab-cta:hover { opacity: 0.88; }
+.cuib-app .upgrade-fab-cta:active { transform: scale(0.96); }
 
 @media (max-width: 980px) {
-  .cubit-app .course-grid { grid-template-columns: 1fr 1fr; }
+  .cuib-app .course-grid { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 620px) {
-  .cubit-app .course-grid { grid-template-columns: 1fr; }
-  .cubit-app .browse-search { max-width: none; }
+  .cuib-app .course-grid { grid-template-columns: 1fr; }
+  .cuib-app .browse-search { max-width: none; }
 }
 
 @keyframes study-tool-heading-in {
