@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
+import { isTokenValid, useAuthSessionKey } from '../auth';
 import { useTheme } from './ThemeContext';
 import { CubeLoader } from './CubeLoader';
 import { LandingNav } from './landing/LandingNav';
@@ -11,11 +12,14 @@ import {
   type LandingPanelId,
 } from './landing/LandingSimpleBelow';
 import { StudentMasterInput } from './StudentMasterInput';
+import GoogleLoginButton from './GoogleLoginButton';
 import { CUBIT_LOGO } from '../cubit/subjects';
 
 export function LandingPage() {
   const location = useLocation();
   const { isDark } = useTheme();
+  const sessionKey = useAuthSessionKey();
+  const signedIn = sessionKey !== 'guest' && isTokenValid();
   const [isLoading, setIsLoading] = useState(false);
   const [panel, setPanel] = useState<LandingPanelId | null>(null);
 
@@ -100,7 +104,16 @@ export function LandingPage() {
               className="cuib-app mx-auto mt-10 w-full max-w-xl text-left"
               style={{ background: 'transparent' }}
             >
-              <StudentMasterInput signedIn={false} />
+              <StudentMasterInput signedIn={signedIn} />
+              {!signedIn && (
+                <div className="signin-google-wrap mt-4 flex justify-center">
+                  <GoogleLoginButton
+                    signInIntent="student"
+                    theme={isDark ? 'filled_black' : 'outline'}
+                    size="large"
+                  />
+                </div>
+              )}
             </motion.div>
 
             <p className="landing-hero-trust mt-8 text-sm text-[var(--landing-muted)]">Free to try. No credit card.</p>
@@ -133,7 +146,11 @@ export function LandingPage() {
               </button>
             </div>
             <div className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-16 md:px-8">
-              {panel === 'features' ? <LandingFeaturesContent /> : <LandingLearnContent />}
+              {panel === 'features' ? (
+                <LandingFeaturesContent onGetStarted={() => setPanel(null)} />
+              ) : (
+                <LandingLearnContent onGetStarted={() => setPanel(null)} />
+              )}
             </div>
           </motion.div>
         ) : null}

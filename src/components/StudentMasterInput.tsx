@@ -11,6 +11,7 @@ import {
   STUDENT_YOUTUBE_INPUT_ENABLED,
 } from '../utils/studentInputModes';
 import { cn } from './ui/utils';
+import { goToSignIn } from '../utils/navigation';
 
 const PHRASES = [
   'Paste a YouTube URL to create a course',
@@ -130,11 +131,9 @@ export function StudentMasterInput({ className, signedIn = true }: StudentMaster
       if (isYt) {
         setError(null);
         if (!signedIn) {
-          navigate('/signin', {
-            state: isYoutubePlaylistUrl(trimmed)
-              ? { playlistUrl: trimmed, startTool: mode }
-              : { youtubeUrl: trimmed, startTool: mode },
-          });
+          goToSignIn(navigate, isYoutubePlaylistUrl(trimmed)
+            ? { playlistUrl: trimmed, startTool: mode }
+            : { youtubeUrl: trimmed, startTool: mode });
           return;
         }
         if (isYoutubePlaylistUrl(trimmed)) {
@@ -152,7 +151,7 @@ export function StudentMasterInput({ className, signedIn = true }: StudentMaster
       setError(null);
       const promptState = { prompt: trimmed, examType, startTool: 'quiz' as const };
       if (!signedIn) {
-        navigate('/signin', { state: promptState });
+        goToSignIn(navigate, promptState);
         return;
       }
       navigate('/quiz-setup', { state: promptState });
@@ -166,11 +165,9 @@ export function StudentMasterInput({ className, signedIn = true }: StudentMaster
     }
     setError(null);
     if (!signedIn) {
-      navigate('/signin', {
-        state: isYoutubePlaylistUrl(trimmed)
-          ? { playlistUrl: trimmed, startTool: mode }
-          : { youtubeUrl: trimmed, startTool: mode },
-      });
+      goToSignIn(navigate, isYoutubePlaylistUrl(trimmed)
+        ? { playlistUrl: trimmed, startTool: mode }
+        : { youtubeUrl: trimmed, startTool: mode });
       return;
     }
     navigate('/course-builder', { state: { youtubeUrl: trimmed, startTool: mode } });

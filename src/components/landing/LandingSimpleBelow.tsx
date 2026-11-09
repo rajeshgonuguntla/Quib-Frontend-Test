@@ -1,4 +1,5 @@
 import { Link } from 'react-router';
+import { SIGN_IN_HASH_PATH } from '../../utils/navigation';
 
 const FEATURE_CARDS = [
   {
@@ -115,7 +116,11 @@ const LEARN_CARDS = [
 
 export type LandingPanelId = 'features' | 'learn';
 
-export function LandingFeaturesContent() {
+type LandingPanelCtaProps = {
+  onGetStarted?: () => void;
+};
+
+export function LandingFeaturesContent({ onGetStarted }: LandingPanelCtaProps) {
   return (
     <div className="mx-auto max-w-6xl text-center">
       <p className="landing-mono-label mb-3">Features</p>
@@ -139,7 +144,8 @@ export function LandingFeaturesContent() {
         ))}
       </div>
       <Link
-        to="/signin"
+        to={SIGN_IN_HASH_PATH}
+        onClick={onGetStarted}
         className="mt-10 inline-flex min-h-11 items-center justify-center rounded-md bg-[var(--landing-fg)] px-7 py-3.5 text-sm font-medium text-[var(--landing-bg)] no-underline transition-opacity hover:opacity-90"
       >
         Get started free
@@ -148,7 +154,7 @@ export function LandingFeaturesContent() {
   );
 }
 
-export function LandingLearnContent() {
+export function LandingLearnContent({ onGetStarted }: LandingPanelCtaProps) {
   return (
     <div className="mx-auto max-w-6xl text-center">
       <p className="landing-mono-label mb-3">Learn</p>
@@ -178,7 +184,8 @@ export function LandingLearnContent() {
         ))}
       </div>
       <Link
-        to="/signin"
+        to={SIGN_IN_HASH_PATH}
+        onClick={onGetStarted}
         className="mt-10 inline-flex min-h-11 items-center justify-center rounded-md bg-[var(--landing-fg)] px-7 py-3.5 text-sm font-medium text-[var(--landing-bg)] no-underline transition-opacity hover:opacity-90"
       >
         Get started free

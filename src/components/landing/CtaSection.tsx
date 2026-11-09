@@ -13,6 +13,7 @@ import { LandingThumb } from './LandingThumb';
 import { LANDING_CTA_TOPICS } from './landingThumbnails';
 import { useTheme } from '../ThemeContext';
 import { CREATOR_FLOW_ENABLED } from '../../utils/signInIntent';
+import { SIGN_IN_HASH_PATH } from '../../utils/navigation';
 
 const MODES = [
   { label: 'learn', line: 'Paste a YouTube video or open a published course', hint: 'Generate study tools · Chat with the lesson tutor · Track progress' },
@@ -289,7 +290,7 @@ export function CtaSection() {
         >
           <motion.div style={{ x: btnX, y: btnY }}>
             <Link
-              to="/signin"
+              to={SIGN_IN_HASH_PATH}
               className="group relative inline-flex items-center gap-2 overflow-hidden rounded-md bg-[var(--landing-fg)] px-7 py-3.5 text-sm font-medium text-[var(--landing-bg)] no-underline"
             >
               <motion.span

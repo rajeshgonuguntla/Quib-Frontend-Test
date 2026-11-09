@@ -60,6 +60,7 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 import { clearSignInIntent } from '../utils/signInIntent';
+import { goToSignIn, SIGN_IN_PATH } from '../utils/navigation';
 import { getDisplayName } from '../utils/userDisplay';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -448,7 +449,7 @@ function LearningMode({
     clearToken();
     clearSignInIntent();
     setProfile(null);
-    navigate('/signin');
+    navigate(SIGN_IN_PATH);
   };
 
   const lessonIdsKey = allLessons.map((l) => l.id).join(',');
@@ -1770,7 +1771,7 @@ export function CourseDetails() {
   const handleStartLearning = async () => {
     if (!resolvedCourseId) return;
     if (!isTokenValid()) {
-      navigate('/signin', { state: { returnTo: `/course-details/${resolvedCourseId}` } });
+      goToSignIn(navigate, { returnTo: `/course-details/${resolvedCourseId}` });
       return;
     }
     try {
@@ -1779,7 +1780,7 @@ export function CourseDetails() {
       setLearningMode(true);
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.status === 401) {
-        navigate('/signin', { state: { returnTo: `/course-details/${resolvedCourseId}` } });
+        goToSignIn(navigate, { returnTo: `/course-details/${resolvedCourseId}` });
         return;
       }
       setError('Unable to start learning. Please sign in and try again.');
@@ -1791,7 +1792,7 @@ export function CourseDetails() {
   // Learning view always uses tutor Q&A; plain-language edit assistant lives in CourseEditor only.
   const showCourseChat = learningMode && !!resolvedCourseId;
   const handleChatSignIn = () => {
-    navigate('/signin', { state: { returnTo: `/course-details/${resolvedCourseId}` } });
+    goToSignIn(navigate, { returnTo: `/course-details/${resolvedCourseId}` });
   };
 
   if (learningMode && resolvedCourseId) {

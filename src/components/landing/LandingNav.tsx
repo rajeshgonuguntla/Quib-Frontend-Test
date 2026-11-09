@@ -3,6 +3,7 @@ import { ThemeToggle } from '../ThemeToggle';
 import { motion } from 'framer-motion';
 import { isTokenValid, useAuthSessionKey } from '../../auth';
 import { CUBIT_LOGO } from '../../cubit/subjects';
+import { CREATOR_FLOW_ENABLED } from '../../utils/signInIntent';
 import type { LandingPanelId } from './LandingSimpleBelow';
 
 type LandingNavProps = {
@@ -78,9 +79,12 @@ export function LandingNav({ isDark, activePanel, onOpenPanel, onClosePanel }: L
           >
             Dashboard
           </Link>
-        ) : (
+        ) : CREATOR_FLOW_ENABLED ? (
           <>
-            <Link to="/signin" className="hidden text-sm text-[var(--landing-muted)] no-underline transition-colors hover:text-[var(--landing-fg)] sm:inline">
+            <Link
+              to="/signin"
+              className="hidden text-sm text-[var(--landing-muted)] no-underline transition-colors hover:text-[var(--landing-fg)] sm:inline"
+            >
               Log in
             </Link>
             <Link
@@ -90,7 +94,7 @@ export function LandingNav({ isDark, activePanel, onOpenPanel, onClosePanel }: L
               Sign up
             </Link>
           </>
-        )}
+        ) : null}
       </div>
     </motion.nav>
   );

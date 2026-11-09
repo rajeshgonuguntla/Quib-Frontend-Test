@@ -4,6 +4,7 @@ import { Sun, Moon, ArrowRight, Youtube } from 'lucide-react';
 import { useTheme, getC } from './ThemeContext';
 import { courseGenStateFromYoutubeUrl, getYoutubeUrlValidationError } from '../utils/youtubeUrl';
 import { QuibLogo } from './QuibLogo';
+import { SIGN_IN_HASH_PATH } from '../utils/navigation';
 
 const SUGGESTIONS = [
   { label: 'Single video — React Hooks', url: 'https://www.youtube.com/watch?v=TNhaISOUy6Q' },
@@ -61,7 +62,7 @@ export function EducatorCourseBuilder() {
           <button onClick={toggleTheme} className="w-8 h-8 rounded-lg flex items-center justify-center transition-all" style={{ background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)', border: `1px solid ${C.border}`, color: C.text2, cursor: 'pointer' }}>
             {isDark ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
           </button>
-          <Link to="/signin" className="text-[0.82rem] font-[600] no-underline px-[18px] py-2 rounded-md transition-all hover:opacity-90" style={{ background: C.text, color: C.bg }}>
+          <Link to={SIGN_IN_HASH_PATH} className="text-[0.82rem] font-[600] no-underline px-[18px] py-2 rounded-md transition-all hover:opacity-90" style={{ background: C.text, color: C.bg }}>
             Sign in
           </Link>
         </div>

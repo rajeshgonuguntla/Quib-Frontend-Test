@@ -15,6 +15,7 @@ import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from '../co
 import { billingPlanLabel, hidesUpgradeCta } from '../api/billingApi';
 import { clearToken } from '../auth';
 import { clearSignInIntent, isAdminAccount } from '../utils/signInIntent';
+import { SIGN_IN_PATH } from '../utils/navigation';
 import { getDisplayName, getFirstName } from '../utils/userDisplay';
 import { AppSidebar } from './AppSidebar';
 import { useShell } from './ShellContext';
@@ -49,7 +50,7 @@ export function AppTopbar() {
     clearToken();
     clearSignInIntent();
     setProfile(null);
-    navigate('/signin');
+    navigate(SIGN_IN_PATH);
   };
 
   const goProfile = () => {

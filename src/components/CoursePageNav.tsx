@@ -6,6 +6,7 @@ import { useUserProfile } from '../context/UserProfileContext';
 import { UserAvatar } from './UserAvatar';
 import { getDisplayName } from '../utils/userDisplay';
 import { clearSignInIntent } from '../utils/signInIntent';
+import { SIGN_IN_HASH_PATH, SIGN_IN_PATH } from '../utils/navigation';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -47,7 +48,7 @@ export function CoursePageNav({
     clearToken();
     clearSignInIntent();
     setProfile(null);
-    navigate('/signin');
+    navigate(SIGN_IN_PATH);
   };
 
   const defaultCenter = (
@@ -65,7 +66,7 @@ export function CoursePageNav({
       ) : (
         <li>
           <Link
-            to="/signin"
+            to={SIGN_IN_HASH_PATH}
             className="text-[0.875rem] font-[400] no-underline transition-opacity hover:opacity-100"
             style={{ color: C.text2, letterSpacing: '0.01em', opacity: 0.8 }}
           >
@@ -157,7 +158,7 @@ export function CoursePageNav({
           </DropdownMenu>
         ) : (
           <Link
-            to="/signin"
+            to={SIGN_IN_HASH_PATH}
             className="md:hidden px-3 py-1.5 rounded-lg text-[0.78rem] font-[600] no-underline"
             style={{ background: C.red, color: '#fff' }}
           >
