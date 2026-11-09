@@ -8,7 +8,7 @@ import { EducatorsPipeline } from './educators/EducatorsPipeline';
 import { EducatorsCapabilities } from './educators/EducatorsCapabilities';
 import { EducatorsCta } from './educators/EducatorsCta';
 import { QuibLogo } from './QuibLogo';
-import { scrollToSection } from '../utils/navigation';
+import { scrollToSection, SIGN_IN_HASH_PATH } from '../utils/navigation';
 import '../styles/educators.css';
 
 export function Educators() {
@@ -88,11 +88,11 @@ export function Educators() {
           >
             {isDark ? <Sun className="size-3.5" /> : <Moon className="size-3.5" />}
           </button>
-          <Link to="/signin" className="text-[0.82rem] font-[400] no-underline transition-opacity hover:opacity-80" style={{ color: C.text2 }}>
+          <Link to={SIGN_IN_HASH_PATH} className="text-[0.82rem] font-[400] no-underline transition-opacity hover:opacity-80" style={{ color: C.text2 }}>
             Sign in
           </Link>
           <Link
-            to="/signin"
+            to={SIGN_IN_HASH_PATH}
             className="rounded-md px-[18px] py-2 text-[0.82rem] font-[600] no-underline transition-all hover:opacity-90"
             style={{ background: C.text, color: C.bg }}
           >
@@ -157,7 +157,7 @@ export function Educators() {
               <ul className="list-none space-y-2 p-0 text-[0.82rem]">
                 <li><Link to="/" className="no-underline transition-opacity hover:opacity-80" style={{ color: C.text2 }}>Features</Link></li>
                 <li><Link to="/educators" className="no-underline transition-opacity hover:opacity-80" style={{ color: C.text2 }}>For Educators</Link></li>
-                <li><Link to="/signin" className="no-underline transition-opacity hover:opacity-80" style={{ color: C.text2 }}>Get Started</Link></li>
+                <li><Link to={SIGN_IN_HASH_PATH} className="no-underline transition-opacity hover:opacity-80" style={{ color: C.text2 }}>Get Started</Link></li>
               </ul>
             </div>
             <div>

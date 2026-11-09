@@ -5,6 +5,7 @@ import { submitGovernmentInquiry } from '../api/governmentsApi';
 import { useTheme, getC } from './ThemeContext';
 import { QuibLogo } from './QuibLogo';
 import { ThemeToggle } from './ThemeToggle';
+import { SIGN_IN_HASH_PATH } from '../utils/navigation';
 
 export function Governments() {
   const { isDark } = useTheme();
@@ -56,7 +57,7 @@ export function Governments() {
         <div className="flex items-center gap-2">
           <ThemeToggle size="sm" />
           <Link
-            to="/signin"
+            to={SIGN_IN_HASH_PATH}
             className="rounded-md px-3 py-1.5 text-sm font-medium no-underline"
             style={{ background: C.red, color: '#fff' }}
           >

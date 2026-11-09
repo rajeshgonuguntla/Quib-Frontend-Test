@@ -2,6 +2,7 @@ import { Navigate, Outlet, useLocation } from 'react-router';
 import { useEffect, useState } from 'react';
 import { useUserProfile } from './context/UserProfileContext';
 import { INTERESTS_KEY } from './components/Onboarding';
+import { SIGN_IN_PATH } from './utils/navigation';
 import { safeAppPath } from './utils/safeAppPath';
 
 const TOKEN_KEY = 'token';
@@ -80,7 +81,7 @@ export function ProtectedRoute() {
   if (!isTokenValid()) {
     clearToken();
     const returnTo = safeAppPath(`${location.pathname}${location.search}${location.hash}`);
-    return <Navigate to="/signin" replace state={returnTo ? { returnTo } : undefined} />;
+    return <Navigate to={SIGN_IN_PATH} replace state={returnTo ? { returnTo } : undefined} />;
   }
 
   return <Outlet />;

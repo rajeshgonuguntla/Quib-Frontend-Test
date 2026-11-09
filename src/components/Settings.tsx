@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { useUserProfile } from '../context/UserProfileContext';
 import { isAdminAccount, clearSignInIntent } from '../utils/signInIntent';
+import { SIGN_IN_PATH } from '../utils/navigation';
 import { updateUserProfile } from '../api/userApi';
 import { getDisplayName } from '../utils/userDisplay';
 import { UserAvatar } from './UserAvatar';
@@ -74,7 +75,7 @@ export function Settings() {
     clearToken();
     clearSignInIntent();
     setProfile(null);
-    navigate('/signin');
+    navigate(SIGN_IN_PATH);
   };
 
   const displayName = getDisplayName(profile);

@@ -1,4 +1,4 @@
-import { Link, useLocation, useNavigate } from 'react-router';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import { ArrowLeft, BookOpen, GraduationCap } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -117,6 +117,11 @@ export function SignIn() {
     }
   }, [location.hash, location.search, navigate]);
 
+  // Student Google sign-in lives on the landing hero below the search bar.
+  if (!CREATOR_FLOW_ENABLED) {
+    return <Navigate to="/#ask" replace state={location.state} />;
+  }
+
   return (
     <div className={`landing-page min-h-screen overflow-x-hidden ${isDark ? '' : 'light'}`}>
       <div className="landing-grid-bg pointer-events-none fixed inset-0" />
@@ -137,38 +142,31 @@ export function SignIn() {
             transition={{ delay: 0.05 }}
             className="mb-10 text-center text-2xl font-semibold tracking-tight text-[var(--landing-fg)] md:text-4xl"
           >
-            {CREATOR_FLOW_ENABLED ? 'Choose how you want to use Cubit' : 'Sign in to Cubit'}
+            Choose how you want to use Cubit
           </motion.h1>
 
-          <div className={CREATOR_FLOW_ENABLED ? 'grid gap-6 md:grid-cols-2' : 'mx-auto grid max-w-md gap-6'}>
-            {/* ponytail: creator card kept; gated by CREATOR_FLOW_ENABLED */}
-            {CREATOR_FLOW_ENABLED && (
-              <SignInCard
-                intent="creator"
-                icon={GraduationCap}
-                eyebrow="For creators"
-                title="Turn your YouTube videos into a real course."
-                description="Connect your channel, generate structured modules, and publish to the catalog. Educators also get full student access — browse, enroll, and learn."
-                highlights={[
-                  { value: 'YouTube', label: 'Paste a URL' },
-                  { value: 'AI', label: 'Build course' },
-                  { value: 'Publish', label: 'To catalog' },
-                ]}
-                pendingUrl={pendingUrl}
-                isDark={isDark}
-                delay={0.1}
-              />
-            )}
+          <div className="grid gap-6 md:grid-cols-2">
+            <SignInCard
+              intent="creator"
+              icon={GraduationCap}
+              eyebrow="For creators"
+              title="Turn your YouTube videos into a real course."
+              description="Connect your channel, generate structured modules, and publish to the catalog. Educators also get full student access — browse, enroll, and learn."
+              highlights={[
+                { value: 'YouTube', label: 'Paste a URL' },
+                { value: 'AI', label: 'Build course' },
+                { value: 'Publish', label: 'To catalog' },
+              ]}
+              pendingUrl={pendingUrl}
+              isDark={isDark}
+              delay={0.1}
+            />
             <SignInCard
               intent="student"
               icon={BookOpen}
               eyebrow="For students"
               title="Learn from structured educator courses."
-              description={
-                CREATOR_FLOW_ENABLED
-                  ? 'Browse courses, take AI quizzes, track progress, and earn certificates. Educator accounts must use the creator sign-in on the left.'
-                  : 'Browse courses, take AI quizzes, track progress, and earn certificates.'
-              }
+              description="Browse courses, take AI quizzes, track progress, and earn certificates. Educator accounts must use the creator sign-in on the left."
               highlights={[
                 { value: 'Browse', label: 'Courses' },
                 { value: 'AI', label: 'Quizzes' },

@@ -6,6 +6,7 @@ import { clearToken } from '../auth';
 import { useUserProfile } from '../context/UserProfileContext';
 import { UserAvatar } from './UserAvatar';
 import { getDisplayName, getFirstName } from '../utils/userDisplay';
+import { SIGN_IN_PATH } from '../utils/navigation';
 import { QuibLogo } from './QuibLogo';
 
 interface DarkLayoutProps {
@@ -207,7 +208,7 @@ export function DarkLayout({
                       Settings
                     </button>
                     <button
-                      onClick={() => { clearToken(); setProfile(null); navigate('/signin'); setShowProfileMenu(false); }}
+                      onClick={() => { clearToken(); setProfile(null); navigate(SIGN_IN_PATH); setShowProfileMenu(false); }}
                       className="w-full text-left px-4 py-2.5 text-sm flex items-center gap-2 cursor-pointer transition-colors"
                       style={{ color: C.red, background: 'transparent', borderTop: `1px solid ${C.border}` }}
                       onMouseEnter={(e) => (e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.04)')}
