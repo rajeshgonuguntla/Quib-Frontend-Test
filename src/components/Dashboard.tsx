@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
-import { Play } from 'lucide-react';
+import { ChevronDown, ChevronUp, Play } from 'lucide-react';
 import axios from 'axios';
 import { fetchEnrollments } from '../api/catalogApi';
 import { useUserProfile } from '../context/UserProfileContext';
@@ -8,6 +8,10 @@ import { getFirstName } from '../utils/userDisplay';
 import { ytThumb } from '../utils/catalogMap';
 import { StudentMasterInput } from './StudentMasterInput';
 import { consumePendingLearnerStart } from '../utils/completeGoogleSignIn';
+import {
+  readContinueLearningOpen,
+  writeContinueLearningOpen,
+} from '../utils/dashboardContinueLearning';
 
 type ProgressItem = {
   id: string;
@@ -28,6 +32,11 @@ export function Dashboard() {
   const firstName = getFirstName(profile);
 
   const [inProgress, setInProgress] = useState<ProgressItem[]>([]);
+  const [continueOpen, setContinueOpen] = useState(() => readContinueLearningOpen());
+
+  useEffect(() => {
+    writeContinueLearningOpen(continueOpen);
+  }, [continueOpen]);
 
   useEffect(() => {
     const stashed = consumePendingLearnerStart();
@@ -142,41 +151,57 @@ export function Dashboard() {
 
       <StudentMasterInput />
 
-      <div className="my-5 h-px bg-[var(--border)]" />
-
-      <div className="mb-5 flex items-end justify-between">
-        <h2 style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--ink-soft)' }}>
-          Continue learning
-        </h2>
+      <div className="relative my-5">
+        <div className="h-px bg-[var(--border)]" />
         <button
           type="button"
-          onClick={() => navigate('/discover?tab=courses')}
-          className="flex items-center gap-1 pb-0.5 text-[var(--ink-faint)] transition-colors hover:text-[var(--accent)]"
-          style={{ fontFamily: 'var(--mono)', fontSize: 12 }}
+          onClick={() => setContinueOpen((open) => !open)}
+          className="absolute left-1/2 top-1/2 flex size-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--ink-faint)] transition-colors hover:border-[var(--ink-faint)] hover:text-[var(--ink)]"
+          aria-expanded={continueOpen}
+          aria-controls="dashboard-continue-learning"
+          aria-label={continueOpen ? 'Collapse continue learning' : 'Expand continue learning'}
         >
-          View all
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-            <path d="M5 12h14" />
-            <path d="M13 6l6 6-6 6" />
-          </svg>
+          {continueOpen ? <ChevronUp size={14} strokeWidth={2.2} /> : <ChevronDown size={14} strokeWidth={2.2} />}
         </button>
       </div>
 
-      {inProgress.length === 0 ? (
-        <p className="text-[13px] text-[var(--ink-soft)]">No courses or quizzes in progress yet.</p>
-      ) : (
-        <div className="grid grid-cols-1 gap-[18px] md:grid-cols-3">
-          {inProgress.map((item) => (
-            <ProgressCard
-              key={item.id}
-              item={item}
-              onOpen={() =>
-                item.kind === 'course'
-                  ? navigate(`/course-details/${item.id}`, { state: { from: `${location.pathname}${location.search}` } })
-                  : navigate(`/quiz/${item.id}`)
-              }
-            />
-          ))}
+      {continueOpen && (
+        <div id="dashboard-continue-learning">
+          <div className="mb-5 flex items-end justify-between">
+            <h2 style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--ink-soft)' }}>
+              Continue learning
+            </h2>
+            <button
+              type="button"
+              onClick={() => navigate('/discover?tab=courses')}
+              className="flex items-center gap-1 pb-0.5 text-[var(--ink-faint)] transition-colors hover:text-[var(--accent)]"
+              style={{ fontFamily: 'var(--mono)', fontSize: 12 }}
+            >
+              View all
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M5 12h14" />
+                <path d="M13 6l6 6-6 6" />
+              </svg>
+            </button>
+          </div>
+
+          {inProgress.length === 0 ? (
+            <p className="text-[13px] text-[var(--ink-soft)]">No courses or quizzes in progress yet.</p>
+          ) : (
+            <div className="grid grid-cols-1 gap-[18px] md:grid-cols-3">
+              {inProgress.map((item) => (
+                <ProgressCard
+                  key={item.id}
+                  item={item}
+                  onOpen={() =>
+                    item.kind === 'course'
+                      ? navigate(`/course-details/${item.id}`, { state: { from: `${location.pathname}${location.search}` } })
+                      : navigate(`/quiz/${item.id}`)
+                  }
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
