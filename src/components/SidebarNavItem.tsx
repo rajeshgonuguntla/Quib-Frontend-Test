@@ -12,15 +12,21 @@ type SidebarNavItemProps = {
   item: SidebarNavItemData;
   active: boolean;
   onClick: () => void;
+  collapsed?: boolean;
 };
 
-export function SidebarNavItem({ item, active, onClick }: SidebarNavItemProps) {
+export function SidebarNavItem({ item, active, onClick, collapsed = false }: SidebarNavItemProps) {
   return (
     <button
       type="button"
       onClick={onClick}
+      title={collapsed ? item.label : undefined}
+      aria-label={collapsed ? item.label : undefined}
       className={cn(
-        'relative flex w-full items-center justify-between gap-2.5 rounded-md py-[7px] pl-3.5 pr-1 text-left text-[13px] transition-colors duration-150',
+        'relative flex w-full items-center rounded-md text-left text-[13px] transition-colors duration-150',
+        collapsed
+          ? 'min-h-11 justify-center px-0 py-2'
+          : 'justify-between gap-2.5 py-[7px] pl-3.5 pr-1',
         active ? 'font-semibold text-[var(--ink)]' : 'font-medium text-[var(--ink-faint)] hover:bg-[var(--fill)] hover:text-[var(--ink-soft)]',
       )}
     >
@@ -28,13 +34,13 @@ export function SidebarNavItem({ item, active, onClick }: SidebarNavItemProps) {
         className="absolute left-0 top-1/2 w-[2px] -translate-y-1/2 rounded-full bg-[var(--accent)] transition-[height] duration-150"
         style={{ height: active ? 14 : 0 }}
       />
-      <span className="flex items-center gap-2.5">
+      <span className={cn('flex items-center', collapsed ? 'justify-center' : 'gap-2.5')}>
         <span className="flex size-[17px] shrink-0 items-center justify-center [&_svg]:size-[17px]">
           {item.icon}
         </span>
-        {item.label}
+        {!collapsed ? item.label : null}
       </span>
-      {item.badge && (
+      {!collapsed && item.badge ? (
         <span
           className="rounded-[5px] px-[7px] py-px"
           style={{
@@ -46,7 +52,7 @@ export function SidebarNavItem({ item, active, onClick }: SidebarNavItemProps) {
         >
           {item.badge}
         </span>
-      )}
+      ) : null}
     </button>
   );
 }
