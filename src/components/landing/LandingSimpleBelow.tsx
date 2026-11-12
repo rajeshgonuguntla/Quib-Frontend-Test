@@ -93,24 +93,36 @@ const LEARN_CARDS = [
     title: 'Python for Beginners',
     meta: '5 / 12 lessons',
     progress: 5 / 12,
+    glyph: '>>>',
+    wash: 'linear-gradient(145deg, rgba(59, 130, 246, 0.22) 0%, rgba(59, 130, 246, 0.04) 55%, transparent 100%)',
+    glyphColor: 'rgba(37, 99, 235, 0.35)',
   },
   {
     topic: 'Calculus I',
     title: 'Limits & Derivatives',
     meta: '2 / 14 lessons',
     progress: 2 / 14,
+    glyph: '∫',
+    wash: 'linear-gradient(145deg, color-mix(in srgb, var(--brand, #ff7a1a) 28%, transparent) 0%, color-mix(in srgb, var(--brand, #ff7a1a) 6%, transparent) 55%, transparent 100%)',
+    glyphColor: 'color-mix(in srgb, var(--brand, #ff7a1a) 40%, transparent)',
   },
   {
     topic: 'Cell Biology',
     title: 'Intro to Cell Biology',
     meta: '6 / 9 lessons',
     progress: 6 / 9,
+    glyph: '◈',
+    wash: 'linear-gradient(145deg, rgba(34, 160, 107, 0.22) 0%, rgba(34, 160, 107, 0.04) 55%, transparent 100%)',
+    glyphColor: 'rgba(22, 128, 84, 0.35)',
   },
   {
     topic: 'SAT Reading',
     title: 'Evidence & Inference',
     meta: '8 questions',
     progress: 0.55,
+    glyph: 'Aa',
+    wash: 'linear-gradient(145deg, rgba(180, 120, 50, 0.2) 0%, rgba(180, 120, 50, 0.04) 55%, transparent 100%)',
+    glyphColor: 'rgba(146, 94, 36, 0.35)',
   },
 ] as const;
 
@@ -167,9 +179,19 @@ export function LandingLearnContent({ onGetStarted }: LandingPanelCtaProps) {
             key={card.title}
             className="overflow-hidden rounded-xl border border-[var(--landing-border)] bg-[var(--landing-card)] text-left"
           >
-            <div className="flex min-h-[120px] flex-col justify-between border-b border-[var(--landing-border)] bg-[var(--landing-bg)]/40 px-3 py-3">
-              <p className="text-[10px] font-medium text-[var(--landing-fg)]">{card.topic}</p>
-              <div className="h-1 w-full overflow-hidden rounded-full bg-[var(--landing-border)]">
+            <div
+              className="relative flex min-h-[120px] flex-col justify-between overflow-hidden border-b border-[var(--landing-border)] px-3 py-3"
+              style={{ background: card.wash }}
+            >
+              <p className="relative z-[1] text-[10px] font-medium text-[var(--landing-fg)]">{card.topic}</p>
+              <span
+                aria-hidden
+                className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 select-none font-mono text-[2.75rem] font-semibold leading-none"
+                style={{ color: card.glyphColor }}
+              >
+                {card.glyph}
+              </span>
+              <div className="relative z-[1] h-1 w-full overflow-hidden rounded-full bg-[var(--landing-border)]">
                 <div
                   className="h-full rounded-full bg-[var(--brand,#ff7a1a)]"
                   style={{ width: `${Math.round(card.progress * 100)}%` }}

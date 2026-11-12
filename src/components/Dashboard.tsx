@@ -7,6 +7,7 @@ import { useUserProfile } from '../context/UserProfileContext';
 import { getFirstName } from '../utils/userDisplay';
 import { ytThumb } from '../utils/catalogMap';
 import { StudentMasterInput } from './StudentMasterInput';
+import { consumePendingLearnerStart } from '../utils/completeGoogleSignIn';
 
 type ProgressItem = {
   id: string;
@@ -29,6 +30,12 @@ export function Dashboard() {
   const [inProgress, setInProgress] = useState<ProgressItem[]>([]);
 
   useEffect(() => {
+    const stashed = consumePendingLearnerStart();
+    if (stashed) {
+      navigate(stashed.path, { state: stashed.state, replace: true });
+      return;
+    }
+
     const incomingPlaylistUrl = location.state?.playlistUrl as string | undefined;
     const incomingVideoUrl = location.state?.youtubeUrl as string | undefined;
     const incomingPrompt = location.state?.prompt as string | undefined;

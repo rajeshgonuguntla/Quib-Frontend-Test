@@ -1,32 +1,12 @@
 import { useState } from 'react';
 import { GoogleLogin, type CredentialResponse } from '@react-oauth/google';
-import axios from 'axios';
 import { useLocation, useNavigate } from 'react-router';
 import { useUserProfile } from '../context/UserProfileContext';
-import { fetchUserProfile } from '../api/userApi';
-import { fetchOnboarding } from '../api/catalogApi';
-import { clearLocalSession, clearToken, setSession } from '../auth';
-import { logClientError } from '../utils/logClientError';
-import { INTERESTS_KEY, EDUCATORS_KEY } from './Onboarding';
-import type { UserProfile } from '../types/userProfile';
-import type { OnboardingState } from '../types/catalog';
 import {
-  CREATOR_FLOW_ENABLED,
-  EDUCATOR_USE_CREATOR_LOGIN_MESSAGE,
-  isEducatorAccount,
-  isEducatorRoute,
-  resolveDefaultDestination,
-  setSignInIntent,
-  type SignInIntent,
-} from '../utils/signInIntent';
-import { peekReferralCode, rememberReferralCode } from '../utils/referralCode';
-import { safeAppPath } from '../utils/safeAppPath';
-
-type GoogleAuthResponse = {
-  expiresAt?: number;
-  profile?: UserProfile | null;
-  onboarding?: OnboardingState | null;
-};
+  completeGoogleSignIn,
+  takeLearnerStartState,
+  type LearnerStartState,
+} from '../utils/completeGoogleSignIn';
 
 type GoogleLoginButtonProps = {
   theme?: 'outline' | 'filled_blue' | 'filled_black';
@@ -49,20 +29,7 @@ function GoogleLoginButton({
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [signInError, setSignInError] = useState<string | null>(null);
 
-  const showBlocked = (message: string) => {
-    if (onLoginBlocked) {
-      onLoginBlocked(message);
-    } else {
-      setSignInError(message);
-    }
-  };
-
   const handleSuccess = async (credentialResponse: CredentialResponse) => {
-    if (!credentialResponse.credential) {
-      setSignInError('Login failed — missing Google credential.');
-      return;
-    }
-
     setIsSigningIn(true);
     if (onLoginBlocked) {
       onLoginBlocked(null);
@@ -70,89 +37,25 @@ function GoogleLoginButton({
       setSignInError(null);
     }
 
-    try {
-      clearLocalSession();
+    const stashed = takeLearnerStartState();
+    const locationState = (location.state as LearnerStartState | null) ?? null;
+    const result = await completeGoogleSignIn({
+      credentialResponse,
+      navigate,
+      setProfile,
+      signInIntent,
+      pendingState: { ...(locationState ?? {}), ...(stashed ?? {}) },
+      search: location.search,
+      onBlocked: (message) => {
+        if (onLoginBlocked) onLoginBlocked(message);
+        else setSignInError(message);
+      },
+    });
 
-      const referralCode = peekReferralCode()
-        ?? new URLSearchParams(location.search).get('ref')
-        ?? undefined;
-      rememberReferralCode(referralCode);
-
-      const res = await axios.post<GoogleAuthResponse>('/api/auth/google', {
-        token: credentialResponse.credential,
-        referralCode,
-      });
-
-      const expiresAt = res.data.expiresAt;
-      if (typeof expiresAt !== 'number') {
-        throw new Error('Login response missing expiresAt');
-      }
-      setSession(expiresAt);
-
-      let profile = res.data.profile ?? null;
-      let onboarding = res.data.onboarding ?? null;
-
-      if (!profile || !onboarding) {
-        const [fallbackProfile, fallbackOnboarding] = await Promise.all([
-          profile ? Promise.resolve(profile) : fetchUserProfile(),
-          onboarding ? Promise.resolve(onboarding) : fetchOnboarding().catch(() => null),
-        ]);
-        profile = fallbackProfile;
-        onboarding = fallbackOnboarding;
-      }
-
-      const requestedIntent: SignInIntent =
-        signInIntent ?? (location.state?.signInIntent as SignInIntent | undefined) ?? 'student';
-      // ponytail: creator flow gated — always student until CREATOR_FLOW_ENABLED
-      const intent: SignInIntent = CREATOR_FLOW_ENABLED ? requestedIntent : 'student';
-
-      if (CREATOR_FLOW_ENABLED && intent === 'student' && isEducatorAccount(profile)) {
-        clearToken();
-        showBlocked(EDUCATOR_USE_CREATOR_LOGIN_MESSAGE);
-        setIsSigningIn(false);
-        return;
-      }
-
-      setProfile(profile);
-
-      const effectiveIntent: SignInIntent =
-        CREATOR_FLOW_ENABLED && isEducatorAccount(profile) ? 'creator' : intent;
-      setSignInIntent(effectiveIntent);
-
-      let destination = safeAppPath(location.state?.returnTo);
-
-      if (effectiveIntent === 'student' && destination && isEducatorRoute(destination)) {
-        destination = undefined;
-      }
-
-      if (onboarding?.completed) {
-        localStorage.setItem(INTERESTS_KEY, JSON.stringify(onboarding.interestIds ?? []));
-        localStorage.setItem(EDUCATORS_KEY, JSON.stringify(onboarding.followedCreatorIds ?? []));
-        if (!destination) {
-          destination = resolveDefaultDestination(profile, effectiveIntent, true);
-        }
-      } else if (!destination) {
-        const hasInterests = !!localStorage.getItem(INTERESTS_KEY);
-        destination = resolveDefaultDestination(
-          profile,
-          effectiveIntent,
-          onboarding ? onboarding.completed : hasInterests,
-        );
-      }
-
-      navigate(destination, {
-        state: {
-          ...location.state,
-          signInIntent: effectiveIntent,
-        },
-      });
-    } catch (error) {
-      logClientError('Login failed', error);
-      clearToken();
-      setSignInError('Sign-in failed. Please try again.');
-    } finally {
-      setIsSigningIn(false);
+    if (!result.ok && !onLoginBlocked) {
+      setSignInError(result.error);
     }
+    setIsSigningIn(false);
   };
 
   return (

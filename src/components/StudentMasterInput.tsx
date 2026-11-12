@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router';
+import { GoogleLogin, type CredentialResponse } from '@react-oauth/google';
 import { ArrowRight, Upload } from 'lucide-react';
 import {
   getYoutubeUrlValidationError,
@@ -11,7 +12,14 @@ import {
   STUDENT_YOUTUBE_INPUT_ENABLED,
 } from '../utils/studentInputModes';
 import { cn } from './ui/utils';
-import { goToSignIn } from '../utils/navigation';
+import { useUserProfile } from '../context/UserProfileContext';
+import { useTheme } from './ThemeContext';
+import {
+  clickLandingGoogleSignIn,
+  completeGoogleSignIn,
+  stashLearnerStartState,
+  type LearnerStartState,
+} from '../utils/completeGoogleSignIn';
 
 const PHRASES = [
   'Paste a YouTube URL to create a course',
@@ -62,13 +70,17 @@ function VideoGlyph() {
 
 export function StudentMasterInput({ className, signedIn = true }: StudentMasterInputProps) {
   const navigate = useNavigate();
+  const { setProfile } = useUserProfile();
+  const { isDark } = useTheme();
   const [mode, setMode] = useState<LearnerStartMode>('course');
   const [examType, setExamType] = useState<SampleExamType>('custom');
   const [inputValue, setInputValue] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [focused, setFocused] = useState(false);
   const [phText, setPhText] = useState('');
+  const [isSigningIn, setIsSigningIn] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const pendingRef = useRef<LearnerStartState | null>(null);
   const phraseIdx = useRef(0);
   const activeRef = useRef(true);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -122,20 +134,92 @@ export function StudentMasterInput({ className, signedIn = true }: StudentMaster
     };
   }, [showTypewriter, phrases]);
 
+  const buildGuestPending = (): { ok: true; pending: LearnerStartState } | { ok: false; error: string } => {
+    const trimmed = inputValue.trim();
+    if (!trimmed) {
+      return { ok: true, pending: { signInIntent: 'student' } };
+    }
+
+    if (isQuizMode) {
+      const isYt = isYoutubePlaylistUrl(trimmed) || isYoutubeVideoUrl(trimmed);
+      if (isYt) {
+        return {
+          ok: true,
+          pending: isYoutubePlaylistUrl(trimmed)
+            ? { playlistUrl: trimmed, startTool: mode, signInIntent: 'student' }
+            : { youtubeUrl: trimmed, startTool: mode, signInIntent: 'student' },
+        };
+      }
+      if (trimmed.length < 8) {
+        return { ok: false, error: 'Describe what you want to be tested on (or paste a YouTube URL).' };
+      }
+      return {
+        ok: true,
+        pending: { prompt: trimmed, examType, startTool: 'quiz', signInIntent: 'student' },
+      };
+    }
+
+    const validationError = getYoutubeUrlValidationError(inputValue);
+    if (validationError) {
+      return { ok: false, error: validationError };
+    }
+    return {
+      ok: true,
+      pending: isYoutubePlaylistUrl(trimmed)
+        ? { playlistUrl: trimmed, startTool: mode, signInIntent: 'student' }
+        : { youtubeUrl: trimmed, startTool: mode, signInIntent: 'student' },
+    };
+  };
+
+  const rememberGuestPending = () => {
+    const built = buildGuestPending();
+    if (!built.ok) {
+      setError(built.error);
+      return false;
+    }
+    setError(null);
+    pendingRef.current = built.pending;
+    stashLearnerStartState(built.pending);
+    return true;
+  };
+
+  const finishGoogleCredential = async (credentialResponse: CredentialResponse) => {
+    setIsSigningIn(true);
+    setError(null);
+    const result = await completeGoogleSignIn({
+      credentialResponse,
+      navigate,
+      setProfile,
+      signInIntent: 'student',
+      pendingState: pendingRef.current,
+    });
+    if (!result.ok) {
+      setError(result.error);
+    }
+    setIsSigningIn(false);
+  };
+
+  /** Landing hero: open the same Google account chooser as the Continue with Google control. */
+  const openLandingGoogleChooser = () => {
+    if (!rememberGuestPending()) return;
+    requestAnimationFrame(() => {
+      clickLandingGoogleSignIn();
+    });
+  };
+
   const submitInput = (e?: FormEvent) => {
     e?.preventDefault();
     const trimmed = inputValue.trim();
+
+    if (!signedIn) {
+      openLandingGoogleChooser();
+      return;
+    }
 
     if (isQuizMode) {
       const isYt = isYoutubePlaylistUrl(trimmed) || isYoutubeVideoUrl(trimmed);
       if (isYt) {
         setError(null);
-        if (!signedIn) {
-          goToSignIn(navigate, isYoutubePlaylistUrl(trimmed)
-            ? { playlistUrl: trimmed, startTool: mode }
-            : { youtubeUrl: trimmed, startTool: mode });
-          return;
-        }
         if (isYoutubePlaylistUrl(trimmed)) {
           navigate('/playlist-setup/new', { state: { playlistUrl: trimmed } });
           return;
@@ -149,12 +233,7 @@ export function StudentMasterInput({ className, signedIn = true }: StudentMaster
         return;
       }
       setError(null);
-      const promptState = { prompt: trimmed, examType, startTool: 'quiz' as const };
-      if (!signedIn) {
-        goToSignIn(navigate, promptState);
-        return;
-      }
-      navigate('/quiz-setup', { state: promptState });
+      navigate('/quiz-setup', { state: { prompt: trimmed, examType, startTool: 'quiz' as const } });
       return;
     }
 
@@ -164,12 +243,6 @@ export function StudentMasterInput({ className, signedIn = true }: StudentMaster
       return;
     }
     setError(null);
-    if (!signedIn) {
-      goToSignIn(navigate, isYoutubePlaylistUrl(trimmed)
-        ? { playlistUrl: trimmed, startTool: mode }
-        : { youtubeUrl: trimmed, startTool: mode });
-      return;
-    }
     navigate('/course-builder', { state: { youtubeUrl: trimmed, startTool: mode } });
   };
 
@@ -177,6 +250,20 @@ export function StudentMasterInput({ className, signedIn = true }: StudentMaster
 
   return (
     <div className={className}>
+      {isSigningIn && (
+        <div
+          className="fixed inset-0 z-[200] flex flex-col items-center justify-center gap-4"
+          style={{ background: 'rgba(8,8,11,0.85)', backdropFilter: 'blur(8px)' }}
+        >
+          <div
+            className="w-10 h-10 rounded-full border-2 border-t-transparent animate-spin"
+            style={{ borderColor: 'rgba(255,122,26,0.35)', borderTopColor: '#ff7a1a' }}
+          />
+          <p className="text-sm font-medium text-white/80">Signing you in…</p>
+          <p className="text-xs text-white/45">Almost there</p>
+        </div>
+      )}
+
       <form
         onSubmit={submitInput}
         className={cn(
@@ -185,30 +272,28 @@ export function StudentMasterInput({ className, signedIn = true }: StudentMaster
           'focus-within:border-[var(--ink-faint)] focus-within:shadow-[0_0_0_3px_var(--accent-soft)]',
         )}
       >
-        {signedIn && (
-          <div className="flex items-center gap-1 overflow-x-auto px-3 pb-2 pt-2.5 [scrollbar-width:none]">
-            {TABS.map((tab) => {
-              const active = mode === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setMode(tab.id)}
-                  className="shrink-0 rounded-full px-3 py-1.5 text-[11px] transition-colors"
-                  style={{
-                    fontWeight: active ? 700 : 600,
-                    color: active ? 'var(--ink)' : 'var(--ink-faint)',
-                    background: active ? 'var(--fill)' : 'transparent',
-                  }}
-                >
-                  {tab.label}
-                </button>
-              );
-            })}
-          </div>
-        )}
+        <div className="flex items-center gap-1 overflow-x-auto px-3 pb-2 pt-2.5 [scrollbar-width:none]">
+          {TABS.map((tab) => {
+            const active = mode === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setMode(tab.id)}
+                className="shrink-0 rounded-full px-3 py-1.5 text-[11px] transition-colors"
+                style={{
+                  fontWeight: active ? 700 : 600,
+                  color: active ? 'var(--ink)' : 'var(--ink-faint)',
+                  background: active ? 'var(--fill)' : 'transparent',
+                }}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
 
-        {signedIn && isQuizMode && (
+        {isQuizMode && (
           <div className="flex items-center gap-1 overflow-x-auto px-3 pb-1 [scrollbar-width:none]">
             {EXAM_TYPES.map((opt) => {
               const active = examType === opt.id;
@@ -283,20 +368,53 @@ export function StudentMasterInput({ className, signedIn = true }: StudentMaster
             </>
           )}
 
-          <button
-            type="submit"
-            className="mx-1.5 inline-flex h-10 min-w-10 shrink-0 items-center justify-center gap-1.5 rounded-full bg-[var(--ink)] px-3 text-[var(--bg)] transition-opacity hover:opacity-[0.82] active:scale-95 sm:size-[34px] sm:min-w-0 sm:px-0"
-            aria-label={isQuizMode ? 'Start sample test' : 'Create course'}
-          >
-            <span className="text-[12px] font-bold sm:hidden">{isQuizMode ? 'Go' : 'Create'}</span>
-            <ArrowRight size={15} strokeWidth={2.2} />
-          </button>
+          {/*
+            Landing guests: keep the same black arrow visually, but place the real Google
+            Sign-In control on top so the click opens the same account-chooser page.
+          */}
+          <div className="relative mx-1.5 size-10 shrink-0 sm:size-[34px]">
+            <div
+              className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center rounded-full bg-[var(--ink)] text-[var(--bg)]"
+              aria-hidden
+            >
+              <ArrowRight size={15} strokeWidth={2.2} />
+            </div>
+            {!signedIn ? (
+              <div
+                className="absolute inset-0 z-10 overflow-hidden rounded-full opacity-[0.02] [&_div]:!h-full [&_div]:!w-full [&_iframe]:!h-full [&_iframe]:!min-h-0 [&_iframe]:!w-full"
+                onMouseDown={() => {
+                  rememberGuestPending();
+                }}
+                title="Continue with Google"
+              >
+                <GoogleLogin
+                  onSuccess={(cred) => {
+                    void finishGoogleCredential(cred);
+                  }}
+                  onError={() => setError('Google sign-in was cancelled or failed.')}
+                  type="icon"
+                  theme={isDark ? 'filled_black' : 'outline'}
+                  size="large"
+                  shape="circle"
+                  text="continue_with"
+                />
+              </div>
+            ) : (
+              <button
+                type="submit"
+                className="absolute inset-0 z-10 rounded-full"
+                aria-label={isQuizMode ? 'Start sample test' : 'Create course'}
+              />
+            )}
+          </div>
         </div>
       </form>
 
       {!error && !isQuizMode && (
         <p className="mt-2 text-[11px] leading-snug text-[var(--ink-faint)]">
-          Paste a YouTube video or playlist URL, then tap Create.
+          {signedIn
+            ? 'Paste a YouTube video or playlist URL, then tap Create.'
+            : 'Paste a YouTube URL or tap the arrow to choose a Google account.'}
         </p>
       )}
 
