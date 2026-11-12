@@ -1,3 +1,4 @@
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Outlet, useLocation, useNavigate } from 'react-router';
 import { AnimatePresence } from 'framer-motion';
 import { AppSidebar } from './AppSidebar';
@@ -37,7 +38,7 @@ function MobileUpgradeFab() {
 
 function AppShellLayout() {
   const location = useLocation();
-  const { sidebarCollapsed } = useShell();
+  const { sidebarCollapsed, setSidebarCollapsed } = useShell();
   const educatorWorkspace = isEducatorWorkspaceRoute(location.pathname);
   const courseEditor = isCourseEditorRoute(location.pathname);
 
@@ -67,6 +68,20 @@ function AppShellLayout() {
         {!educatorWorkspace && (
           <aside className="cuib-sidebar">
             <AppSidebar pathname={location.pathname} search={location.search} />
+            <button
+              type="button"
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              className="cuib-sidebar-edge-toggle"
+              aria-expanded={!sidebarCollapsed}
+              aria-controls="cuib-sidebar-nav"
+              aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+              {sidebarCollapsed ? (
+                <ChevronRight size={14} strokeWidth={2.2} />
+              ) : (
+                <ChevronLeft size={14} strokeWidth={2.2} />
+              )}
+            </button>
           </aside>
         )}
         <main className="cuib-main">
