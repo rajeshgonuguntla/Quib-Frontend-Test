@@ -35,47 +35,58 @@ function MobileUpgradeFab() {
   );
 }
 
-export function AppShell() {
+function AppShellLayout() {
   const location = useLocation();
+  const { sidebarCollapsed } = useShell();
   const educatorWorkspace = isEducatorWorkspaceRoute(location.pathname);
   const courseEditor = isCourseEditorRoute(location.pathname);
 
   if (courseEditor) {
     return (
-      <ShellProvider>
-        <div className="cuib-app flex h-dvh flex-col overflow-hidden">
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-            <Outlet />
-          </div>
+      <div className="cuib-app flex h-dvh flex-col overflow-hidden">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <Outlet />
         </div>
-      </ShellProvider>
+      </div>
     );
   }
 
   return (
-    <ShellProvider>
-      <div className="cuib-app min-h-screen">
-        <header className="cuib-topnav sticky top-0 z-50">
-          <AppTopbar />
-        </header>
+    <div className="cuib-app min-h-screen">
+      <header className="cuib-topnav sticky top-0 z-50">
+        <AppTopbar />
+      </header>
 
-        <div className={cn('cuib-shell', educatorWorkspace && '!grid-cols-1')}>
-          {!educatorWorkspace && (
-            <aside className="cuib-sidebar">
-              <AppSidebar pathname={location.pathname} search={location.search} />
-            </aside>
-          )}
-          <main className="cuib-main">
-            <AnimatePresence mode="wait">
-              <PageTransition key={location.pathname}>
-                <Outlet />
-              </PageTransition>
-            </AnimatePresence>
-          </main>
-        </div>
-
-        {!educatorWorkspace && <MobileUpgradeFab />}
+      <div
+        className={cn(
+          'cuib-shell',
+          educatorWorkspace && '!grid-cols-1',
+          !educatorWorkspace && sidebarCollapsed && 'cuib-shell--sidebar-collapsed',
+        )}
+      >
+        {!educatorWorkspace && (
+          <aside className="cuib-sidebar">
+            <AppSidebar pathname={location.pathname} search={location.search} />
+          </aside>
+        )}
+        <main className="cuib-main">
+          <AnimatePresence mode="wait">
+            <PageTransition key={location.pathname}>
+              <Outlet />
+            </PageTransition>
+          </AnimatePresence>
+        </main>
       </div>
+
+      {!educatorWorkspace && <MobileUpgradeFab />}
+    </div>
+  );
+}
+
+export function AppShell() {
+  return (
+    <ShellProvider>
+      <AppShellLayout />
     </ShellProvider>
   );
 }

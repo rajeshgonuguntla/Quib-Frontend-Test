@@ -61,6 +61,11 @@
   padding: 24px 40px 40px;
 }
 
+.cuib-app .cuib-shell--sidebar-collapsed {
+  grid-template-columns: 72px 1fr;
+  gap: 16px;
+}
+
 .cuib-app .cuib-sidebar {
   position: sticky;
   top: 78px;
@@ -71,6 +76,10 @@
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
+}
+
+.cuib-app .cuib-shell--sidebar-collapsed .cuib-sidebar {
+  padding-right: 8px;
 }
 
 .cuib-app .cuib-sidebar > * {

@@ -1,3 +1,4 @@
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { SidebarNavItem } from '../components/SidebarNavItem';
 import { NAV_GROUPS, isNavItemActive, type NavItem } from './navConfig';
@@ -21,11 +22,13 @@ function NavList({
   pathname,
   search,
   onNavigate,
+  collapsed,
 }: {
   items: NavItem[];
   pathname: string;
   search: string;
   onNavigate?: () => void;
+  collapsed?: boolean;
 }) {
   const navigate = useNavigate();
   const { libraryStats } = useShell();
@@ -50,6 +53,7 @@ function NavList({
             item={{ ...item, badge }}
             active={isNavItemActive(pathname, search, item.id, item.path)}
             onClick={() => go(item.path)}
+            collapsed={collapsed}
           />
         );
       })}
@@ -57,12 +61,13 @@ function NavList({
   );
 }
 
-function SidebarUpgradeChip({ onNavigate }: { onNavigate?: () => void }) {
+function SidebarUpgradeChip({ onNavigate, collapsed }: { onNavigate?: () => void; collapsed?: boolean }) {
   const navigate = useNavigate();
   const { profile } = useUserProfile();
   const { billing } = useShell();
   if (!profile || isAdminAccount(profile)) return null;
   if (billing && hidesUpgradeCta(billing)) return null;
+  if (collapsed) return null;
 
   return (
     <div className="cuib-upgrade-chip mt-3">
@@ -85,7 +90,9 @@ function SidebarUpgradeChip({ onNavigate }: { onNavigate?: () => void }) {
 
 export function AppSidebar({ pathname, search, onNavigate, layout = 'sidebar' }: AppSidebarProps) {
   const { profile } = useUserProfile();
+  const { sidebarCollapsed, setSidebarCollapsed } = useShell();
   const isDrawer = layout === 'drawer';
+  const collapsed = !isDrawer && sidebarCollapsed;
   const navGroups = filterNavGroups(NAV_GROUPS, isEducatorExperience(profile), profile)
     .filter((group) => group.items.length > 0);
 
@@ -110,22 +117,55 @@ export function AppSidebar({ pathname, search, onNavigate, layout = 'sidebar' }:
       className={isDrawer ? 'flex flex-col' : 'flex h-full min-h-0 flex-col'}
       aria-label="Main"
     >
-      <div className="shrink-0">
-        <NavList items={primaryItems} pathname={pathname} search={search} onNavigate={onNavigate} />
+      {!isDrawer ? (
+        <div className={collapsed ? 'mb-2 flex justify-center' : 'mb-2 flex justify-end'}>
+          <button
+            type="button"
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            className="flex size-11 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--ink-faint)] transition-colors hover:border-[var(--ink-faint)] hover:text-[var(--ink)]"
+            aria-expanded={!sidebarCollapsed}
+            aria-controls="cuib-sidebar-nav"
+            aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {sidebarCollapsed ? (
+              <ChevronRight size={14} strokeWidth={2.2} />
+            ) : (
+              <ChevronLeft size={14} strokeWidth={2.2} />
+            )}
+          </button>
+        </div>
+      ) : null}
+
+      <div id="cuib-sidebar-nav" className="shrink-0">
+        <NavList
+          items={primaryItems}
+          pathname={pathname}
+          search={search}
+          onNavigate={onNavigate}
+          collapsed={collapsed}
+        />
         {createItems.length > 0 ? (
           <div className="mt-5">
-            <p
-              className="mb-1 px-2.5 uppercase"
-              style={{
-                fontFamily: 'var(--mono)',
-                fontSize: 10,
-                letterSpacing: '0.06em',
-                color: 'var(--ink-faint)',
-              }}
-            >
-              Create
-            </p>
-            <NavList items={createItems} pathname={pathname} search={search} onNavigate={onNavigate} />
+            {!collapsed ? (
+              <p
+                className="mb-1 px-2.5 uppercase"
+                style={{
+                  fontFamily: 'var(--mono)',
+                  fontSize: 10,
+                  letterSpacing: '0.06em',
+                  color: 'var(--ink-faint)',
+                }}
+              >
+                Create
+              </p>
+            ) : null}
+            <NavList
+              items={createItems}
+              pathname={pathname}
+              search={search}
+              onNavigate={onNavigate}
+              collapsed={collapsed}
+            />
           </div>
         ) : null}
       </div>
@@ -135,9 +175,15 @@ export function AppSidebar({ pathname, search, onNavigate, layout = 'sidebar' }:
         style={{ borderTop: '1px solid var(--border)' }}
       >
         {footerItems.length > 0 ? (
-          <NavList items={footerItems} pathname={pathname} search={search} onNavigate={onNavigate} />
+          <NavList
+            items={footerItems}
+            pathname={pathname}
+            search={search}
+            onNavigate={onNavigate}
+            collapsed={collapsed}
+          />
         ) : null}
-        <SidebarUpgradeChip onNavigate={onNavigate} />
+        <SidebarUpgradeChip onNavigate={onNavigate} collapsed={collapsed} />
       </div>
     </nav>
   );
