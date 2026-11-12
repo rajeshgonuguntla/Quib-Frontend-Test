@@ -106,7 +106,10 @@ export function LandingPage() {
             >
               <StudentMasterInput signedIn={signedIn} />
               {!signedIn && (
-                <div className="signin-google-wrap mt-4 flex justify-center">
+                <div
+                  data-landing-google-signin
+                  className="signin-google-wrap mt-4 flex justify-center"
+                >
                   <GoogleLoginButton
                     signInIntent="student"
                     theme={isDark ? 'filled_black' : 'outline'}
