@@ -1,4 +1,3 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { SidebarNavItem } from '../components/SidebarNavItem';
 import { NAV_GROUPS, isNavItemActive, type NavItem } from './navConfig';
@@ -90,7 +89,7 @@ function SidebarUpgradeChip({ onNavigate, collapsed }: { onNavigate?: () => void
 
 export function AppSidebar({ pathname, search, onNavigate, layout = 'sidebar' }: AppSidebarProps) {
   const { profile } = useUserProfile();
-  const { sidebarCollapsed, setSidebarCollapsed } = useShell();
+  const { sidebarCollapsed } = useShell();
   const isDrawer = layout === 'drawer';
   const collapsed = !isDrawer && sidebarCollapsed;
   const navGroups = filterNavGroups(NAV_GROUPS, isEducatorExperience(profile), profile)
@@ -114,29 +113,11 @@ export function AppSidebar({ pathname, search, onNavigate, layout = 'sidebar' }:
 
   return (
     <nav
+      id={isDrawer ? undefined : 'cuib-sidebar-nav'}
       className={isDrawer ? 'flex flex-col' : 'flex h-full min-h-0 flex-col'}
       aria-label="Main"
     >
-      {!isDrawer ? (
-        <div className={collapsed ? 'mb-2 flex justify-center' : 'mb-2 flex justify-end'}>
-          <button
-            type="button"
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="flex size-11 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--ink-faint)] transition-colors hover:border-[var(--ink-faint)] hover:text-[var(--ink)]"
-            aria-expanded={!sidebarCollapsed}
-            aria-controls="cuib-sidebar-nav"
-            aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          >
-            {sidebarCollapsed ? (
-              <ChevronRight size={14} strokeWidth={2.2} />
-            ) : (
-              <ChevronLeft size={14} strokeWidth={2.2} />
-            )}
-          </button>
-        </div>
-      ) : null}
-
-      <div id="cuib-sidebar-nav" className="shrink-0">
+      <div className="shrink-0">
         <NavList
           items={primaryItems}
           pathname={pathname}
