@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveLearnerStartDestination } from './completeGoogleSignIn';
+import { resolveLearnerStartDestination } from './learnerStartDestination';
 
 describe('resolveLearnerStartDestination', () => {
   it('routes course YouTube URLs to course-builder', () => {
