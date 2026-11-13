@@ -59,6 +59,7 @@ Reject diffs that look like generic AI UI:
 
 - Warm cream `#F4F1EA` + terracotta + decorative serif
 - Near-black + acid green
+- Neon / Tailwind green progress checklists (`#22c55e`, lime pills, glowing double-checks) — use shell `--accent` / `getC().red` for loading steps
 - Purple/violet SaaS gradients, glassmorphism, neon glow
 - Numbered `01 / 02 / 03` markers unless the content is actually a sequence
 - Extra fonts (Playfair, Space Grotesk, etc.) when Inter is already the product face
