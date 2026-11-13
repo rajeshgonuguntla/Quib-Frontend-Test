@@ -20,6 +20,10 @@ import {
 import { peekReferralCode, rememberReferralCode } from './referralCode';
 import { safeAppPath } from './safeAppPath';
 import {
+  LOCAL_DEV_BYPASS_PROFILE,
+  markLocalDevBypassSession,
+} from './authDevBypass';
+import {
   PENDING_LEARNER_START_KEY,
   resolveLearnerStartDestination,
   stashPendingLearnerStart,
@@ -44,6 +48,19 @@ type GoogleAuthResponse = {
   onboarding?: OnboardingState | null;
 };
 
+type FinishSessionArgs = {
+  auth: GoogleAuthResponse;
+  navigate: NavigateFunction;
+  setProfile: (profile: UserProfile | null) => void;
+  signInIntent?: SignInIntent;
+  pendingState?: LearnerStartState | null;
+  onBlocked?: (message: string) => void;
+};
+
+export type CompleteGoogleSignInResult =
+  | { ok: true }
+  | { ok: false; error: string };
+
 type CompleteGoogleSignInArgs = {
   credentialResponse: CredentialResponse;
   navigate: NavigateFunction;
@@ -55,9 +72,96 @@ type CompleteGoogleSignInArgs = {
   onBlocked?: (message: string) => void;
 };
 
-export type CompleteGoogleSignInResult =
-  | { ok: true }
-  | { ok: false; error: string };
+type CompleteDevBypassSignInArgs = {
+  navigate: NavigateFunction;
+  setProfile: (profile: UserProfile | null) => void;
+  signInIntent?: SignInIntent;
+  pendingState?: LearnerStartState | null;
+  onBlocked?: (message: string) => void;
+};
+
+async function finishAuthenticatedSession({
+  auth,
+  navigate,
+  setProfile,
+  signInIntent,
+  pendingState,
+  onBlocked,
+}: FinishSessionArgs): Promise<CompleteGoogleSignInResult> {
+  const expiresAt = auth.expiresAt;
+  if (typeof expiresAt !== 'number') {
+    throw new Error('Login response missing expiresAt');
+  }
+  setSession(expiresAt);
+
+  let profile = auth.profile ?? null;
+  let onboarding = auth.onboarding ?? null;
+
+  if (!profile || !onboarding) {
+    const [fallbackProfile, fallbackOnboarding] = await Promise.all([
+      profile ? Promise.resolve(profile) : fetchUserProfile(),
+      onboarding ? Promise.resolve(onboarding) : fetchOnboarding().catch(() => null),
+    ]);
+    profile = fallbackProfile;
+    onboarding = fallbackOnboarding;
+  }
+
+  const requestedIntent: SignInIntent = signInIntent ?? pendingState?.signInIntent ?? 'student';
+  const intent: SignInIntent = CREATOR_FLOW_ENABLED ? requestedIntent : 'student';
+
+  if (CREATOR_FLOW_ENABLED && intent === 'student' && isEducatorAccount(profile)) {
+    clearToken();
+    onBlocked?.(EDUCATOR_USE_CREATOR_LOGIN_MESSAGE);
+    return { ok: false, error: EDUCATOR_USE_CREATOR_LOGIN_MESSAGE };
+  }
+
+  setProfile(profile);
+
+  const effectiveIntent: SignInIntent =
+    CREATOR_FLOW_ENABLED && isEducatorAccount(profile) ? 'creator' : intent;
+  setSignInIntent(effectiveIntent);
+
+  let destination = safeAppPath(
+    typeof pendingState?.returnTo === 'string' ? pendingState.returnTo : undefined,
+  );
+
+  if (effectiveIntent === 'student' && destination && isEducatorRoute(destination)) {
+    destination = undefined;
+  }
+
+  const learnerStart = resolveLearnerStartDestination(pendingState);
+  let navState: LearnerStartState = {
+    ...(pendingState ?? {}),
+    signInIntent: effectiveIntent,
+  };
+
+  if (onboarding?.completed) {
+    localStorage.setItem(INTERESTS_KEY, JSON.stringify(onboarding.interestIds ?? []));
+    localStorage.setItem(EDUCATORS_KEY, JSON.stringify(onboarding.followedCreatorIds ?? []));
+    if (learnerStart) {
+      destination = learnerStart.path;
+      navState = { ...navState, ...learnerStart.state };
+      sessionStorage.removeItem(PENDING_LEARNER_START_KEY);
+    } else if (!destination) {
+      destination = resolveDefaultDestination(profile, effectiveIntent, true);
+    }
+  } else {
+    if (learnerStart) {
+      stashPendingLearnerStart(learnerStart.state);
+    }
+    if (!destination) {
+      const hasInterests = !!localStorage.getItem(INTERESTS_KEY);
+      destination = resolveDefaultDestination(
+        profile,
+        effectiveIntent,
+        onboarding ? onboarding.completed : hasInterests,
+      );
+    }
+  }
+
+  navigate(destination, { state: navState });
+  return { ok: true };
+}
 
 export async function completeGoogleSignIn({
   credentialResponse,
@@ -85,82 +189,60 @@ export async function completeGoogleSignIn({
       referralCode,
     });
 
-    const expiresAt = res.data.expiresAt;
-    if (typeof expiresAt !== 'number') {
-      throw new Error('Login response missing expiresAt');
-    }
-    setSession(expiresAt);
-
-    let profile = res.data.profile ?? null;
-    let onboarding = res.data.onboarding ?? null;
-
-    if (!profile || !onboarding) {
-      const [fallbackProfile, fallbackOnboarding] = await Promise.all([
-        profile ? Promise.resolve(profile) : fetchUserProfile(),
-        onboarding ? Promise.resolve(onboarding) : fetchOnboarding().catch(() => null),
-      ]);
-      profile = fallbackProfile;
-      onboarding = fallbackOnboarding;
-    }
-
-    const requestedIntent: SignInIntent = signInIntent ?? pendingState?.signInIntent ?? 'student';
-    const intent: SignInIntent = CREATOR_FLOW_ENABLED ? requestedIntent : 'student';
-
-    if (CREATOR_FLOW_ENABLED && intent === 'student' && isEducatorAccount(profile)) {
-      clearToken();
-      onBlocked?.(EDUCATOR_USE_CREATOR_LOGIN_MESSAGE);
-      return { ok: false, error: EDUCATOR_USE_CREATOR_LOGIN_MESSAGE };
-    }
-
-    setProfile(profile);
-
-    const effectiveIntent: SignInIntent =
-      CREATOR_FLOW_ENABLED && isEducatorAccount(profile) ? 'creator' : intent;
-    setSignInIntent(effectiveIntent);
-
-    let destination = safeAppPath(
-      typeof pendingState?.returnTo === 'string' ? pendingState.returnTo : undefined,
-    );
-
-    if (effectiveIntent === 'student' && destination && isEducatorRoute(destination)) {
-      destination = undefined;
-    }
-
-    const learnerStart = resolveLearnerStartDestination(pendingState);
-    let navState: LearnerStartState = {
-      ...(pendingState ?? {}),
-      signInIntent: effectiveIntent,
-    };
-
-    if (onboarding?.completed) {
-      localStorage.setItem(INTERESTS_KEY, JSON.stringify(onboarding.interestIds ?? []));
-      localStorage.setItem(EDUCATORS_KEY, JSON.stringify(onboarding.followedCreatorIds ?? []));
-      if (learnerStart) {
-        destination = learnerStart.path;
-        navState = { ...navState, ...learnerStart.state };
-        sessionStorage.removeItem(PENDING_LEARNER_START_KEY);
-      } else if (!destination) {
-        destination = resolveDefaultDestination(profile, effectiveIntent, true);
-      }
-    } else {
-      if (learnerStart) {
-        stashPendingLearnerStart(learnerStart.state);
-      }
-      if (!destination) {
-        const hasInterests = !!localStorage.getItem(INTERESTS_KEY);
-        destination = resolveDefaultDestination(
-          profile,
-          effectiveIntent,
-          onboarding ? onboarding.completed : hasInterests,
-        );
-      }
-    }
-
-    navigate(destination, { state: navState });
-    return { ok: true };
+    return await finishAuthenticatedSession({
+      auth: res.data,
+      navigate,
+      setProfile,
+      signInIntent,
+      pendingState,
+      onBlocked,
+    });
   } catch (error) {
     logClientError('Login failed', error);
     clearToken();
     return { ok: false, error: 'Sign-in failed. Please try again.' };
+  }
+}
+
+/**
+ * Frontend-only local bypass — no backend call.
+ * Unlocks shell routes for UI work; API calls that need a real cookie will still 401.
+ */
+export async function completeDevBypassSignIn({
+  navigate,
+  setProfile,
+  signInIntent,
+  pendingState,
+  onBlocked,
+}: CompleteDevBypassSignInArgs): Promise<CompleteGoogleSignInResult> {
+  try {
+    clearLocalSession();
+    markLocalDevBypassSession(LOCAL_DEV_BYPASS_PROFILE);
+
+    // Mark onboarding complete so local UI lands on the dashboard, not the wizard.
+    if (!localStorage.getItem(INTERESTS_KEY)) {
+      localStorage.setItem(INTERESTS_KEY, JSON.stringify([]));
+    }
+
+    return await finishAuthenticatedSession({
+      auth: {
+        expiresAt: Math.floor(Date.now() / 1000) + 60 * 60 * 12,
+        profile: LOCAL_DEV_BYPASS_PROFILE,
+        onboarding: {
+          completed: true,
+          interestIds: [],
+          followedCreatorIds: [],
+        },
+      },
+      navigate,
+      setProfile,
+      signInIntent,
+      pendingState,
+      onBlocked,
+    });
+  } catch (error) {
+    logClientError('Dev bypass login failed', error);
+    clearToken();
+    return { ok: false, error: 'Local bypass failed.' };
   }
 }

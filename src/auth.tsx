@@ -2,6 +2,7 @@ import { Navigate, Outlet, useLocation } from 'react-router';
 import { useEffect, useState } from 'react';
 import { useUserProfile } from './context/UserProfileContext';
 import { INTERESTS_KEY } from './components/Onboarding';
+import { clearLocalDevBypassSession } from './utils/authDevBypass';
 import { SIGN_IN_PATH } from './utils/navigation';
 import { safeAppPath } from './utils/safeAppPath';
 
@@ -43,6 +44,7 @@ export function useAuthSessionKey(): string {
 export function clearLocalSession(): void {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(SESSION_EXP_KEY);
+  clearLocalDevBypassSession();
   notifyAuthChanged();
 }
 

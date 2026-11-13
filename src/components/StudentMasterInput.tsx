@@ -26,6 +26,7 @@ import {
   type LearnerStartMode,
   type SampleExamType,
 } from '../utils/learnerStartMode';
+import { StandaloneNotesWorkspace } from './StandaloneNotesWorkspace';
 
 export type { LearnerStartMode, SampleExamType } from '../utils/learnerStartMode';
 export {
@@ -321,153 +322,157 @@ export function StudentMasterInput({ className, signedIn = true }: StudentMaster
           })}
         </div>
 
-        <form
-          onSubmit={submitInput}
-          className={cn(
-            'relative z-[1] flex min-h-12 items-center overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)]',
-            'shadow-[var(--shadow)]',
-          )}
-        >
-          <div className="flex shrink-0 items-center justify-center pl-3 pr-2 text-[var(--ink-faint)]">
-            <VideoGlyph />
-          </div>
+        {isNotesMode ? (
+          <StandaloneNotesWorkspace />
+        ) : (
+          <form
+            onSubmit={submitInput}
+            className={cn(
+              'relative z-[1] flex min-h-12 items-center overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)]',
+              'shadow-[var(--shadow)]',
+            )}
+          >
+            <div className="flex shrink-0 items-center justify-center pl-3 pr-2 text-[var(--ink-faint)]">
+              <VideoGlyph />
+            </div>
 
-          <div className="relative flex min-w-0 flex-1 items-center overflow-hidden">
-            <input
-              type="text"
-              value={inputValue}
-              onChange={(e) => {
-                setInputValue(e.target.value);
-                if (error) setError(null);
-              }}
-              onFocus={() => setFocused(true)}
-              onBlur={() => setFocused(false)}
-              placeholder=" "
-              className="relative z-[1] w-full bg-transparent py-[13px] text-[13px] outline-none"
-              style={{
-                fontFamily: 'var(--mono)',
-                color: 'var(--ink)',
-                caretColor: 'var(--accent)',
-              }}
-              aria-label={
-                isQuizMode
-                  ? 'Test topic or YouTube URL'
-                  : isNotesMode
-                    ? 'YouTube URL for notes'
+            <div className="relative flex min-w-0 flex-1 items-center overflow-hidden">
+              <input
+                type="text"
+                value={inputValue}
+                onChange={(e) => {
+                  setInputValue(e.target.value);
+                  if (error) setError(null);
+                }}
+                onFocus={() => setFocused(true)}
+                onBlur={() => setFocused(false)}
+                placeholder=" "
+                className="relative z-[1] w-full bg-transparent py-[13px] text-[13px] outline-none"
+                style={{
+                  fontFamily: 'var(--mono)',
+                  color: 'var(--ink)',
+                  caretColor: 'var(--accent)',
+                }}
+                aria-label={
+                  isQuizMode
+                    ? 'Test topic or YouTube URL'
                     : isFlashcardsMode
                       ? 'YouTube URL for flashcards'
                       : 'YouTube URL to create a course'
-              }
-              autoComplete="off"
-              // Never use inputMode=url — iOS URL keyboard has no space bar (blocks prompt text).
-              inputMode="text"
-              enterKeyHint="go"
-            />
-            {showTypewriter && (
-              <div className="pointer-events-none absolute inset-y-0 left-0 z-0 flex items-center gap-0.5 overflow-hidden whitespace-nowrap" aria-hidden>
-                <span className="truncate text-[13px] text-[var(--ink-faint)]" style={{ fontFamily: 'var(--mono)' }}>{phText}</span>
-                <span className="inline-block h-[13px] w-[1.5px] shrink-0 animate-pulse bg-[var(--ink-faint)]" />
+                }
+                autoComplete="off"
+                // Never use inputMode=url — iOS URL keyboard has no space bar (blocks prompt text).
+                inputMode="text"
+                enterKeyHint="go"
+              />
+              {showTypewriter && (
+                <div className="pointer-events-none absolute inset-y-0 left-0 z-0 flex items-center gap-0.5 overflow-hidden whitespace-nowrap" aria-hidden>
+                  <span className="truncate text-[13px] text-[var(--ink-faint)]" style={{ fontFamily: 'var(--mono)' }}>{phText}</span>
+                  <span className="inline-block h-[13px] w-[1.5px] shrink-0 animate-pulse bg-[var(--ink-faint)]" />
+                </div>
+              )}
+            </div>
+
+            {isQuizMode ? (
+              <div className="mr-1 flex shrink-0 items-center gap-0.5">
+                {EXAM_TYPES.map((opt) => {
+                  const active = examType === opt.id;
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => setExamType(opt.id)}
+                      className="flex h-6 shrink-0 items-center rounded-full px-2 text-[10px] transition-colors"
+                      style={{
+                        fontWeight: active ? 700 : 600,
+                        color: active ? 'var(--accent)' : 'var(--ink-soft)',
+                        background: 'transparent',
+                        border: active ? '1px solid var(--accent)' : '1px solid transparent',
+                      }}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
               </div>
+            ) : null}
+
+            {STUDENT_UPLOAD_ENABLED && (
+              <>
+                <div className="h-[22px] w-px shrink-0 bg-[var(--border)]" aria-hidden />
+                <button
+                  type="button"
+                  title="Upload"
+                  onClick={() => fileRef.current?.click()}
+                  className="flex size-11 shrink-0 items-center justify-center text-[var(--ink-faint)] transition-colors hover:bg-[var(--border)] hover:text-[var(--ink)]"
+                >
+                  <Upload size={16} strokeWidth={1.8} />
+                </button>
+                <input ref={fileRef} type="file" className="hidden" accept="image/*,audio/*,video/*,.pdf,.txt,.md" />
+              </>
             )}
-          </div>
 
-          {isQuizMode ? (
-            <div className="mr-1 flex shrink-0 items-center gap-0.5">
-              {EXAM_TYPES.map((opt) => {
-                const active = examType === opt.id;
-                return (
-                  <button
-                    key={opt.id}
-                    type="button"
-                    onClick={() => setExamType(opt.id)}
-                    className="flex h-6 shrink-0 items-center rounded-full px-2 text-[10px] transition-colors"
-                    style={{
-                      fontWeight: active ? 700 : 600,
-                      color: active ? 'var(--accent)' : 'var(--ink-soft)',
-                      background: 'transparent',
-                      border: active ? '1px solid var(--accent)' : '1px solid transparent',
-                    }}
-                  >
-                    {opt.label}
-                  </button>
-                );
-              })}
-            </div>
-          ) : null}
-
-          {STUDENT_UPLOAD_ENABLED && (
-            <>
-              <div className="h-[22px] w-px shrink-0 bg-[var(--border)]" aria-hidden />
-              <button
-                type="button"
-                title="Upload"
-                onClick={() => fileRef.current?.click()}
-                className="flex size-11 shrink-0 items-center justify-center text-[var(--ink-faint)] transition-colors hover:bg-[var(--border)] hover:text-[var(--ink)]"
-              >
-                <Upload size={16} strokeWidth={1.8} />
-              </button>
-              <input ref={fileRef} type="file" className="hidden" accept="image/*,audio/*,video/*,.pdf,.txt,.md" />
-            </>
-          )}
-
-          {/*
-            Landing guests: keep the same black arrow visually, but place the real Google
-            Sign-In control on top so the click opens the same account-chooser page.
-          */}
-          <div className="relative mx-1.5 size-[34px] shrink-0 sm:size-[34px]">
-            <div
-              className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center rounded-full bg-[var(--ink)] text-[var(--bg)]"
-              aria-hidden
-            >
-              <ArrowRight size={15} strokeWidth={2.2} />
-            </div>
-            {!signedIn ? (
+            {/*
+              Landing guests: keep the same black arrow visually, but place the real Google
+              Sign-In control on top so the click opens the same account-chooser page.
+            */}
+            <div className="relative mx-1.5 size-[34px] shrink-0 sm:size-[34px]">
               <div
-                className="absolute inset-0 z-10 overflow-hidden rounded-full opacity-[0.02] [&_div]:!h-full [&_div]:!w-full [&_iframe]:!h-full [&_iframe]:!min-h-0 [&_iframe]:!w-full"
-                onMouseDown={() => {
-                  rememberGuestPending();
-                }}
-                title="Continue with Google"
+                className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center rounded-full bg-[var(--ink)] text-[var(--bg)]"
+                aria-hidden
               >
-                <GoogleLogin
-                  onSuccess={(cred) => {
-                    void finishGoogleCredential(cred);
-                  }}
-                  onError={() => setError('Google sign-in was cancelled or failed.')}
-                  type="icon"
-                  theme={isDark ? 'filled_black' : 'outline'}
-                  size="large"
-                  shape="circle"
-                  text="continue_with"
-                />
+                <ArrowRight size={15} strokeWidth={2.2} />
               </div>
-            ) : (
-              <button
-                type="submit"
-                className="absolute inset-0 z-10 rounded-full"
-                aria-label={
-                  isQuizMode
-                    ? 'Start quiz'
-                    : isNotesMode
-                      ? 'Create notes'
+              {!signedIn ? (
+                <div
+                  className="absolute inset-0 z-10 overflow-hidden rounded-full opacity-[0.02] [&_div]:!h-full [&_div]:!w-full [&_iframe]:!h-full [&_iframe]:!min-h-0 [&_iframe]:!w-full"
+                  onMouseDown={() => {
+                    rememberGuestPending();
+                  }}
+                  title="Continue with Google"
+                >
+                  <GoogleLogin
+                    onSuccess={(cred) => {
+                      void finishGoogleCredential(cred);
+                    }}
+                    onError={() => setError('Google sign-in was cancelled or failed.')}
+                    type="icon"
+                    theme={isDark ? 'filled_black' : 'outline'}
+                    size="large"
+                    shape="circle"
+                    text="continue_with"
+                  />
+                </div>
+              ) : (
+                <button
+                  type="submit"
+                  className="absolute inset-0 z-10 rounded-full"
+                  aria-label={
+                    isQuizMode
+                      ? 'Start quiz'
                       : isFlashcardsMode
                         ? 'Create flashcards'
                         : 'Create course'
-                }
-              />
-            )}
-          </div>
-        </form>
+                  }
+                />
+              )}
+            </div>
+          </form>
+        )}
       </div>
 
-      {!error && !isQuizMode && (
+      {!error && isNotesMode && (
+        <p className="mt-2 text-[11px] leading-snug text-[var(--ink-faint)]">
+          Tap My notes for your library. Selecting a note opens it here; if you already have one open, tabs let you switch. Drafts save on this device.
+        </p>
+      )}
+
+      {!error && !isQuizMode && !isNotesMode && (
         <p className="mt-2 text-[11px] leading-snug text-[var(--ink-faint)]">
           {signedIn
-            ? isNotesMode
-              ? 'Paste a YouTube video or playlist URL, then tap to make notes.'
-              : isFlashcardsMode
-                ? 'Paste a YouTube video or playlist URL, then tap to make flashcards.'
-                : 'Paste a YouTube video or playlist URL, then tap Create.'
+            ? isFlashcardsMode
+              ? 'Paste a YouTube video or playlist URL, then tap to make flashcards.'
+              : 'Paste a YouTube video or playlist URL, then tap Create.'
             : 'Paste a YouTube URL or tap the arrow to choose a Google account.'}
         </p>
       )}

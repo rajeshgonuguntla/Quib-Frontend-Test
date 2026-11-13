@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { GoogleLogin, type CredentialResponse } from '@react-oauth/google';
 import { useLocation, useNavigate } from 'react-router';
 import { useUserProfile } from '../context/UserProfileContext';
+import { DevAuthBypassButton } from './DevAuthBypassButton';
 import {
   completeGoogleSignIn,
   takeLearnerStartState,
@@ -84,6 +85,11 @@ function GoogleLoginButton({
           shape="pill"
         />
       </div>
+      <DevAuthBypassButton
+        signInIntent={signInIntent}
+        onLoginBlocked={onLoginBlocked}
+        className="mt-3"
+      />
       {signInError && (
         <div
           className="mt-3 rounded-lg border px-3 py-2.5 text-[0.8rem] leading-relaxed"

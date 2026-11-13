@@ -10,6 +10,10 @@ import {
 } from 'react';
 import { fetchUserProfile } from '../api/userApi';
 import { clearToken, isTokenValid, useAuthSessionKey } from '../auth';
+import {
+  isLocalDevBypassSession,
+  readLocalDevBypassProfile,
+} from '../utils/authDevBypass';
 import type { UserProfile } from '../types/userProfile';
 
 type UserProfileContextValue = {
@@ -34,6 +38,16 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
     if (!isTokenValid()) {
       if (seq === requestSeq.current) {
         setProfile(null);
+        setError(null);
+        setLoading(false);
+      }
+      return;
+    }
+
+    // Frontend-only local bypass: skip /users/me so missing cookie does not log you out.
+    if (isLocalDevBypassSession()) {
+      if (seq === requestSeq.current) {
+        setProfile(readLocalDevBypassProfile());
         setError(null);
         setLoading(false);
       }
