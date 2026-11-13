@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router';
 import axios from 'axios';
 import { ShellPage } from '../shell/ShellPage';
-import { Youtube, Clock, FileText, Play, CheckCircle, Award, ArrowRight, Share2, Link2, Copy, Check, AlertCircle } from 'lucide-react';
+import { Play, ArrowRight, Copy, Check, AlertCircle } from 'lucide-react';
 import { useTheme, getC } from './ThemeContext';
 import {
   examBlueprintPreview,
@@ -471,185 +471,160 @@ export function QuizSetup() {
     );
   }
 
+  const shareUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/quiz/${id}`;
+  const readinessLabel = promptRequest ? 'Answer keys validated' : 'Transcript available';
+  const metaBits = [
+    quizData.channel,
+    quizData.duration !== '--:--' ? quizData.duration : null,
+    readinessLabel,
+    quizData.examType ? `${quizData.examType} practice exam` : null,
+  ].filter(Boolean) as string[];
+
+  const detailRows = [
+    { label: 'Questions', value: `${quizData.questionCount} questions` },
+    { label: 'Difficulty', value: quizData.difficulty },
+    { label: 'Estimated time', value: quizData.estimatedTime },
+    { label: 'Completion', value: 'Results available after quiz' },
+  ];
+
   return (
-    <ShellPage title="Quiz Ready!" description="Review the details below and start when you're ready">
-      <div className="space-y-6 max-w-4xl">
-        {/* Prompt exams: title card only. Video embed only for YouTube quizzes. */}
-        <div
-          className="rounded-xl overflow-hidden"
-          style={{ background: C.bg1, border: `1px solid ${C.border}` }}
-        >
+    <ShellPage title="Quiz ready" description="Review the details below and start when you're ready">
+      <div className="mx-auto flex w-full max-w-xl flex-col gap-10 pt-2">
+        {/* Title + optional video — one plane, no tinted meta chips */}
+        <div className="flex flex-col gap-5">
           {!promptRequest && (
-            <div className="aspect-video relative" style={{ background: C.bg2 }}>
+            <div
+              className="aspect-video relative overflow-hidden"
+              style={{ background: C.bg2, borderBottom: `1px solid ${C.border}` }}
+            >
               {getYoutubeVideoId(videoMeta.youtubeUrl) ? (
                 <iframe
                   src={`https://www.youtube.com/embed/${getYoutubeVideoId(videoMeta.youtubeUrl)}`}
                   title={quizData.videoTitle}
-                  className="w-full h-full"
+                  className="h-full w-full"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                   style={{ border: 'none' }}
                 />
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div
-                    className="w-16 h-16 rounded-full flex items-center justify-center"
-                    style={{ background: 'rgba(225,6,0,0.15)', border: '1px solid rgba(225,6,0,0.3)', backdropFilter: 'blur(4px)' }}
-                  >
-                    <Play className="w-7 h-7 ml-1" style={{ color: C.red }} />
-                  </div>
+                  <Play className="size-8" style={{ color: C.text3 }} strokeWidth={1.75} />
                 </div>
               )}
             </div>
           )}
-          <div className="p-6">
-            <h2 className="text-xl font-[400] mb-3" style={{ color: C.text, fontFamily: "var(--display)" }}>{quizData.videoTitle}</h2>
-            <div className="flex flex-wrap items-center gap-5">
-              {!promptRequest && (
-                <span className="flex items-center gap-2 text-sm" style={{ color: C.text2 }}>
-                  <Youtube className="w-4 h-4" style={{ color: C.red }} />
-                  {quizData.channel}
-                </span>
-              )}
-              {promptRequest && (
-                <span className="flex items-center gap-2 text-sm" style={{ color: C.text2 }}>
-                  <FileText className="w-4 h-4" style={{ color: C.red }} />
-                  {quizData.channel}
-                </span>
-              )}
-              <span className="flex items-center gap-2 text-sm" style={{ color: C.text2 }}>
-                <Clock className="w-4 h-4" />
-                {quizData.duration}
-              </span>
-              <span className="flex items-center gap-2 text-sm" style={{ color: '#22c55e' }}>
-                <CheckCircle className="w-4 h-4" />
-                {promptRequest ? 'Answer keys validated' : 'Transcript available'}
-              </span>
-              {quizData.examType && (
-                <span className="flex items-center gap-2 text-sm uppercase tracking-wide" style={{ color: C.text2 }}>
-                  {quizData.examType} practice exam
-                </span>
-              )}
-            </div>
+
+          <div>
+            <h2
+              className="text-[22px] font-semibold leading-snug tracking-[-0.02em]"
+              style={{ color: C.text, fontFamily: 'var(--display)' }}
+            >
+              {quizData.videoTitle}
+            </h2>
+            <p
+              className="mt-2 text-[13px] leading-relaxed"
+              style={{ color: C.text2 }}
+            >
+              {metaBits.join(' · ')}
+            </p>
           </div>
         </div>
 
         {quizData.sections && quizData.sections.length > 0 && (
-          <div
-            className="rounded-xl p-6"
-            style={{ background: C.bg1, border: `1px solid ${C.border}` }}
-          >
-            <div className="text-[10px] tracking-[3px] uppercase font-[500] mb-4" style={{ color: C.text3, fontFamily: 'var(--mono)' }}>
+          <section className="flex flex-col gap-3" style={{ borderTop: `1px solid ${C.border}`, paddingTop: 28 }}>
+            <h3
+              className="text-[11px] font-medium uppercase tracking-[0.14em]"
+              style={{ color: C.text3, fontFamily: 'var(--mono)' }}
+            >
               Sections
-            </div>
-            <ul className="space-y-2">
+            </h3>
+            <ol className="flex flex-col gap-2.5">
               {quizData.sections.map((label) => (
-                <li key={label} className="text-sm" style={{ color: C.text2 }}>
+                <li key={label} className="text-[14px] leading-snug" style={{ color: C.text2 }}>
                   {label}
                 </li>
               ))}
-            </ul>
-          </div>
+            </ol>
+          </section>
         )}
 
-        {/* Quiz Details Grid */}
-        <div
-          className="rounded-xl p-6"
-          style={{ background: C.bg1, border: `1px solid ${C.border}` }}
-        >
-          <div className="flex items-center gap-2 mb-5">
-            <span className="text-[10px] tracking-[3px] uppercase font-[500]" style={{ color: C.text3, fontFamily: "var(--mono)" }}>
-              Quiz Details
-            </span>
-          </div>
-          <div className="grid sm:grid-cols-2 gap-4">
-            {[
-              { icon: FileText, label: 'Questions', value: `${quizData.questionCount} questions`, color: '#3b82f6', bg: 'rgba(59,130,246,0.1)' },
-              { icon: null, label: 'Difficulty', value: quizData.difficulty, color: '#a855f7', bg: 'rgba(168,85,247,0.1)', emoji: '📊' },
-              { icon: Clock, label: 'Estimated Time', value: quizData.estimatedTime, color: '#f97316', bg: 'rgba(249,115,22,0.1)' },
-              { icon: Award, label: 'Completion', value: 'Results available after quiz', color: '#22c55e', bg: 'rgba(34,197,94,0.1)' },
-            ].map((item, idx) => (
+        <section className="flex flex-col gap-3" style={{ borderTop: `1px solid ${C.border}`, paddingTop: 28 }}>
+          <h3
+            className="text-[11px] font-medium uppercase tracking-[0.14em]"
+            style={{ color: C.text3, fontFamily: 'var(--mono)' }}
+          >
+            Quiz details
+          </h3>
+          <dl className="flex flex-col">
+            {detailRows.map((row) => (
               <div
-                key={idx}
-                className="flex items-center gap-4 p-4 rounded-lg"
-                style={{ background: C.bg2, border: `1px solid ${C.border}` }}
+                key={row.label}
+                className="flex items-baseline justify-between gap-6 py-3"
+                style={{ borderBottom: `1px solid ${C.border}` }}
               >
-                <div
-                  className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-                  style={{ background: item.bg }}
+                <dt className="text-[13px] shrink-0" style={{ color: C.text3 }}>
+                  {row.label}
+                </dt>
+                <dd
+                  className="text-right text-[14px] font-medium capitalize leading-snug"
+                  style={{ color: C.text }}
                 >
-                  {item.emoji ? (
-                    <span className="text-lg">{item.emoji}</span>
-                  ) : item.icon ? (
-                    <item.icon className="w-5 h-5" style={{ color: item.color }} />
-                  ) : null}
-                </div>
-                <div>
-                  <div className="text-xs font-[500] mb-0.5" style={{ color: C.text3 }}>{item.label}</div>
-                  <div className="text-sm font-[500] capitalize" style={{ color: C.text }}>{item.value}</div>
-                </div>
+                  {row.value}
+                </dd>
               </div>
             ))}
-          </div>
-        </div>
+          </dl>
+        </section>
 
-        {/* Share with Students */}
-        <div
-          className="rounded-xl p-6"
-          style={{ background: C.bg1, border: `1px solid ${C.border}` }}
-        >
-          <div className="flex items-center gap-2 mb-5">
-            <Share2 className="w-4 h-4" style={{ color: C.text3 }} />
-            <span className="text-[10px] tracking-[3px] uppercase font-[500]" style={{ color: C.text3, fontFamily: "var(--mono)" }}>
-              Share with Students
-            </span>
-          </div>
-
-          {/* Share link preview - always visible */}
-          <div
-            className="flex items-center gap-3 p-3 rounded-lg mb-4"
-            style={{ background: C.bg2, border: `1px solid ${C.border}` }}
+        <section className="flex flex-col gap-3" style={{ borderTop: `1px solid ${C.border}`, paddingTop: 28 }}>
+          <h3
+            className="text-[11px] font-medium uppercase tracking-[0.14em]"
+            style={{ color: C.text3, fontFamily: 'var(--mono)' }}
           >
-            <Link2 className="w-4 h-4 flex-shrink-0" style={{ color: C.text3 }} />
-            <span className="text-sm truncate flex-1" style={{ color: C.text2, fontFamily: 'var(--mono)' }}>
-              {`${typeof window !== 'undefined' ? window.location.origin : ''}/quiz/${id}`}
+            Share with students
+          </h3>
+          <div className="flex min-h-11 items-center gap-3">
+            <span
+              className="min-w-0 flex-1 truncate text-[12px]"
+              style={{ color: C.text2, fontFamily: 'var(--mono)' }}
+              title={shareUrl}
+            >
+              {shareUrl}
             </span>
             <button
+              type="button"
               onClick={() => {
-                navigator.clipboard.writeText(`${window.location.origin}/quiz/${id}`);
+                void navigator.clipboard.writeText(shareUrl);
                 setCopied(true);
                 setTimeout(() => setCopied(false), 2000);
               }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-[500] cursor-pointer transition-all flex-shrink-0"
-              style={{
-                background: copied ? 'rgba(34,197,94,0.15)' : 'rgba(225,6,0,0.1)',
-                border: `1px solid ${copied ? 'rgba(34,197,94,0.3)' : 'rgba(225,6,0,0.2)'}`,
-                color: copied ? '#22c55e' : C.red,
-              }}
+              className="inline-flex h-11 shrink-0 items-center gap-1.5 px-3 text-[13px] font-medium transition-colors"
+              style={{ color: copied ? C.text : C.red }}
             >
-              {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-              {copied ? 'Copied!' : 'Copy Link'}
+              {copied ? <Check className="size-3.5" strokeWidth={2.2} /> : <Copy className="size-3.5" strokeWidth={2.2} />}
+              {copied ? 'Copied' : 'Copy link'}
             </button>
           </div>
+        </section>
 
-        </div>
-
-        {/* Actions */}
-        <div className="flex items-center gap-4 pt-2">
+        <div
+          className="flex flex-wrap items-center gap-3 pt-2"
+          style={{ borderTop: `1px solid ${C.border}`, paddingTop: 28 }}
+        >
           <button
+            type="button"
             onClick={() => navigate('/dashboard')}
-            className="px-6 py-3 rounded-lg text-sm font-[500] cursor-pointer transition-colors"
+            className="inline-flex h-11 items-center px-5 text-[13px] font-medium transition-colors"
             style={{
               background: 'transparent',
-              border: `1px solid ${C.border2}`,
+              border: `1px solid ${C.border}`,
               color: C.text2,
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = C.bg2; e.currentTarget.style.color = C.text; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = C.text2; }}
           >
-            Back to Dashboard
+            Back to dashboard
           </button>
           <button
+            type="button"
             onClick={() => {
               const quizId = (id && isUuid(id)) ? id : sessionStorage.getItem('currentQuizId') || id;
               navigate(`/quiz/${quizId}`, {
@@ -663,18 +638,11 @@ export function QuizSetup() {
                 },
               });
             }}
-            className="px-8 py-3 rounded-lg text-sm font-[600] cursor-pointer transition-all flex items-center gap-2"
-            style={{
-              background: C.red,
-              border: 'none',
-              color: '#fff',
-              boxShadow: '0 0 20px rgba(225,6,0,0.3)',
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.boxShadow = '0 0 30px rgba(225,6,0,0.5)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.boxShadow = '0 0 20px rgba(225,6,0,0.3)'; }}
+            className="inline-flex h-11 items-center gap-2 px-6 text-[13px] font-semibold text-white transition-opacity hover:opacity-90"
+            style={{ background: C.red }}
           >
-            Start Quiz
-            <ArrowRight className="w-4 h-4" />
+            Start quiz
+            <ArrowRight className="size-4" strokeWidth={2.2} />
           </button>
         </div>
       </div>
