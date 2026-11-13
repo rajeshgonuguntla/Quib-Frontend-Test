@@ -368,73 +368,77 @@ export function QuizSetup() {
     }
   }, [youtubeUrl, promptRequest, examType]);
 
-  const steps = promptRequest
+  const statusLabels = promptRequest
     ? [
-        { label: 'Planning exam sections', completed: progress >= 20 },
-        { label: 'Generating section questions', completed: progress >= 55 },
-        { label: 'Validating answer keys', completed: progress >= 85 },
-        { label: 'Ready to start', completed: progress >= 100 },
+        { at: 0, label: 'Planning exam sections' },
+        { at: 20, label: 'Generating section questions' },
+        { at: 55, label: 'Validating answer keys' },
+        { at: 85, label: 'Almost ready' },
+        { at: 100, label: 'Ready to start' },
       ]
     : [
-        { label: 'Fetching transcript', completed: progress >= 33 },
-        { label: 'Analyzing content', completed: progress >= 66 },
-        { label: 'Generating questions', completed: progress >= 100 },
+        { at: 0, label: 'Fetching transcript' },
+        { at: 33, label: 'Analyzing content' },
+        { at: 66, label: 'Generating questions' },
+        { at: 100, label: 'Ready to start' },
       ];
+
+  const currentStatus =
+    [...statusLabels].reverse().find((s) => progress >= s.at)?.label
+    ?? statusLabels[0]!.label;
 
   if (loading) {
     return (
       <ShellPage
-        title="Preparing Your Quiz"
+        title="Preparing your quiz"
         description={
           promptRequest
             ? `Full ${examType.toUpperCase()} practice exam — this can take several minutes`
             : 'This usually takes 20–30 seconds'
         }
       >
-        <div className="max-w-lg space-y-6">
-          {/* Progress bar */}
+        {/* One quiet composition: large % + one status line + hairline progress. No step checklist. */}
+        <div className="mx-auto flex w-full max-w-md flex-col gap-10 pt-6">
+          <div>
+            <p
+              className="tabular-nums text-[56px] font-bold leading-none tracking-[-0.04em] motion-safe:transition-[color] motion-safe:duration-300"
+              style={{ color: C.text, fontFamily: 'var(--display)' }}
+              aria-live="polite"
+            >
+              {progress}
+              <span className="text-[28px] font-semibold tracking-[-0.02em]" style={{ color: C.text3 }}>
+                %
+              </span>
+            </p>
+            <p
+              className="mt-4 text-[13px] leading-snug"
+              style={{ color: C.text2, fontFamily: 'var(--mono)' }}
+              aria-live="polite"
+            >
+              {currentStatus}
+            </p>
+          </div>
+
           <div
-            className="rounded-xl p-6"
-            style={{ background: C.bg1, border: `1px solid ${C.border}` }}
+            className="h-px w-full overflow-hidden"
+            style={{ background: C.border }}
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={progress}
+            aria-label="Quiz generation progress"
           >
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-[500]" style={{ color: C.text2 }}>Generating quiz…</span>
-              <span className="text-sm font-[600] tabular-nums" style={{ color: C.text }}>{progress}%</span>
-            </div>
-            <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: C.bg2 }}>
-              <div
-                className="h-full rounded-full transition-all duration-300"
-                style={{ width: `${progress}%`, background: C.red }}
-              />
-            </div>
+            <div
+              className="h-full origin-left motion-safe:transition-[width] motion-safe:duration-300 motion-safe:ease-out"
+              style={{ width: `${Math.max(progress, 2)}%`, background: C.red }}
+            />
           </div>
-          {/* Steps */}
-          <div className="space-y-3">
-            {steps.map((step, idx) => (
-              <div
-                key={idx}
-                className="flex items-center gap-3 p-4 rounded-xl"
-                style={{ background: C.bg1, border: `1px solid ${C.border}` }}
-              >
-                <div
-                  className="flex size-6 shrink-0 items-center justify-center rounded-full transition-colors duration-300"
-                  style={{
-                    background: step.completed ? C.redDim : C.bg2,
-                    border: `1px solid ${step.completed ? C.red : C.border}`,
-                  }}
-                >
-                  {step.completed ? (
-                    <CheckCircle className="size-3.5" style={{ color: C.red }} strokeWidth={2.2} />
-                  ) : (
-                    <div className="size-2 rounded-full" style={{ background: C.text3 }} />
-                  )}
-                </div>
-                <span className="text-sm" style={{ color: step.completed ? C.text : C.text3 }}>
-                  {step.label}
-                </span>
-              </div>
-            ))}
-          </div>
+
+          <p className="text-[12px] leading-relaxed" style={{ color: C.text3 }}>
+            {promptRequest
+              ? 'Stay on this page — we will open the exam when it is ready.'
+              : 'Hang tight while Cubit builds your questions.'}
+          </p>
         </div>
       </ShellPage>
     );
