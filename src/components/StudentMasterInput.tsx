@@ -20,9 +20,34 @@ import {
   stashLearnerStartState,
   type LearnerStartState,
 } from '../utils/completeGoogleSignIn';
+import {
+  LEARNER_START_TABS,
+  isLearnerStartModeReady,
+  type LearnerStartMode,
+  type SampleExamType,
+} from '../utils/learnerStartMode';
 
-const PHRASES = [
+export type { LearnerStartMode, SampleExamType } from '../utils/learnerStartMode';
+export {
+  LEARNER_START_TABS,
+  isLearnerStartModeReady,
+  studyToolFromStartMode,
+} from '../utils/learnerStartMode';
+
+const COURSE_PHRASES = [
   'Paste a YouTube URL to create a course',
+  'youtube.com/watch?v=…',
+  'Or a playlist URL (list=…)',
+];
+
+const NOTES_PHRASES = [
+  'Paste a YouTube URL for notes',
+  'youtube.com/watch?v=…',
+  'Or a playlist URL (list=…)',
+];
+
+const FLASHCARD_PHRASES = [
+  'Paste a YouTube URL for flashcards',
   'youtube.com/watch?v=…',
   'Or a playlist URL (list=…)',
 ];
@@ -32,20 +57,6 @@ const QUIZ_PHRASES = [
   'GRE verbal: analogies',
   'Test me on photosynthesis',
   'Or paste a YouTube URL',
-];
-
-export type LearnerStartMode = 'course' | 'notes' | 'flashcards' | 'blanks' | 'quiz';
-export type SampleExamType = 'custom' | 'sat' | 'gre';
-
-/** Maps dashboard tool tabs onto lesson study-tool APIs. Quiz is a separate generate path. */
-export function studyToolFromStartMode(mode: string | undefined): 'notes' | 'flashcards' | 'blanks' | null {
-  if (mode === 'notes' || mode === 'flashcards' || mode === 'blanks') return mode;
-  return null;
-}
-
-const TABS: { id: LearnerStartMode; label: string }[] = [
-  { id: 'course', label: 'Create a course' },
-  { id: 'quiz', label: 'Take a sample test' },
 ];
 
 const EXAM_TYPES: { id: SampleExamType; label: string }[] = [
@@ -86,12 +97,20 @@ export function StudentMasterInput({ className, signedIn = true }: StudentMaster
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isQuizMode = mode === 'quiz';
+  const isNotesMode = mode === 'notes';
+  const isFlashcardsMode = mode === 'flashcards';
   const showTypewriter = !focused && !inputValue.trim();
-  const phrases = isQuizMode ? QUIZ_PHRASES : PHRASES;
+  const phrases = isQuizMode
+    ? QUIZ_PHRASES
+    : isNotesMode
+      ? NOTES_PHRASES
+      : isFlashcardsMode
+        ? FLASHCARD_PHRASES
+        : COURSE_PHRASES;
 
   useEffect(() => {
     phraseIdx.current = 0;
-  }, [isQuizMode]);
+  }, [mode]);
 
   useEffect(() => {
     if (!showTypewriter) {
@@ -209,6 +228,8 @@ export function StudentMasterInput({ className, signedIn = true }: StudentMaster
 
   const submitInput = (e?: FormEvent) => {
     e?.preventDefault();
+    if (!isLearnerStartModeReady(mode)) return;
+
     const trimmed = inputValue.trim();
 
     if (!signedIn) {
@@ -264,27 +285,34 @@ export function StudentMasterInput({ className, signedIn = true }: StudentMaster
         </div>
       )}
 
-      <form
-        onSubmit={submitInput}
-        className={cn(
-          'flex flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)]',
-          'shadow-[var(--shadow)] transition-[border-color,box-shadow] duration-150',
-          'focus-within:border-[var(--ink-faint)] focus-within:shadow-[0_0_0_3px_var(--accent-soft)]',
-        )}
-      >
-        <div className="flex items-center gap-1 overflow-x-auto px-3 pb-2 pt-2.5 [scrollbar-width:none]">
-          {TABS.map((tab) => {
+      <div className="relative pt-5">
+        <div
+          className="absolute inset-x-2 top-0 z-0 flex h-8 items-start gap-0.5 overflow-x-auto rounded-t-[14px] border border-b-0 border-[var(--border)] bg-[var(--fill)] px-1.5 pt-1 [scrollbar-width:none]"
+          role="tablist"
+          aria-label="What do you want to create"
+        >
+          {LEARNER_START_TABS.map((tab) => {
             const active = mode === tab.id;
+            const ready = isLearnerStartModeReady(tab.id);
             return (
               <button
                 key={tab.id}
                 type="button"
-                onClick={() => setMode(tab.id)}
-                className="shrink-0 rounded-full px-3 py-1.5 text-[11px] transition-colors"
+                role="tab"
+                aria-selected={active}
+                aria-disabled={!ready}
+                disabled={!ready}
+                title={ready ? undefined : 'Coming soon'}
+                onClick={() => {
+                  if (!ready) return;
+                  setMode(tab.id);
+                }}
+                className="flex h-[18px] shrink-0 items-center rounded-md px-2 text-[10.5px] tracking-[-0.01em] transition-colors disabled:cursor-default disabled:opacity-45"
                 style={{
-                  fontWeight: active ? 700 : 600,
-                  color: active ? 'var(--ink)' : 'var(--ink-faint)',
-                  background: active ? 'var(--fill)' : 'transparent',
+                  fontWeight: active ? 600 : 500,
+                  color: active ? 'var(--ink)' : 'var(--ink-soft)',
+                  background: active ? 'var(--surface)' : 'transparent',
+                  boxShadow: active ? 'inset 0 0 0 1px var(--border)' : 'none',
                 }}
               >
                 {tab.label}
@@ -293,32 +321,15 @@ export function StudentMasterInput({ className, signedIn = true }: StudentMaster
           })}
         </div>
 
-        {isQuizMode && (
-          <div className="flex items-center gap-1 overflow-x-auto px-3 pb-1 [scrollbar-width:none]">
-            {EXAM_TYPES.map((opt) => {
-              const active = examType === opt.id;
-              return (
-                <button
-                  key={opt.id}
-                  type="button"
-                  onClick={() => setExamType(opt.id)}
-                  className="shrink-0 rounded-full px-2.5 py-1 text-[10px] transition-colors"
-                  style={{
-                    fontWeight: active ? 700 : 600,
-                    color: active ? 'var(--ink)' : 'var(--ink-faint)',
-                    background: active ? 'var(--accent-soft)' : 'transparent',
-                    border: active ? '1px solid var(--border)' : '1px solid transparent',
-                  }}
-                >
-                  {opt.label}
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        <div className="flex items-center">
-          <div className="flex shrink-0 items-center justify-center px-3.5 py-0 pl-3.5 text-[var(--ink-faint)]">
+        <form
+          onSubmit={submitInput}
+          className={cn(
+            'relative z-[1] flex min-h-12 items-center overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)]',
+            'shadow-[var(--shadow)] transition-[border-color,box-shadow] duration-150',
+            'focus-within:border-[var(--ink-faint)] focus-within:shadow-[0_0_0_3px_var(--accent-soft)]',
+          )}
+        >
+          <div className="flex shrink-0 items-center justify-center pl-3 pr-2 text-[var(--ink-faint)]">
             <VideoGlyph />
           </div>
 
@@ -339,7 +350,15 @@ export function StudentMasterInput({ className, signedIn = true }: StudentMaster
                 color: 'var(--ink)',
                 caretColor: 'var(--accent)',
               }}
-              aria-label={isQuizMode ? 'Test topic or YouTube URL' : 'YouTube URL to create a course'}
+              aria-label={
+                isQuizMode
+                  ? 'Test topic or YouTube URL'
+                  : isNotesMode
+                    ? 'YouTube URL for notes'
+                    : isFlashcardsMode
+                      ? 'YouTube URL for flashcards'
+                      : 'YouTube URL to create a course'
+              }
               autoComplete="off"
               // Never use inputMode=url — iOS URL keyboard has no space bar (blocks prompt text).
               inputMode="text"
@@ -352,6 +371,30 @@ export function StudentMasterInput({ className, signedIn = true }: StudentMaster
               </div>
             )}
           </div>
+
+          {isQuizMode ? (
+            <div className="mr-1 flex shrink-0 items-center gap-0.5">
+              {EXAM_TYPES.map((opt) => {
+                const active = examType === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => setExamType(opt.id)}
+                    className="flex h-6 shrink-0 items-center rounded-full px-2 text-[10px] transition-colors"
+                    style={{
+                      fontWeight: active ? 700 : 600,
+                      color: active ? 'var(--accent)' : 'var(--ink-soft)',
+                      background: 'transparent',
+                      border: active ? '1px solid var(--accent)' : '1px solid transparent',
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
 
           {STUDENT_UPLOAD_ENABLED && (
             <>
@@ -372,7 +415,7 @@ export function StudentMasterInput({ className, signedIn = true }: StudentMaster
             Landing guests: keep the same black arrow visually, but place the real Google
             Sign-In control on top so the click opens the same account-chooser page.
           */}
-          <div className="relative mx-1.5 size-10 shrink-0 sm:size-[34px]">
+          <div className="relative mx-1.5 size-[34px] shrink-0 sm:size-[34px]">
             <div
               className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center rounded-full bg-[var(--ink)] text-[var(--bg)]"
               aria-hidden
@@ -403,17 +446,29 @@ export function StudentMasterInput({ className, signedIn = true }: StudentMaster
               <button
                 type="submit"
                 className="absolute inset-0 z-10 rounded-full"
-                aria-label={isQuizMode ? 'Start sample test' : 'Create course'}
+                aria-label={
+                  isQuizMode
+                    ? 'Start quiz'
+                    : isNotesMode
+                      ? 'Create notes'
+                      : isFlashcardsMode
+                        ? 'Create flashcards'
+                        : 'Create course'
+                }
               />
             )}
           </div>
-        </div>
-      </form>
+        </form>
+      </div>
 
       {!error && !isQuizMode && (
         <p className="mt-2 text-[11px] leading-snug text-[var(--ink-faint)]">
           {signedIn
-            ? 'Paste a YouTube video or playlist URL, then tap Create.'
+            ? isNotesMode
+              ? 'Paste a YouTube video or playlist URL, then tap to make notes.'
+              : isFlashcardsMode
+                ? 'Paste a YouTube video or playlist URL, then tap to make flashcards.'
+                : 'Paste a YouTube video or playlist URL, then tap Create.'
             : 'Paste a YouTube URL or tap the arrow to choose a Google account.'}
         </p>
       )}
