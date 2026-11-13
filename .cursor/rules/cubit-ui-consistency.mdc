@@ -20,6 +20,7 @@ Source of truth: `src/styles/app-shell.css`, `src/brand.ts`, `.cursor/skills/des
 
 - Circled chevron toggles on dividers (sidebar or dashboard), or a divider line showing through the chevron.
 - Second palette, cream/terracotta, purple gradients, neon glow, extra display fonts.
+- Neon green (`#22c55e`) progress checklists or loading steps — use shell `--accent` / Cubit orange instead.
 - Restyle the whole shell to ship a small feature.
 - Drive-by `build/` artifacts, theme mocks, or unrelated files in UI commits.
 - New localStorage/UI preference helpers without a small `*.test.ts` next to them.

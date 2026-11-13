@@ -24,6 +24,7 @@ Read [CUIB.md](CUIB.md) before judging a diff. Source of truth is `src/styles/ap
 
 **Brand**
 - [ ] Uses existing tokens (`--ink`, `--bg`, `--accent` `#ff7a1a` dark / `#e8650a` light, `--border`, `--fill`, Inter / IBM Plex Mono). No second palette.
+- [ ] No neon green (`#22c55e`) progress checklists — loading steps use `--accent` / Cubit orange.
 - [ ] User-facing name is **Cubit**.
 
 **Components**

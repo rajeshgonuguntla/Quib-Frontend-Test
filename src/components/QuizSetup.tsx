@@ -417,16 +417,16 @@ export function QuizSetup() {
                 style={{ background: C.bg1, border: `1px solid ${C.border}` }}
               >
                 <div
-                  className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-300"
+                  className="flex size-6 shrink-0 items-center justify-center rounded-full transition-colors duration-300"
                   style={{
-                    background: step.completed ? 'rgba(34,197,94,0.15)' : C.bg2,
-                    border: `1px solid ${step.completed ? 'rgba(34,197,94,0.4)' : C.border}`,
+                    background: step.completed ? C.redDim : C.bg2,
+                    border: `1px solid ${step.completed ? C.red : C.border}`,
                   }}
                 >
                   {step.completed ? (
-                    <CheckCircle className="w-3.5 h-3.5" style={{ color: '#22c55e' }} />
+                    <CheckCircle className="size-3.5" style={{ color: C.red }} strokeWidth={2.2} />
                   ) : (
-                    <div className="w-2 h-2 rounded-full" style={{ background: C.text3 }} />
+                    <div className="size-2 rounded-full" style={{ background: C.text3 }} />
                   )}
                 </div>
                 <span className="text-sm" style={{ color: step.completed ? C.text : C.text3 }}>

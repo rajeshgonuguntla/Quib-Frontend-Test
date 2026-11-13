@@ -10,6 +10,10 @@ Dark (`.dark .cuib-app`): `--bg` `#050505`, `--surface` `#0d0d0d`, `--ink` `#f2f
 
 User-facing UI says Cubit.
 
+## Anti-slop
+
+- No neon green (`#22c55e`) progress checklists or loading steps — use shell `--accent` / Cubit orange.
+
 ## Components
 
 - Brand mark: `src/components/CubitLogo.tsx`
