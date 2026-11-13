@@ -325,8 +325,7 @@ export function StudentMasterInput({ className, signedIn = true }: StudentMaster
           onSubmit={submitInput}
           className={cn(
             'relative z-[1] flex min-h-12 items-center overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)]',
-            'shadow-[var(--shadow)] transition-[border-color,box-shadow] duration-150',
-            'focus-within:border-[var(--ink-faint)] focus-within:shadow-[0_0_0_3px_var(--accent-soft)]',
+            'shadow-[var(--shadow)]',
           )}
         >
           <div className="flex shrink-0 items-center justify-center pl-3 pr-2 text-[var(--ink-faint)]">
