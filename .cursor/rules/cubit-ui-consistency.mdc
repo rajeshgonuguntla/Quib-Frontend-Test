@@ -1,0 +1,27 @@
+---
+description: Lock Cubit signed-in UI to existing shell tokens and shared patterns so new work does not invent a second look.
+alwaysApply: true
+---
+
+# Cubit UI consistency (locked)
+
+Source of truth: `src/styles/app-shell.css`, `src/brand.ts`, `.cursor/skills/design-guardrails/CUIB.md`. Not `src/DESIGN_SYSTEM.md`.
+
+## Do
+
+- Use shell tokens only: `--ink`, `--ink-soft`, `--ink-faint`, `--bg`, `--surface`, `--border`, `--fill`, `--accent` / `--brand` (`#e8650a` light / `#ff7a1a` dark).
+- Reuse shell + `src/components/ui/*` (button, input, sheet, dialog). No parallel kits.
+- User-facing product name is **Cubit**.
+- Divider expand/collapse controls use `.cuib-edge-toggle` with `--horizontal` or `--vertical`. Chevron only — **no circle border, no filled disk**. Keep a 44px transparent hit target. Lucide chevron `size={14}` `strokeWidth={2.2}`.
+- Landing stays on landing tokens; do not mix landing colors into `.cuib-app` or shell tokens into marketing without an explicit ask.
+- Phone: 768px (`md`); hit targets ~44px; no hover-only menus.
+
+## Do not
+
+- Circled chevron toggles on dividers (sidebar or dashboard).
+- Second palette, cream/terracotta, purple gradients, neon glow, extra display fonts.
+- Restyle the whole shell to ship a small feature.
+- Drive-by `build/` artifacts, theme mocks, or unrelated files in UI commits.
+- New localStorage/UI preference helpers without a small `*.test.ts` next to them.
+
+Before push / PR: run `.cursor/skills/design-guardrails` and fail closed on blocks.

@@ -71,7 +71,7 @@ function AppShellLayout() {
             <button
               type="button"
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className="cuib-sidebar-edge-toggle"
+              className="cuib-edge-toggle cuib-edge-toggle--vertical"
               aria-expanded={!sidebarCollapsed}
               aria-controls="cuib-sidebar-nav"
               aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}

@@ -156,7 +156,7 @@ export function Dashboard() {
         <button
           type="button"
           onClick={() => setContinueOpen((open) => !open)}
-          className="absolute left-1/2 top-1/2 flex size-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--ink-faint)] transition-colors hover:border-[var(--ink-faint)] hover:text-[var(--ink)]"
+          className="cuib-edge-toggle cuib-edge-toggle--horizontal"
           aria-expanded={continueOpen}
           aria-controls="dashboard-continue-learning"
           aria-label={continueOpen ? 'Collapse continue learning' : 'Expand continue learning'}
