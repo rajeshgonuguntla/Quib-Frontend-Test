@@ -228,7 +228,7 @@ export function StandaloneNotesWorkspace() {
                       ) : (
                         <div
                           className={cn(
-                            'flex min-h-11 min-w-0 flex-1 items-start gap-0.5 rounded-md',
+                            'flex min-h-11 min-w-0 flex-1 items-stretch gap-0.5 rounded-md',
                             active ? 'bg-[var(--fill)]' : '',
                           )}
                         >
@@ -273,7 +273,7 @@ export function StandaloneNotesWorkspace() {
                               e.stopPropagation();
                               void shareNote(note);
                             }}
-                            className="mt-0.5 inline-flex size-11 shrink-0 items-center justify-center rounded-md text-[var(--ink-faint)] transition-colors hover:bg-[var(--fill)] hover:text-[var(--ink)]"
+                            className="inline-flex w-11 shrink-0 items-center justify-center self-stretch rounded-md text-[var(--ink-faint)] transition-colors hover:bg-[var(--fill)] hover:text-[var(--ink)]"
                           >
                             {shareFeedbackId === note.id ? (
                               <Check size={14} strokeWidth={2.2} className="text-[var(--accent)]" />
@@ -288,7 +288,10 @@ export function StandaloneNotesWorkspace() {
                           type="button"
                           aria-label={`Delete ${note.title}`}
                           onClick={() => deleteNote(note.id)}
-                          className="inline-flex size-11 shrink-0 items-center justify-center rounded-md text-[var(--ink-faint)] transition-colors hover:bg-[var(--fill)] hover:text-[var(--ink)]"
+                          className={cn(
+                            'inline-flex w-11 shrink-0 items-center justify-center self-stretch rounded-md text-[var(--ink-faint)] transition-colors hover:bg-[var(--fill)] hover:text-[var(--ink)]',
+                            active ? 'bg-[var(--fill)]' : '',
+                          )}
                         >
                           <Trash2 size={14} strokeWidth={2} />
                         </button>
