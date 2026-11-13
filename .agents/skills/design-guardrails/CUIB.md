@@ -13,6 +13,7 @@ User-facing UI says Cubit.
 ## Anti-slop
 
 - No neon green (`#22c55e`) progress checklists or loading steps — use shell `--accent` / Cubit orange.
+- Stacked “AI generating” step cards on load screens — prefer one % + one status line + a hairline progress track.
 
 ## Components
 
