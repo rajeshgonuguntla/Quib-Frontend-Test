@@ -463,7 +463,7 @@ export function StudentMasterInput({ className, signedIn = true }: StudentMaster
 
       {!error && isNotesMode && (
         <p className="mt-2 text-[11px] leading-snug text-[var(--ink-faint)]">
-          Tap My notes for your library. Selecting a note opens it here; if you already have one open, tabs let you switch. Drafts save on this device.
+          Tap My notes for your library. Pick a note on the right to open it here. Drafts save on this device.
         </p>
       )}
 
