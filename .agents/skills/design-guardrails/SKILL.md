@@ -28,6 +28,7 @@ Read [CUIB.md](CUIB.md) before judging a diff. Source of truth is `src/styles/ap
 
 **Components**
 - [ ] Reuses shell, `src/components/ui/*`, sheets, existing buttons. No parallel button/card/input kit.
+- [ ] Divider collapse controls reuse `.cuib-edge-toggle` (`--horizontal` / `--vertical`): chevron only, no circled button; divider must not show through the glyph (`--bg` knockout).
 
 **Phone (width &lt; 768)**
 - [ ] No hover-only menus or truncated fake dropdowns.

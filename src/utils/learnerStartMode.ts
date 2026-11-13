@@ -8,11 +8,11 @@ export function studyToolFromStartMode(mode: string | undefined): 'notes' | 'fla
 }
 
 /**
- * Notes / flashcards stay visible in the rail but are inert until their backend ships.
- * Course and quiz remain the only actionable start modes.
+ * Flashcards stay visible but inert until their backend ships.
+ * Notes is frontend-ready (rich editor + local draft).
  */
 export function isLearnerStartModeReady(mode: LearnerStartMode): boolean {
-  return mode === 'course' || mode === 'quiz';
+  return mode === 'course' || mode === 'notes' || mode === 'quiz';
 }
 
 /** Visible start options in the student search bar (dashboard + landing). */

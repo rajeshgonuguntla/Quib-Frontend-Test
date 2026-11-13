@@ -13,3 +13,4 @@ User-facing UI says Cubit.
 ## Components
 
 - Brand mark: `src/components/CubitLogo.tsx`
+- Divider collapse: `.cuib-edge-toggle` + `--horizontal` / `--vertical` in `app-shell.css`. Chevron only (lucide `size={14}` `strokeWidth={2.2}`), **no circle border**. Keep a 44px transparent hit target. Use a tight `--bg` knockout behind the glyph so the divider does not show through the chevron. Sidebar rail and dashboard Continue learning must share this.

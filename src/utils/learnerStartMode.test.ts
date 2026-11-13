@@ -20,10 +20,10 @@ describe('studyToolFromStartMode', () => {
 });
 
 describe('isLearnerStartModeReady', () => {
-  it('only enables course and quiz until notes/flashcards backends ship', () => {
+  it('enables course, notes, and quiz; flashcards stay inert', () => {
     expect(isLearnerStartModeReady('course')).toBe(true);
     expect(isLearnerStartModeReady('quiz')).toBe(true);
-    expect(isLearnerStartModeReady('notes')).toBe(false);
+    expect(isLearnerStartModeReady('notes')).toBe(true);
     expect(isLearnerStartModeReady('flashcards')).toBe(false);
     expect(isLearnerStartModeReady('blanks')).toBe(false);
   });
