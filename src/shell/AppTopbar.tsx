@@ -163,12 +163,9 @@ export function AppTopbar() {
               )}
             </div>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => navigate('/settings')} className="cursor-pointer text-[13px]">
-              Profile & settings
-            </DropdownMenuItem>
             <DropdownMenuItem
               onClick={handleSignOut}
-              className="cursor-pointer text-[11.5px] text-[var(--ink-faint)] focus:text-[var(--ink)]"
+              className="cursor-pointer text-[13px] text-[var(--ink-faint)] focus:text-[var(--ink)]"
             >
               Sign out
             </DropdownMenuItem>
