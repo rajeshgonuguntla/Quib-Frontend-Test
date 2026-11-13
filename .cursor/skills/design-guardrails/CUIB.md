@@ -35,7 +35,7 @@ User-facing UI says Cubit, not legacy Quib.
 - Primitives: `src/components/ui/button.tsx`, `input.tsx`, `sheet.tsx`, `dialog.tsx`
 - Theme: `src/components/ThemeContext.tsx` (`getC` on full-bleed lesson/quiz pages)
 - Brand mark: `src/components/CubitLogo.tsx` (filename legacy; display Cubit)
-- Divider collapse: `.cuib-edge-toggle` + `--horizontal` / `--vertical` in `app-shell.css`. Chevron only (lucide `size={14}` `strokeWidth={2.2}`), **no circle border or filled disk**. Keep a 44px transparent hit target. Sidebar rail and dashboard Continue learning must share this — do not invent a floating circled chevron.
+- Divider collapse: `.cuib-edge-toggle` + `--horizontal` / `--vertical` in `app-shell.css`. Chevron only (lucide `size={14}` `strokeWidth={2.2}`), **no circle border**. Keep a 44px transparent hit target. Use a tight `--bg` knockout behind the glyph so the divider does not show through the chevron. Sidebar rail and dashboard Continue learning must share this.
 
 Do not add a second Button/Card/Input system. Do not restyle the whole shell to ship a small feature.
 
