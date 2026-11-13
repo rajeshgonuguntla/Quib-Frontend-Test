@@ -20,10 +20,6 @@ import {
 import { peekReferralCode, rememberReferralCode } from './referralCode';
 import { safeAppPath } from './safeAppPath';
 import {
-  LOCAL_DEV_BYPASS_PROFILE,
-  markLocalDevBypassSession,
-} from './authDevBypass';
-import {
   PENDING_LEARNER_START_KEY,
   resolveLearnerStartDestination,
   stashPendingLearnerStart,
@@ -69,14 +65,6 @@ type CompleteGoogleSignInArgs = {
   /** Pending learner action + any location state to preserve. */
   pendingState?: LearnerStartState | null;
   search?: string;
-  onBlocked?: (message: string) => void;
-};
-
-type CompleteDevBypassSignInArgs = {
-  navigate: NavigateFunction;
-  setProfile: (profile: UserProfile | null) => void;
-  signInIntent?: SignInIntent;
-  pendingState?: LearnerStartState | null;
   onBlocked?: (message: string) => void;
 };
 
@@ -201,48 +189,5 @@ export async function completeGoogleSignIn({
     logClientError('Login failed', error);
     clearToken();
     return { ok: false, error: 'Sign-in failed. Please try again.' };
-  }
-}
-
-/**
- * Frontend-only local bypass — no backend call.
- * Unlocks shell routes for UI work; API calls that need a real cookie will still 401.
- */
-export async function completeDevBypassSignIn({
-  navigate,
-  setProfile,
-  signInIntent,
-  pendingState,
-  onBlocked,
-}: CompleteDevBypassSignInArgs): Promise<CompleteGoogleSignInResult> {
-  try {
-    clearLocalSession();
-    markLocalDevBypassSession(LOCAL_DEV_BYPASS_PROFILE);
-
-    // Mark onboarding complete so local UI lands on the dashboard, not the wizard.
-    if (!localStorage.getItem(INTERESTS_KEY)) {
-      localStorage.setItem(INTERESTS_KEY, JSON.stringify([]));
-    }
-
-    return await finishAuthenticatedSession({
-      auth: {
-        expiresAt: Math.floor(Date.now() / 1000) + 60 * 60 * 12,
-        profile: LOCAL_DEV_BYPASS_PROFILE,
-        onboarding: {
-          completed: true,
-          interestIds: [],
-          followedCreatorIds: [],
-        },
-      },
-      navigate,
-      setProfile,
-      signInIntent,
-      pendingState,
-      onBlocked,
-    });
-  } catch (error) {
-    logClientError('Dev bypass login failed', error);
-    clearToken();
-    return { ok: false, error: 'Local bypass failed.' };
   }
 }
