@@ -90,7 +90,7 @@
   overflow-y: auto;
 }
 
-/* Divider collapse control — chevron only (no circle). Keep 44px hit target. */
+/* Divider collapse — chevron only (no circle). 44px hit target; --bg knockout hides the divider under the glyph. */
 .cuib-app .cuib-edge-toggle {
   position: absolute;
   z-index: 2;
@@ -106,6 +106,21 @@
   background: transparent;
   color: var(--ink-faint);
   transition: color 150ms ease;
+}
+
+.cuib-app .cuib-edge-toggle::before {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  width: 16px;
+  height: 20px;
+  background: var(--bg);
+  pointer-events: none;
+}
+
+.cuib-app .cuib-edge-toggle > svg {
+  position: relative;
+  z-index: 1;
 }
 
 .cuib-app .cuib-edge-toggle:hover {
