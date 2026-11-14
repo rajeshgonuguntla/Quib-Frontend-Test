@@ -440,62 +440,409 @@ function downloadHtmlFile(html: string, filename: string): void {
   URL.revokeObjectURL(url);
 }
 
+/** Matches `getC()` quiz-taking chrome in `QuizTaking.tsx`. */
+function cubitQuizTakingExportCss(): string {
+  return `
+    :root {
+      --quiz-bg: #ffffff;
+      --quiz-bg1: #f7f7f8;
+      --quiz-bg2: #efefef;
+      --quiz-border: rgba(0, 0, 0, 0.11);
+      --quiz-text: #0c0c0e;
+      --quiz-text2: #525252;
+      --quiz-text3: #737373;
+      --quiz-accent: ${BRAND_ACCENT_LIGHT};
+      --quiz-accent-dim: rgba(232, 101, 10, 0.09);
+      --quiz-card: #ffffff;
+      --mono: "IBM Plex Mono", ui-monospace, monospace;
+      --display: Inter, system-ui, sans-serif;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --quiz-bg: #050505;
+        --quiz-bg1: #0d0d0d;
+        --quiz-bg2: #141414;
+        --quiz-border: #1c1c1c;
+        --quiz-text: #f2f2f2;
+        --quiz-text2: #8a8a8a;
+        --quiz-text3: #5a5a5a;
+        --quiz-accent: #ff7a1a;
+        --quiz-accent-dim: rgba(255, 122, 26, 0.12);
+        --quiz-card: #0d0d0d;
+      }
+    }
+    * { box-sizing: border-box; }
+  body.cuib-app {
+      margin: 0;
+      min-height: 100vh;
+      font-family: var(--display);
+      background: var(--quiz-bg);
+      color: var(--quiz-text);
+      line-height: 1.5;
+    }
+    .hide { display: none !important; }
+    #quiz-shell { display: flex; flex-direction: column; min-height: 100vh; }
+    .ready-screen {
+      max-width: 36rem;
+      margin: 0 auto;
+      padding: 2rem 1.25rem 3rem;
+    }
+    .ready-kicker {
+      margin: 0 0 0.5rem;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--quiz-text3);
+      font-family: var(--mono);
+    }
+    .ready-title {
+      margin: 0 0 0.5rem;
+      font-size: 1.375rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.35;
+    }
+    .ready-meta {
+      margin: 0 0 1.75rem;
+      font-size: 0.8125rem;
+      color: var(--quiz-text2);
+    }
+    .ready-detail {
+      border-top: 1px solid var(--quiz-border);
+      padding-top: 1.25rem;
+      margin-bottom: 1.5rem;
+      font-size: 0.875rem;
+      color: var(--quiz-text2);
+    }
+    .btn-accent {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      width: 100%;
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 0.5rem;
+      background: var(--quiz-accent);
+      color: #fff;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--quiz-border);
+      color: var(--quiz-text2);
+    }
+    .quiz-header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      padding: 1rem 1.5rem;
+      background: var(--quiz-card);
+      border-bottom: 1px solid var(--quiz-border);
+    }
+    .quiz-header-inner {
+      max-width: 48rem;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .quiz-logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--quiz-text);
+      text-decoration: none;
+    }
+    .quiz-logo img { display: block; object-fit: contain; border-radius: 4px; }
+    .quiz-logo-name { font-size: 1.05rem; font-weight: 700; letter-spacing: -0.03em; }
+    .quiz-header-title {
+      display: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--quiz-text2);
+    }
+    @media (min-width: 768px) {
+      .quiz-header-title { display: block; max-width: 14rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    }
+    .quiz-main { flex: 1; padding: 1.5rem; }
+    .quiz-main-inner { max-width: 48rem; margin: 0 auto; }
+    .quiz-card {
+      border-radius: 1rem;
+      overflow: hidden;
+      background: var(--quiz-card);
+      border: 1px solid var(--quiz-border);
+    }
+    .quiz-card-body { padding: 1.25rem 1.5rem 1.5rem; }
+    .type-pill {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 0.25rem 0.75rem;
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      background: var(--quiz-bg1);
+      color: var(--quiz-text3);
+      border: 1px solid var(--quiz-border);
+    }
+    .question-text {
+      margin: 2rem 0;
+      font-size: 1.25rem;
+      font-weight: 500;
+      line-height: 1.55;
+      color: var(--quiz-text);
+    }
+    .option-list { display: flex; flex-direction: column; gap: 0.75rem; }
+    .opt-btn {
+      width: 100%;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-align: left;
+      padding: 0.875rem 1rem;
+      border-radius: 0.75rem;
+      border: 1px solid var(--quiz-border);
+      background: var(--quiz-card);
+      color: var(--quiz-text);
+      font-size: 0.95rem;
+      font-family: var(--display);
+      cursor: pointer;
+    }
+    .opt-btn.is-selected {
+      background: var(--quiz-accent-dim);
+      border-color: var(--quiz-accent);
+    }
+    .opt-ring {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+      border-radius: 999px;
+      border: 2px solid var(--quiz-border);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .opt-btn.is-selected .opt-ring {
+      border-color: var(--quiz-accent);
+      background: var(--quiz-accent);
+    }
+    .opt-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: #fff;
+      display: none;
+    }
+    .opt-btn.is-selected .opt-dot { display: block; }
+    .text-area {
+      width: 100%;
+      min-height: 10rem;
+      padding: 1rem;
+      border-radius: 0.75rem;
+      border: 1px solid var(--quiz-border);
+      background: var(--quiz-card);
+      color: var(--quiz-text);
+      font-size: 0.95rem;
+      font-family: var(--display);
+      resize: vertical;
+    }
+    .quiz-card-footer {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 1rem 1.5rem;
+      border-top: 1px solid var(--quiz-border);
+    }
+    .progress-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex: 1;
+      min-width: 8rem;
+    }
+    .progress-track {
+      height: 4px;
+      flex: 1;
+      max-width: 10rem;
+      border-radius: 999px;
+      overflow: hidden;
+      background: var(--quiz-bg2);
+    }
+    .progress-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: var(--quiz-accent);
+    }
+    .progress-label {
+      font-size: 0.8rem;
+      font-family: var(--mono);
+      color: var(--quiz-text2);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    .nav-btns { display: flex; gap: 0.5rem; }
+    .nav-btn {
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.625rem 1rem;
+      border-radius: 0.75rem;
+      border: 1px solid var(--quiz-border);
+      background: var(--quiz-card);
+      color: var(--quiz-text);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .nav-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .nav-btn-primary {
+      background: var(--quiz-accent);
+      border-color: var(--quiz-accent);
+      color: #fff;
+    }
+    .results-panel {
+      max-width: 36rem;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+    .results-card {
+      border: 1px solid var(--quiz-border);
+      border-radius: 1rem;
+      background: var(--quiz-bg1);
+      padding: 1.25rem 1.5rem;
+      margin: 1rem 0 1.25rem;
+    }
+    .results-title {
+      margin: 0 0 0.5rem;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .results-copy { margin: 0 0 1rem; font-size: 0.875rem; color: var(--quiz-text2); }
+    .btn-accent-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      width: 100%;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.5rem;
+      background: var(--quiz-accent);
+      color: #fff !important;
+      font-size: 0.875rem;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .footer-note {
+      max-width: 48rem;
+      margin: 1.5rem auto 0;
+      padding: 0 1.5rem 2rem;
+      font-size: 0.75rem;
+      color: var(--quiz-text3);
+    }
+    .footer-note a { color: var(--quiz-accent); }
+  `;
+}
+
+const CUBIT_LOGO_EXPORT = `${CUBIT_APP_ORIGIN}/cubit/cubit-logo.webp`;
+
+function cubitLogoLockupHtml(): string {
+  return `<span class="quiz-logo" aria-label="${escapeHtmlForExport(BRAND_NAME)}">
+    <img src="${CUBIT_LOGO_EXPORT}" width="18" height="18" alt="" />
+    <span class="quiz-logo-name">${escapeHtmlForExport(BRAND_NAME)}</span>
+  </span>`;
+}
+
+function exportQuestionTypeLabel(type: InteractiveQuizItem['type']): string {
+  if (type === 'mcq') return 'Multiple choice';
+  if (type === 'trueFalse') return 'True/False';
+  return 'Short answer';
+}
+
+function buildExportQuestionPanels(questions: InteractiveQuizItem[]): string {
+  const total = questions.length;
+  return questions
+    .map((q, i) => {
+      const panelHidden = i === 0 ? '' : ' hide';
+      const typeLabel = escapeHtmlForExport(exportQuestionTypeLabel(q.type));
+      const qText = escapeHtmlForExport(q.question);
+      const progress = total ? Math.round(((i + 1) / total) * 100) : 0;
+
+      let answerBlock = '';
+      if ((q.type === 'mcq' || q.type === 'trueFalse') && q.options?.length) {
+        answerBlock = `<div class="option-list" role="radiogroup" aria-label="Options for question ${i + 1}">
+          ${q.options
+            .map(
+              (opt) =>
+                `<button type="button" class="opt-btn" data-q="${i}" data-value="${escapeHtmlForExport(opt)}">
+              <span class="opt-ring" aria-hidden="true"><span class="opt-dot"></span></span>
+              <span>${escapeHtmlForExport(opt)}</span>
+            </button>`,
+            )
+            .join('')}
+        </div>`;
+      } else {
+        answerBlock = `<textarea class="text-area" name="q${i}" rows="5" placeholder="Type your answer here..." autocomplete="off"></textarea>`;
+      }
+
+      const isLast = i === total - 1;
+      const nextLabel = isLast ? 'Submit' : 'Next';
+
+      return `<div class="question-panel${panelHidden}" data-panel="${i}" data-type="${escapeHtmlForExport(q.type)}">
+        <article class="quiz-card">
+          <div class="quiz-card-body">
+            <div style="margin-bottom:2rem"><span class="type-pill">${typeLabel}</span></div>
+            <p class="question-text">${qText}</p>
+            ${answerBlock}
+            ${q.type !== 'shortAnswer' ? `<input type="hidden" name="q${i}" id="answer-${i}" value="" />` : ''}
+          </div>
+          <div class="quiz-card-footer">
+            <div class="progress-wrap">
+              <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progress}">
+                <div class="progress-fill" style="width:${progress}%"></div>
+              </div>
+              <span class="progress-label">${i + 1} / ${total}</span>
+            </div>
+            <div class="nav-btns">
+              <button type="button" class="nav-btn" data-action="prev" data-panel="${i}" ${i === 0 ? 'disabled' : ''}>Previous</button>
+              <button type="button" class="nav-btn ${isLast ? 'nav-btn-primary' : ''}" data-action="${isLast ? 'submit' : 'next'}" data-panel="${i}">${nextLabel}</button>
+            </div>
+          </div>
+        </article>
+      </div>`;
+    })
+    .join('\n');
+}
+
 export function buildInteractiveQuizHtml(payload: InteractiveQuizHtmlPayload): string {
   const title = escapeHtmlForExport(payload.quizTitle);
-  const channel = payload.channelName?.trim()
-    ? `<p class="meta">${escapeHtmlForExport(payload.channelName)}</p>`
-    : '';
   const passAt = payload.passPercent ?? 70;
   const resultsSignInUrl = escapeHtmlForExport(
     payload.resultsSignInUrl ?? payload.takeQuizUrl ?? CUBIT_APP_ORIGIN,
   );
   const takeQuizUrl = escapeHtmlForExport(payload.takeQuizUrl ?? resultsSignInUrl);
-  const introLead =
-    'Answer in this file, then sign in on Cubit to submit and see your score and review.';
-  const quizLink = takeQuizUrl
-    ? `<p class="footer-link"><a href="${takeQuizUrl}">Open on ${escapeHtmlForExport(BRAND_NAME)}</a></p>`
-    : '';
-
-  const formQuestions = payload.questions
-    .map((q, i) => {
-      const qText = escapeHtmlForExport(q.question);
-      const name = `q${i}`;
-      let inputs = '';
-      if (q.type === 'mcq' && q.options && q.options.length > 0) {
-        inputs = q.options
-          .map(
-            (opt, oi) =>
-              `<label class="opt"><input type="radio" name="${name}" value="${escapeHtmlForExport(opt)}" /> <span>${escapeHtmlForExport(opt)}</span></label>`,
-          )
-          .join('');
-      } else if (q.type === 'trueFalse') {
-        inputs = ['True', 'False']
-          .map(
-            (opt) =>
-              `<label class="opt"><input type="radio" name="${name}" value="${opt}" /> <span>${opt}</span></label>`,
-          )
-          .join('');
-      } else {
-        inputs = `<input class="text-in" type="text" name="${name}" autocomplete="off" placeholder="Your answer" />`;
-      }
-      return `<div class="qcard" data-q="${i}">
-        <div class="qhead"><span class="qnum">Q${i + 1}</span> <span class="qtext">${qText}</span></div>
-        <div class="opts">${inputs}</div>
-      </div>`;
-    })
-    .join('\n');
-
-  const bank = jsonForHtmlScript(
-    payload.questions.map((q) => ({
-      type: q.type,
-      correctAnswer: q.correctAnswer,
-      explanation: q.explanation ?? '',
-      options: q.options ?? [],
-    })),
-  );
-
   const questionCount = payload.questions.length;
   const generatedLine = escapeHtmlForExport(formatGeneratedStamp(payload.generatedAt));
+  const questionPanels = buildExportQuestionPanels(payload.questions);
+  const metaLine = [
+    payload.channelName?.trim(),
+    `${questionCount} questions`,
+    `${passAt}% to pass`,
+    generatedLine,
+  ]
+    .filter(Boolean)
+    .join(' · ');
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -504,149 +851,141 @@ export function buildInteractiveQuizHtml(payload: InteractiveQuizHtmlPayload): s
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>${title} — ${escapeHtmlForExport(BRAND_NAME)} quiz</title>
   ${CUBIT_EXPORT_FONTS}
-  <style>
-    ${cubitExportCss()}
-    .intro-card {
-      border: 1px solid var(--border);
-      background: var(--accent-soft);
-      border-radius: 12px;
-      padding: 18px 20px;
-      margin: 16px 0 24px;
-    }
-    .intro-stats {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 16px 28px;
-      font-size: 0.875rem;
-      color: var(--ink-soft);
-    }
-    .stat-val {
-      font-weight: 600;
-      color: var(--accent);
-      font-variant-numeric: tabular-nums;
-    }
-    .intro-gen {
-      margin: 14px 0 0;
-      font-size: 0.75rem;
-      color: var(--ink-faint);
-      font-family: "IBM Plex Mono", ui-monospace, monospace;
-    }
-    .intro-title { font-size: clamp(1.35rem, 4vw, 1.75rem); }
-    .qcard { border: 1px solid var(--border); background: var(--fill); border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; }
-    .qhead { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 12px; font-weight: 500; font-size: 0.9rem; }
-    .qnum { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.75rem; color: var(--ink-faint); flex-shrink: 0; }
-    .opts { display: flex; flex-direction: column; gap: 8px; }
-    .opt { display: flex; gap: 10px; align-items: center; font-size: 0.875rem; cursor: pointer; color: var(--ink-soft); min-height: 44px; }
-    .opt input { accent-color: var(--accent); }
-    .text-in { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--ink); font-size: 16px; }
-    .score-card { border: 1px solid var(--border); background: var(--fill); border-radius: 12px; padding: 20px; margin: 8px 0 24px; }
-    .score-pct { font-size: 2.5rem; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
-    .pill { display: inline-block; font-size: 0.75rem; font-weight: 600; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border); margin-left: 12px; }
-    .pill.pass { color: var(--feedback-ok); background: var(--accent-soft); }
-    .pill.fail { color: var(--feedback-bad); }
-    .review { margin-top: 8px; }
-    .rcard { border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; font-size: 0.875rem; background: var(--surface); }
-    .rcard.ok { border-color: rgba(22,163,74,0.35); }
-    .rcard.bad { border-color: rgba(239,68,68,0.35); }
-    .rlbl { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-faint); font-family: "IBM Plex Mono", ui-monospace, monospace; margin-top: 8px; }
-    .results-gate-title { font-size: 1.25rem; font-weight: 600; margin: 0 0 8px; color: var(--ink); }
-    a.primary { text-decoration: none; }
-  </style>
+  <style>${cubitQuizTakingExportCss()}</style>
 </head>
-<body>
-  <div class="wrap">
-    <section id="intro" class="intro" aria-labelledby="intro-title">
-      ${cubitWordmarkHtml()}
-      <p class="kicker">Shared practice quiz</p>
-      <div class="hairline-accent" aria-hidden="true"></div>
-      <h1 id="intro-title" class="intro-title">${title}</h1>
-      ${channel}
-      <div class="intro-card">
-        <ul class="intro-stats">
-          <li><span class="stat-val">${questionCount}</span> questions</li>
-          <li><span class="stat-val">${passAt}%</span> to pass</li>
-        </ul>
-        <p class="intro-gen">${generatedLine}</p>
+<body class="cuib-app">
+  <section id="intro" class="ready-screen" aria-labelledby="ready-heading">
+    <p class="ready-kicker">Quiz ready</p>
+    <h1 id="ready-heading" class="ready-title">${title}</h1>
+    <p class="ready-meta">${escapeHtmlForExport(metaLine)}</p>
+    <p class="ready-detail">Review the details, then start when you are ready. Scored results are on mycubit.app after you sign in and submit.</p>
+    <button type="button" class="btn-accent" id="start-btn">Start quiz</button>
+  </section>
+
+  <div id="quiz-shell" class="hide" aria-hidden="true">
+    <header class="quiz-header">
+      <div class="quiz-header-inner">
+        <div style="display:flex;align-items:center;gap:1rem;min-width:0">
+          ${cubitLogoLockupHtml()}
+          <span class="quiz-header-title">${title}</span>
+        </div>
+        <button type="button" class="btn-accent" id="header-submit" style="width:auto;padding:0.5rem 1rem;font-size:0.82rem;border-radius:0.75rem">Submit quiz</button>
       </div>
-      <p class="meta">${introLead}</p>
-      <button type="button" class="primary wide" id="start-btn">Start quiz</button>
-    </section>
-    <div id="form-wrap" class="hide" aria-hidden="true">
-      ${cubitWordmarkHtml()}
-      <p class="kicker">Questions</p>
-      <div class="hairline" aria-hidden="true"></div>
-      <form id="quiz-form" novalidate>
-        ${formQuestions}
-        <button type="submit" class="primary wide">Submit</button>
-      </form>
-    </div>
-    <div id="results" class="hide" aria-live="polite">
-      ${cubitWordmarkHtml()}
-      <p class="kicker">Next step</p>
-      <div class="score-card">
-        <p class="results-gate-title">Results are on Cubit</p>
-        <p class="meta" id="score-line">
-          Sign in on mycubit.app, take this quiz there, and your score and question review will appear after you submit.
-        </p>
-        <a
-          id="results-signin-link"
-          class="primary wide"
-          href="${resultsSignInUrl}"
-          rel="noopener noreferrer"
-        >Sign in on mycubit.app</a>
+    </header>
+    <main class="quiz-main">
+      <div class="quiz-main-inner">
+        <form id="quiz-form" novalidate>
+          ${questionPanels}
+        </form>
       </div>
-      <button type="button" class="primary wide ghost" id="retry-btn">Back to start</button>
-    </div>
-    ${quizLink}
-    <p class="sub">Exported from ${escapeHtmlForExport(BRAND_NAME)}. Scored results require signing in on mycubit.app.</p>
+    </main>
   </div>
-  <script id="cubit-quiz-bank" type="application/json">${bank}</script>
+
+  <section id="results" class="results-panel hide" aria-live="polite" aria-hidden="true">
+    ${cubitLogoLockupHtml()}
+    <p class="ready-kicker" style="margin-top:1.25rem">Next step</p>
+    <div class="results-card">
+      <p class="results-title">Results are on Cubit</p>
+      <p class="results-copy">Sign in on mycubit.app, take this quiz there, and your score and question review will appear after you submit.</p>
+      <a class="btn-accent-link" href="${resultsSignInUrl}" rel="noopener noreferrer">Sign in on mycubit.app</a>
+    </div>
+    <button type="button" class="btn-accent btn-ghost" id="retry-btn" style="margin-top:0.75rem">Back to start</button>
+  </section>
+
+  <p class="footer-note">Exported from ${escapeHtmlForExport(BRAND_NAME)}. <a href="${takeQuizUrl}">Open on ${escapeHtmlForExport(BRAND_NAME)}</a></p>
+
   <script>
   (function () {
+    var TOTAL = ${questionCount};
+    var current = 0;
     var intro = document.getElementById('intro');
-    var startBtn = document.getElementById('start-btn');
-    var form = document.getElementById('quiz-form');
-    var formWrap = document.getElementById('form-wrap');
+    var shell = document.getElementById('quiz-shell');
     var results = document.getElementById('results');
-    var retry = document.getElementById('retry-btn');
+    var startBtn = document.getElementById('start-btn');
+    var retryBtn = document.getElementById('retry-btn');
+    var headerSubmit = document.getElementById('header-submit');
+    var form = document.getElementById('quiz-form');
     var reduceMotion = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    function panels() {
+      return Array.prototype.slice.call(document.querySelectorAll('.question-panel'));
+    }
+
+    function showPanel(index) {
+      current = Math.max(0, Math.min(index, TOTAL - 1));
+      panels().forEach(function (panel, i) {
+        if (i === current) {
+          panel.classList.remove('hide');
+        } else {
+          panel.classList.add('hide');
+        }
+      });
+    }
+
+    function finishToResults() {
+      shell.classList.add('hide');
+      shell.setAttribute('aria-hidden', 'true');
+      results.classList.remove('hide');
+      results.removeAttribute('aria-hidden');
+      window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
+    }
 
     startBtn.addEventListener('click', function () {
       intro.classList.add('hide');
       intro.setAttribute('aria-hidden', 'true');
-      formWrap.classList.remove('hide');
-      formWrap.setAttribute('aria-hidden', 'false');
-      if (!reduceMotion) {
-        formWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      } else {
-        formWrap.scrollIntoView({ block: 'start' });
+      shell.classList.remove('hide');
+      shell.removeAttribute('aria-hidden');
+      showPanel(0);
+    });
+
+    document.addEventListener('click', function (e) {
+      var t = e.target;
+      if (!t || !t.closest) return;
+      var opt = t.closest('.opt-btn');
+      if (opt) {
+        var q = Number(opt.getAttribute('data-q'));
+        var val = opt.getAttribute('data-value') || '';
+        var hidden = document.getElementById('answer-' + q);
+        if (hidden) hidden.value = val;
+        var list = opt.parentElement;
+        if (list) {
+          list.querySelectorAll('.opt-btn').forEach(function (btn) {
+            btn.classList.toggle('is-selected', btn === opt);
+          });
+        }
+        return;
+      }
+      var nav = t.closest('[data-action]');
+      if (!nav) return;
+      var action = nav.getAttribute('data-action');
+      var panelIdx = Number(nav.getAttribute('data-panel'));
+      if (action === 'prev' && panelIdx > 0) {
+        showPanel(panelIdx - 1);
+        return;
+      }
+      if (action === 'next' && panelIdx < TOTAL - 1) {
+        showPanel(panelIdx + 1);
+        return;
+      }
+      if (action === 'submit') {
+        finishToResults();
       }
     });
 
-    form.addEventListener('submit', function (e) {
-      e.preventDefault();
-      formWrap.classList.add('hide');
-      formWrap.setAttribute('aria-hidden', 'true');
-      results.classList.remove('hide');
-      results.removeAttribute('aria-hidden');
-      if (!reduceMotion) {
-        results.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      } else {
-        results.scrollIntoView({ block: 'start' });
-      }
+    headerSubmit.addEventListener('click', function () {
+      finishToResults();
     });
 
-    retry.addEventListener('click', function () {
+    retryBtn.addEventListener('click', function () {
       form.reset();
+      document.querySelectorAll('.opt-btn.is-selected').forEach(function (b) { b.classList.remove('is-selected'); });
       results.classList.add('hide');
       results.setAttribute('aria-hidden', 'true');
-      formWrap.classList.add('hide');
-      formWrap.setAttribute('aria-hidden', 'true');
+      shell.classList.add('hide');
+      shell.setAttribute('aria-hidden', 'true');
       intro.classList.remove('hide');
       intro.removeAttribute('aria-hidden');
+      showPanel(0);
       window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
     });
   })();

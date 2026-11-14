@@ -67,16 +67,17 @@ describe('downloadQuizAttemptHtml', () => {
         },
       ],
     });
-    expect(html).toContain('cubit-quiz-bank');
-    expect(html).toContain('"correctAnswer":"B"');
     expect(html).toContain('Start quiz');
-    expect(html).toContain('id="intro"');
-    expect(html).toContain('cubit-mark');
-    expect(html).toContain('id="form-wrap" class="hide"');
+    expect(html).toContain('Quiz ready');
+    expect(html).toContain('id="quiz-shell"');
+    expect(html).toContain('question-panel');
+    expect(html).toContain('Multiple choice');
+    expect(html).toContain('opt-btn');
+    expect(html).toContain('Submit quiz');
     expect(html).toContain('Sign in on mycubit.app');
     expect(html).toContain('mycubit.app');
-    const formOnly = html.split('<script id="cubit-quiz-bank"')[0] ?? '';
-    expect(formOnly).not.toContain('Correct answer');
+    expect(html).not.toContain('cubit-quiz-bank');
+    expect(html.split('<script>')[0] ?? '').not.toContain('Correct answer');
   });
 
   it('jsonForHtmlScript escapes script-breaking sequences', () => {
