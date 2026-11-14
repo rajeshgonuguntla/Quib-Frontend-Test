@@ -1,5 +1,12 @@
 import { BRAND_ACCENT_LIGHT, BRAND_FEEDBACK_RED, BRAND_NAME } from '../brand';
 import { defaultQuizTimeLimitSeconds, type ExamBlueprintSectionRow } from '../api/quizApi';
+import {
+  classifyAttemptAnswer,
+  formatExamMetaLine,
+  kickerForQuestionIndex,
+  resultsSummaryCopy,
+  type ResultStatus,
+} from './resultsReview';
 
 /** Public app host for links inside downloaded HTML (not the dev origin). */
 export const CUBIT_APP_ORIGIN = 'https://mycubit.app';
@@ -149,12 +156,15 @@ export type QuizAttemptReviewRow = {
   correctAnswer: string;
   isCorrect: boolean;
   explanation?: string;
+  status?: ResultStatus;
+  sectionKicker?: string;
 };
 
 export type QuizAttemptSectionScore = {
   topic: string;
   scorePercent: number;
   totalCount: number;
+  correctCount?: number;
 };
 
 export type QuizAttemptHtmlPayload = {
@@ -166,6 +176,8 @@ export type QuizAttemptHtmlPayload = {
   passed: boolean;
   attemptNumber?: number;
   submittedAt?: string;
+  examMeta?: string;
+  practiceLabel?: string;
   sectionScores: QuizAttemptSectionScore[];
   questions: QuizAttemptReviewRow[];
   /** Optional link for others to take the same quiz on Cubit. */
@@ -191,173 +203,444 @@ function slugFilename(title: string): string {
   return base.length > 0 ? base : 'quiz-attempt';
 }
 
-export function buildQuizAttemptHtml(payload: QuizAttemptHtmlPayload): string {
-  const title = escapeHtmlForExport(payload.quizTitle);
-  const channel = payload.channelName?.trim()
-    ? `<p class="meta">${escapeHtmlForExport(payload.channelName)}</p>`
+function cubitResultsExportCss(): string {
+  return `
+    :root { --feedback-bad: ${BRAND_FEEDBACK_RED}; }
+    .ov-start { text-decoration: none; border-radius: 0.5rem; }
+    .rs-score { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0.5rem 1rem; margin-top: 1.5rem; }
+    .rs-pct {
+      margin: 0;
+      font-size: 3.25rem;
+      font-weight: 700;
+      letter-spacing: -0.05em;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+    .rs-score-meta { margin: 0 0 0.35rem; }
+    .rs-score-meta p { margin: 0; font-size: 15px; font-weight: 600; }
+    .rs-chip {
+      display: inline-flex;
+      align-items: center;
+      height: 24px;
+      margin-top: 4px;
+      padding: 0 6px;
+      border: 1px solid var(--quiz-border);
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--quiz-text2);
+    }
+    .rs-exam { margin: 1rem 0 0; font-size: 13px; color: var(--quiz-text3); }
+    .rs-copy { margin: 0.5rem 0 0; max-width: 36rem; font-size: 15px; line-height: 1.6; color: var(--quiz-text2); }
+    .rs-filters { display: flex; gap: 4px; overflow-x: auto; margin-top: 1.5rem; }
+    .rs-filter {
+      flex-shrink: 0;
+      height: 44px;
+      padding: 0 0.9rem;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--quiz-text2);
+      font-size: 13px;
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+    }
+    .rs-filter.on { background: var(--quiz-bg2); color: var(--quiz-text); }
+    .rs-review { margin-top: 8px; border-top: 1px solid var(--quiz-border); }
+    .rs-q { padding: 1.5rem 0; border-bottom: 1px solid var(--quiz-border); }
+    .rs-q-top { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
+    .rs-q-num {
+      margin: 0;
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      color: var(--quiz-text3);
+      font-family: var(--mono);
+    }
+    .rs-q-sec { margin: 0; font-size: 12px; color: var(--quiz-text3); }
+    .rs-q-prompt { margin: 0; font-size: 16px; font-weight: 600; line-height: 1.35; }
+    .rs-status { margin: 12px 0 0; font-size: 13px; font-weight: 500; color: var(--quiz-text2); }
+    .rs-status.wrong { color: var(--feedback-bad); }
+    .rs-status.skipped { color: var(--quiz-text3); }
+    .rs-expl-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      height: 44px;
+      margin-top: 8px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: var(--quiz-text2);
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+    }
+    .rs-expl { margin-top: 4px; font-size: 14px; line-height: 1.6; color: var(--quiz-text2); }
+    .rs-expl .ok { color: var(--quiz-text); }
+    .rs-jump-label {
+      margin: 0 0 12px;
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      color: var(--quiz-text3);
+      font-family: var(--mono);
+    }
+    .rs-jump { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+    .rs-jump-cell {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 44px;
+      border: 1px solid var(--quiz-border);
+      border-radius: 4px;
+      background: transparent;
+      color: var(--quiz-text);
+      font-size: 12px;
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+      font-family: inherit;
+      cursor: pointer;
+    }
+    .rs-jump-cell.wrong { color: var(--feedback-bad); border-color: rgba(239, 68, 68, 0.45); }
+    .rs-jump-cell.skipped { color: var(--quiz-text3); }
+    .rs-jump-cell.on { background: var(--quiz-bg2); }
+    .rs-phone-jump { padding: 1.25rem 0 0; }
+    .rs-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 0;
+    }
+    .rs-nav button {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      height: 44px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: var(--quiz-text2);
+      font-size: 13px;
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+    }
+    .rs-nav button:disabled { opacity: 0.4; cursor: default; }
+    .rs-nav-count { font-size: 12px; font-variant-numeric: tabular-nums; color: var(--quiz-text3); }
+    .rs-aside-pct {
+      margin: 0;
+      font-size: 2.75rem;
+      font-weight: 700;
+      letter-spacing: -0.05em;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+    .rs-aside-sub { margin: 8px 0 0; font-size: 13px; color: var(--quiz-text2); }
+    .rs-secs { list-style: none; margin: 1.25rem 0 0; padding: 0; border-top: 1px solid var(--quiz-border); }
+    .rs-secs li {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--quiz-border);
+    }
+    .rs-sec-name { margin: 0; font-size: 13px; font-weight: 600; line-height: 1.35; }
+    .rs-sec-of { margin: 2px 0 0; font-size: 12px; color: var(--quiz-text3); }
+    .rs-sec-pct { font-size: 13px; font-variant-numeric: tabular-nums; color: var(--quiz-text2); }
+    .rs-empty { padding: 2rem 0; font-size: 15px; color: var(--quiz-text2); }
+    .rs-sticky { display: grid; grid-template-columns: 1fr; }
+    @media (min-width: 768px) {
+      .rs-pct { font-size: 3.75rem; }
+      .rs-q-top { flex-direction: row; align-items: baseline; justify-content: space-between; gap: 12px; }
+      .rs-jump { grid-template-columns: repeat(9, 1fr); gap: 4px; }
+      .rs-jump-cell { height: 32px; font-size: 11px; }
+      .rs-phone-jump, .rs-sticky { display: none; }
+    }
+  `;
+}
+
+function resultsStatusLabel(status: ResultStatus): string {
+  if (status === 'correct') return 'Correct';
+  if (status === 'skipped') return 'Skipped';
+  return 'Incorrect';
+}
+
+function resultsQuestionBlockHtml(q: {
+  index: number;
+  question: string;
+  sectionKicker?: string;
+  status: ResultStatus;
+  explanation?: string;
+  correctAnswer?: string;
+}): string {
+  const kicker = q.sectionKicker
+    ? `<p class="rs-q-sec">${escapeHtmlForExport(q.sectionKicker)}</p>`
     : '';
-  const attemptMeta = [
-    payload.attemptNumber != null ? `Attempt #${payload.attemptNumber}` : null,
-    payload.submittedAt
-      ? new Date(payload.submittedAt).toLocaleString(undefined, {
-          dateStyle: 'medium',
-          timeStyle: 'short',
-        })
-      : null,
-  ]
-    .filter(Boolean)
-    .join(' · ');
+  const explBtn = q.explanation?.trim()
+    ? `<button type="button" class="rs-expl-btn" data-action="expl">Explanation <span aria-hidden="true">⌄</span></button>
+        <div class="rs-expl hide" data-expl>
+          ${
+            q.status === 'wrong' && q.correctAnswer
+              ? `<p>Correct answer: <span class="ok">${escapeHtmlForExport(q.correctAnswer)}</span></p>`
+              : ''
+          }
+          <p>${escapeHtmlForExport(q.explanation)}</p>
+        </div>`
+    : '';
+  return `<div class="rs-q" id="result-q">
+      <div class="rs-q-top">
+        <p class="rs-q-num">Question ${q.index}</p>
+        ${kicker}
+      </div>
+      <p class="rs-q-prompt">${escapeHtmlForExport(q.question)}</p>
+      <p class="rs-status ${q.status}">${resultsStatusLabel(q.status)}</p>
+      ${explBtn}
+    </div>`;
+}
 
-  const sections =
-    payload.sectionScores.length > 0
-      ? `<section class="sections">
-      <h2>Section scores</h2>
-      <ul>
-        ${payload.sectionScores
-          .map(
-            (s) =>
-              `<li><span class="sec-name">${escapeHtmlForExport(s.topic)}</span> <span class="sec-score">${s.scorePercent}%</span> <span class="sec-meta">(${s.totalCount} questions)</span></li>`,
-          )
-          .join('\n')}
-      </ul>
-    </section>`
-      : '';
-
-  const questions = payload.questions
+function resultsJumpCellsHtml(
+  questions: Array<{ index: number; status: ResultStatus }>,
+  selected: number,
+): string {
+  return questions
     .map((q) => {
-      const status = q.isCorrect ? 'correct' : 'incorrect';
-      const expl = q.explanation?.trim()
-        ? `<div class="block"><div class="label">Explanation</div><div class="box expl">${escapeHtmlForExport(q.explanation)}</div></div>`
-        : '';
-      return `<details class="q ${status}" open>
-        <summary>
-          <span class="q-num">Q${q.index}</span>
-          <span class="q-text">${escapeHtmlForExport(q.question)}</span>
-          <span class="badge ${status}">${q.isCorrect ? 'Correct' : 'Incorrect'}</span>
-        </summary>
-        <div class="q-body">
-          <div class="block">
-            <div class="label">Your answer</div>
-            <div class="box yours">${escapeHtmlForExport(q.userAnswer || '—')}</div>
-          </div>
-          <div class="block">
-            <div class="label">Correct answer</div>
-            <div class="box right">${escapeHtmlForExport(q.correctAnswer || '—')}</div>
-          </div>
-          ${expl}
-        </div>
-      </details>`;
+      const on = q.index === selected ? ' on' : '';
+      return `<button type="button" class="rs-jump-cell ${q.status}${on}" data-jump="${q.index}" aria-label="Question ${q.index}, ${q.status}" ${q.index === selected ? 'aria-current="true"' : ''}>${q.index}</button>`;
     })
-    .join('\n');
+    .join('');
+}
 
-  const quizLink = payload.takeQuizUrl
-    ? `<p class="footer-link"><a href="${escapeHtmlForExport(payload.takeQuizUrl)}">Take this quiz on ${escapeHtmlForExport(BRAND_NAME)}</a></p>`
+export function buildQuizAttemptHtml(payload: QuizAttemptHtmlPayload): string {
+  const takeQuizUrl = escapeHtmlForExport(payload.takeQuizUrl || cubitPublicQuizUrl());
+  const rows = payload.questions.map((q, i) => {
+    const status = q.status ?? classifyAttemptAnswer(q.userAnswer, q.isCorrect);
+    const kicker =
+      q.sectionKicker ||
+      kickerForQuestionIndex(
+        i,
+        [],
+        payload.sectionScores.map((s) => ({ title: s.topic, totalCount: s.totalCount })),
+      );
+    return {
+      index: q.index,
+      question: q.question,
+      userAnswer: q.userAnswer,
+      correctAnswer: q.correctAnswer,
+      explanation: q.explanation ?? '',
+      status,
+      sectionKicker: kicker ?? '',
+    };
+  });
+  const counts = {
+    all: rows.length,
+    wrong: rows.filter((q) => q.status === 'wrong').length,
+    correct: rows.filter((q) => q.status === 'correct').length,
+    skipped: rows.filter((q) => q.status === 'skipped').length,
+  };
+  const first = rows[0];
+  const examMeta = escapeHtmlForExport(
+    payload.examMeta || formatExamMetaLine(payload.practiceLabel, payload.submittedAt),
+  );
+  const summary = escapeHtmlForExport(
+    resultsSummaryCopy(payload.correctCount, payload.totalCount, payload.passed),
+  );
+  const passLabel = payload.passed ? 'Passed' : 'Did not pass';
+  const sectionsHtml =
+    payload.sectionScores.length > 0
+      ? `<ul class="rs-secs">${payload.sectionScores
+          .map((s) => {
+            const correct = s.correctCount ?? 0;
+            return `<li>
+            <div>
+              <p class="rs-sec-name">${escapeHtmlForExport(s.topic)}</p>
+              <p class="rs-sec-of">${correct} of ${s.totalCount}</p>
+            </div>
+            <span class="rs-sec-pct">${s.scorePercent}%</span>
+          </li>`;
+          })
+          .join('')}</ul>`
+      : '';
+  const jumpInner = resultsJumpCellsHtml(rows, first?.index ?? 1);
+  const jumpBlock = rows.length
+    ? `<div>
+        <p class="rs-jump-label">Jump to a question</p>
+        <div class="rs-jump">${jumpInner}</div>
+      </div>`
     : '';
+  const retake = `<a class="ov-start" href="${takeQuizUrl}">Retake quiz</a>`;
+  const questionHtml = first
+    ? resultsQuestionBlockHtml(first)
+    : `<p class="rs-empty">No questions in this filter.</p>`;
 
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>${title} — ${escapeHtmlForExport(BRAND_NAME)} attempt</title>
+  <title>${escapeHtmlForExport(payload.quizTitle)} — ${escapeHtmlForExport(BRAND_NAME)} results</title>
   ${CUBIT_EXPORT_FONTS}
-  <style>
-    ${cubitExportCss()}
-    .score-card {
-      border: 1px solid var(--border);
-      background: var(--fill);
-      border-radius: 12px;
-      padding: 20px 24px;
-      margin-bottom: 24px;
-    }
-    .score-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 12px 24px; }
-    .score-pct { font-size: 2.5rem; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
-    .score-detail { font-size: 0.875rem; color: var(--ink-soft); }
-    .pass-pill {
-      display: inline-block;
-      font-size: 0.75rem;
-      font-weight: 600;
-      padding: 4px 10px;
-      border-radius: 999px;
-      border: 1px solid var(--border);
-    }
-    .pass-pill.pass { color: var(--feedback-ok); background: var(--accent-soft); }
-    .pass-pill.fail { color: var(--feedback-bad); background: var(--fill); }
-    h2 { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-faint); font-family: \"IBM Plex Mono\", ui-monospace, monospace; margin: 0 0 12px; }
-    .sections ul { list-style: none; padding: 0; margin: 0 0 28px; }
-    .sections li {
-      display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline;
-      padding: 10px 0; border-bottom: 1px solid var(--border);
-      font-size: 0.875rem;
-    }
-    .sec-name { flex: 1; min-width: 140px; }
-    .sec-score { font-weight: 600; color: var(--accent); }
-    .sec-meta { color: var(--ink-faint); font-size: 0.8rem; }
-    details.q {
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      margin-bottom: 10px;
-      background: var(--fill);
-    }
-    details.q summary {
-      cursor: pointer;
-      list-style: none;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px 12px;
-      align-items: flex-start;
-      padding: 14px 16px;
-      font-weight: 500;
-      font-size: 0.9rem;
-    }
-    details.q summary::-webkit-details-marker { display: none; }
-    .q-num { font-family: \"IBM Plex Mono\", ui-monospace, monospace; font-size: 0.75rem; color: var(--ink-faint); }
-    .q-text { flex: 1; min-width: 200px; }
-    .badge { font-size: 0.7rem; font-weight: 600; padding: 2px 8px; border-radius: 6px; }
-    .badge.correct { color: var(--feedback-ok); background: var(--accent-soft); }
-    .badge.incorrect { color: var(--feedback-bad); background: var(--fill); }
-    .q-body { padding: 0 16px 16px; border-top: 1px solid var(--border); }
-    .block { margin-top: 12px; }
-    .label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-faint); margin-bottom: 6px; font-family: \"IBM Plex Mono\", ui-monospace, monospace; }
-    .box {
-      display: block;
-      padding: 10px 12px;
-      border-radius: 8px;
-      font-size: 0.875rem;
-      border: 1px solid var(--border);
-      background: var(--bg);
-      white-space: pre-wrap;
-    }
-    .box.yours { border-color: var(--border); }
-    .box.right { border-color: rgba(22, 163, 74, 0.35); }
-    .box.expl { color: var(--ink-soft); }
-    .footer-link { margin-top: 32px; font-size: 0.875rem; }
-    .footer-link a { color: var(--accent); }
-    .sub { font-size: 0.75rem; color: var(--ink-faint); margin-top: 24px; }
-  </style>
+  <style>${cubitQuizTakingExportCss()}${cubitResultsExportCss()}</style>
 </head>
-<body>
-  <div class="wrap">
-    ${cubitWordmarkHtml()}
-    <p class="kicker">Attempt report</p>
-    <div class="hairline-accent" aria-hidden="true"></div>
-    <h1>${title}</h1>
-    ${channel}
-    <div class="score-card" aria-label="Score summary">
-      <div class="score-row">
-        <div class="score-pct">${payload.scorePercent}%</div>
-        <span class="pass-pill ${payload.passed ? 'pass' : 'fail'}">${payload.passed ? 'Passed' : 'Not passed'}</span>
-      </div>
-      <p class="score-detail">${payload.correctCount} of ${payload.totalCount} correct${attemptMeta ? ` · ${escapeHtmlForExport(attemptMeta)}` : ''}</p>
+<body class="cuib-app">
+  <header class="ov-header">
+    <div class="ov-header-inner">
+      ${cubitLogoLockupHtml()}
+      <a class="ov-header-link" href="${takeQuizUrl}">Open on Cubit</a>
     </div>
-    ${sections}
-    <section>
-      <h2>Questions &amp; answers</h2>
-      ${questions}
-    </section>
-    ${quizLink}
-    <p class="sub">Personal attempt snapshot from ${escapeHtmlForExport(BRAND_NAME)}. Includes your answers, correct answers, and explanations.</p>
+  </header>
+  <div class="ov-body">
+    <div class="ov-main">
+      <p class="ov-kicker">Results</p>
+      <h1 class="ov-title">Your results</h1>
+      <div class="rs-score">
+        <p class="rs-pct">${payload.scorePercent}%</p>
+        <div class="rs-score-meta">
+          <p>${payload.correctCount} of ${payload.totalCount} correct</p>
+          <span class="rs-chip">${passLabel}</span>
+        </div>
+      </div>
+      <p class="rs-exam">${examMeta}</p>
+      <p class="rs-copy">${summary}</p>
+      <div class="rs-filters" role="tablist">
+        <button type="button" class="rs-filter on" data-filter="all">All ${counts.all}</button>
+        <button type="button" class="rs-filter" data-filter="wrong">Wrong ${counts.wrong}</button>
+        <button type="button" class="rs-filter" data-filter="correct">Correct ${counts.correct}</button>
+        <button type="button" class="rs-filter" data-filter="skipped">Skipped ${counts.skipped}</button>
+      </div>
+      <div class="rs-review">
+        <div id="rs-question">${questionHtml}</div>
+        <div class="rs-phone-jump">${jumpBlock}</div>
+        <div class="rs-nav">
+          <button type="button" id="rs-prev" disabled>‹ Previous</button>
+          <span class="rs-nav-count" id="rs-count">${rows.length ? `1 of ${rows.length}` : '0 of 0'}</span>
+          <button type="button" id="rs-next" ${rows.length < 2 ? 'disabled' : ''}>Next ›</button>
+        </div>
+      </div>
+    </div>
+    <aside class="ov-aside">
+      <div class="ov-card">
+        <p class="rs-aside-pct">${payload.scorePercent}%</p>
+        <p class="rs-aside-sub">${payload.correctCount} of ${payload.totalCount} correct</p>
+        ${sectionsHtml}
+        ${jumpBlock ? `<div style="margin-top:1.25rem">${jumpBlock}</div>` : ''}
+        <div style="margin-top:1.5rem">${retake}</div>
+      </div>
+    </aside>
   </div>
+  <div class="ov-sticky-start rs-sticky">${retake}</div>
+  <script>
+  (function () {
+    var QUESTIONS = ${jsonForHtmlScript(rows)};
+    var filter = 'all';
+    var selected = QUESTIONS[0] ? QUESTIONS[0].index : 1;
+    var explOpen = false;
+    function visible() {
+      if (filter === 'all') return QUESTIONS;
+      return QUESTIONS.filter(function (q) { return q.status === filter; });
+    }
+    function label(status) {
+      return status === 'correct' ? 'Correct' : status === 'skipped' ? 'Skipped' : 'Incorrect';
+    }
+    function esc(s) {
+      return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+    function renderQuestion(q) {
+      var root = document.getElementById('rs-question');
+      if (!root) return;
+      if (!q) {
+        root.innerHTML = '<p class="rs-empty">No questions in this filter.</p>';
+        return;
+      }
+      var kicker = q.sectionKicker ? '<p class="rs-q-sec">' + esc(q.sectionKicker) + '</p>' : '';
+      var expl = '';
+      if (q.explanation) {
+        var body = '';
+        if (q.status === 'wrong' && q.correctAnswer) {
+          body += '<p>Correct answer: <span class="ok">' + esc(q.correctAnswer) + '</span></p>';
+        }
+        body += '<p>' + esc(q.explanation) + '</p>';
+        expl = '<button type="button" class="rs-expl-btn" data-action="expl">Explanation <span aria-hidden="true">' + (explOpen ? '⌃' : '⌄') + '</span></button>'
+          + '<div class="rs-expl' + (explOpen ? '' : ' hide') + '" data-expl>' + body + '</div>';
+      }
+      root.innerHTML = '<div class="rs-q" id="result-q"><div class="rs-q-top"><p class="rs-q-num">Question ' + q.index + '</p>'
+        + kicker + '</div><p class="rs-q-prompt">' + esc(q.question) + '</p>'
+        + '<p class="rs-status ' + q.status + '">' + label(q.status) + '</p>' + expl + '</div>';
+    }
+    function render() {
+      var vis = visible();
+      if (vis.length && !vis.some(function (q) { return q.index === selected; })) {
+        selected = vis[0].index;
+        explOpen = false;
+      }
+      var current = QUESTIONS.filter(function (q) { return q.index === selected; })[0] || vis[0];
+      renderQuestion(vis.length ? current : null);
+      var idx = vis.findIndex(function (q) { return current && q.index === current.index; });
+      var prev = document.getElementById('rs-prev');
+      var next = document.getElementById('rs-next');
+      var count = document.getElementById('rs-count');
+      if (prev) prev.disabled = idx <= 0;
+      if (next) next.disabled = idx < 0 || idx >= vis.length - 1;
+      if (count) count.textContent = vis.length ? (idx + 1) + ' of ' + vis.length : '0 of 0';
+      document.querySelectorAll('.rs-filter').forEach(function (btn) {
+        btn.classList.toggle('on', btn.getAttribute('data-filter') === filter);
+      });
+      document.querySelectorAll('[data-jump]').forEach(function (btn) {
+        var n = Number(btn.getAttribute('data-jump'));
+        var on = n === selected;
+        btn.classList.toggle('on', on);
+        if (on) btn.setAttribute('aria-current', 'true');
+        else btn.removeAttribute('aria-current');
+      });
+    }
+    function select(index) {
+      selected = index;
+      explOpen = false;
+      render();
+      var el = document.getElementById('result-q');
+      if (el && el.scrollIntoView) {
+        var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+      }
+    }
+    document.addEventListener('click', function (e) {
+      var t = e.target;
+      if (t && t.nodeType !== 1) t = t.parentElement;
+      if (!t || !t.closest) return;
+      var filterBtn = t.closest('[data-filter]');
+      if (filterBtn) {
+        filter = filterBtn.getAttribute('data-filter');
+        explOpen = false;
+        var vis = visible();
+        if (vis[0]) selected = vis[0].index;
+        render();
+        return;
+      }
+      var jump = t.closest('[data-jump]');
+      if (jump) {
+        select(Number(jump.getAttribute('data-jump')));
+        return;
+      }
+      if (t.closest('[data-action="expl"]')) {
+        explOpen = !explOpen;
+        render();
+        return;
+      }
+      if (t.closest('#rs-prev')) {
+        var visP = visible();
+        var iP = visP.findIndex(function (q) { return q.index === selected; });
+        if (iP > 0) select(visP[iP - 1].index);
+        return;
+      }
+      if (t.closest('#rs-next')) {
+        var visN = visible();
+        var iN = visN.findIndex(function (q) { return q.index === selected; });
+        if (iN >= 0 && iN < visN.length - 1) select(visN[iN + 1].index);
+      }
+    });
+  })();
+  </script>
 </body>
 </html>`;
 }

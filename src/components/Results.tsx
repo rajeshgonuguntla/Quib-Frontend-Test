@@ -15,7 +15,7 @@ import {
   type ApiSectionScore,
   type FrontendQuestion,
 } from '../api/quizApi';
-import { downloadQuizAttemptHtmlReport } from '../utils/downloadQuizAttemptHtml';
+import { cubitPublicQuizUrl, downloadQuizAttemptHtmlReport } from '../utils/downloadQuizAttemptHtml';
 import {
   classifyAttemptAnswer,
   formatExamMetaLine,
@@ -242,6 +242,10 @@ export function Results() {
 
   const quizTitle = videoMeta.title || 'Generated Quiz';
   const shareUrl = `${window.location.origin}/quiz/${id}`;
+  const examMeta = formatExamMetaLine(
+    blueprint?.practiceLabel || (examType && examType.toLowerCase() !== 'custom' ? examType : undefined),
+    submittedAt,
+  );
 
   const handleDownloadAttemptHtml = () => {
     if (reviewRows.length === 0) return;
@@ -254,10 +258,12 @@ export function Results() {
       passed,
       attemptNumber: apiResult?.attemptNumber,
       submittedAt,
+      examMeta,
       sectionScores: sections.map((s) => ({
         topic: s.label,
         scorePercent: s.percent,
         totalCount: s.total,
+        correctCount: s.correct,
       })),
       questions: reviewRows.map((q) => ({
         index: q.index,
@@ -265,16 +271,13 @@ export function Results() {
         userAnswer: String(q.userAnswer ?? ''),
         correctAnswer: String(q.correctAnswer ?? ''),
         isCorrect: q.status === 'correct',
+        status: q.status,
+        sectionKicker: q.sectionKicker,
         explanation: q.explanation,
       })),
-      takeQuizUrl: shareUrl,
+      takeQuizUrl: isUuid(id) ? cubitPublicQuizUrl(id) : shareUrl,
     });
   };
-
-  const examMeta = formatExamMetaLine(
-    blueprint?.practiceLabel || (examType && examType.toLowerCase() !== 'custom' ? examType : undefined),
-    submittedAt,
-  );
 
   if (resultsLoading) {
     return (
