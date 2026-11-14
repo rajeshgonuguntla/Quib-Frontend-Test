@@ -1,4 +1,5 @@
 import { BRAND_ACCENT_LIGHT, BRAND_FEEDBACK_RED, BRAND_NAME } from '../brand';
+import { defaultQuizTimeLimitSeconds } from '../api/quizApi';
 
 /** Public app host for links inside downloaded HTML (not the dev origin). */
 export const CUBIT_APP_ORIGIN = 'https://mycubit.app';
@@ -423,6 +424,8 @@ export type InteractiveQuizHtmlPayload = {
   /** Where to sign in / take the quiz for scored results (defaults to takeQuizUrl or mycubit.app). */
   resultsSignInUrl?: string;
   generatedAt?: string;
+  /** Countdown seconds; defaults to the same formula as QuizTaking. */
+  timeLimitSeconds?: number;
 };
 
 function formatGeneratedStamp(iso?: string): string {
@@ -644,6 +647,24 @@ function cubitQuizTakingExportCss(): string {
       justify-content: space-between;
       gap: 1rem;
     }
+    .quiz-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-shrink: 0;
+    }
+    .quiz-timer {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: var(--mono);
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+      color: var(--quiz-text);
+      font-size: 0.9rem;
+    }
+    .quiz-timer svg { color: var(--quiz-accent); flex-shrink: 0; }
+    .quiz-timer.is-warn { color: var(--quiz-accent); }
     .quiz-logo {
       display: inline-flex;
       align-items: center;
@@ -932,6 +953,8 @@ export function buildInteractiveQuizHtml(payload: InteractiveQuizHtmlPayload): s
   const questionCount = payload.questions.length;
   const generatedLine = escapeHtmlForExport(formatGeneratedStamp(payload.generatedAt));
   const questionPanels = buildExportQuestionPanels(payload.questions);
+  const timeLimitSeconds =
+    payload.timeLimitSeconds ?? defaultQuizTimeLimitSeconds(questionCount);
   const examLabel = (payload.examType ?? '').trim();
   const thirdStat =
     examLabel && examLabel.toLowerCase() !== 'custom'
@@ -988,7 +1011,13 @@ export function buildInteractiveQuizHtml(payload: InteractiveQuizHtmlPayload): s
           ${cubitLogoLockupHtml()}
           <span class="quiz-header-title">${title}</span>
         </div>
-        <button type="button" class="btn-accent" id="header-submit" style="width:auto;padding:0.5rem 1rem;font-size:0.82rem;border-radius:0.75rem">Submit quiz</button>
+        <div class="quiz-header-actions">
+          <div class="quiz-timer" id="quiz-timer" aria-live="polite" aria-label="Time remaining">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span id="quiz-timer-value">0:00</span>
+          </div>
+          <button type="button" class="btn-accent" id="header-submit" style="width:auto;padding:0.5rem 1rem;font-size:0.82rem;border-radius:0.75rem">Submit quiz</button>
+        </div>
       </div>
     </header>
     <main class="quiz-main">
@@ -1004,11 +1033,52 @@ export function buildInteractiveQuizHtml(payload: InteractiveQuizHtmlPayload): s
   (function () {
     var TOTAL = ${questionCount};
     var current = 0;
+    var remaining = ${timeLimitSeconds};
     var SIGN_IN_URL = ${JSON.stringify(signInHref)};
     var intro = document.getElementById('intro');
     var shell = document.getElementById('quiz-shell');
     var startBtn = document.getElementById('start-btn');
     var headerSubmit = document.getElementById('header-submit');
+    var timerRoot = document.getElementById('quiz-timer');
+    var timerValue = document.getElementById('quiz-timer-value');
+    var timerId = null;
+
+    function formatClock(sec) {
+      var m = Math.floor(Math.max(0, sec) / 60);
+      var s = Math.max(0, sec) % 60;
+      return m + ':' + (s < 10 ? '0' : '') + s;
+    }
+
+    function paintTimer() {
+      if (timerValue) timerValue.textContent = formatClock(remaining);
+      if (timerRoot) {
+        if (remaining < 300) timerRoot.classList.add('is-warn');
+        else timerRoot.classList.remove('is-warn');
+      }
+    }
+
+    function stopTimer() {
+      if (timerId) {
+        clearInterval(timerId);
+        timerId = null;
+      }
+    }
+
+    function startTimer() {
+      paintTimer();
+      stopTimer();
+      timerId = setInterval(function () {
+        remaining -= 1;
+        if (remaining <= 0) {
+          remaining = 0;
+          paintTimer();
+          stopTimer();
+          goToSignIn();
+          return;
+        }
+        paintTimer();
+      }, 1000);
+    }
 
     function panels() {
       return Array.prototype.slice.call(document.querySelectorAll('.question-panel'));
@@ -1026,6 +1096,7 @@ export function buildInteractiveQuizHtml(payload: InteractiveQuizHtmlPayload): s
     }
 
     function goToSignIn() {
+      stopTimer();
       window.location.assign(SIGN_IN_URL);
     }
 
@@ -1035,6 +1106,7 @@ export function buildInteractiveQuizHtml(payload: InteractiveQuizHtmlPayload): s
       shell.classList.remove('hide');
       shell.removeAttribute('aria-hidden');
       showPanel(0);
+      startTimer();
     });
 
     document.addEventListener('click', function (e) {

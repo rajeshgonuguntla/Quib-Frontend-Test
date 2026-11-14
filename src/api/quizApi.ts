@@ -113,7 +113,7 @@ export function buildFrontendSections(
           key,
           title: s.title ?? key,
           questionCount: s.questionCount ?? indexes.length,
-          timeLimitSeconds: s.timeLimitSeconds ?? Math.max(indexes.length * 90, 300),
+          timeLimitSeconds: s.timeLimitSeconds ?? defaultQuizTimeLimitSeconds(indexes.length),
           questionIndexes: indexes,
         };
       });
@@ -123,10 +123,15 @@ export function buildFrontendSections(
       key: 'all',
       title: 'Quiz',
       questionCount: questions.length,
-      timeLimitSeconds: Math.max(questions.length * 90, 300),
+      timeLimitSeconds: defaultQuizTimeLimitSeconds(questions.length),
       questionIndexes: questions.map((_, i) => i),
     },
   ];
+}
+
+/** Same clock as in-app QuizTaking and exported HTML: 90s per question, 5 minutes minimum. */
+export function defaultQuizTimeLimitSeconds(questionCount: number): number {
+  return Math.max(Math.max(0, questionCount) * 90, 300);
 }
 
 /** Display sizes matching backend ExamBlueprint (before generate). */

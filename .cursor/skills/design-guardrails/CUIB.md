@@ -105,7 +105,13 @@ Source of truth for **downloaded practice quiz HTML** (`src/utils/downloadQuizAt
 - Local score/results on this file after submit (submit goes to mycubit.app sign-in).
 - Mix landing marketing tokens into this card.
 
-Taking UI after **Start quiz** still follows in-app `QuizTaking.tsx` (header, one question, option chips).
+Taking UI after **Start quiz** (and in-app `/quiz/:id`) follows `QuizTaking.tsx` 1:1:
+
+- Sticky header: Cubit lockup, title (desktop), **clock + mm:ss** (IBM Plex Mono, accent clock, warn under 5:00), **Submit quiz**.
+- Timer: `defaultQuizTimeLimitSeconds` — 90s per question, 5 minutes minimum. Counts down; at 0, submit (app) or send to mycubit.app sign-in (HTML).
+- One question at a time: type pill, option chips with ring, short-answer textarea, hairline progress + Previous / Next / Submit.
+
+Standalone generated quizzes (app + HTML export) share this chrome. Course module quizzes in the lesson rail are a different surface.
 
 ## Tests and verification
 

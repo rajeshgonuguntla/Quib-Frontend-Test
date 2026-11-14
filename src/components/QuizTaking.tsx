@@ -5,6 +5,7 @@ import { useTheme, getC } from './ThemeContext';
 import { QuibLogo } from './QuibLogo';
 import {
   buildFrontendSections,
+  defaultQuizTimeLimitSeconds,
   fetchQuizDetail,
   isUuid,
   mapApiQuestionsToFrontend,
@@ -96,7 +97,7 @@ export function QuizTaking() {
   );
   const activeSection = sections[Math.min(sectionIndex, Math.max(0, sections.length - 1))];
   const sectionQuestionIndexes = activeSection?.questionIndexes ?? questions.map((_, i) => i);
-  const initialTime = activeSection?.timeLimitSeconds ?? Math.max(questions.length * 90, 300);
+  const initialTime = activeSection?.timeLimitSeconds ?? defaultQuizTimeLimitSeconds(questions.length);
   const [timeLeft, setTimeLeft] = useState(initialTime);
   const timeLeftRef = useRef(timeLeft);
   const totalSpentRef = useRef(0);
@@ -108,7 +109,7 @@ export function QuizTaking() {
   }, [timeLeft]);
 
   useEffect(() => {
-    setTimeLeft(activeSection?.timeLimitSeconds ?? Math.max(questions.length * 90, 300));
+    setTimeLeft(activeSection?.timeLimitSeconds ?? defaultQuizTimeLimitSeconds(questions.length));
   }, [sectionIndex, activeSection?.timeLimitSeconds, questions.length]);
 
   useEffect(() => {
@@ -341,7 +342,7 @@ export function QuizTaking() {
               className="px-4 py-2 rounded-xl text-[0.82rem] font-[600] cursor-pointer"
               style={{ background: C.red, border: 'none', color: '#fff' }}
             >
-              Submit Quiz
+              Submit quiz
             </button>
           </div>
         </div>

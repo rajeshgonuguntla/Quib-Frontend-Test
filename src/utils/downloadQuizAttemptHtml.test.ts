@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { defaultQuizTimeLimitSeconds } from '../api/quizApi';
 import {
   buildInteractiveQuizHtml,
   buildQuizAttemptHtml,
@@ -78,6 +79,8 @@ describe('downloadQuizAttemptHtml', () => {
     expect(html).toContain('Multiple choice');
     expect(html).toContain('opt-btn');
     expect(html).toContain('Submit quiz');
+    expect(html).toContain('quiz-timer');
+    expect(html).toContain('startTimer');
     expect(html).toContain('mycubit.app/#ask');
     expect(html).toContain('goToSignIn');
     expect(html).not.toContain('cubit-quiz-bank');
@@ -86,6 +89,11 @@ describe('downloadQuizAttemptHtml', () => {
 
   it('jsonForHtmlScript escapes script-breaking sequences', () => {
     expect(jsonForHtmlScript({ x: '</script>' })).not.toContain('</script>');
+  });
+
+  it('defaultQuizTimeLimitSeconds matches in-app taking (90s per question, 5 min floor)', () => {
+    expect(defaultQuizTimeLimitSeconds(1)).toBe(300);
+    expect(defaultQuizTimeLimitSeconds(10)).toBe(900);
   });
 
   it('cubitPublicSignInUrl is the live landing sign-in', () => {
