@@ -1,5 +1,19 @@
 import { BRAND_ACCENT_LIGHT, BRAND_FEEDBACK_RED, BRAND_NAME } from '../brand';
 
+/** Public app host for links inside downloaded HTML (not the dev origin). */
+export const CUBIT_APP_ORIGIN = 'https://mycubit.app';
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+export function cubitPublicQuizUrl(quizId?: string | null): string {
+  const id = quizId?.trim();
+  if (id && UUID_RE.test(id)) {
+    return `${CUBIT_APP_ORIGIN}/quiz/${id}`;
+  }
+  return CUBIT_APP_ORIGIN;
+}
+
 const CUBIT_EXPORT_FONTS = `
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -365,6 +379,7 @@ export type GeneratedQuizQuestionLike = {
   question: string;
   options?: string[];
   answer?: string;
+  correctAnswerIndex?: number;
   explanation?: string;
 };
 
@@ -374,14 +389,23 @@ export function mapGeneratedQuestionsToInteractiveItems(
 ): InteractiveQuizItem[] {
   return questions
     .filter((q) => q.question.trim().length > 0)
-    .map((q) => ({
-      question: q.question,
-      type: q.type,
-      options: q.options,
-      correctAnswer: String(q.answer ?? '').trim(),
-      explanation: q.explanation,
-    }))
-    .filter((q) => q.correctAnswer.length > 0);
+    .map((q) => {
+      let correctAnswer = String(q.answer ?? '').trim();
+      if (
+        !correctAnswer &&
+        typeof q.correctAnswerIndex === 'number' &&
+        q.options?.[q.correctAnswerIndex]
+      ) {
+        correctAnswer = q.options[q.correctAnswerIndex].trim();
+      }
+      return {
+        question: q.question,
+        type: q.type,
+        options: q.options,
+        correctAnswer,
+        explanation: q.explanation,
+      };
+    });
 }
 
 export type InteractiveQuizHtmlPayload = {
@@ -390,6 +414,8 @@ export type InteractiveQuizHtmlPayload = {
   passPercent?: number;
   questions: InteractiveQuizItem[];
   takeQuizUrl?: string;
+  /** Where to sign in / take the quiz for scored results (defaults to takeQuizUrl or mycubit.app). */
+  resultsSignInUrl?: string;
   generatedAt?: string;
 };
 
@@ -420,8 +446,14 @@ export function buildInteractiveQuizHtml(payload: InteractiveQuizHtmlPayload): s
     ? `<p class="meta">${escapeHtmlForExport(payload.channelName)}</p>`
     : '';
   const passAt = payload.passPercent ?? 70;
-  const quizLink = payload.takeQuizUrl
-    ? `<p class="footer-link"><a href="${escapeHtmlForExport(payload.takeQuizUrl)}">Take on ${escapeHtmlForExport(BRAND_NAME)}</a></p>`
+  const resultsSignInUrl = escapeHtmlForExport(
+    payload.resultsSignInUrl ?? payload.takeQuizUrl ?? CUBIT_APP_ORIGIN,
+  );
+  const takeQuizUrl = escapeHtmlForExport(payload.takeQuizUrl ?? resultsSignInUrl);
+  const introLead =
+    'Answer in this file, then sign in on Cubit to submit and see your score and review.';
+  const quizLink = takeQuizUrl
+    ? `<p class="footer-link"><a href="${takeQuizUrl}">Open on ${escapeHtmlForExport(BRAND_NAME)}</a></p>`
     : '';
 
   const formQuestions = payload.questions
@@ -520,6 +552,8 @@ export function buildInteractiveQuizHtml(payload: InteractiveQuizHtmlPayload): s
     .rcard.ok { border-color: rgba(22,163,74,0.35); }
     .rcard.bad { border-color: rgba(239,68,68,0.35); }
     .rlbl { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-faint); font-family: "IBM Plex Mono", ui-monospace, monospace; margin-top: 8px; }
+    .results-gate-title { font-size: 1.25rem; font-weight: 600; margin: 0 0 8px; color: var(--ink); }
+    a.primary { text-decoration: none; }
   </style>
 </head>
 <body>
@@ -537,7 +571,7 @@ export function buildInteractiveQuizHtml(payload: InteractiveQuizHtmlPayload): s
         </ul>
         <p class="intro-gen">${generatedLine}</p>
       </div>
-      <p class="meta">Answer every question, then submit for an instant score in this file. Works offline after download.</p>
+      <p class="meta">${introLead}</p>
       <button type="button" class="primary wide" id="start-btn">Start quiz</button>
     </section>
     <div id="form-wrap" class="hide" aria-hidden="true">
@@ -546,68 +580,39 @@ export function buildInteractiveQuizHtml(payload: InteractiveQuizHtmlPayload): s
       <div class="hairline" aria-hidden="true"></div>
       <form id="quiz-form" novalidate>
         ${formQuestions}
-        <button type="submit" class="primary wide">Submit and see score</button>
+        <button type="submit" class="primary wide">Submit</button>
       </form>
     </div>
     <div id="results" class="hide" aria-live="polite">
       ${cubitWordmarkHtml()}
-      <p class="kicker">Your results</p>
+      <p class="kicker">Next step</p>
       <div class="score-card">
-        <span class="score-pct" id="score-pct">0%</span>
-        <span class="pill" id="pass-pill"></span>
-        <p class="meta" id="score-line"></p>
+        <p class="results-gate-title">Results are on Cubit</p>
+        <p class="meta" id="score-line">
+          Sign in on mycubit.app, take this quiz there, and your score and question review will appear after you submit.
+        </p>
+        <a
+          id="results-signin-link"
+          class="primary wide"
+          href="${resultsSignInUrl}"
+          rel="noopener noreferrer"
+        >Sign in on mycubit.app</a>
       </div>
-      <div class="review" id="review"></div>
       <button type="button" class="primary wide ghost" id="retry-btn">Back to start</button>
     </div>
     ${quizLink}
-    <p class="sub">Exported from ${escapeHtmlForExport(BRAND_NAME)}. Answer key is used only when you submit.</p>
+    <p class="sub">Exported from ${escapeHtmlForExport(BRAND_NAME)}. Scored results require signing in on mycubit.app.</p>
   </div>
   <script id="cubit-quiz-bank" type="application/json">${bank}</script>
   <script>
   (function () {
-    var PASS_AT = ${passAt};
-    var bankEl = document.getElementById('cubit-quiz-bank');
-    var BANK = JSON.parse(bankEl.textContent || '[]');
     var intro = document.getElementById('intro');
     var startBtn = document.getElementById('start-btn');
     var form = document.getElementById('quiz-form');
     var formWrap = document.getElementById('form-wrap');
     var results = document.getElementById('results');
-    var review = document.getElementById('review');
     var retry = document.getElementById('retry-btn');
     var reduceMotion = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-    function norm(s) {
-      return String(s || '').trim().toLowerCase().replace(/\\s+/g, ' ');
-    }
-
-    function readAnswer(i) {
-      var name = 'q' + i;
-      var picked = form.querySelector('input[name="' + name + '"]:checked');
-      if (picked) return picked.value;
-      var text = form.querySelector('input[name="' + name + '"][type="text"]');
-      return text ? text.value : '';
-    }
-
-    function grade() {
-      var correct = 0;
-      var rows = [];
-      for (var i = 0; i < BANK.length; i++) {
-        var meta = BANK[i];
-        var user = readAnswer(i);
-        var ok = norm(user) === norm(meta.correctAnswer);
-        if (ok) correct++;
-        rows.push({ i: i, ok: ok, user: user, meta: meta });
-      }
-      var total = BANK.length;
-      var pct = total ? Math.round((correct / total) * 100) : 0;
-      return { correct: correct, total: total, pct: pct, rows: rows };
-    }
-
-    function esc(s) {
-      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    }
 
     startBtn.addEventListener('click', function () {
       intro.classList.add('hide');
@@ -623,23 +628,6 @@ export function buildInteractiveQuizHtml(payload: InteractiveQuizHtmlPayload): s
 
     form.addEventListener('submit', function (e) {
       e.preventDefault();
-      var g = grade();
-      document.getElementById('score-pct').textContent = g.pct + '%';
-      var pill = document.getElementById('pass-pill');
-      var passed = g.pct >= PASS_AT;
-      pill.textContent = passed ? 'Passed' : 'Not passed';
-      pill.className = 'pill ' + (passed ? 'pass' : 'fail');
-      document.getElementById('score-line').textContent = g.correct + ' of ' + g.total + ' correct';
-      review.innerHTML = g.rows.map(function (r) {
-        var qEl = document.querySelector('.qcard[data-q="' + r.i + '"] .qtext');
-        var qText = qEl ? qEl.textContent : 'Question ' + (r.i + 1);
-        var expl = r.meta.explanation ? '<div class="rlbl">Explanation</div><div>' + esc(r.meta.explanation) + '</div>' : '';
-        return '<div class="rcard ' + (r.ok ? 'ok' : 'bad') + '">' +
-          '<strong>' + esc(qText) + '</strong>' +
-          '<div class="rlbl">Your answer</div><div>' + esc(r.user || '—') + '</div>' +
-          (!r.ok ? '<div class="rlbl">Correct answer</div><div>' + esc(r.meta.correctAnswer) + '</div>' : '') +
-          expl + '</div>';
-      }).join('');
       formWrap.classList.add('hide');
       formWrap.setAttribute('aria-hidden', 'true');
       results.classList.remove('hide');
@@ -653,7 +641,6 @@ export function buildInteractiveQuizHtml(payload: InteractiveQuizHtmlPayload): s
 
     retry.addEventListener('click', function () {
       form.reset();
-      review.innerHTML = '';
       results.classList.add('hide');
       results.setAttribute('aria-hidden', 'true');
       formWrap.classList.add('hide');

@@ -4,6 +4,7 @@ import axios from 'axios';
 import { ShellPage } from '../shell/ShellPage';
 import { Play, ArrowRight, Copy, Check, AlertCircle, Download } from 'lucide-react';
 import {
+  cubitPublicQuizUrl,
   downloadInteractiveQuizHtml,
   mapGeneratedQuestionsToInteractiveItems,
 } from '../utils/downloadQuizAttemptHtml';
@@ -28,6 +29,7 @@ interface BackendQuestion {
   question?: string;
   options?: string[];
   correctAnswerIndex?: number;
+  correctAnswer?: string;
   explanation?: string;
 }
 
@@ -82,9 +84,10 @@ const normalizeQuestions = (rawQuestions: BackendQuestion[]): Question[] => {
         question: q.question?.trim() ?? '',
         options,
         answer:
-          typeof q.correctAnswerIndex === 'number' && options?.[q.correctAnswerIndex]
+          q.correctAnswer?.trim() ||
+          (typeof q.correctAnswerIndex === 'number' && options?.[q.correctAnswerIndex]
             ? options[q.correctAnswerIndex]
-            : undefined,
+            : undefined),
         explanation: q.explanation?.trim(),
       };
     })
@@ -125,6 +128,40 @@ const extractQuestionsFromResponse = (payload: unknown): Question[] => {
   }
 
   return [];
+};
+
+const readSessionQuestionsForQuiz = (quizId: string): Question[] | null => {
+  try {
+    if (sessionStorage.getItem('currentQuizId') !== quizId) return null;
+    const raw = sessionStorage.getItem('generatedQuestions');
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Question[];
+    return parsed.length > 0 ? parsed : null;
+  } catch {
+    return null;
+  }
+};
+
+const mergeQuestionsWithAnswerKeys = (fromApi: Question[], fromCache: Question[]): Question[] => {
+  if (fromCache.length === fromApi.length) {
+    return fromApi.map((q, i) => ({
+      ...q,
+      answer: fromCache[i]?.answer ?? q.answer,
+      explanation: fromCache[i]?.explanation ?? q.explanation,
+      options: q.options ?? fromCache[i]?.options,
+    }));
+  }
+  const byPrompt = new Map(fromCache.map((q) => [q.question.trim(), q]));
+  return fromApi.map((q) => {
+    const hit = byPrompt.get(q.question.trim());
+    if (!hit) return q;
+    return {
+      ...q,
+      answer: hit.answer ?? q.answer,
+      explanation: hit.explanation ?? q.explanation,
+      options: q.options ?? hit.options,
+    };
+  });
 };
 
 const extractMetaFromResponse = (payload: unknown, fallbackUrl: string): QuizMeta => {
@@ -221,9 +258,13 @@ export function QuizSetup() {
 
       try {
         if (id && isUuid(id)) {
+          const cachedQuestions = readSessionQuestionsForQuiz(id);
           const data = await fetchQuizDetail(id, false);
           if (!isMounted) return;
-          const parsedQuestions = mapApiQuestionsToFrontend(data.questions ?? [], data.sections);
+          let parsedQuestions = mapApiQuestionsToFrontend(data.questions ?? [], data.sections);
+          if (cachedQuestions) {
+            parsedQuestions = mergeQuestionsWithAnswerKeys(parsedQuestions, cachedQuestions);
+          }
           const parsedMeta: QuizMeta = {
             title: data.title ?? 'Generated Quiz',
             channelName: data.channelName ?? 'Unknown Channel',
@@ -475,9 +516,12 @@ export function QuizSetup() {
     );
   }
 
-  const shareUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/quiz/${id}`;
+  const quizIdForLink =
+    (id && isUuid(id) ? id : null) ?? sessionStorage.getItem('currentQuizId') ?? undefined;
+  const cubitQuizLink = cubitPublicQuizUrl(quizIdForLink);
+  const shareUrl = cubitQuizLink;
   const interactiveItems = mapGeneratedQuestionsToInteractiveItems(questions);
-  const canDownloadShareableHtml = interactiveItems.length > 0;
+  const canDownloadShareableHtml = questions.some((q) => q.question.trim().length > 0);
 
   const handleDownloadShareableQuizHtml = () => {
     if (!canDownloadShareableHtml) return;
@@ -486,7 +530,8 @@ export function QuizSetup() {
       channelName: videoMeta.channelName,
       passPercent: 70,
       questions: interactiveItems,
-      takeQuizUrl: shareUrl,
+      takeQuizUrl: cubitQuizLink,
+      resultsSignInUrl: cubitQuizLink,
     });
   };
   const readinessLabel = promptRequest ? 'Answer keys validated' : 'Transcript available';
@@ -545,6 +590,28 @@ export function QuizSetup() {
               {metaBits.join(' · ')}
             </p>
           </div>
+        </div>
+
+        <div
+          className="flex flex-col gap-2 rounded-xl p-4"
+          style={{ border: `1px solid ${C.border}`, background: C.bg1 }}
+        >
+          <p className="text-[13px] font-medium" style={{ color: C.text }}>
+            Offline exam (HTML)
+          </p>
+          <p className="text-[12px] leading-relaxed" style={{ color: C.text3 }}>
+            Download a Cubit-branded practice file with intro screen students open before taking the test.
+          </p>
+          <button
+            type="button"
+            disabled={!canDownloadShareableHtml}
+            onClick={handleDownloadShareableQuizHtml}
+            className="inline-flex h-11 w-full items-center justify-center gap-2 text-[13px] font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            style={{ background: C.red }}
+          >
+            <Download className="size-4" strokeWidth={2.2} />
+            Download quiz (HTML)
+          </button>
         </div>
 
         {quizData.sections && quizData.sections.length > 0 && (
@@ -623,18 +690,8 @@ export function QuizSetup() {
             </button>
           </div>
           <p className="text-[12px] leading-relaxed" style={{ color: C.text3 }}>
-            Or download an offline HTML file students can open without signing in.
+            Same offline HTML as above — share the file or the Cubit link.
           </p>
-          <button
-            type="button"
-            disabled={!canDownloadShareableHtml}
-            onClick={handleDownloadShareableQuizHtml}
-            className="inline-flex h-11 w-full items-center justify-center gap-2 text-[13px] font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-            style={{ background: C.red }}
-          >
-            <Download className="size-4" strokeWidth={2.2} />
-            Download quiz (HTML)
-          </button>
         </section>
 
         <div

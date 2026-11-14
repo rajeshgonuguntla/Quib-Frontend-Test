@@ -73,7 +73,8 @@ describe('downloadQuizAttemptHtml', () => {
     expect(html).toContain('id="intro"');
     expect(html).toContain('cubit-mark');
     expect(html).toContain('id="form-wrap" class="hide"');
-    expect(html).toContain('Submit and see score');
+    expect(html).toContain('Sign in on mycubit.app');
+    expect(html).toContain('mycubit.app');
     const formOnly = html.split('<script id="cubit-quiz-bank"')[0] ?? '';
     expect(formOnly).not.toContain('Correct answer');
   });
@@ -82,12 +83,13 @@ describe('downloadQuizAttemptHtml', () => {
     expect(jsonForHtmlScript({ x: '</script>' })).not.toContain('</script>');
   });
 
-  it('mapGeneratedQuestionsToInteractiveItems keeps rows with answers only', () => {
+  it('mapGeneratedQuestionsToInteractiveItems includes questions without answer keys', () => {
     const items = mapGeneratedQuestionsToInteractiveItems([
       { type: 'mcq', question: 'Q1', options: ['A', 'B'], answer: 'B' },
       { type: 'shortAnswer', question: 'Q2', answer: '' },
     ]);
-    expect(items).toHaveLength(1);
+    expect(items).toHaveLength(2);
     expect(items[0]?.correctAnswer).toBe('B');
+    expect(items[1]?.correctAnswer).toBe('');
   });
 });
