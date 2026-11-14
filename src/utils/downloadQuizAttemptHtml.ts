@@ -365,6 +365,7 @@ export type GeneratedQuizQuestionLike = {
   question: string;
   options?: string[];
   answer?: string;
+  correctAnswerIndex?: number;
   explanation?: string;
 };
 
@@ -374,13 +375,23 @@ export function mapGeneratedQuestionsToInteractiveItems(
 ): InteractiveQuizItem[] {
   return questions
     .filter((q) => q.question.trim().length > 0)
-    .map((q) => ({
-      question: q.question,
-      type: q.type,
-      options: q.options,
-      correctAnswer: String(q.answer ?? '').trim(),
-      explanation: q.explanation,
-    }))
+    .map((q) => {
+      let correctAnswer = String(q.answer ?? '').trim();
+      if (
+        !correctAnswer &&
+        typeof q.correctAnswerIndex === 'number' &&
+        q.options?.[q.correctAnswerIndex]
+      ) {
+        correctAnswer = q.options[q.correctAnswerIndex].trim();
+      }
+      return {
+        question: q.question,
+        type: q.type,
+        options: q.options,
+        correctAnswer,
+        explanation: q.explanation,
+      };
+    })
     .filter((q) => q.correctAnswer.length > 0);
 }
 

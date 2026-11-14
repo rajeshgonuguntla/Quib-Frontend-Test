@@ -13,6 +13,7 @@ import {
   fetchQuizDetail,
   isUuid,
   mapApiQuestionsToFrontend,
+  mapGenerateResponseQuestions,
 } from '../api/quizApi';
 
 interface Question {
@@ -141,6 +142,12 @@ const readSessionQuestionsForQuiz = (quizId: string): Question[] | null => {
   }
 };
 
+const persistQuestionsIfExportable = (next: Question[]): void => {
+  if (mapGeneratedQuestionsToInteractiveItems(next).length > 0) {
+    sessionStorage.setItem('generatedQuestions', JSON.stringify(next));
+  }
+};
+
 const mergeQuestionsWithAnswerKeys = (fromApi: Question[], fromCache: Question[]): Question[] => {
   if (fromCache.length === fromApi.length) {
     return fromApi.map((q, i) => ({
@@ -258,11 +265,19 @@ export function QuizSetup() {
       try {
         if (id && isUuid(id)) {
           const cachedQuestions = readSessionQuestionsForQuiz(id);
-          const data = await fetchQuizDetail(id, !cachedQuestions);
+          let data;
+          try {
+            data = await fetchQuizDetail(id, true);
+          } catch {
+            data = await fetchQuizDetail(id, false);
+          }
           if (!isMounted) return;
           let parsedQuestions = mapApiQuestionsToFrontend(data.questions ?? [], data.sections);
           if (cachedQuestions) {
             parsedQuestions = mergeQuestionsWithAnswerKeys(parsedQuestions, cachedQuestions);
+          }
+          if (!mapGeneratedQuestionsToInteractiveItems(parsedQuestions).length && cachedQuestions) {
+            parsedQuestions = cachedQuestions;
           }
           const parsedMeta: QuizMeta = {
             title: data.title ?? 'Generated Quiz',
@@ -272,7 +287,7 @@ export function QuizSetup() {
           };
           setQuestions(parsedQuestions);
           setVideoMeta(parsedMeta);
-          sessionStorage.setItem('generatedQuestions', JSON.stringify(parsedQuestions));
+          persistQuestionsIfExportable(parsedQuestions);
           sessionStorage.setItem('generatedVideoMeta', JSON.stringify(parsedMeta));
           if (data.sections) {
             sessionStorage.setItem('quizSections', JSON.stringify(data.sections));
@@ -296,8 +311,8 @@ export function QuizSetup() {
             },
           });
 
-          const parsedQuestions = response.data.questions?.length
-            ? mapApiQuestionsToFrontend(response.data.questions, response.data.sections)
+          const parsedQuestions = mapGenerateResponseQuestions(response.data).length
+            ? mapGenerateResponseQuestions(response.data)
             : extractQuestionsFromResponse(response.data);
           const parsedMeta: QuizMeta = {
             title: response.data.videoTitle?.trim() || 'Practice quiz',
@@ -317,7 +332,7 @@ export function QuizSetup() {
 
           setQuestions(parsedQuestions);
           setVideoMeta(parsedMeta);
-          sessionStorage.setItem('generatedQuestions', JSON.stringify(parsedQuestions));
+          persistQuestionsIfExportable(parsedQuestions);
           sessionStorage.setItem('generatedVideoMeta', JSON.stringify(parsedMeta));
           if (response.data.sections) {
             sessionStorage.setItem('quizSections', JSON.stringify(response.data.sections));
@@ -353,8 +368,8 @@ export function QuizSetup() {
           },
         });
 
-        const parsedQuestions = response.data.questions?.length
-          ? mapApiQuestionsToFrontend(response.data.questions)
+        const parsedQuestions = mapGenerateResponseQuestions(response.data).length
+          ? mapGenerateResponseQuestions(response.data)
           : extractQuestionsFromResponse(response.data);
         const parsedMeta = extractMetaFromResponse(response.data, youtubeUrl);
 
@@ -369,7 +384,7 @@ export function QuizSetup() {
 
         setQuestions(parsedQuestions);
         setVideoMeta(parsedMeta);
-        sessionStorage.setItem('generatedQuestions', JSON.stringify(parsedQuestions));
+        persistQuestionsIfExportable(parsedQuestions);
         sessionStorage.setItem('generatedVideoMeta', JSON.stringify(parsedMeta));
         if (response.data.quizId) {
           sessionStorage.setItem('currentQuizId', response.data.quizId);
@@ -609,7 +624,7 @@ export function QuizSetup() {
           </button>
           {!canDownloadShareableHtml && (
             <p className="text-[11px] leading-relaxed" style={{ color: C.text3, fontFamily: 'var(--mono)' }}>
-              Waiting for answer keys from generation…
+              Answer keys did not load — sign in, finish generation, and run an updated API (exportQuestions).
             </p>
           )}
         </div>

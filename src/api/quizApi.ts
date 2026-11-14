@@ -9,6 +9,13 @@ export interface ApiQuizSection {
   timeLimitSeconds?: number;
 }
 
+/** Present only on generate responses for the quiz owner (offline HTML export). */
+export interface ApiQuizGeneratePayload {
+  questions?: ApiQuizQuestion[];
+  exportQuestions?: ApiQuizQuestion[];
+  sections?: ApiQuizSection[];
+}
+
 export interface ApiQuizQuestion {
   id?: string;
   sectionId?: string;
@@ -28,6 +35,7 @@ export interface FrontendQuestion {
   question: string;
   options?: string[];
   answer?: string;
+  correctAnswerIndex?: number;
   explanation?: string;
   sectionKey?: string;
   sectionTitle?: string;
@@ -65,6 +73,17 @@ export function mapApiQuestionType(type?: string): FrontendQuestion['type'] {
   return 'mcq';
 }
 
+export function mapGenerateResponseQuestions(
+  payload: ApiQuizGeneratePayload,
+): FrontendQuestion[] {
+  const raw =
+    payload.exportQuestions && payload.exportQuestions.length > 0
+      ? payload.exportQuestions
+      : payload.questions;
+  if (!raw?.length) return [];
+  return mapApiQuestionsToFrontend(raw, payload.sections);
+}
+
 export function mapApiQuestionsToFrontend(
   questions: ApiQuizQuestion[],
   sections?: ApiQuizSection[]
@@ -85,6 +104,8 @@ export function mapApiQuestionsToFrontend(
       question: q.question?.trim() ?? '',
       options: q.options,
       answer: fromField || fromIndex || undefined,
+      correctAnswerIndex:
+        typeof q.correctAnswerIndex === 'number' ? q.correctAnswerIndex : undefined,
       explanation: q.explanation,
       sectionKey: q.sectionKey,
       sectionTitle: q.sectionKey ? titleByKey.get(q.sectionKey) : undefined,
