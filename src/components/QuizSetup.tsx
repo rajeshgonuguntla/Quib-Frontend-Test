@@ -12,11 +12,14 @@ import {
 import { useTheme, getC } from './ThemeContext';
 import {
   examBlueprintPreview,
+  examSectionRowsFromApi,
   defaultQuizTimeLimitSeconds,
   fetchQuizDetail,
   isUuid,
   mapApiQuestionsToFrontend,
+  type ApiQuizSection,
 } from '../api/quizApi';
+import { resolveExamType } from '../utils/examType';
 
 interface Question {
   id: number;
@@ -205,12 +208,24 @@ const extractMetaFromResponse = (payload: unknown, fallbackUrl: string): QuizMet
   };
 };
 
+const readStoredSections = (): ApiQuizSection[] | undefined => {
+  try {
+    const raw = sessionStorage.getItem('quizSections');
+    if (!raw) return undefined;
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as ApiQuizSection[]) : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
 
 export function QuizSetup() {
   const { isDark } = useTheme();
   const C = getC(isDark);
   const [copied, setCopied] = useState(false);
   const [loadedExamType, setLoadedExamType] = useState<string | null>(null);
+  const [apiSections, setApiSections] = useState<ApiQuizSection[] | undefined>(readStoredSections);
 
   const navigate = useNavigate();
   const { id } = useParams();
@@ -252,7 +267,9 @@ export function QuizSetup() {
       : `${Math.ceil(questionCount * 1.5)} minutes`,
     examType: blueprint ? examKind : promptRequest ? examType : undefined,
     sections: blueprint?.sections,
-    sectionRows: blueprint?.sectionRows ?? [],
+    sectionRows: blueprint?.sectionRows?.length
+      ? blueprint.sectionRows
+      : examSectionRowsFromApi(apiSections),
     displayTitle: blueprint?.displayTitle,
     practiceLabel: blueprint?.practiceLabel,
     minutes: blueprint?.minutes ?? Math.ceil(questionCount * 1.5),
@@ -306,6 +323,7 @@ export function QuizSetup() {
           sessionStorage.setItem('generatedVideoMeta', JSON.stringify(parsedMeta));
           if (data.sections) {
             sessionStorage.setItem('quizSections', JSON.stringify(data.sections));
+            setApiSections(data.sections);
           }
           if (data.examType) {
             sessionStorage.setItem('quizExamType', data.examType);
@@ -317,9 +335,14 @@ export function QuizSetup() {
         }
 
         if (promptRequest.trim()) {
+          const generateExamType = resolveExamType(
+            (location.state?.examType as string | undefined) || 'custom',
+            promptRequest,
+          );
+          sessionStorage.setItem('quizExamType', generateExamType);
           const response = await axios.post('/api/quiz/generate-from-prompt', {
             prompt: promptRequest.trim(),
-            examType,
+            examType: generateExamType,
             config: {
               difficulty: location.state?.difficulty || 'medium',
               timedExam: true,
@@ -352,15 +375,20 @@ export function QuizSetup() {
           sessionStorage.setItem('generatedVideoMeta', JSON.stringify(parsedMeta));
           if (response.data.sections) {
             sessionStorage.setItem('quizSections', JSON.stringify(response.data.sections));
+            setApiSections(response.data.sections);
           }
-          if (response.data.examType) {
-            sessionStorage.setItem('quizExamType', response.data.examType);
-            setLoadedExamType(response.data.examType);
-          }
+          const resolvedType =
+            (typeof response.data.examType === 'string' && response.data.examType.trim()) ||
+            generateExamType;
+          sessionStorage.setItem('quizExamType', resolvedType);
+          setLoadedExamType(resolvedType);
           if (response.data.quizId) {
             sessionStorage.setItem('currentQuizId', response.data.quizId);
             if (id === 'new' || !id) {
-              navigate(`/quiz-setup/${response.data.quizId}`, { replace: true, state: location.state });
+              navigate(`/quiz-setup/${response.data.quizId}`, {
+                replace: true,
+                state: { ...location.state, examType: resolvedType },
+              });
             }
           }
           setProgress(100);

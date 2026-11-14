@@ -76,6 +76,7 @@ Reject diffs that look like generic AI UI:
 - Sections table: title, subtitle, question count or `Essay · self-score`, minutes.
 - Phone: pills as a text line; share block in flow; **Start quiz** sticky at the bottom, ~44px.
 - Cubit orange primary. No neon green, no second palette.
+- GRE = 54 questions / 118 min / 5 section rows (AWA self-score + verbal 12/15 + quant 12/15). SAT = 98 / 134 / 4. Custom uses the generated count (cap 60) and real API sections — never a fake 60/90/1 row because the model titled it GRE. Infer GRE/SAT from the prompt when the Custom chip is still selected.
 
 ## In-app quiz results
 
@@ -86,6 +87,15 @@ Reject diffs that look like generic AI UI:
 - Right card: percent, section scores, jump-to-question grid (selected cell filled), **Retake quiz**, **Download report**. Clicking a number loads that question on the left.
 - Phone: jump grid under the question (~44px cells); **Retake quiz** + **Download report** sticky at the bottom, ~44px.
 - Incorrect uses `#ef4444`, not Cubit orange or neon green.
+
+## Offline quiz HTML results
+
+`buildQuizAttemptHtml` / Download report — the **same results layout** as [In-app quiz results](#in-app-quiz-results). Light, dark (`prefers-color-scheme`), and phone (~390px). One question at a time; jump-grid numbers load that question.
+
+**HTML-only differences**
+- Header right is **Open on Cubit**, not Back to dashboard.
+- No **Download report** — the student already has the file.
+- **Retake quiz** links to the Cubit quiz URL.
 
 ## Offline quiz HTML landing
 

@@ -26,6 +26,7 @@ import {
   type LearnerStartMode,
   type SampleExamType,
 } from '../utils/learnerStartMode';
+import { inferExamTypeFromText, resolveExamType } from '../utils/examType';
 import { StandaloneNotesWorkspace } from './StandaloneNotesWorkspace';
 
 export type { LearnerStartMode, SampleExamType } from '../utils/learnerStartMode';
@@ -86,6 +87,7 @@ export function StudentMasterInput({ className, signedIn = true }: StudentMaster
   const { isDark } = useTheme();
   const [mode, setMode] = useState<LearnerStartMode>('course');
   const [examType, setExamType] = useState<SampleExamType>('custom');
+  const [examPinned, setExamPinned] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [focused, setFocused] = useState(false);
@@ -175,7 +177,12 @@ export function StudentMasterInput({ className, signedIn = true }: StudentMaster
       }
       return {
         ok: true,
-        pending: { prompt: trimmed, examType, startTool: 'quiz', signInIntent: 'student' },
+        pending: {
+          prompt: trimmed,
+          examType: resolveExamType(examType, trimmed),
+          startTool: 'quiz',
+          signInIntent: 'student',
+        },
       };
     }
 
@@ -255,7 +262,13 @@ export function StudentMasterInput({ className, signedIn = true }: StudentMaster
         return;
       }
       setError(null);
-      navigate('/quiz-setup', { state: { prompt: trimmed, examType, startTool: 'quiz' as const } });
+      navigate('/quiz-setup', {
+        state: {
+          prompt: trimmed,
+          examType: resolveExamType(examType, trimmed),
+          startTool: 'quiz' as const,
+        },
+      });
       return;
     }
 
@@ -341,8 +354,12 @@ export function StudentMasterInput({ className, signedIn = true }: StudentMaster
                 type="text"
                 value={inputValue}
                 onChange={(e) => {
-                  setInputValue(e.target.value);
+                  const next = e.target.value;
+                  setInputValue(next);
                   if (error) setError(null);
+                  if (!examPinned && isQuizMode) {
+                    setExamType(inferExamTypeFromText(next));
+                  }
                 }}
                 onFocus={() => setFocused(true)}
                 onBlur={() => setFocused(false)}
@@ -381,7 +398,10 @@ export function StudentMasterInput({ className, signedIn = true }: StudentMaster
                     <button
                       key={opt.id}
                       type="button"
-                      onClick={() => setExamType(opt.id)}
+                      onClick={() => {
+                        setExamType(opt.id);
+                        setExamPinned(true);
+                      }}
                       className="flex h-6 shrink-0 items-center rounded-full px-2 text-[10px] transition-colors"
                       style={{
                         fontWeight: active ? 700 : 600,
