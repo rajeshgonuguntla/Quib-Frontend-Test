@@ -11,10 +11,7 @@ import {
   type ApiAttemptSummary,
   type ApiSectionScore,
 } from '../api/quizApi';
-import {
-  downloadInteractiveQuizHtml,
-  downloadQuizAttemptHtmlReport,
-} from '../utils/downloadQuizAttemptHtml';
+import { downloadQuizAttemptHtmlReport } from '../utils/downloadQuizAttemptHtml';
 
 interface Question {
   id: number;
@@ -209,24 +206,6 @@ export function Results() {
 
   const canDownloadAttempt = questionReview.length > 0;
 
-  const handleDownloadShareableQuizHtml = () => {
-    if (questionReview.length === 0) return;
-    downloadInteractiveQuizHtml({
-      quizTitle,
-      channelName: videoMeta.channelName,
-      passPercent: 70,
-      questions: questionReview.map((q, i) => ({
-        question: q.question,
-        type: q.type,
-        options: questions[i]?.options,
-        correctAnswer: String(q.correctAnswer ?? ''),
-        explanation: q.explanation,
-      })),
-      takeQuizUrl: shareUrl,
-    });
-  };
-
-
   const toggleQuestion = (id: number) => {
     const newExpanded = new Set(expandedQuestions);
     if (newExpanded.has(id)) newExpanded.delete(id);
@@ -376,17 +355,6 @@ export function Results() {
                     onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = C.text2; }}
                   >
                     <Download className="w-4 h-4" /> Your attempt report (HTML)
-                  </button>
-                  <button
-                    type="button"
-                    disabled={!canDownloadAttempt}
-                    onClick={handleDownloadShareableQuizHtml}
-                    className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-[500] cursor-pointer transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{ background: 'transparent', border: 'none', color: C.text2, borderTop: `1px solid ${C.border}` }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'; e.currentTarget.style.color = C.text; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = C.text2; }}
-                  >
-                    <Share2 className="w-4 h-4" /> Shareable quiz (HTML)
                   </button>
                 </div>
               </div>
@@ -668,28 +636,17 @@ export function Results() {
         {/* Bottom Actions */}
         <div className="flex flex-wrap items-center justify-center gap-4">
           {canDownloadAttempt && (
-            <>
-              <button
-                type="button"
-                onClick={handleDownloadShareableQuizHtml}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-[500] cursor-pointer transition-colors"
-                style={{ background: C.red, border: 'none', color: '#fff' }}
-              >
-                <Share2 className="w-4 h-4" strokeWidth={2} />
-                Download quiz to share (HTML)
-              </button>
-              <button
-                type="button"
-                onClick={handleDownloadAttemptHtml}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-[500] cursor-pointer transition-colors"
-                style={{ background: 'transparent', border: `1px solid ${C.border2}`, color: C.text2 }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = C.bg2; e.currentTarget.style.color = C.text; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = C.text2; }}
-              >
-                <Download className="w-4 h-4" strokeWidth={2} />
-                Your attempt report (HTML)
-              </button>
-            </>
+            <button
+              type="button"
+              onClick={handleDownloadAttemptHtml}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-[500] cursor-pointer transition-colors"
+              style={{ background: 'transparent', border: `1px solid ${C.border2}`, color: C.text2 }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = C.bg2; e.currentTarget.style.color = C.text; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = C.text2; }}
+            >
+              <Download className="w-4 h-4" strokeWidth={2} />
+              Your attempt report (HTML)
+            </button>
           )}
           <button
             onClick={() => navigate('/dashboard')}

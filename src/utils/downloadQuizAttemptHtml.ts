@@ -360,6 +360,30 @@ export type InteractiveQuizItem = {
   explanation?: string;
 };
 
+export type GeneratedQuizQuestionLike = {
+  type: 'mcq' | 'trueFalse' | 'shortAnswer';
+  question: string;
+  options?: string[];
+  answer?: string;
+  explanation?: string;
+};
+
+/** Map freshly generated quiz questions (pre-attempt) into shareable HTML items. */
+export function mapGeneratedQuestionsToInteractiveItems(
+  questions: GeneratedQuizQuestionLike[],
+): InteractiveQuizItem[] {
+  return questions
+    .filter((q) => q.question.trim().length > 0)
+    .map((q) => ({
+      question: q.question,
+      type: q.type,
+      options: q.options,
+      correctAnswer: String(q.answer ?? '').trim(),
+      explanation: q.explanation,
+    }))
+    .filter((q) => q.correctAnswer.length > 0);
+}
+
 export type InteractiveQuizHtmlPayload = {
   quizTitle: string;
   channelName?: string;

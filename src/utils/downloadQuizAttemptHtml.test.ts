@@ -4,6 +4,7 @@ import {
   buildQuizAttemptHtml,
   escapeHtmlForExport,
   jsonForHtmlScript,
+  mapGeneratedQuestionsToInteractiveItems,
 } from './downloadQuizAttemptHtml';
 
 describe('downloadQuizAttemptHtml', () => {
@@ -79,5 +80,14 @@ describe('downloadQuizAttemptHtml', () => {
 
   it('jsonForHtmlScript escapes script-breaking sequences', () => {
     expect(jsonForHtmlScript({ x: '</script>' })).not.toContain('</script>');
+  });
+
+  it('mapGeneratedQuestionsToInteractiveItems keeps rows with answers only', () => {
+    const items = mapGeneratedQuestionsToInteractiveItems([
+      { type: 'mcq', question: 'Q1', options: ['A', 'B'], answer: 'B' },
+      { type: 'shortAnswer', question: 'Q2', answer: '' },
+    ]);
+    expect(items).toHaveLength(1);
+    expect(items[0]?.correctAnswer).toBe('B');
   });
 });
