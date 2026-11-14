@@ -12,6 +12,7 @@ import {
 import { useTheme, getC } from './ThemeContext';
 import {
   examBlueprintPreview,
+  defaultQuizTimeLimitSeconds,
   fetchQuizDetail,
   isUuid,
   mapApiQuestionsToFrontend,
@@ -531,6 +532,7 @@ export function QuizSetup() {
       channelName: videoMeta.channelName,
       examType: quizData.examType,
       passPercent: 70,
+      timeLimitSeconds: defaultQuizTimeLimitSeconds(questions.length),
       questions: interactiveItems,
       takeQuizUrl: cubitQuizLink,
       resultsSignInUrl: cubitPublicSignInUrl(),
