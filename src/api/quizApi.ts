@@ -210,6 +210,25 @@ export function examBlueprintPreview(examType: string): ExamBlueprintPreview {
   ]);
 }
 
+/** Map saved quiz sections onto the Quiz ready table (custom exams without a fixed blueprint). */
+export function examSectionRowsFromApi(sections?: ApiQuizSection[]): ExamBlueprintSectionRow[] {
+  if (!sections?.length) return [];
+  return sections
+    .slice()
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+    .map((s) => {
+      const raw = (s.title ?? s.sectionKey ?? 'Section').trim();
+      const parts = raw.split(/\s*[—–-]\s*/);
+      const seconds = s.timeLimitSeconds ?? 0;
+      return {
+        title: parts[0] || raw,
+        subtitle: parts[1],
+        questionsLabel: String(s.questionCount ?? 0),
+        minutes: seconds > 0 ? Math.max(1, Math.round(seconds / 60)) : 0,
+      };
+    });
+}
+
 export function isUuid(value: string | undefined): boolean {
   if (!value) return false;
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);

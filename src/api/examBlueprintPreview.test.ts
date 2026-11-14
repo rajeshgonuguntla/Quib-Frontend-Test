@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { examBlueprintPreview } from './quizApi';
+import { examBlueprintPreview, examSectionRowsFromApi } from './quizApi';
 
 describe('examBlueprintPreview', () => {
   it('matches Sept 2023 GRE objective form (+ AWA note)', () => {
@@ -18,5 +18,16 @@ describe('examBlueprintPreview', () => {
   it('keeps SAT digital shape', () => {
     const sat = examBlueprintPreview('sat');
     expect(sat.questions).toBe(98);
+  });
+
+  it('maps API sections onto Quiz ready rows', () => {
+    const rows = examSectionRowsFromApi([
+      { sectionKey: 's2', title: 'Verbal — Section 2', questionCount: 20, timeLimitSeconds: 1800, sortOrder: 2 },
+      { sectionKey: 's1', title: 'Verbal — Section 1', questionCount: 20, timeLimitSeconds: 1800, sortOrder: 1 },
+    ]);
+    expect(rows).toEqual([
+      { title: 'Verbal', subtitle: 'Section 1', questionsLabel: '20', minutes: 30 },
+      { title: 'Verbal', subtitle: 'Section 2', questionsLabel: '20', minutes: 30 },
+    ]);
   });
 });

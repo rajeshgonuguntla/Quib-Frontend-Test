@@ -10,7 +10,7 @@ import {
 } from './downloadQuizAttemptHtml';
 
 describe('downloadQuizAttemptHtml', () => {
-  it('escapes HTML in questions and answers', () => {
+  it('escapes HTML in questions and matches the in-app results chrome', () => {
     const html = buildQuizAttemptHtml({
       quizTitle: 'Test <b>quiz</b>',
       scorePercent: 80,
@@ -29,12 +29,19 @@ describe('downloadQuizAttemptHtml', () => {
         },
       ],
     });
-    expect(html).not.toContain('<script>');
+    expect(html).not.toContain('<script>alert');
     expect(html).toContain('&lt;script&gt;');
-    expect(html).toContain('A &amp; B');
+    expect(html).toContain('\\u003cscript');
     expect(html).toContain('80%');
-    expect(html).toContain('Correct answer');
-    expect(html).toContain('Your answer');
+    expect(html).toContain('Your results');
+    expect(html).toContain('Jump to a question');
+    expect(html).toContain('Retake quiz');
+    expect(html).toContain('Open on Cubit');
+    expect(html).toContain('All 1');
+    expect(html).toContain('Incorrect');
+    expect(html).toContain('Explanation');
+    expect(html).not.toContain('Attempt report');
+    expect(html).not.toContain('Your answer');
   });
 
   it('includes section scores when provided', () => {
@@ -44,12 +51,13 @@ describe('downloadQuizAttemptHtml', () => {
       correctCount: 39,
       totalCount: 54,
       passed: true,
-      sectionScores: [{ topic: 'Verbal 1', scorePercent: 75, totalCount: 12 }],
+      sectionScores: [{ topic: 'Verbal reasoning, section 1', scorePercent: 75, totalCount: 12, correctCount: 9 }],
       questions: [],
     });
-    expect(html).toContain('Section scores');
-    expect(html).toContain('Verbal 1');
+    expect(html).toContain('Verbal reasoning, section 1');
+    expect(html).toContain('9 of 12');
     expect(html).toContain('75%');
+    expect(html).toContain('Your results');
   });
 
   it('escapeHtmlForExport handles quotes', () => {
