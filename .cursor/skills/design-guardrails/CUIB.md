@@ -82,9 +82,9 @@ Reject diffs that look like generic AI UI:
 `ResultsScreen` / `/results/:id` — full-bleed (no sidebar). Light, dark, and phone (~390):
 
 - Header: Cubit lockup left, **Back to dashboard** right.
-- Left: `Results` kicker, **Your results**, large percent, `N of M correct`, Passed / Did not pass chip, exam meta, review copy, All / Wrong / Correct / Skipped filters, question list (kicker + prompt + Incorrect/Correct + Explanation).
-- Right card: percent, section scores, jump-to-question grid, **Retake quiz**, **Download report**.
-- Phone: no jump grid; **Retake quiz** + **Download report** sticky at the bottom, ~44px.
+- Left: `Results` kicker, **Your results**, large percent, `N of M correct`, Passed / Did not pass chip, exam meta, review copy, All / Wrong / Correct / Skipped filters, **one question at a time** (kicker + prompt + Incorrect/Correct + Explanation, Previous / Next).
+- Right card: percent, section scores, jump-to-question grid (selected cell filled), **Retake quiz**, **Download report**. Clicking a number loads that question on the left.
+- Phone: jump grid under the question (~44px cells); **Retake quiz** + **Download report** sticky at the bottom, ~44px.
 - Incorrect uses `#ef4444`, not Cubit orange or neon green.
 
 ## Offline quiz HTML landing

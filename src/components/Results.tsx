@@ -73,7 +73,6 @@ export function Results() {
   const location = useLocation();
   const { isDark } = useTheme();
   const C = getC(isDark);
-  const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const [filter, setFilter] = useState<ResultsFilter>('all');
   const [loadedResult, setLoadedResult] = useState<AttemptResult | undefined>(location.state?.result);
   const [resultsError, setResultsError] = useState<string | null>(null);
@@ -339,21 +338,6 @@ export function Results() {
         counts={counts}
         questions={reviewRows}
         sections={sections}
-        expanded={expanded}
-        onToggle={(index) => {
-          setExpanded((prev) => {
-            const next = new Set(prev);
-            if (next.has(index)) next.delete(index);
-            else next.add(index);
-            return next;
-          });
-        }}
-        onJump={(index) => {
-          setFilter('all');
-          requestAnimationFrame(() => {
-            document.getElementById(`result-q-${index}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          });
-        }}
         onRetake={() => navigate(`/quiz/${id}`)}
         onDownload={handleDownloadAttemptHtml}
         canDownload={reviewRows.length > 0}
