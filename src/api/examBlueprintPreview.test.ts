@@ -11,7 +11,7 @@ describe('examBlueprintPreview', () => {
     expect(gre.sections[0]).toMatch(/Analytical writing/i);
     expect(gre.sections.some((s) => s.includes('12') && s.includes('18'))).toBe(true);
     expect(gre.sectionRows.some((s) => s.minutes === 26 && s.questionsLabel === '15')).toBe(true);
-    expect(gre.sectionRows[0]?.subtitle).toBe('Analyze an issue');
+    expect(gre.sectionRows[0]?.subtitle).toBe('Analyze an Issue');
     expect(gre.practiceLabel).toBe('GRE practice');
   });
 

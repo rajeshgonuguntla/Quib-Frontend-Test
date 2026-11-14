@@ -192,7 +192,7 @@ export function examBlueprintPreview(examType: string): ExamBlueprintPreview {
       [
         {
           title: 'Analytical writing',
-          subtitle: 'Analyze an issue',
+          subtitle: 'Analyze an Issue',
           questionsLabel: 'Essay · self-score',
           minutes: 30,
         },
