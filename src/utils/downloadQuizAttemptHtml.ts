@@ -14,6 +14,11 @@ export function cubitPublicQuizUrl(quizId?: string | null): string {
   return CUBIT_APP_ORIGIN;
 }
 
+/** Student Google sign-in on the live app (landing hero). */
+export function cubitPublicSignInUrl(): string {
+  return `${CUBIT_APP_ORIGIN}/#ask`;
+}
+
 const CUBIT_EXPORT_FONTS = `
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -828,10 +833,8 @@ function buildExportQuestionPanels(questions: InteractiveQuizItem[]): string {
 export function buildInteractiveQuizHtml(payload: InteractiveQuizHtmlPayload): string {
   const title = escapeHtmlForExport(payload.quizTitle);
   const passAt = payload.passPercent ?? 70;
-  const resultsSignInUrl = escapeHtmlForExport(
-    payload.resultsSignInUrl ?? payload.takeQuizUrl ?? CUBIT_APP_ORIGIN,
-  );
-  const takeQuizUrl = escapeHtmlForExport(payload.takeQuizUrl ?? resultsSignInUrl);
+  const signInHref = payload.resultsSignInUrl ?? cubitPublicSignInUrl();
+  const takeQuizUrl = escapeHtmlForExport(payload.takeQuizUrl ?? cubitPublicQuizUrl());
   const questionCount = payload.questions.length;
   const generatedLine = escapeHtmlForExport(formatGeneratedStamp(payload.generatedAt));
   const questionPanels = buildExportQuestionPanels(payload.questions);
@@ -858,7 +861,7 @@ export function buildInteractiveQuizHtml(payload: InteractiveQuizHtmlPayload): s
     <p class="ready-kicker">Quiz ready</p>
     <h1 id="ready-heading" class="ready-title">${title}</h1>
     <p class="ready-meta">${escapeHtmlForExport(metaLine)}</p>
-    <p class="ready-detail">Review the details, then start when you are ready. Scored results are on mycubit.app after you sign in and submit.</p>
+    <p class="ready-detail">Review the details, then start when you are ready. After you submit, you will sign in on mycubit.app for scored results.</p>
     <button type="button" class="btn-accent" id="start-btn">Start quiz</button>
   </section>
 
@@ -881,31 +884,17 @@ export function buildInteractiveQuizHtml(payload: InteractiveQuizHtmlPayload): s
     </main>
   </div>
 
-  <section id="results" class="results-panel hide" aria-live="polite" aria-hidden="true">
-    ${cubitLogoLockupHtml()}
-    <p class="ready-kicker" style="margin-top:1.25rem">Next step</p>
-    <div class="results-card">
-      <p class="results-title">Results are on Cubit</p>
-      <p class="results-copy">Sign in on mycubit.app, take this quiz there, and your score and question review will appear after you submit.</p>
-      <a class="btn-accent-link" href="${resultsSignInUrl}" rel="noopener noreferrer">Sign in on mycubit.app</a>
-    </div>
-    <button type="button" class="btn-accent btn-ghost" id="retry-btn" style="margin-top:0.75rem">Back to start</button>
-  </section>
-
   <p class="footer-note">Exported from ${escapeHtmlForExport(BRAND_NAME)}. <a href="${takeQuizUrl}">Open on ${escapeHtmlForExport(BRAND_NAME)}</a></p>
 
   <script>
   (function () {
     var TOTAL = ${questionCount};
     var current = 0;
+    var SIGN_IN_URL = ${JSON.stringify(signInHref)};
     var intro = document.getElementById('intro');
     var shell = document.getElementById('quiz-shell');
-    var results = document.getElementById('results');
     var startBtn = document.getElementById('start-btn');
-    var retryBtn = document.getElementById('retry-btn');
     var headerSubmit = document.getElementById('header-submit');
-    var form = document.getElementById('quiz-form');
-    var reduceMotion = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     function panels() {
       return Array.prototype.slice.call(document.querySelectorAll('.question-panel'));
@@ -922,12 +911,8 @@ export function buildInteractiveQuizHtml(payload: InteractiveQuizHtmlPayload): s
       });
     }
 
-    function finishToResults() {
-      shell.classList.add('hide');
-      shell.setAttribute('aria-hidden', 'true');
-      results.classList.remove('hide');
-      results.removeAttribute('aria-hidden');
-      window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
+    function goToSignIn() {
+      window.location.assign(SIGN_IN_URL);
     }
 
     startBtn.addEventListener('click', function () {
@@ -968,25 +953,12 @@ export function buildInteractiveQuizHtml(payload: InteractiveQuizHtmlPayload): s
         return;
       }
       if (action === 'submit') {
-        finishToResults();
+        goToSignIn();
       }
     });
 
     headerSubmit.addEventListener('click', function () {
-      finishToResults();
-    });
-
-    retryBtn.addEventListener('click', function () {
-      form.reset();
-      document.querySelectorAll('.opt-btn.is-selected').forEach(function (b) { b.classList.remove('is-selected'); });
-      results.classList.add('hide');
-      results.setAttribute('aria-hidden', 'true');
-      shell.classList.add('hide');
-      shell.setAttribute('aria-hidden', 'true');
-      intro.classList.remove('hide');
-      intro.removeAttribute('aria-hidden');
-      showPanel(0);
-      window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
+      goToSignIn();
     });
   })();
   </script>

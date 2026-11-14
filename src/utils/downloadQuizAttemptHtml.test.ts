@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildInteractiveQuizHtml,
   buildQuizAttemptHtml,
+  cubitPublicSignInUrl,
   escapeHtmlForExport,
   jsonForHtmlScript,
   mapGeneratedQuestionsToInteractiveItems,
@@ -74,14 +75,18 @@ describe('downloadQuizAttemptHtml', () => {
     expect(html).toContain('Multiple choice');
     expect(html).toContain('opt-btn');
     expect(html).toContain('Submit quiz');
-    expect(html).toContain('Sign in on mycubit.app');
-    expect(html).toContain('mycubit.app');
+    expect(html).toContain('mycubit.app/#ask');
+    expect(html).toContain('goToSignIn');
     expect(html).not.toContain('cubit-quiz-bank');
     expect(html.split('<script>')[0] ?? '').not.toContain('Correct answer');
   });
 
   it('jsonForHtmlScript escapes script-breaking sequences', () => {
     expect(jsonForHtmlScript({ x: '</script>' })).not.toContain('</script>');
+  });
+
+  it('cubitPublicSignInUrl is the live landing sign-in', () => {
+    expect(cubitPublicSignInUrl()).toBe('https://mycubit.app/#ask');
   });
 
   it('mapGeneratedQuestionsToInteractiveItems includes questions without answer keys', () => {
