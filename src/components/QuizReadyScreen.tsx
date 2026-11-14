@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
-import { Check, ChevronLeft, Copy } from 'lucide-react';
+import { Check, ChevronLeft } from 'lucide-react';
 import { QuibLogo } from './QuibLogo';
 import type { ExamBlueprintSectionRow } from '../api/quizApi';
 import type { getC } from './ThemeContext';
@@ -45,7 +45,7 @@ export function QuizSetupChrome({
         className="sticky top-0 z-50 px-5 py-3.5 md:px-8"
         style={{ background: C.bg, borderBottom: `1px solid ${C.border}` }}
       >
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3">
           <Link to="/dashboard" className="no-underline" style={{ color: C.text }}>
             <QuibLogo size={20} wordmarkClassName="text-[1.05rem] font-[700] tracking-tight" />
           </Link>
@@ -115,10 +115,10 @@ export function QuizReadyScreen({
         <button
           type="button"
           onClick={onCopyLink}
-          className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-lg px-3 text-[13px] font-medium"
+          className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-lg px-3.5 text-[13px] font-medium"
           style={{ border: `1px solid ${C.border}`, color: C.text, background: 'transparent' }}
         >
-          {copied ? <Check className="size-3.5" strokeWidth={2.2} /> : <Copy className="size-3.5" strokeWidth={2.2} />}
+          {copied ? <Check className="size-3.5" strokeWidth={2.2} /> : null}
           {copied ? 'Copied' : 'Copy link'}
         </button>
       </div>
@@ -138,7 +138,7 @@ export function QuizReadyScreen({
   );
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-5 py-8 pb-24 md:grid md:grid-cols-[minmax(0,1fr)_minmax(16.5rem,20.5rem)] md:items-start md:gap-12 md:px-8 md:py-10 md:pb-10 lg:gap-16">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-5 py-8 pb-28 md:grid md:grid-cols-[minmax(0,1fr)_minmax(16.5rem,20.5rem)] md:items-start md:gap-12 md:px-8 md:py-10 md:pb-10 lg:gap-16">
       <div className="min-w-0">
         <p
           className="mb-2 text-[11px]"
@@ -212,7 +212,7 @@ export function QuizReadyScreen({
               Sections
             </p>
             <div
-              className="mb-1 hidden grid-cols-[1fr_7.5rem_4.5rem] gap-3 pb-2 text-[11px] md:grid"
+              className="mb-1 hidden grid-cols-[minmax(0,1fr)_9.5rem_4.75rem] gap-3 pb-2 text-[11px] md:grid"
               style={{ color: C.text3, borderBottom: `1px solid ${C.border}` }}
             >
               <span>Section</span>
@@ -220,32 +220,60 @@ export function QuizReadyScreen({
               <span className="text-right">Time</span>
             </div>
             <ul>
-              {sections.map((row) => (
-                <li
-                  key={`${row.title}-${row.subtitle ?? ''}`}
-                  className="grid gap-1 py-3.5 md:grid-cols-[1fr_7.5rem_4.5rem] md:items-start md:gap-3"
-                  style={{ borderBottom: `1px solid ${C.border}` }}
-                >
-                  <div>
-                    <p className="text-[15px] font-semibold leading-snug">{row.title}</p>
-                    {row.subtitle ? (
-                      <p className="mt-0.5 text-[13px]" style={{ color: C.text3 }}>
-                        {row.subtitle}
+              {sections.map((row) => {
+                const counted = /^\d+$/.test(row.questionsLabel);
+                const phoneMeta = counted
+                  ? [row.subtitle, `${row.questionsLabel} questions`].filter(Boolean).join(' · ')
+                  : null;
+                return (
+                  <li
+                    key={`${row.title}-${row.subtitle ?? ''}`}
+                    className="py-3.5"
+                    style={{ borderBottom: `1px solid ${C.border}` }}
+                  >
+                    <div className="flex items-start justify-between gap-4 md:hidden">
+                      <div className="min-w-0">
+                        <p className="text-[15px] font-semibold leading-snug">{row.title}</p>
+                        {phoneMeta ? (
+                          <p className="mt-0.5 text-[13px]" style={{ color: C.text2 }}>
+                            {phoneMeta}
+                          </p>
+                        ) : (
+                          <>
+                            {row.subtitle ? (
+                              <p className="mt-0.5 text-[13px]" style={{ color: C.text3 }}>
+                                {row.subtitle}
+                              </p>
+                            ) : null}
+                            <p className="mt-0.5 text-[13px]" style={{ color: C.text2 }}>
+                              {row.questionsLabel}
+                            </p>
+                          </>
+                        )}
+                      </div>
+                      <p className="shrink-0 pt-0.5 text-[13px]" style={{ color: C.text2 }}>
+                        {row.minutes} min
                       </p>
-                    ) : null}
-                    <p className="mt-1 text-[13px] md:hidden" style={{ color: C.text2 }}>
-                      {row.questionsLabel}
-                      {row.questionsLabel.match(/^\d+$/) ? ' questions' : ''}
-                    </p>
-                  </div>
-                  <p className="hidden text-right text-[14px] md:block" style={{ color: C.text2 }}>
-                    {row.questionsLabel}
-                  </p>
-                  <p className="text-[13px] md:text-right md:text-[14px]" style={{ color: C.text2 }}>
-                    {row.minutes} min
-                  </p>
-                </li>
-              ))}
+                    </div>
+                    <div className="hidden grid-cols-[minmax(0,1fr)_9.5rem_4.75rem] items-start gap-3 md:grid">
+                      <div>
+                        <p className="text-[15px] font-semibold leading-snug">{row.title}</p>
+                        {row.subtitle ? (
+                          <p className="mt-0.5 text-[13px]" style={{ color: C.text3 }}>
+                            {row.subtitle}
+                          </p>
+                        ) : null}
+                      </div>
+                      <p className="text-right text-[14px]" style={{ color: C.text2 }}>
+                        {row.questionsLabel}
+                      </p>
+                      <p className="text-right text-[14px]" style={{ color: C.text2 }}>
+                        {row.minutes} min
+                      </p>
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           </section>
         ) : null}
@@ -270,8 +298,12 @@ export function QuizReadyScreen({
       </aside>
 
       <div
-        className="sticky bottom-0 -mx-5 mt-2 border-t px-5 py-3 md:hidden"
-        style={{ background: C.bg, borderColor: C.border }}
+        className="fixed inset-x-0 bottom-0 z-40 border-t px-5 py-3 md:hidden"
+        style={{
+          background: C.bg,
+          borderColor: C.border,
+          paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))',
+        }}
       >
         {startButton}
       </div>

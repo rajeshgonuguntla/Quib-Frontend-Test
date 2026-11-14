@@ -210,6 +210,7 @@ export function QuizSetup() {
   const { isDark } = useTheme();
   const C = getC(isDark);
   const [copied, setCopied] = useState(false);
+  const [loadedExamType, setLoadedExamType] = useState<string | null>(null);
 
   const navigate = useNavigate();
   const { id } = useParams();
@@ -218,7 +219,10 @@ export function QuizSetup() {
   const promptRequest =
     (location.state?.prompt as string | undefined) || sessionStorage.getItem('quizPrompt') || '';
   const examType =
-    (location.state?.examType as string | undefined) || sessionStorage.getItem('quizExamType') || 'custom';
+    loadedExamType ||
+    (location.state?.examType as string | undefined) ||
+    sessionStorage.getItem('quizExamType') ||
+    'custom';
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState(0);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -230,10 +234,11 @@ export function QuizSetup() {
     youtubeUrl,
   });
 
-  const blueprint = promptRequest ? examBlueprintPreview(examType) : null;
-  const questionCount =
-    questions.length ||
-    (blueprint ? blueprint.questions : location.state?.questionCount || 10);
+  const examKind = (examType || 'custom').toLowerCase();
+  const blueprint = examKind === 'gre' || examKind === 'sat' ? examBlueprintPreview(examKind) : null;
+  const questionCount = blueprint
+    ? blueprint.questions
+    : questions.length || location.state?.questionCount || 10;
   const quizData = {
     videoTitle: videoMeta.title,
     channel: videoMeta.channelName,
@@ -245,7 +250,7 @@ export function QuizSetup() {
     estimatedTime: blueprint
       ? `${blueprint.minutes} minutes`
       : `${Math.ceil(questionCount * 1.5)} minutes`,
-    examType: promptRequest ? examType : undefined,
+    examType: blueprint ? examKind : promptRequest ? examType : undefined,
     sections: blueprint?.sections,
     sectionRows: blueprint?.sectionRows ?? [],
     displayTitle: blueprint?.displayTitle,
@@ -265,7 +270,25 @@ export function QuizSetup() {
       try {
         if (id && isUuid(id)) {
           const cachedQuestions = readSessionQuestionsForQuiz(id);
-          const data = await fetchQuizDetail(id, false);
+          let data: Awaited<ReturnType<typeof fetchQuizDetail>>;
+          try {
+            data = await fetchQuizDetail(id, false);
+          } catch (err) {
+            if (!cachedQuestions?.length) throw err;
+            if (!isMounted) return;
+            setQuestions(cachedQuestions);
+            const metaRaw = sessionStorage.getItem('generatedVideoMeta');
+            if (metaRaw) {
+              try {
+                setVideoMeta(JSON.parse(metaRaw) as QuizMeta);
+              } catch {
+                /* keep default meta */
+              }
+            }
+            setProgress(100);
+            setLoading(false);
+            return;
+          }
           if (!isMounted) return;
           let parsedQuestions = mapApiQuestionsToFrontend(data.questions ?? [], data.sections);
           if (cachedQuestions) {
@@ -286,6 +309,7 @@ export function QuizSetup() {
           }
           if (data.examType) {
             sessionStorage.setItem('quizExamType', data.examType);
+            setLoadedExamType(data.examType);
           }
           setProgress(100);
           setLoading(false);
@@ -331,6 +355,7 @@ export function QuizSetup() {
           }
           if (response.data.examType) {
             sessionStorage.setItem('quizExamType', response.data.examType);
+            setLoadedExamType(response.data.examType);
           }
           if (response.data.quizId) {
             sessionStorage.setItem('currentQuizId', response.data.quizId);
@@ -545,7 +570,10 @@ export function QuizSetup() {
       resultsSignInUrl: cubitPublicSignInUrl(),
     });
   };
-  const readinessLabel = promptRequest ? 'Answer keys validated' : 'Transcript available';
+  const readinessLabel =
+    promptRequest || examKind === 'gre' || examKind === 'sat'
+      ? 'Answer keys validated'
+      : 'Transcript available';
   const sectionRows =
     quizData.sectionRows.length > 0
       ? quizData.sectionRows
