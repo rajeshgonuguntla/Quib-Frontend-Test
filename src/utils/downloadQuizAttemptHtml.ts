@@ -416,6 +416,7 @@ export function mapGeneratedQuestionsToInteractiveItems(
 export type InteractiveQuizHtmlPayload = {
   quizTitle: string;
   channelName?: string;
+  examType?: string;
   passPercent?: number;
   questions: InteractiveQuizItem[];
   takeQuizUrl?: string;
@@ -425,11 +426,13 @@ export type InteractiveQuizHtmlPayload = {
 };
 
 function formatGeneratedStamp(iso?: string): string {
-  if (!iso) return `Generated · ${BRAND_NAME}`;
+  if (!iso) return 'Generated';
   const when = Date.parse(iso);
-  if (!Number.isFinite(when)) return `Generated · ${BRAND_NAME}`;
-  const label = new Date(when).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
-  return `Generated ${label} · ${BRAND_NAME}`;
+  if (!Number.isFinite(when)) return 'Generated';
+  const d = new Date(when);
+  const date = d.toLocaleDateString(undefined, { dateStyle: 'medium' });
+  const time = d.toLocaleTimeString(undefined, { timeStyle: 'short' });
+  return `Generated ${date} · ${time}`;
 }
 
 function downloadHtmlFile(html: string, filename: string): void {
@@ -488,38 +491,122 @@ function cubitQuizTakingExportCss(): string {
     .hide { display: none !important; }
     #quiz-shell { display: flex; flex-direction: column; min-height: 100vh; }
     .ready-screen {
-      max-width: 36rem;
-      margin: 0 auto;
-      padding: 2rem 1.25rem 3rem;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2.5rem 1.25rem 3rem;
+    }
+    .landing-logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.65rem;
+      margin-bottom: 1.75rem;
+      color: var(--quiz-text);
+    }
+    .landing-logo img { width: 40px; height: 40px; object-fit: contain; }
+    .landing-logo-name {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      line-height: 1;
+    }
+    .ready-card {
+      width: 100%;
+      max-width: 28rem;
+      border: 1px solid var(--quiz-border);
+      border-radius: 1.15rem;
+      background: var(--quiz-card);
+      padding: 1.75rem 1.6rem 1.5rem;
     }
     .ready-kicker {
-      margin: 0 0 0.5rem;
+      margin: 0 0 0.55rem;
       font-size: 11px;
-      font-weight: 500;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
+      font-weight: 400;
+      letter-spacing: 0.04em;
       color: var(--quiz-text3);
       font-family: var(--mono);
     }
     .ready-title {
-      margin: 0 0 0.5rem;
-      font-size: 1.375rem;
-      font-weight: 600;
-      letter-spacing: -0.02em;
-      line-height: 1.35;
+      margin: 0;
+      font-size: 1.7rem;
+      font-weight: 700;
+      letter-spacing: -0.035em;
+      line-height: 1.2;
     }
-    .ready-meta {
-      margin: 0 0 1.75rem;
-      font-size: 0.8125rem;
-      color: var(--quiz-text2);
+    .ready-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      margin: 1.15rem 0 0;
+      padding: 1.05rem 0;
+      border-top: 1px solid var(--quiz-border);
+      border-bottom: 1px solid var(--quiz-border);
+      text-align: center;
+    }
+    .ready-stat {
+      padding: 0 0.4rem;
+    }
+    .ready-stat + .ready-stat {
+      border-left: 1px solid var(--quiz-border);
+    }
+    .ready-stat-val {
+      display: block;
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      font-variant-numeric: tabular-nums;
+      color: var(--quiz-text);
+    }
+    .ready-stat-label {
+      display: block;
+      margin-top: 0.2rem;
+      font-size: 0.72rem;
+      color: var(--quiz-text3);
+    }
+    .ready-gen {
+      margin: 0.9rem 0 0;
+      font-size: 0.7rem;
+      color: var(--quiz-text3);
+      font-family: var(--mono);
     }
     .ready-detail {
-      border-top: 1px solid var(--quiz-border);
-      padding-top: 1.25rem;
-      margin-bottom: 1.5rem;
-      font-size: 0.875rem;
+      margin: 1.15rem 0 0;
+      font-size: 0.9rem;
+      line-height: 1.45;
       color: var(--quiz-text2);
     }
+    .how-kicker {
+      margin: 1.35rem 0 0;
+      font-size: 11px;
+      color: var(--quiz-text3);
+      font-family: var(--mono);
+    }
+    .how-list {
+      list-style: none;
+      margin: 0.35rem 0 0;
+      padding: 0;
+    }
+    .how-list li {
+      padding: 0.85rem 0;
+      border-top: 1px solid var(--quiz-border);
+      font-size: 0.92rem;
+      font-weight: 500;
+      color: var(--quiz-text);
+    }
+    .how-list li:last-child { border-bottom: 1px solid var(--quiz-border); }
+    .ready-caption {
+      margin: 0.7rem 0 0;
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--quiz-text3);
+    }
+    .ready-footer {
+      margin-top: 1.75rem;
+      font-size: 0.75rem;
+      color: var(--quiz-text3);
+    }
+    .ready-footer a { color: var(--quiz-accent); text-decoration: none; }
     .btn-accent {
       display: inline-flex;
       align-items: center;
@@ -769,6 +856,13 @@ function cubitLogoLockupHtml(): string {
   </span>`;
 }
 
+function cubitLandingLogoHtml(): string {
+  return `<div class="landing-logo" aria-label="${escapeHtmlForExport(BRAND_NAME)}">
+    <img src="${CUBIT_LOGO_EXPORT}" width="40" height="40" alt="" />
+    <span class="landing-logo-name">${escapeHtmlForExport(BRAND_NAME)}</span>
+  </div>`;
+}
+
 function exportQuestionTypeLabel(type: InteractiveQuizItem['type']): string {
   if (type === 'mcq') return 'Multiple choice';
   if (type === 'trueFalse') return 'True/False';
@@ -838,14 +932,11 @@ export function buildInteractiveQuizHtml(payload: InteractiveQuizHtmlPayload): s
   const questionCount = payload.questions.length;
   const generatedLine = escapeHtmlForExport(formatGeneratedStamp(payload.generatedAt));
   const questionPanels = buildExportQuestionPanels(payload.questions);
-  const metaLine = [
-    payload.channelName?.trim(),
-    `${questionCount} questions`,
-    `${passAt}% to pass`,
-    generatedLine,
-  ]
-    .filter(Boolean)
-    .join(' · ');
+  const examLabel = (payload.examType ?? '').trim();
+  const thirdStat =
+    examLabel && examLabel.toLowerCase() !== 'custom'
+      ? examLabel.toUpperCase()
+      : 'Quiz';
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -858,11 +949,36 @@ export function buildInteractiveQuizHtml(payload: InteractiveQuizHtmlPayload): s
 </head>
 <body class="cuib-app">
   <section id="intro" class="ready-screen" aria-labelledby="ready-heading">
-    <p class="ready-kicker">Quiz ready</p>
-    <h1 id="ready-heading" class="ready-title">${title}</h1>
-    <p class="ready-meta">${escapeHtmlForExport(metaLine)}</p>
-    <p class="ready-detail">Review the details, then start when you are ready. After you submit, you will sign in on mycubit.app for scored results.</p>
-    <button type="button" class="btn-accent" id="start-btn">Start quiz</button>
+    ${cubitLandingLogoHtml()}
+    <div class="ready-card">
+      <p class="ready-kicker">Quiz ready</p>
+      <h1 id="ready-heading" class="ready-title">${title}</h1>
+      <div class="ready-stats">
+        <div class="ready-stat">
+          <span class="ready-stat-val">${questionCount}</span>
+          <span class="ready-stat-label">questions</span>
+        </div>
+        <div class="ready-stat">
+          <span class="ready-stat-val">${passAt}%</span>
+          <span class="ready-stat-label">to pass</span>
+        </div>
+        <div class="ready-stat">
+          <span class="ready-stat-val">${escapeHtmlForExport(thirdStat)}</span>
+          <span class="ready-stat-label">practice</span>
+        </div>
+      </div>
+      <p class="ready-gen">${generatedLine}</p>
+      <p class="ready-detail">Review the details, then start when you are ready.</p>
+      <p class="how-kicker">How it works</p>
+      <ul class="how-list">
+        <li>Answer at your own pace</li>
+        <li>Submit when you're done</li>
+        <li>Sign in on mycubit.app to see your score</li>
+      </ul>
+      <button type="button" class="btn-accent" id="start-btn" style="margin-top:1.25rem;border-radius:0.75rem;font-size:0.95rem">Start quiz</button>
+      <p class="ready-caption">No sign-in needed to start.</p>
+    </div>
+    <p class="ready-footer">Exported from ${escapeHtmlForExport(BRAND_NAME)} · <a href="${takeQuizUrl}">Open on ${escapeHtmlForExport(BRAND_NAME)}</a></p>
   </section>
 
   <div id="quiz-shell" class="hide" aria-hidden="true">
@@ -883,8 +999,6 @@ export function buildInteractiveQuizHtml(payload: InteractiveQuizHtmlPayload): s
       </div>
     </main>
   </div>
-
-  <p class="footer-note">Exported from ${escapeHtmlForExport(BRAND_NAME)}. <a href="${takeQuizUrl}">Open on ${escapeHtmlForExport(BRAND_NAME)}</a></p>
 
   <script>
   (function () {

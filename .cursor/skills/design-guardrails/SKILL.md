@@ -40,6 +40,9 @@ Read [CUIB.md](CUIB.md) before judging a diff. Source of truth is `src/styles/ap
 - [ ] Sentence case, specific labels. No “Get started on your journey” filler.
 - [ ] Motion is functional (state change), not decorative entrance spam. Honor `prefers-reduced-motion` if adding animation.
 
+**Offline quiz HTML**
+- [ ] If the diff builds or restyles exported quiz HTML (`downloadQuizAttemptHtml.ts`), the **landing / Quiz ready** screen matches [CUIB.md — Offline quiz HTML landing](CUIB.md#offline-quiz-html-landing). Do not invent a second intro.
+
 **Scope**
 - [ ] No drive-by refactors or unrelated files.
 - [ ] No secrets (`.env`, credentials).
