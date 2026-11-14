@@ -82,12 +82,13 @@ describe('downloadQuizAttemptHtml', () => {
     expect(jsonForHtmlScript({ x: '</script>' })).not.toContain('</script>');
   });
 
-  it('mapGeneratedQuestionsToInteractiveItems keeps rows with answers only', () => {
+  it('mapGeneratedQuestionsToInteractiveItems includes questions without answer keys', () => {
     const items = mapGeneratedQuestionsToInteractiveItems([
       { type: 'mcq', question: 'Q1', options: ['A', 'B'], answer: 'B' },
       { type: 'shortAnswer', question: 'Q2', answer: '' },
     ]);
-    expect(items).toHaveLength(1);
+    expect(items).toHaveLength(2);
     expect(items[0]?.correctAnswer).toBe('B');
+    expect(items[1]?.correctAnswer).toBe('');
   });
 });

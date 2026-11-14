@@ -391,8 +391,7 @@ export function mapGeneratedQuestionsToInteractiveItems(
         correctAnswer,
         explanation: q.explanation,
       };
-    })
-    .filter((q) => q.correctAnswer.length > 0);
+    });
 }
 
 export type InteractiveQuizHtmlPayload = {
@@ -431,6 +430,12 @@ export function buildInteractiveQuizHtml(payload: InteractiveQuizHtmlPayload): s
     ? `<p class="meta">${escapeHtmlForExport(payload.channelName)}</p>`
     : '';
   const passAt = payload.passPercent ?? 70;
+  const practiceOnly =
+    payload.questions.length > 0 &&
+    payload.questions.every((q) => !String(q.correctAnswer || '').trim());
+  const introLead = practiceOnly
+    ? 'Practice offline in this file. For scoring and feedback, use the Cubit link below.'
+    : 'Answer every question, then submit for an instant score in this file. Works offline after download.';
   const quizLink = payload.takeQuizUrl
     ? `<p class="footer-link"><a href="${escapeHtmlForExport(payload.takeQuizUrl)}">Take on ${escapeHtmlForExport(BRAND_NAME)}</a></p>`
     : '';
@@ -548,7 +553,7 @@ export function buildInteractiveQuizHtml(payload: InteractiveQuizHtmlPayload): s
         </ul>
         <p class="intro-gen">${generatedLine}</p>
       </div>
-      <p class="meta">Answer every question, then submit for an instant score in this file. Works offline after download.</p>
+      <p class="meta">${introLead}</p>
       <button type="button" class="primary wide" id="start-btn">Start quiz</button>
     </section>
     <div id="form-wrap" class="hide" aria-hidden="true">
@@ -578,6 +583,7 @@ export function buildInteractiveQuizHtml(payload: InteractiveQuizHtmlPayload): s
   <script>
   (function () {
     var PASS_AT = ${passAt};
+    var PRACTICE_ONLY = ${practiceOnly ? 'true' : 'false'};
     var bankEl = document.getElementById('cubit-quiz-bank');
     var BANK = JSON.parse(bankEl.textContent || '[]');
     var intro = document.getElementById('intro');
@@ -635,22 +641,37 @@ export function buildInteractiveQuizHtml(payload: InteractiveQuizHtmlPayload): s
     form.addEventListener('submit', function (e) {
       e.preventDefault();
       var g = grade();
-      document.getElementById('score-pct').textContent = g.pct + '%';
       var pill = document.getElementById('pass-pill');
-      var passed = g.pct >= PASS_AT;
-      pill.textContent = passed ? 'Passed' : 'Not passed';
-      pill.className = 'pill ' + (passed ? 'pass' : 'fail');
-      document.getElementById('score-line').textContent = g.correct + ' of ' + g.total + ' correct';
-      review.innerHTML = g.rows.map(function (r) {
-        var qEl = document.querySelector('.qcard[data-q="' + r.i + '"] .qtext');
-        var qText = qEl ? qEl.textContent : 'Question ' + (r.i + 1);
-        var expl = r.meta.explanation ? '<div class="rlbl">Explanation</div><div>' + esc(r.meta.explanation) + '</div>' : '';
-        return '<div class="rcard ' + (r.ok ? 'ok' : 'bad') + '">' +
-          '<strong>' + esc(qText) + '</strong>' +
-          '<div class="rlbl">Your answer</div><div>' + esc(r.user || '—') + '</div>' +
-          (!r.ok ? '<div class="rlbl">Correct answer</div><div>' + esc(r.meta.correctAnswer) + '</div>' : '') +
-          expl + '</div>';
-      }).join('');
+      if (PRACTICE_ONLY) {
+        document.getElementById('score-pct').textContent = '—';
+        pill.textContent = 'Practice';
+        pill.className = 'pill';
+        document.getElementById('score-line').textContent =
+          'Answer keys are not in this export. Take on Cubit for a scored attempt.';
+        review.innerHTML = g.rows.map(function (r) {
+          var qEl = document.querySelector('.qcard[data-q="' + r.i + '"] .qtext');
+          var qText = qEl ? qEl.textContent : 'Question ' + (r.i + 1);
+          return '<div class="rcard">' +
+            '<strong>' + esc(qText) + '</strong>' +
+            '<div class="rlbl">Your answer</div><div>' + esc(r.user || '—') + '</div></div>';
+        }).join('');
+      } else {
+        document.getElementById('score-pct').textContent = g.pct + '%';
+        var passed = g.pct >= PASS_AT;
+        pill.textContent = passed ? 'Passed' : 'Not passed';
+        pill.className = 'pill ' + (passed ? 'pass' : 'fail');
+        document.getElementById('score-line').textContent = g.correct + ' of ' + g.total + ' correct';
+        review.innerHTML = g.rows.map(function (r) {
+          var qEl = document.querySelector('.qcard[data-q="' + r.i + '"] .qtext');
+          var qText = qEl ? qEl.textContent : 'Question ' + (r.i + 1);
+          var expl = r.meta.explanation ? '<div class="rlbl">Explanation</div><div>' + esc(r.meta.explanation) + '</div>' : '';
+          return '<div class="rcard ' + (r.ok ? 'ok' : 'bad') + '">' +
+            '<strong>' + esc(qText) + '</strong>' +
+            '<div class="rlbl">Your answer</div><div>' + esc(r.user || '—') + '</div>' +
+            (!r.ok ? '<div class="rlbl">Correct answer</div><div>' + esc(r.meta.correctAnswer) + '</div>' : '') +
+            expl + '</div>';
+        }).join('');
+      }
       formWrap.classList.add('hide');
       formWrap.setAttribute('aria-hidden', 'true');
       results.classList.remove('hide');

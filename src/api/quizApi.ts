@@ -9,13 +9,6 @@ export interface ApiQuizSection {
   timeLimitSeconds?: number;
 }
 
-/** Present only on generate responses for the quiz owner (offline HTML export). */
-export interface ApiQuizGeneratePayload {
-  questions?: ApiQuizQuestion[];
-  exportQuestions?: ApiQuizQuestion[];
-  sections?: ApiQuizSection[];
-}
-
 export interface ApiQuizQuestion {
   id?: string;
   sectionId?: string;
@@ -71,17 +64,6 @@ export function mapApiQuestionType(type?: string): FrontendQuestion['type'] {
   if (type === 'true_false') return 'trueFalse';
   if (type === 'short_answer') return 'shortAnswer';
   return 'mcq';
-}
-
-export function mapGenerateResponseQuestions(
-  payload: ApiQuizGeneratePayload,
-): FrontendQuestion[] {
-  const raw =
-    payload.exportQuestions && payload.exportQuestions.length > 0
-      ? payload.exportQuestions
-      : payload.questions;
-  if (!raw?.length) return [];
-  return mapApiQuestionsToFrontend(raw, payload.sections);
 }
 
 export function mapApiQuestionsToFrontend(
