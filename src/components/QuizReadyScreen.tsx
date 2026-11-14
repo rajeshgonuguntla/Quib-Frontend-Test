@@ -34,9 +34,11 @@ const kickerStyle = (C: Theme) => ({
 export function QuizSetupChrome({
   C,
   children,
+  backChevron = true,
 }: {
   C: Theme;
   children: ReactNode;
+  backChevron?: boolean;
 }) {
   return (
     <div
@@ -60,7 +62,7 @@ export function QuizSetupChrome({
             className="inline-flex h-11 items-center gap-0.5 text-[13px] no-underline"
             style={{ color: C.text2 }}
           >
-            <ChevronLeft className="size-3.5" strokeWidth={2.2} />
+            {backChevron ? <ChevronLeft className="size-3.5" strokeWidth={2.2} /> : null}
             Back to dashboard
           </Link>
         </div>

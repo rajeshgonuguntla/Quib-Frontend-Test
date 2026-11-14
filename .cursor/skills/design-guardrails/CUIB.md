@@ -77,6 +77,16 @@ Reject diffs that look like generic AI UI:
 - Phone: pills as a text line; share block in flow; **Start quiz** sticky at the bottom, ~44px.
 - Cubit orange primary. No neon green, no second palette.
 
+## In-app quiz results
+
+`ResultsScreen` / `/results/:id` — full-bleed (no sidebar). Light, dark, and phone (~390):
+
+- Header: Cubit lockup left, **Back to dashboard** right.
+- Left: `Results` kicker, **Your results**, large percent, `N of M correct`, Passed / Did not pass chip, exam meta, review copy, All / Wrong / Correct / Skipped filters, question list (kicker + prompt + Incorrect/Correct + Explanation).
+- Right card: percent, section scores, jump-to-question grid, **Retake quiz**, **Download report**.
+- Phone: no jump grid; **Retake quiz** + **Download report** sticky at the bottom, ~44px.
+- Incorrect uses `#ef4444`, not Cubit orange or neon green.
+
 ## Offline quiz HTML landing
 
 Source of truth for **downloaded practice quiz HTML** (`src/utils/downloadQuizAttemptHtml.ts` intro / `#intro`): the **same exam overview** as [In-app Quiz ready](#in-app-quiz-ready-after-generate). Light, dark (`prefers-color-scheme`), and phone (~390px). Do not ship a second intro (centered marketing card, how-it-works list, pass-% stats).
