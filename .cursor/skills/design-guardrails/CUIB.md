@@ -66,6 +66,17 @@ Reject diffs that look like generic AI UI:
 - Extra fonts (Playfair, Space Grotesk, etc.) when Inter is already the product face
 - “Unlock your potential”, “seamless experience”, emoji in product chrome
 
+## In-app Quiz ready (after generate)
+
+`QuizReadyScreen` / `/quiz-setup/:id` — full-bleed (no sidebar). Light, dark, and phone (~390):
+
+- Header: Cubit lockup left, **Back to dashboard** right.
+- Desktop: title + pills + stats + section table on the left; sticky **Start quiz** card on the right (share URL, Copy link, Download offline HTML).
+- Stats: questions / min / sections, hairline columns, no tinted chips.
+- Sections table: title, subtitle, question count or `Essay · self-score`, minutes.
+- Phone: pills as a text line; share block in flow; **Start quiz** sticky at the bottom, ~44px.
+- Cubit orange primary. No neon green, no second palette.
+
 ## Offline quiz HTML landing
 
 Source of truth for **downloaded practice quiz HTML** (`src/utils/downloadQuizAttemptHtml.ts` intro / `#intro`). Match this composition in light, dark (`prefers-color-scheme`), and phone (~390px). Do not use a marketing kicker + stacked radios as the first screen.

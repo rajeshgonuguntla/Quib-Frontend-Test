@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router';
 import axios from 'axios';
-import { ShellPage } from '../shell/ShellPage';
-import { Play, ArrowRight, Copy, Check, AlertCircle, Download } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
+import { QuizReadyScreen, QuizSetupChrome } from './QuizReadyScreen';
 import {
   cubitPublicQuizUrl,
   cubitPublicSignInUrl,
@@ -247,6 +247,10 @@ export function QuizSetup() {
       : `${Math.ceil(questionCount * 1.5)} minutes`,
     examType: promptRequest ? examType : undefined,
     sections: blueprint?.sections,
+    sectionRows: blueprint?.sectionRows ?? [],
+    displayTitle: blueprint?.displayTitle,
+    practiceLabel: blueprint?.practiceLabel,
+    minutes: blueprint?.minutes ?? Math.ceil(questionCount * 1.5),
   };
 
   useEffect(() => {
@@ -436,14 +440,11 @@ export function QuizSetup() {
 
   if (loading) {
     return (
-      <ShellPage
-        title="Preparing your quiz"
-        description={
-          promptRequest
-            ? `Full ${examType.toUpperCase()} practice exam — this can take several minutes`
-            : 'This usually takes 20–30 seconds'
-        }
-      >
+      <QuizSetupChrome C={C}>
+        <div className="mx-auto flex w-full max-w-md flex-col gap-10 px-5 py-16">
+          <p className="text-[11px]" style={{ color: C.text3, fontFamily: 'var(--mono)' }}>
+            Preparing your quiz
+          </p>
         {/* One quiet composition: large % + one status line + hairline progress. No step checklist. */}
         <div className="mx-auto flex w-full max-w-md flex-col gap-10 pt-6">
           <div>
@@ -487,13 +488,18 @@ export function QuizSetup() {
               : 'Hang tight while Cubit builds your questions.'}
           </p>
         </div>
-      </ShellPage>
+        </div>
+      </QuizSetupChrome>
     );
   }
 
   if (setupError) {
     return (
-      <ShellPage title="Something went wrong" description="We couldn't generate your quiz">
+      <QuizSetupChrome C={C}>
+        <div className="mx-auto w-full max-w-lg px-5 py-12">
+          <p className="mb-3 text-[11px]" style={{ color: C.text3, fontFamily: 'var(--mono)' }}>
+            Something went wrong
+          </p>
         <div className="max-w-lg">
           <div
             className="rounded-xl p-6 flex flex-col gap-5"
@@ -510,11 +516,12 @@ export function QuizSetup() {
               onMouseEnter={(e) => { e.currentTarget.style.color = C.text; }}
               onMouseLeave={(e) => { e.currentTarget.style.color = C.text2; }}
             >
-              Back to Dashboard
+              Back to dashboard
             </button>
           </div>
         </div>
-      </ShellPage>
+        </div>
+      </QuizSetupChrome>
     );
   }
 
@@ -528,7 +535,7 @@ export function QuizSetup() {
   const handleDownloadShareableQuizHtml = () => {
     if (!canDownloadShareableHtml) return;
     downloadInteractiveQuizHtml({
-      quizTitle: quizData.videoTitle,
+      quizTitle: quizData.displayTitle || quizData.videoTitle,
       channelName: videoMeta.channelName,
       examType: quizData.examType,
       passPercent: 70,
@@ -539,204 +546,55 @@ export function QuizSetup() {
     });
   };
   const readinessLabel = promptRequest ? 'Answer keys validated' : 'Transcript available';
-  const metaBits = [
-    quizData.channel,
-    quizData.duration !== '--:--' ? quizData.duration : null,
-    readinessLabel,
-    quizData.examType ? `${quizData.examType} practice exam` : null,
-  ].filter(Boolean) as string[];
+  const sectionRows =
+    quizData.sectionRows.length > 0
+      ? quizData.sectionRows
+      : [
+          {
+            title: quizData.videoTitle || 'Quiz',
+            questionsLabel: String(quizData.questionCount),
+            minutes: quizData.minutes,
+          },
+        ];
+  const readyTitle = quizData.displayTitle || quizData.videoTitle;
 
-  const detailRows = [
-    { label: 'Questions', value: `${quizData.questionCount} questions` },
-    { label: 'Difficulty', value: quizData.difficulty },
-    { label: 'Estimated time', value: quizData.estimatedTime },
-    { label: 'Completion', value: 'Results available after quiz' },
-  ];
+  const handleStart = () => {
+    const quizId = (id && isUuid(id)) ? id : sessionStorage.getItem('currentQuizId') || id;
+    navigate(`/quiz/${quizId}`, {
+      state: {
+        questions,
+        videoMeta,
+        youtubeUrl,
+        sections: sessionStorage.getItem('quizSections')
+          ? JSON.parse(sessionStorage.getItem('quizSections')!)
+          : undefined,
+      },
+    });
+  };
 
   return (
-    <ShellPage title="Quiz ready" description="Review the details below and start when you're ready">
-      <div className="mx-auto flex w-full max-w-xl flex-col gap-10 pt-2">
-        {/* Title + optional video — one plane, no tinted meta chips */}
-        <div className="flex flex-col gap-5">
-          {!promptRequest && (
-            <div
-              className="aspect-video relative overflow-hidden"
-              style={{ background: C.bg2, borderBottom: `1px solid ${C.border}` }}
-            >
-              {getYoutubeVideoId(videoMeta.youtubeUrl) ? (
-                <iframe
-                  src={`https://www.youtube.com/embed/${getYoutubeVideoId(videoMeta.youtubeUrl)}`}
-                  title={quizData.videoTitle}
-                  className="h-full w-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  style={{ border: 'none' }}
-                />
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <Play className="size-8" style={{ color: C.text3 }} strokeWidth={1.75} />
-                </div>
-              )}
-            </div>
-          )}
-
-          <div>
-            <h2
-              className="text-[22px] font-semibold leading-snug tracking-[-0.02em]"
-              style={{ color: C.text, fontFamily: 'var(--display)' }}
-            >
-              {quizData.videoTitle}
-            </h2>
-            <p
-              className="mt-2 text-[13px] leading-relaxed"
-              style={{ color: C.text2 }}
-            >
-              {metaBits.join(' · ')}
-            </p>
-          </div>
-        </div>
-
-        <div
-          className="flex flex-col gap-2 rounded-xl p-4"
-          style={{ border: `1px solid ${C.border}`, background: C.bg1 }}
-        >
-          <p className="text-[13px] font-medium" style={{ color: C.text }}>
-            Offline exam (HTML)
-          </p>
-          <p className="text-[12px] leading-relaxed" style={{ color: C.text3 }}>
-            Download a Cubit-branded practice file with intro screen students open before taking the test.
-          </p>
-          <button
-            type="button"
-            disabled={!canDownloadShareableHtml}
-            onClick={handleDownloadShareableQuizHtml}
-            className="inline-flex h-11 w-full items-center justify-center gap-2 text-[13px] font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-            style={{ background: C.red }}
-          >
-            <Download className="size-4" strokeWidth={2.2} />
-            Download quiz (HTML)
-          </button>
-        </div>
-
-        {quizData.sections && quizData.sections.length > 0 && (
-          <section className="flex flex-col gap-3" style={{ borderTop: `1px solid ${C.border}`, paddingTop: 28 }}>
-            <h3
-              className="text-[11px] font-medium uppercase tracking-[0.14em]"
-              style={{ color: C.text3, fontFamily: 'var(--mono)' }}
-            >
-              Sections
-            </h3>
-            <ol className="flex flex-col gap-2.5">
-              {quizData.sections.map((label) => (
-                <li key={label} className="text-[14px] leading-snug" style={{ color: C.text2 }}>
-                  {label}
-                </li>
-              ))}
-            </ol>
-          </section>
-        )}
-
-        <section className="flex flex-col gap-3" style={{ borderTop: `1px solid ${C.border}`, paddingTop: 28 }}>
-          <h3
-            className="text-[11px] font-medium uppercase tracking-[0.14em]"
-            style={{ color: C.text3, fontFamily: 'var(--mono)' }}
-          >
-            Quiz details
-          </h3>
-          <dl className="flex flex-col">
-            {detailRows.map((row) => (
-              <div
-                key={row.label}
-                className="flex items-baseline justify-between gap-6 py-3"
-                style={{ borderBottom: `1px solid ${C.border}` }}
-              >
-                <dt className="text-[13px] shrink-0" style={{ color: C.text3 }}>
-                  {row.label}
-                </dt>
-                <dd
-                  className="text-right text-[14px] font-medium capitalize leading-snug"
-                  style={{ color: C.text }}
-                >
-                  {row.value}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        </section>
-
-        <section className="flex flex-col gap-3" style={{ borderTop: `1px solid ${C.border}`, paddingTop: 28 }}>
-          <h3
-            className="text-[11px] font-medium uppercase tracking-[0.14em]"
-            style={{ color: C.text3, fontFamily: 'var(--mono)' }}
-          >
-            Share with students
-          </h3>
-          <div className="flex min-h-11 items-center gap-3">
-            <span
-              className="min-w-0 flex-1 truncate text-[12px]"
-              style={{ color: C.text2, fontFamily: 'var(--mono)' }}
-              title={shareUrl}
-            >
-              {shareUrl}
-            </span>
-            <button
-              type="button"
-              onClick={() => {
-                void navigator.clipboard.writeText(shareUrl);
-                setCopied(true);
-                setTimeout(() => setCopied(false), 2000);
-              }}
-              className="inline-flex h-11 shrink-0 items-center gap-1.5 px-3 text-[13px] font-medium transition-colors"
-              style={{ color: copied ? C.text : C.red }}
-            >
-              {copied ? <Check className="size-3.5" strokeWidth={2.2} /> : <Copy className="size-3.5" strokeWidth={2.2} />}
-              {copied ? 'Copied' : 'Copy link'}
-            </button>
-          </div>
-          <p className="text-[12px] leading-relaxed" style={{ color: C.text3 }}>
-            Same offline HTML as above — share the file or the Cubit link.
-          </p>
-        </section>
-
-        <div
-          className="flex flex-wrap items-center gap-3 pt-2"
-          style={{ borderTop: `1px solid ${C.border}`, paddingTop: 28 }}
-        >
-          <button
-            type="button"
-            onClick={() => navigate('/dashboard')}
-            className="inline-flex h-11 items-center px-5 text-[13px] font-medium transition-colors"
-            style={{
-              background: 'transparent',
-              border: `1px solid ${C.border}`,
-              color: C.text2,
-            }}
-          >
-            Back to dashboard
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              const quizId = (id && isUuid(id)) ? id : sessionStorage.getItem('currentQuizId') || id;
-              navigate(`/quiz/${quizId}`, {
-                state: {
-                  questions,
-                  videoMeta,
-                  youtubeUrl,
-                  sections: sessionStorage.getItem('quizSections')
-                    ? JSON.parse(sessionStorage.getItem('quizSections')!)
-                    : undefined,
-                },
-              });
-            }}
-            className="inline-flex h-11 items-center gap-2 px-6 text-[13px] font-semibold text-white transition-opacity hover:opacity-90"
-            style={{ background: C.red }}
-          >
-            Start quiz
-            <ArrowRight className="size-4" strokeWidth={2.2} />
-          </button>
-        </div>
-      </div>
-    </ShellPage>
+    <QuizSetupChrome C={C}>
+      <QuizReadyScreen
+        C={C}
+        title={readyTitle}
+        practiceLabel={quizData.practiceLabel}
+        difficulty={quizData.difficulty}
+        readinessLabel={readinessLabel}
+        questionCount={quizData.questionCount}
+        minutes={quizData.minutes}
+        sectionCount={sectionRows.length}
+        sections={sectionRows}
+        shareUrl={shareUrl}
+        copied={copied}
+        canDownloadHtml={canDownloadShareableHtml}
+        onCopyLink={() => {
+          void navigator.clipboard.writeText(shareUrl);
+          setCopied(true);
+          window.setTimeout(() => setCopied(false), 2000);
+        }}
+        onDownloadHtml={handleDownloadShareableQuizHtml}
+        onStart={handleStart}
+      />
+    </QuizSetupChrome>
   );
 }
