@@ -73,16 +73,23 @@ export function mapApiQuestionsToFrontend(
     (sections ?? []).map((s) => [s.sectionKey ?? '', s.title ?? s.sectionKey ?? ''])
   );
   return questions
-    .map((q, index) => ({
+    .map((q, index) => {
+      const fromIndex =
+        typeof q.correctAnswerIndex === 'number' && Array.isArray(q.options)
+          ? q.options[q.correctAnswerIndex]?.trim()
+          : undefined;
+      const fromField = q.correctAnswer?.trim();
+      return {
       id: index,
       type: mapApiQuestionType(q.type),
       question: q.question?.trim() ?? '',
       options: q.options,
-      answer: q.correctAnswer,
+      answer: fromField || fromIndex || undefined,
       explanation: q.explanation,
       sectionKey: q.sectionKey,
       sectionTitle: q.sectionKey ? titleByKey.get(q.sectionKey) : undefined,
-    }))
+    };
+    })
     .filter((q) => q.question.length > 0);
 }
 
