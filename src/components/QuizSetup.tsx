@@ -5,6 +5,7 @@ import { ShellPage } from '../shell/ShellPage';
 import { Play, ArrowRight, Copy, Check, AlertCircle, Download } from 'lucide-react';
 import {
   cubitPublicQuizUrl,
+  cubitPublicSignInUrl,
   downloadInteractiveQuizHtml,
   mapGeneratedQuestionsToInteractiveItems,
 } from '../utils/downloadQuizAttemptHtml';
@@ -531,7 +532,7 @@ export function QuizSetup() {
       passPercent: 70,
       questions: interactiveItems,
       takeQuizUrl: cubitQuizLink,
-      resultsSignInUrl: cubitQuizLink,
+      resultsSignInUrl: cubitPublicSignInUrl(),
     });
   };
   const readinessLabel = promptRequest ? 'Answer keys validated' : 'Transcript available';
