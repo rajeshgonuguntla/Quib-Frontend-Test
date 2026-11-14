@@ -66,6 +66,47 @@ Reject diffs that look like generic AI UI:
 - Extra fonts (Playfair, Space Grotesk, etc.) when Inter is already the product face
 - “Unlock your potential”, “seamless experience”, emoji in product chrome
 
+## Offline quiz HTML landing
+
+Source of truth for **downloaded practice quiz HTML** (`src/utils/downloadQuizAttemptHtml.ts` intro / `#intro`). Match this composition in light, dark (`prefers-color-scheme`), and phone (~390px). Do not use a marketing kicker + stacked radios as the first screen.
+
+**Page**
+- Full-bleed `--bg` (`#ffffff` / `#050505`). Centered column.
+- Cubit cube + **Cubit** wordmark **above** the card (logo ~40px, wordmark ~1.75rem / 700, Inter). Not a small header lockup inside the card.
+
+**Card**
+- One rounded card (`~16–20px` radius), `--surface` fill, 1px `--border`. Max width ~28rem. Generous padding (~28–32px).
+- Kicker: `Quiz ready` — 11px, `--ink-faint`, IBM Plex Mono, letter-spacing. Sentence case (not all-caps shouting).
+- Title: quiz name, ~1.75–2rem, weight 700, `--ink`, tight tracking.
+- Hairline under the title.
+
+**Stats row** (three equal columns, vertical hairlines, no tinted chips)
+- Value: large tabular (`54` / `70%` / `GRE`). Label under it in `--ink-faint` (`questions` / `to pass` / `practice`).
+- Third column is exam type (e.g. GRE) + `practice`. If no exam type, use `Quiz` / `practice`.
+- Timestamp under stats: `Generated Nov 14, 2026 · 12:37 PM` — mono, `--ink-faint`. No extra “Cubit” in that line.
+
+**Copy**
+- One sentence: `Review the details, then start when you are ready.`
+- `How it works` kicker, then **three hairline rows** (not numbered, not cards):
+  1. `Answer at your own pace`
+  2. `Submit when you're done`
+  3. `Sign in on mycubit.app to see your score`
+
+**Primary**
+- Full-width Cubit orange (`#e8650a` light / `#ff7a1a` dark), ~12px radius, min-height 44px, white label **Start quiz**.
+- Caption under button: `No sign-in needed to start.` (`--ink-faint`).
+
+**Footer** (below the card, not inside it)
+- `Exported from Cubit · Open on Cubit` — small, `--ink-faint`; **Open on Cubit** is `--accent` and links to `https://mycubit.app` (or `/quiz/{id}`).
+
+**Do not**
+- Cream/terracotta, purple gradients, neon, extra fonts.
+- Numbered `01 / 02 / 03` how-it-works.
+- Local score/results on this file after submit (submit goes to mycubit.app sign-in).
+- Mix landing marketing tokens into this card.
+
+Taking UI after **Start quiz** still follows in-app `QuizTaking.tsx` (header, one question, option chips).
+
 ## Tests and verification
 
 - Pure helpers: unit tests (`vitest`) next to the file (`*.test.ts`).

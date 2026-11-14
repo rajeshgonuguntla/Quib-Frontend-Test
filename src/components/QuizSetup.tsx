@@ -529,6 +529,7 @@ export function QuizSetup() {
     downloadInteractiveQuizHtml({
       quizTitle: quizData.videoTitle,
       channelName: videoMeta.channelName,
+      examType: quizData.examType,
       passPercent: 70,
       questions: interactiveItems,
       takeQuizUrl: cubitQuizLink,

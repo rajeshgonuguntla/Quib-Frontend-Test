@@ -70,6 +70,9 @@ describe('downloadQuizAttemptHtml', () => {
     });
     expect(html).toContain('Start quiz');
     expect(html).toContain('Quiz ready');
+    expect(html).toContain('How it works');
+    expect(html).toContain('No sign-in needed to start.');
+    expect(html).toContain('ready-card');
     expect(html).toContain('id="quiz-shell"');
     expect(html).toContain('question-panel');
     expect(html).toContain('Multiple choice');
