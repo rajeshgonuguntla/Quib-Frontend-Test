@@ -2,7 +2,11 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router';
 import axios from 'axios';
 import { ShellPage } from '../shell/ShellPage';
-import { Play, ArrowRight, Copy, Check, AlertCircle } from 'lucide-react';
+import { Play, ArrowRight, Copy, Check, AlertCircle, Download } from 'lucide-react';
+import {
+  downloadInteractiveQuizHtml,
+  mapGeneratedQuestionsToInteractiveItems,
+} from '../utils/downloadQuizAttemptHtml';
 import { useTheme, getC } from './ThemeContext';
 import {
   examBlueprintPreview,
@@ -472,6 +476,19 @@ export function QuizSetup() {
   }
 
   const shareUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/quiz/${id}`;
+  const interactiveItems = mapGeneratedQuestionsToInteractiveItems(questions);
+  const canDownloadShareableHtml = interactiveItems.length > 0;
+
+  const handleDownloadShareableQuizHtml = () => {
+    if (!canDownloadShareableHtml) return;
+    downloadInteractiveQuizHtml({
+      quizTitle: quizData.videoTitle,
+      channelName: videoMeta.channelName,
+      passPercent: 70,
+      questions: interactiveItems,
+      takeQuizUrl: shareUrl,
+    });
+  };
   const readinessLabel = promptRequest ? 'Answer keys validated' : 'Transcript available';
   const metaBits = [
     quizData.channel,
@@ -605,6 +622,19 @@ export function QuizSetup() {
               {copied ? 'Copied' : 'Copy link'}
             </button>
           </div>
+          <p className="text-[12px] leading-relaxed" style={{ color: C.text3 }}>
+            Or download an offline HTML file students can open without signing in.
+          </p>
+          <button
+            type="button"
+            disabled={!canDownloadShareableHtml}
+            onClick={handleDownloadShareableQuizHtml}
+            className="inline-flex h-11 w-full items-center justify-center gap-2 text-[13px] font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            style={{ background: C.red }}
+          >
+            <Download className="size-4" strokeWidth={2.2} />
+            Download quiz (HTML)
+          </button>
         </section>
 
         <div

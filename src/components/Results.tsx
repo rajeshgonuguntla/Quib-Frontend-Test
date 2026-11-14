@@ -11,6 +11,7 @@ import {
   type ApiAttemptSummary,
   type ApiSectionScore,
 } from '../api/quizApi';
+import { downloadQuizAttemptHtmlReport } from '../utils/downloadQuizAttemptHtml';
 
 interface Question {
   id: number;
@@ -98,6 +99,7 @@ export function Results() {
       explanation?: string;
     }>;
     certificate?: { certificateCode?: string; id?: string };
+    submittedAt?: string;
   } | undefined;
 
   const questions: Question[] =
@@ -174,6 +176,35 @@ export function Results() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleDownloadAttemptHtml = () => {
+    if (questionReview.length === 0) return;
+    downloadQuizAttemptHtmlReport({
+      quizTitle,
+      channelName: videoMeta.channelName,
+      scorePercent: score,
+      correctCount: correctAnswers,
+      totalCount: totalQuestions,
+      passed,
+      attemptNumber: apiResult?.attemptNumber,
+      submittedAt: apiResult?.submittedAt,
+      sectionScores: breakdown.map((b) => ({
+        topic: b.topic,
+        scorePercent: b.score,
+        totalCount: b.total,
+      })),
+      questions: questionReview.map((q, i) => ({
+        index: i + 1,
+        question: q.question,
+        userAnswer: String(q.userAnswer ?? ''),
+        correctAnswer: String(q.correctAnswer ?? ''),
+        isCorrect: q.isCorrect,
+        explanation: q.explanation,
+      })),
+      takeQuizUrl: shareUrl,
+    });
+  };
+
+  const canDownloadAttempt = questionReview.length > 0;
 
   const toggleQuestion = (id: number) => {
     const newExpanded = new Set(expandedQuestions);
@@ -315,12 +346,15 @@ export function Results() {
                   }}
                 >
                   <button
-                    className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-[500] cursor-pointer transition-colors text-left"
+                    type="button"
+                    disabled={!canDownloadAttempt}
+                    onClick={handleDownloadAttemptHtml}
+                    className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-[500] cursor-pointer transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{ background: 'transparent', border: 'none', color: C.text2 }}
                     onMouseEnter={(e) => { e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'; e.currentTarget.style.color = C.text; }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = C.text2; }}
                   >
-                    <Download className="w-4 h-4" /> Download PDF
+                    <Download className="w-4 h-4" /> Your attempt report (HTML)
                   </button>
                 </div>
               </div>
@@ -600,7 +634,20 @@ export function Results() {
         </div>
 
         {/* Bottom Actions */}
-        <div className="flex items-center justify-center gap-4">
+        <div className="flex flex-wrap items-center justify-center gap-4">
+          {canDownloadAttempt && (
+            <button
+              type="button"
+              onClick={handleDownloadAttemptHtml}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-[500] cursor-pointer transition-colors"
+              style={{ background: 'transparent', border: `1px solid ${C.border2}`, color: C.text2 }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = C.bg2; e.currentTarget.style.color = C.text; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = C.text2; }}
+            >
+              <Download className="w-4 h-4" strokeWidth={2} />
+              Your attempt report (HTML)
+            </button>
+          )}
           <button
             onClick={() => navigate('/dashboard')}
             className="px-6 py-3 rounded-lg text-sm font-[500] cursor-pointer transition-colors"
