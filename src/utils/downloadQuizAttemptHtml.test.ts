@@ -71,9 +71,13 @@ describe('downloadQuizAttemptHtml', () => {
     });
     expect(html).toContain('Start quiz');
     expect(html).toContain('Quiz ready');
-    expect(html).toContain('How it works');
-    expect(html).toContain('No sign-in needed to start.');
-    expect(html).toContain('ready-card');
+    expect(html).toContain('Results available after the quiz');
+    expect(html).toContain('Copy link');
+    expect(html).toContain('Share with students');
+    expect(html).toContain('Open on Cubit');
+    expect(html).not.toContain('How it works');
+    expect(html).not.toContain('No sign-in needed to start.');
+    expect(html).not.toContain('ready-card');
     expect(html).toContain('id="quiz-shell"');
     expect(html).toContain('question-panel');
     expect(html).toContain('Multiple choice');
@@ -85,6 +89,39 @@ describe('downloadQuizAttemptHtml', () => {
     expect(html).toContain('goToSignIn');
     expect(html).not.toContain('cubit-quiz-bank');
     expect(html.split('<script>')[0] ?? '').not.toContain('Correct answer');
+  });
+
+  it('uses the in-app exam overview for GRE stats and sections', () => {
+    const html = buildInteractiveQuizHtml({
+      quizTitle: 'GRE practice exam: verbal & quantitative reasoning',
+      examType: 'gre',
+      practiceLabel: 'GRE practice',
+      difficulty: 'medium',
+      readinessLabel: 'Answer keys validated',
+      questionCount: 54,
+      minutes: 118,
+      sections: [
+        {
+          title: 'Analytical writing',
+          subtitle: 'Analyze an Issue',
+          questionsLabel: 'Essay · self-score',
+          minutes: 30,
+        },
+        { title: 'Verbal reasoning', subtitle: 'Section 1', questionsLabel: '12', minutes: 18 },
+      ],
+      questions: [
+        { question: 'Pick one', type: 'mcq', options: ['A', 'B'], correctAnswer: 'B' },
+      ],
+    });
+    expect(html).toContain('>54<');
+    expect(html).toContain('>118<');
+    expect(html).toContain('questions</span>');
+    expect(html).toContain('min</span>');
+    expect(html).toContain('sections</span>');
+    expect(html).toContain('Analytical writing');
+    expect(html).toContain('Essay · self-score');
+    expect(html).toContain('GRE practice');
+    expect(html).not.toContain('70%');
   });
 
   it('jsonForHtmlScript escapes script-breaking sequences', () => {
