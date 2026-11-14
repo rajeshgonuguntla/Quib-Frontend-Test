@@ -73,7 +73,8 @@ describe('downloadQuizAttemptHtml', () => {
     expect(html).toContain('id="intro"');
     expect(html).toContain('cubit-mark');
     expect(html).toContain('id="form-wrap" class="hide"');
-    expect(html).toContain('Submit and see score');
+    expect(html).toContain('Sign in on mycubit.app');
+    expect(html).toContain('mycubit.app');
     const formOnly = html.split('<script id="cubit-quiz-bank"')[0] ?? '';
     expect(formOnly).not.toContain('Correct answer');
   });

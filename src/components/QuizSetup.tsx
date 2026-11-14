@@ -4,6 +4,7 @@ import axios from 'axios';
 import { ShellPage } from '../shell/ShellPage';
 import { Play, ArrowRight, Copy, Check, AlertCircle, Download } from 'lucide-react';
 import {
+  cubitPublicQuizUrl,
   downloadInteractiveQuizHtml,
   mapGeneratedQuestionsToInteractiveItems,
 } from '../utils/downloadQuizAttemptHtml';
@@ -515,7 +516,10 @@ export function QuizSetup() {
     );
   }
 
-  const shareUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/quiz/${id}`;
+  const quizIdForLink =
+    (id && isUuid(id) ? id : null) ?? sessionStorage.getItem('currentQuizId') ?? undefined;
+  const cubitQuizLink = cubitPublicQuizUrl(quizIdForLink);
+  const shareUrl = cubitQuizLink;
   const interactiveItems = mapGeneratedQuestionsToInteractiveItems(questions);
   const canDownloadShareableHtml = questions.some((q) => q.question.trim().length > 0);
 
@@ -526,7 +530,8 @@ export function QuizSetup() {
       channelName: videoMeta.channelName,
       passPercent: 70,
       questions: interactiveItems,
-      takeQuizUrl: shareUrl,
+      takeQuizUrl: cubitQuizLink,
+      resultsSignInUrl: cubitQuizLink,
     });
   };
   const readinessLabel = promptRequest ? 'Answer keys validated' : 'Transcript available';
