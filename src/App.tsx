@@ -94,6 +94,8 @@ export default function App() {
                 {/* Full-bleed — no AppShell */}
                 <Route path="/onboarding" element={<Onboarding />} />
                 <Route path="/quiz/:id" element={<QuizTaking />} />
+                <Route path="/quiz-setup" element={<QuizSetup />} />
+                <Route path="/quiz-setup/:id" element={<QuizSetup />} />
                 <Route path="/certificate/:id" element={<Certificate />} />
 
                 {/* Authenticated app shell */}
@@ -114,8 +116,6 @@ export default function App() {
                   <Route path="/my-quizzes" element={<Navigate to="/library?tab=saved" replace />} />
                   <Route path="/certificates" element={<MyCertificates />} />
                   <Route path="/course-builder" element={<CourseBuilderFollowupsPage />} />
-                  <Route path="/quiz-setup" element={<QuizSetup />} />
-                  <Route path="/quiz-setup/:id" element={<QuizSetup />} />
                   <Route path="/playlist-setup/:id" element={<PlaylistSetup />} />
                   <Route path="/results/:id" element={<Results />} />
                   <Route path="/settings" element={<Settings />} />

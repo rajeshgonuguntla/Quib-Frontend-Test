@@ -134,40 +134,80 @@ export function defaultQuizTimeLimitSeconds(questionCount: number): number {
   return Math.max(Math.max(0, questionCount) * 90, 300);
 }
 
+export type ExamBlueprintSectionRow = {
+  title: string;
+  subtitle?: string;
+  questionsLabel: string;
+  minutes: number;
+};
+
+export type ExamBlueprintPreview = {
+  questions: number;
+  minutes: number;
+  displayTitle: string;
+  practiceLabel: string;
+  sectionRows: ExamBlueprintSectionRow[];
+  /** Flattened labels for tests and older call sites. */
+  sections: string[];
+};
+
+function blueprintFromRows(
+  questions: number,
+  minutes: number,
+  displayTitle: string,
+  practiceLabel: string,
+  sectionRows: ExamBlueprintSectionRow[],
+): ExamBlueprintPreview {
+  return {
+    questions,
+    minutes,
+    displayTitle,
+    practiceLabel,
+    sectionRows,
+    sections: sectionRows.map((row) => {
+      const sub = row.subtitle ? ` — ${row.subtitle}` : '';
+      return `${row.title}${sub} (${row.questionsLabel} / ${row.minutes} min)`;
+    }),
+  };
+}
+
 /** Display sizes matching backend ExamBlueprint (before generate). */
-export function examBlueprintPreview(examType: string): { questions: number; minutes: number; sections: string[] } {
+export function examBlueprintPreview(examType: string): ExamBlueprintPreview {
   const t = (examType || 'custom').toLowerCase();
   if (t === 'sat') {
-    return {
-      questions: 98,
-      minutes: 134,
-      sections: [
-        'Reading and Writing Module 1 (27)',
-        'Reading and Writing Module 2 (27)',
-        'Math Module 1 (22)',
-        'Math Module 2 (22)',
-      ],
-    };
+    return blueprintFromRows(98, 134, 'SAT practice exam: reading, writing & math', 'SAT practice', [
+      { title: 'Reading and Writing', subtitle: 'Module 1', questionsLabel: '27', minutes: 32 },
+      { title: 'Reading and Writing', subtitle: 'Module 2', questionsLabel: '27', minutes: 32 },
+      { title: 'Math', subtitle: 'Module 1', questionsLabel: '22', minutes: 35 },
+      { title: 'Math', subtitle: 'Module 2', questionsLabel: '22', minutes: 35 },
+    ]);
   }
   if (t === 'gre') {
     // Objective modules match ExamBlueprint.gre (Sept 2023). AWA 30 min is self-scored, not auto-generated.
-    return {
-      questions: 54,
-      minutes: 118,
-      sections: [
-        'Analytical Writing — Analyze an Issue (30 min, self-score)',
-        'Verbal Reasoning — Section 1 (12 / 18 min)',
-        'Verbal Reasoning — Section 2 (15 / 23 min)',
-        'Quantitative Reasoning — Section 1 (12 / 21 min)',
-        'Quantitative Reasoning — Section 2 (15 / 26 min)',
+    return blueprintFromRows(
+      54,
+      118,
+      'GRE practice exam: verbal & quantitative reasoning',
+      'GRE practice',
+      [
+        {
+          title: 'Analytical writing',
+          subtitle: 'Analyze an issue',
+          questionsLabel: 'Essay · self-score',
+          minutes: 30,
+        },
+        { title: 'Verbal reasoning', subtitle: 'Section 1', questionsLabel: '12', minutes: 18 },
+        { title: 'Verbal reasoning', subtitle: 'Section 2', questionsLabel: '15', minutes: 23 },
+        { title: 'Quantitative reasoning', subtitle: 'Section 1', questionsLabel: '12', minutes: 21 },
+        { title: 'Quantitative reasoning', subtitle: 'Section 2', questionsLabel: '15', minutes: 26 },
       ],
-    };
+    );
   }
-  return {
-    questions: 60,
-    minutes: 90,
-    sections: ['Topic Section 1 (20)', 'Topic Section 2 (20)', 'Topic Section 3 (20)'],
-  };
+  return blueprintFromRows(60, 90, 'Practice exam', 'Practice', [
+    { title: 'Topic section', subtitle: 'Section 1', questionsLabel: '20', minutes: 30 },
+    { title: 'Topic section', subtitle: 'Section 2', questionsLabel: '20', minutes: 30 },
+    { title: 'Topic section', subtitle: 'Section 3', questionsLabel: '20', minutes: 30 },
+  ]);
 }
 
 export function isUuid(value: string | undefined): boolean {
