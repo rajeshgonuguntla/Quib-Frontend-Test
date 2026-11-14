@@ -1,5 +1,5 @@
 import { BRAND_ACCENT_LIGHT, BRAND_FEEDBACK_RED, BRAND_NAME } from '../brand';
-import { defaultQuizTimeLimitSeconds } from '../api/quizApi';
+import { defaultQuizTimeLimitSeconds, type ExamBlueprintSectionRow } from '../api/quizApi';
 
 /** Public app host for links inside downloaded HTML (not the dev origin). */
 export const CUBIT_APP_ORIGIN = 'https://mycubit.app';
@@ -418,6 +418,13 @@ export type InteractiveQuizHtmlPayload = {
   quizTitle: string;
   channelName?: string;
   examType?: string;
+  practiceLabel?: string;
+  difficulty?: string;
+  readinessLabel?: string;
+  /** Display stats — same numbers as in-app Quiz ready (may include essay time). */
+  questionCount?: number;
+  minutes?: number;
+  sections?: ExamBlueprintSectionRow[];
   passPercent?: number;
   questions: InteractiveQuizItem[];
   takeQuizUrl?: string;
@@ -427,16 +434,6 @@ export type InteractiveQuizHtmlPayload = {
   /** Countdown seconds; defaults to the same formula as QuizTaking. */
   timeLimitSeconds?: number;
 };
-
-function formatGeneratedStamp(iso?: string): string {
-  if (!iso) return 'Generated';
-  const when = Date.parse(iso);
-  if (!Number.isFinite(when)) return 'Generated';
-  const d = new Date(when);
-  const date = d.toLocaleDateString(undefined, { dateStyle: 'medium' });
-  const time = d.toLocaleTimeString(undefined, { timeStyle: 'short' });
-  return `Generated ${date} · ${time}`;
-}
 
 function downloadHtmlFile(html: string, filename: string): void {
   const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
@@ -493,123 +490,200 @@ function cubitQuizTakingExportCss(): string {
     }
     .hide { display: none !important; }
     #quiz-shell { display: flex; flex-direction: column; min-height: 100vh; }
-    .ready-screen {
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 2.5rem 1.25rem 3rem;
+    #intro { min-height: 100vh; display: flex; flex-direction: column; background: var(--quiz-bg); }
+    .ov-header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: var(--quiz-bg);
+      border-bottom: 1px solid var(--quiz-border);
     }
-    .landing-logo {
+    .ov-header-inner {
+      width: 100%;
+      max-width: 1080px;
+      margin: 0 auto;
+      height: 3.5rem;
+      padding: 0 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+    }
+    .ov-header-link {
       display: inline-flex;
       align-items: center;
-      gap: 0.65rem;
-      margin-bottom: 1.75rem;
-      color: var(--quiz-text);
+      min-height: 44px;
+      font-size: 13px;
+      color: var(--quiz-text2);
+      text-decoration: none;
     }
-    .landing-logo img { width: 40px; height: 40px; object-fit: contain; }
-    .landing-logo-name {
-      font-size: 1.75rem;
-      font-weight: 700;
-      letter-spacing: -0.04em;
-      line-height: 1;
-    }
-    .ready-card {
+    .ov-body {
       width: 100%;
-      max-width: 28rem;
-      border: 1px solid var(--quiz-border);
-      border-radius: 1.15rem;
-      background: var(--quiz-card);
-      padding: 1.75rem 1.6rem 1.5rem;
+      max-width: 1080px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 2.5rem;
+      padding: 2rem 1.25rem 7rem;
     }
-    .ready-kicker {
-      margin: 0 0 0.55rem;
+    .ov-kicker {
+      margin: 0 0 0.65rem;
       font-size: 11px;
-      font-weight: 400;
       letter-spacing: 0.04em;
       color: var(--quiz-text3);
       font-family: var(--mono);
     }
-    .ready-title {
+    .ov-title {
       margin: 0;
-      font-size: 1.7rem;
+      font-size: 1.85rem;
       font-weight: 700;
-      letter-spacing: -0.035em;
-      line-height: 1.2;
+      letter-spacing: -0.04em;
+      line-height: 1.12;
     }
-    .ready-stats {
+    .ov-pills { display: none; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.25rem; }
+    .ov-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      height: 26px;
+      padding: 0 0.65rem;
+      border-radius: 999px;
+      border: 1px solid var(--quiz-border);
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--quiz-text2);
+    }
+    .ov-check { color: var(--quiz-accent); flex-shrink: 0; }
+    .ov-pills-phone { margin: 0.75rem 0 0; font-size: 13px; color: var(--quiz-text2); line-height: 1.5; }
+    .ov-pills-phone .ov-check { display: inline; vertical-align: -2px; margin-right: 2px; }
+    .ov-stats {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
-      margin: 1.15rem 0 0;
-      padding: 1.05rem 0;
+      margin-top: 2rem;
+      padding: 1.5rem 0;
       border-top: 1px solid var(--quiz-border);
       border-bottom: 1px solid var(--quiz-border);
       text-align: center;
     }
-    .ready-stat {
-      padding: 0 0.4rem;
-    }
-    .ready-stat + .ready-stat {
-      border-left: 1px solid var(--quiz-border);
-    }
-    .ready-stat-val {
+    .ov-stat + .ov-stat { border-left: 1px solid var(--quiz-border); }
+    .ov-stat-val {
       display: block;
-      font-size: 1.35rem;
+      font-size: 2rem;
       font-weight: 700;
-      letter-spacing: -0.03em;
+      letter-spacing: -0.04em;
       font-variant-numeric: tabular-nums;
-      color: var(--quiz-text);
     }
-    .ready-stat-label {
-      display: block;
-      margin-top: 0.2rem;
-      font-size: 0.72rem;
-      color: var(--quiz-text3);
-    }
-    .ready-gen {
-      margin: 0.9rem 0 0;
-      font-size: 0.7rem;
-      color: var(--quiz-text3);
-      font-family: var(--mono);
-    }
-    .ready-detail {
-      margin: 1.15rem 0 0;
-      font-size: 0.9rem;
-      line-height: 1.45;
-      color: var(--quiz-text2);
-    }
-    .how-kicker {
-      margin: 1.35rem 0 0;
+    .ov-stat-label { display: block; margin-top: 0.25rem; font-size: 12px; color: var(--quiz-text3); }
+    .ov-sections { margin-top: 2.25rem; }
+    .ov-sec-head {
+      display: none;
+      grid-template-columns: minmax(0,1fr) 8.75rem 3.6rem;
+      gap: 1.5rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--quiz-border);
       font-size: 11px;
       color: var(--quiz-text3);
+    }
+    .ov-sec-head span:nth-child(2),
+    .ov-sec-head span:nth-child(3) { text-align: right; }
+    .ov-sec-list { list-style: none; margin: 0; padding: 0; }
+    .ov-sec-row { padding: 1rem 0; border-bottom: 1px solid var(--quiz-border); }
+    .ov-sec-phone { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+    .ov-sec-desk { display: none; }
+    .ov-sec-title { margin: 0; font-size: 15px; font-weight: 600; line-height: 1.35; }
+    .ov-sec-sub { margin: 0.2rem 0 0; font-size: 13px; color: var(--quiz-text3); }
+    .ov-sec-meta { margin: 0.2rem 0 0; font-size: 13px; color: var(--quiz-text2); }
+    .ov-sec-q, .ov-sec-time { margin: 0; font-size: 14px; color: var(--quiz-text2); text-align: right; }
+    .ov-sec-phone .ov-sec-time { font-size: 13px; padding-top: 2px; flex-shrink: 0; }
+    .ov-share { display: flex; flex-direction: column; gap: 0.65rem; }
+    .ov-share-phone { margin-top: 2rem; }
+    .ov-share-row { display: flex; gap: 0.5rem; }
+    .ov-url {
+      flex: 1;
+      min-width: 0;
+      min-height: 44px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      border-radius: 0.75rem;
+      padding: 0.65rem 0.75rem;
+      background: var(--quiz-bg1);
+      color: var(--quiz-text2);
       font-family: var(--mono);
+      font-size: 12px;
     }
-    .how-list {
-      list-style: none;
-      margin: 0.35rem 0 0;
-      padding: 0;
-    }
-    .how-list li {
-      padding: 0.85rem 0;
-      border-top: 1px solid var(--quiz-border);
-      font-size: 0.92rem;
-      font-weight: 500;
+    .ov-copy {
+      flex-shrink: 0;
+      min-height: 44px;
+      padding: 0 0.9rem;
+      border-radius: 0.75rem;
+      border: 1px solid var(--quiz-border);
+      background: transparent;
       color: var(--quiz-text);
+      font-size: 13px;
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
     }
-    .how-list li:last-child { border-bottom: 1px solid var(--quiz-border); }
-    .ready-caption {
-      margin: 0.7rem 0 0;
-      text-align: center;
-      font-size: 0.75rem;
-      color: var(--quiz-text3);
+    .ov-share-note { margin: 0; font-size: 12px; line-height: 1.5; color: var(--quiz-text3); }
+    .ov-aside { display: none; }
+    .ov-card {
+      position: sticky;
+      top: 4.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      padding: 1.25rem;
+      border: 1px solid var(--quiz-border);
+      border-radius: 18px;
+      background: var(--quiz-bg);
     }
-    .ready-footer {
-      margin-top: 1.75rem;
-      font-size: 0.75rem;
-      color: var(--quiz-text3);
+    .ov-start {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 48px;
+      border: none;
+      border-radius: 1rem;
+      background: var(--quiz-accent);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
     }
-    .ready-footer a { color: var(--quiz-accent); text-decoration: none; }
+    .ov-card-caption { margin: 0; text-align: center; font-size: 12px; color: var(--quiz-text3); }
+    .ov-card-rule { height: 1px; background: var(--quiz-border); margin: 2px 0; }
+    .ov-sticky-start {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 40;
+      padding: 0.75rem 1.25rem max(0.75rem, env(safe-area-inset-bottom));
+      background: var(--quiz-bg);
+      border-top: 1px solid var(--quiz-border);
+    }
+    @media (min-width: 768px) {
+      .ov-header-inner { height: 3.75rem; padding: 0 2.5rem; }
+      .ov-body {
+        grid-template-columns: minmax(0,1fr) 20rem;
+        align-items: start;
+        gap: 3rem;
+        padding: 2.25rem 2.5rem 3rem;
+      }
+      .ov-title { font-size: 2.5rem; }
+      .ov-pills { display: flex; }
+      .ov-pills-phone, .ov-share-phone, .ov-sticky-start, .ov-sec-phone { display: none; }
+      .ov-aside { display: block; }
+      .ov-sec-head, .ov-sec-desk {
+        display: grid;
+        grid-template-columns: minmax(0,1fr) 8.75rem 3.6rem;
+        gap: 1.5rem;
+        align-items: start;
+      }
+    }
     .btn-accent {
       display: inline-flex;
       align-items: center;
@@ -872,16 +946,82 @@ const CUBIT_LOGO_EXPORT = `${CUBIT_APP_ORIGIN}/cubit/cubit-logo.webp`;
 
 function cubitLogoLockupHtml(): string {
   return `<span class="quiz-logo" aria-label="${escapeHtmlForExport(BRAND_NAME)}">
-    <img src="${CUBIT_LOGO_EXPORT}" width="18" height="18" alt="" />
+    <img src="${CUBIT_LOGO_EXPORT}" width="22" height="22" alt="" />
     <span class="quiz-logo-name">${escapeHtmlForExport(BRAND_NAME)}</span>
   </span>`;
 }
 
-function cubitLandingLogoHtml(): string {
-  return `<div class="landing-logo" aria-label="${escapeHtmlForExport(BRAND_NAME)}">
-    <img src="${CUBIT_LOGO_EXPORT}" width="40" height="40" alt="" />
-    <span class="landing-logo-name">${escapeHtmlForExport(BRAND_NAME)}</span>
+function overviewCheckIconHtml(): string {
+  return `<svg class="ov-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>`;
+}
+
+function overviewPillsHtml(pills: string[], readinessLabel: string): string {
+  const check = overviewCheckIconHtml();
+  const desktop = pills
+    .map((pill) => {
+      const mark = pill === readinessLabel ? check : '';
+      return `<span class="ov-pill">${mark}${escapeHtmlForExport(pill)}</span>`;
+    })
+    .join('');
+  const phone = pills
+    .map((pill, i) => {
+      const mark = pill === readinessLabel ? check : '';
+      return `${i > 0 ? ' · ' : ''}${mark}${escapeHtmlForExport(pill)}`;
+    })
+    .join('');
+  return `<div class="ov-pills">${desktop}</div><p class="ov-pills-phone">${phone}</p>`;
+}
+
+function overviewSectionsHtml(rows: ExamBlueprintSectionRow[]): string {
+  if (rows.length === 0) return '';
+  const items = rows
+    .map((row) => {
+      const counted = /^\d+$/.test(row.questionsLabel);
+      const phoneMeta = counted
+        ? [row.subtitle, `${row.questionsLabel} questions`].filter(Boolean).join(' · ')
+        : null;
+      const phoneDetail = phoneMeta
+        ? `<p class="ov-sec-meta">${escapeHtmlForExport(phoneMeta)}</p>`
+        : `${row.subtitle ? `<p class="ov-sec-sub">${escapeHtmlForExport(row.subtitle)}</p>` : ''}<p class="ov-sec-meta">${escapeHtmlForExport(row.questionsLabel)}</p>`;
+      return `<li class="ov-sec-row">
+        <div class="ov-sec-phone">
+          <div>
+            <p class="ov-sec-title">${escapeHtmlForExport(row.title)}</p>
+            ${phoneDetail}
+          </div>
+          <p class="ov-sec-time">${row.minutes} min</p>
+        </div>
+        <div class="ov-sec-desk">
+          <div>
+            <p class="ov-sec-title">${escapeHtmlForExport(row.title)}</p>
+            ${row.subtitle ? `<p class="ov-sec-sub">${escapeHtmlForExport(row.subtitle)}</p>` : ''}
+          </div>
+          <p class="ov-sec-q">${escapeHtmlForExport(row.questionsLabel)}</p>
+          <p class="ov-sec-time">${row.minutes} min</p>
+        </div>
+      </li>`;
+    })
+    .join('');
+  return `<section class="ov-sections">
+    <p class="ov-kicker">Sections</p>
+    <div class="ov-sec-head"><span>Section</span><span>Questions</span><span>Time</span></div>
+    <ul class="ov-sec-list">${items}</ul>
+  </section>`;
+}
+
+function overviewShareHtml(shareUrl: string): string {
+  return `<div class="ov-share">
+    <p class="ov-kicker">Share with students</p>
+    <div class="ov-share-row">
+      <div class="ov-url" title="${escapeHtmlForExport(shareUrl)}">${escapeHtmlForExport(shareUrl)}</div>
+      <button type="button" class="ov-copy">Copy link</button>
+    </div>
+    <p class="ov-share-note">Students open the same intro screen either way.</p>
   </div>`;
+}
+
+function overviewStartButtonHtml(): string {
+  return `<button type="button" class="ov-start start-btn">Start quiz</button>`;
 }
 
 function exportQuestionTypeLabel(type: InteractiveQuizItem['type']): string {
@@ -947,19 +1087,34 @@ function buildExportQuestionPanels(questions: InteractiveQuizItem[]): string {
 
 export function buildInteractiveQuizHtml(payload: InteractiveQuizHtmlPayload): string {
   const title = escapeHtmlForExport(payload.quizTitle);
-  const passAt = payload.passPercent ?? 70;
   const signInHref = payload.resultsSignInUrl ?? cubitPublicSignInUrl();
-  const takeQuizUrl = escapeHtmlForExport(payload.takeQuizUrl ?? cubitPublicQuizUrl());
-  const questionCount = payload.questions.length;
-  const generatedLine = escapeHtmlForExport(formatGeneratedStamp(payload.generatedAt));
+  const takeQuizUrlRaw = payload.takeQuizUrl ?? cubitPublicQuizUrl();
+  const takeQuizUrl = escapeHtmlForExport(takeQuizUrlRaw);
   const questionPanels = buildExportQuestionPanels(payload.questions);
+  const itemCount = payload.questions.length;
   const timeLimitSeconds =
-    payload.timeLimitSeconds ?? defaultQuizTimeLimitSeconds(questionCount);
-  const examLabel = (payload.examType ?? '').trim();
-  const thirdStat =
-    examLabel && examLabel.toLowerCase() !== 'custom'
-      ? examLabel.toUpperCase()
-      : 'Quiz';
+    payload.timeLimitSeconds ?? defaultQuizTimeLimitSeconds(itemCount);
+  const displayQuestions = payload.questionCount ?? itemCount;
+  const displayMinutes =
+    payload.minutes ?? Math.max(1, Math.round(timeLimitSeconds / 60));
+  const sectionRows: ExamBlueprintSectionRow[] =
+    payload.sections && payload.sections.length > 0
+      ? payload.sections
+      : [
+          {
+            title: payload.quizTitle || 'Quiz',
+            questionsLabel: String(displayQuestions),
+            minutes: displayMinutes,
+          },
+        ];
+  const difficultyRaw = (payload.difficulty ?? 'medium').trim() || 'medium';
+  const difficultyLabel = difficultyRaw.charAt(0).toUpperCase() + difficultyRaw.slice(1);
+  const readinessLabel = payload.readinessLabel?.trim() || 'Answer keys validated';
+  const pills = [payload.practiceLabel?.trim(), difficultyLabel, readinessLabel].filter(
+    Boolean,
+  ) as string[];
+  const startBtn = overviewStartButtonHtml();
+  const shareBlock = overviewShareHtml(takeQuizUrlRaw);
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -971,37 +1126,45 @@ export function buildInteractiveQuizHtml(payload: InteractiveQuizHtmlPayload): s
   <style>${cubitQuizTakingExportCss()}</style>
 </head>
 <body class="cuib-app">
-  <section id="intro" class="ready-screen" aria-labelledby="ready-heading">
-    ${cubitLandingLogoHtml()}
-    <div class="ready-card">
-      <p class="ready-kicker">Quiz ready</p>
-      <h1 id="ready-heading" class="ready-title">${title}</h1>
-      <div class="ready-stats">
-        <div class="ready-stat">
-          <span class="ready-stat-val">${questionCount}</span>
-          <span class="ready-stat-label">questions</span>
-        </div>
-        <div class="ready-stat">
-          <span class="ready-stat-val">${passAt}%</span>
-          <span class="ready-stat-label">to pass</span>
-        </div>
-        <div class="ready-stat">
-          <span class="ready-stat-val">${escapeHtmlForExport(thirdStat)}</span>
-          <span class="ready-stat-label">practice</span>
-        </div>
+  <section id="intro" aria-labelledby="ready-heading">
+    <header class="ov-header">
+      <div class="ov-header-inner">
+        ${cubitLogoLockupHtml()}
+        <a class="ov-header-link" href="${takeQuizUrl}">Open on Cubit</a>
       </div>
-      <p class="ready-gen">${generatedLine}</p>
-      <p class="ready-detail">Review the details, then start when you are ready.</p>
-      <p class="how-kicker">How it works</p>
-      <ul class="how-list">
-        <li>Answer at your own pace</li>
-        <li>Submit when you're done</li>
-        <li>Sign in on mycubit.app to see your score</li>
-      </ul>
-      <button type="button" class="btn-accent" id="start-btn" style="margin-top:1.25rem;border-radius:0.75rem;font-size:0.95rem">Start quiz</button>
-      <p class="ready-caption">No sign-in needed to start.</p>
+    </header>
+    <div class="ov-body">
+      <div class="ov-main">
+        <p class="ov-kicker">Quiz ready</p>
+        <h1 id="ready-heading" class="ov-title">${title}</h1>
+        ${overviewPillsHtml(pills, readinessLabel)}
+        <div class="ov-stats">
+          <div class="ov-stat">
+            <span class="ov-stat-val">${displayQuestions}</span>
+            <span class="ov-stat-label">questions</span>
+          </div>
+          <div class="ov-stat">
+            <span class="ov-stat-val">${displayMinutes}</span>
+            <span class="ov-stat-label">min</span>
+          </div>
+          <div class="ov-stat">
+            <span class="ov-stat-val">${sectionRows.length}</span>
+            <span class="ov-stat-label">sections</span>
+          </div>
+        </div>
+        ${overviewSectionsHtml(sectionRows)}
+        <div class="ov-share-phone">${shareBlock}</div>
+      </div>
+      <aside class="ov-aside">
+        <div class="ov-card">
+          ${startBtn}
+          <p class="ov-card-caption">Results available after the quiz</p>
+          <div class="ov-card-rule"></div>
+          ${shareBlock}
+        </div>
+      </aside>
     </div>
-    <p class="ready-footer">Exported from ${escapeHtmlForExport(BRAND_NAME)} · <a href="${takeQuizUrl}">Open on ${escapeHtmlForExport(BRAND_NAME)}</a></p>
+    <div class="ov-sticky-start">${startBtn}</div>
   </section>
 
   <div id="quiz-shell" class="hide" aria-hidden="true">
@@ -1031,13 +1194,13 @@ export function buildInteractiveQuizHtml(payload: InteractiveQuizHtmlPayload): s
 
   <script>
   (function () {
-    var TOTAL = ${questionCount};
+    var TOTAL = ${itemCount};
     var current = 0;
     var remaining = ${timeLimitSeconds};
     var SIGN_IN_URL = ${JSON.stringify(signInHref)};
+    var SHARE_URL = ${JSON.stringify(takeQuizUrlRaw)};
     var intro = document.getElementById('intro');
     var shell = document.getElementById('quiz-shell');
-    var startBtn = document.getElementById('start-btn');
     var headerSubmit = document.getElementById('header-submit');
     var timerRoot = document.getElementById('quiz-timer');
     var timerValue = document.getElementById('quiz-timer-value');
@@ -1100,13 +1263,27 @@ export function buildInteractiveQuizHtml(payload: InteractiveQuizHtmlPayload): s
       window.location.assign(SIGN_IN_URL);
     }
 
-    startBtn.addEventListener('click', function () {
+    function beginQuiz() {
       intro.classList.add('hide');
       intro.setAttribute('aria-hidden', 'true');
       shell.classList.remove('hide');
       shell.removeAttribute('aria-hidden');
       showPanel(0);
       startTimer();
+    }
+
+    document.querySelectorAll('.start-btn').forEach(function (btn) {
+      btn.addEventListener('click', beginQuiz);
+    });
+    document.querySelectorAll('.ov-copy').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(SHARE_URL).then(function () {
+            btn.textContent = 'Copied';
+            setTimeout(function () { btn.textContent = 'Copy link'; }, 2000);
+          });
+        }
+      });
     });
 
     document.addEventListener('click', function (e) {

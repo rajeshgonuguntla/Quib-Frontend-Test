@@ -556,20 +556,6 @@ export function QuizSetup() {
   const shareUrl = cubitQuizLink;
   const interactiveItems = mapGeneratedQuestionsToInteractiveItems(questions);
   const canDownloadShareableHtml = questions.some((q) => q.question.trim().length > 0);
-
-  const handleDownloadShareableQuizHtml = () => {
-    if (!canDownloadShareableHtml) return;
-    downloadInteractiveQuizHtml({
-      quizTitle: quizData.displayTitle || quizData.videoTitle,
-      channelName: videoMeta.channelName,
-      examType: quizData.examType,
-      passPercent: 70,
-      timeLimitSeconds: defaultQuizTimeLimitSeconds(questions.length),
-      questions: interactiveItems,
-      takeQuizUrl: cubitQuizLink,
-      resultsSignInUrl: cubitPublicSignInUrl(),
-    });
-  };
   const readinessLabel =
     promptRequest || examKind === 'gre' || examKind === 'sat'
       ? 'Answer keys validated'
@@ -585,6 +571,25 @@ export function QuizSetup() {
           },
         ];
   const readyTitle = quizData.displayTitle || quizData.videoTitle;
+
+  const handleDownloadShareableQuizHtml = () => {
+    if (!canDownloadShareableHtml) return;
+    downloadInteractiveQuizHtml({
+      quizTitle: quizData.displayTitle || quizData.videoTitle,
+      channelName: videoMeta.channelName,
+      examType: quizData.examType,
+      practiceLabel: quizData.practiceLabel,
+      difficulty: quizData.difficulty,
+      readinessLabel,
+      questionCount: quizData.questionCount,
+      minutes: quizData.minutes,
+      sections: sectionRows,
+      timeLimitSeconds: defaultQuizTimeLimitSeconds(questions.length),
+      questions: interactiveItems,
+      takeQuizUrl: cubitQuizLink,
+      resultsSignInUrl: cubitPublicSignInUrl(),
+    });
+  };
 
   const handleStart = () => {
     const quizId = (id && isUuid(id)) ? id : sessionStorage.getItem('currentQuizId') || id;
