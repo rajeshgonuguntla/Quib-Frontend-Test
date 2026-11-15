@@ -36,7 +36,7 @@ export function MyCourses() {
   return (
     <div>
       <PageHeader
-        label="Library"
+        label="Learn"
         title="My courses"
         description={filter === 'completed' ? 'Courses you have finished.' : 'Pick up where you left off.'}
       />

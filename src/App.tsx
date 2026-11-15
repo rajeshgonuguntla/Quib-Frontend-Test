@@ -7,7 +7,11 @@ import { LandingPage } from './components/LandingPage';
 import { SignIn } from './components/SignIn';
 import { Dashboard } from './components/Dashboard';
 import { Onboarding } from './components/Onboarding';
-import { Library, MyCoursesRedirect } from './components/Library';
+import { Library } from './components/Library';
+import { MyCourses } from './components/MyCourses';
+import { PracticePage } from './components/PracticePage';
+import { NotesPage } from './components/NotesPage';
+import { ReviewPage } from './components/ReviewPage';
 import { MyCertificates } from './components/MyCertificates';
 import { QuizSetup } from './components/QuizSetup';
 import { PlaylistSetup } from './components/PlaylistSetup';
@@ -106,7 +110,10 @@ export default function App() {
                   <Route path="/browse-courses" element={<BrowseCoursesRedirect />} />
                   <Route path="/creators" element={<CreatorsRedirect />} />
                   <Route path="/library" element={<Library />} />
-                  <Route path="/my-courses" element={<MyCoursesRedirect />} />
+                  <Route path="/my-courses" element={<MyCourses />} />
+                  <Route path="/practice" element={<PracticePage />} />
+                  <Route path="/notes" element={<NotesPage />} />
+                  <Route path="/review" element={<ReviewPage />} />
                   <Route path="/educator-studio" element={<EducatorStudio />} />
                   <Route path="/educator-courses" element={<EducatorMyCourses />} />
                   <Route path="/educator-analytics" element={<EducatorAnalytics />} />

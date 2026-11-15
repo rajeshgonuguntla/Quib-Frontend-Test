@@ -70,6 +70,8 @@ const EXAM_TYPES: { id: SampleExamType; label: string }[] = [
 type StudentMasterInputProps = {
   className?: string;
   signedIn?: boolean;
+  /** Lock the start bar to one tool (Practice page uses quiz). */
+  lockMode?: LearnerStartMode;
 };
 
 function VideoGlyph() {
@@ -81,11 +83,11 @@ function VideoGlyph() {
   );
 }
 
-export function StudentMasterInput({ className, signedIn = true }: StudentMasterInputProps) {
+export function StudentMasterInput({ className, signedIn = true, lockMode }: StudentMasterInputProps) {
   const navigate = useNavigate();
   const { setProfile } = useUserProfile();
   const { isDark } = useTheme();
-  const [mode, setMode] = useState<LearnerStartMode>('course');
+  const [mode, setMode] = useState<LearnerStartMode>(lockMode ?? 'course');
   const [examType, setExamType] = useState<SampleExamType>('custom');
   const [examPinned, setExamPinned] = useState(false);
   const [inputValue, setInputValue] = useState('');
@@ -299,7 +301,8 @@ export function StudentMasterInput({ className, signedIn = true }: StudentMaster
         </div>
       )}
 
-      <div className="relative pt-5">
+      <div className={lockMode ? 'relative' : 'relative pt-5'}>
+        {!lockMode ? (
         <div
           className="absolute inset-x-2 top-0 z-0 flex h-8 items-start gap-0.5 overflow-x-auto rounded-t-[14px] border border-b-0 border-[var(--border)] bg-[var(--fill)] px-1.5 pt-1 [scrollbar-width:none]"
           role="tablist"
@@ -334,6 +337,7 @@ export function StudentMasterInput({ className, signedIn = true }: StudentMaster
             );
           })}
         </div>
+        ) : null}
 
         {isNotesMode ? (
           <StandaloneNotesWorkspace />
