@@ -173,7 +173,7 @@ export function Dashboard() {
             </h2>
             <button
               type="button"
-              onClick={() => navigate('/discover?tab=courses')}
+              onClick={() => navigate('/my-courses')}
               className="flex items-center gap-1 pb-0.5 text-[var(--ink-faint)] transition-colors hover:text-[var(--accent)]"
               style={{ fontFamily: 'var(--mono)', fontSize: 12 }}
             >

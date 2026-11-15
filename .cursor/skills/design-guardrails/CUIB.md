@@ -39,6 +39,10 @@ User-facing UI says Cubit, not legacy Quib.
 
 Do not add a second Button/Card/Input system. Do not restyle the whole shell to ship a small feature.
 
+## Signed-in left nav
+
+Learner rail, top to bottom: **Home**, **My courses**, **Practice**, **Notes**, **Review**, **Progress**. Settings stays in the footer. Do not put Browse or Creators back in the learner rail unless asked. Admin still gets Platform insights. Creator items stay under Create when that flow is on.
+
 ## Phone
 
 Breakpoint for this product’s lesson/shell splits: **768px** (`md`). Shell CSS still has a 980px cut in places; do not add a third number. Prefer aligning new work to 768.
