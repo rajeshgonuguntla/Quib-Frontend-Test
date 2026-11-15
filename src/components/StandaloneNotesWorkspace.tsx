@@ -23,7 +23,13 @@ function loadLibrary(): StandaloneNotesLibrary {
   return next;
 }
 
-export function StandaloneNotesWorkspace() {
+type StandaloneNotesWorkspaceProps = {
+  /** `below` is Notes tab only — dashboard / landing keep the side library. */
+  libraryLayout?: 'side' | 'below';
+};
+
+export function StandaloneNotesWorkspace({ libraryLayout = 'side' }: StandaloneNotesWorkspaceProps) {
+  const libraryBelow = libraryLayout === 'below';
   const [library, setLibrary] = useState<StandaloneNotesLibrary>(() => loadLibrary());
   const [panelOpen, setPanelOpen] = useState(false);
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -121,12 +127,15 @@ export function StandaloneNotesWorkspace() {
 
   if (!activeNote) return null;
 
+  const libraryVisible = libraryBelow || panelOpen;
+
   return (
     <div className="relative z-[1]">
       <div
         className={cn(
-          'grid gap-0',
-          panelOpen ? 'md:grid-cols-[minmax(0,1fr)_220px]' : 'grid-cols-1',
+          libraryBelow
+            ? 'flex flex-col gap-2'
+            : cn('grid gap-0', panelOpen ? 'md:grid-cols-[minmax(0,1fr)_220px]' : 'grid-cols-1'),
         )}
       >
         <RichNotesEditor
@@ -134,21 +143,24 @@ export function StandaloneNotesWorkspace() {
           initialHtml={activeNote.html}
           reloadKey={activeNote.id}
           myNotesLabel="My notes"
-          onMyNotesClick={() => setPanelOpen((open) => !open)}
+          onMyNotesClick={libraryBelow ? undefined : () => setPanelOpen((open) => !open)}
+          showMyNotesControl={!libraryBelow}
           ariaLabel="Notes"
           className={cn(
             'overflow-hidden rounded-2xl shadow-[var(--shadow)]',
-            panelOpen && 'md:rounded-r-none',
+            !libraryBelow && panelOpen && 'md:rounded-r-none',
           )}
           minHeightClassName="min-h-[200px] max-h-[420px]"
           onPersist={onPersist}
         />
 
-        {panelOpen ? (
+        {libraryVisible ? (
           <aside
             className={cn(
               'flex flex-col border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow)]',
-              'mt-2 rounded-2xl md:mt-0 md:border-l-0 md:rounded-l-none md:rounded-r-2xl md:shadow-none',
+              libraryBelow
+                ? 'rounded-2xl'
+                : 'mt-2 rounded-2xl md:mt-0 md:border-l-0 md:rounded-l-none md:rounded-r-2xl md:shadow-none',
             )}
             aria-label="My notes library"
           >
@@ -174,17 +186,19 @@ export function StandaloneNotesWorkspace() {
                 >
                   <Plus size={16} strokeWidth={2} />
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setPanelOpen(false)}
-                  className="inline-flex size-11 items-center justify-center rounded-md text-[var(--ink-faint)] transition-colors hover:bg-[var(--fill)] hover:text-[var(--ink)]"
-                  aria-expanded={true}
-                  aria-label="Collapse my notes"
-                  title="Collapse"
-                >
-                  <ChevronRight size={16} strokeWidth={2.2} className="hidden md:inline" />
-                  <ChevronLeft size={16} strokeWidth={2.2} className="md:hidden" />
-                </button>
+                {libraryBelow ? null : (
+                  <button
+                    type="button"
+                    onClick={() => setPanelOpen(false)}
+                    className="inline-flex size-11 items-center justify-center rounded-md text-[var(--ink-faint)] transition-colors hover:bg-[var(--fill)] hover:text-[var(--ink)]"
+                    aria-expanded={true}
+                    aria-label="Collapse my notes"
+                    title="Collapse"
+                  >
+                    <ChevronRight size={16} strokeWidth={2.2} className="hidden md:inline" />
+                    <ChevronLeft size={16} strokeWidth={2.2} className="md:hidden" />
+                  </button>
+                )}
               </div>
             </div>
 

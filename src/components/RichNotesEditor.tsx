@@ -108,6 +108,8 @@ export type RichNotesEditorProps = {
   /** Clickable trailing control (sentence case). Defaults to focusing the editor. */
   myNotesLabel?: string;
   onMyNotesClick?: () => void;
+  /** Hide the trailing My notes control (Notes tab shows the library below the editor). */
+  showMyNotesControl?: boolean;
   ariaLabel?: string;
   player?: RichNotesPlayerClock | null;
   className?: string;
@@ -122,6 +124,7 @@ export function RichNotesEditor({
   persistDebounceMs = 700,
   myNotesLabel = 'My notes',
   onMyNotesClick,
+  showMyNotesControl = true,
   ariaLabel = 'Notes editor',
   player,
   className,
@@ -389,39 +392,41 @@ export function RichNotesEditor({
               {status === 'error' && (error ?? 'Error')}
             </span>
           )}
-          <button
-            type="button"
-            onClick={() => {
-              if (onMyNotesClick) {
-                onMyNotesClick();
-                return;
-              }
-              editorRef.current?.focus();
-            }}
-            className="inline-flex h-11 min-w-[44px] cursor-pointer items-center gap-1 rounded-md px-1.5 text-[12px] font-medium underline decoration-current/35 underline-offset-2 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-            style={{
-              fontFamily: 'var(--mono)',
-              color: C.text3,
-              outlineColor: C.accent,
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = C.accent;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = C.text3;
-            }}
-            onFocus={(e) => {
-              e.currentTarget.style.color = C.accent;
-            }}
-            onBlur={(e) => {
-              e.currentTarget.style.color = C.text3;
-            }}
-            aria-label={`${myNotesLabel} — open editor`}
-            title={`Open ${myNotesLabel}`}
-          >
-            {myNotesLabel}
-            <ChevronRight size={12} strokeWidth={2.5} aria-hidden />
-          </button>
+          {showMyNotesControl ? (
+            <button
+              type="button"
+              onClick={() => {
+                if (onMyNotesClick) {
+                  onMyNotesClick();
+                  return;
+                }
+                editorRef.current?.focus();
+              }}
+              className="inline-flex h-11 min-w-[44px] cursor-pointer items-center gap-1 rounded-md px-1.5 text-[12px] font-medium underline decoration-current/35 underline-offset-2 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+              style={{
+                fontFamily: 'var(--mono)',
+                color: C.text3,
+                outlineColor: C.accent,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = C.accent;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = C.text3;
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.color = C.accent;
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.color = C.text3;
+              }}
+              aria-label={`${myNotesLabel} — open editor`}
+              title={`Open ${myNotesLabel}`}
+            >
+              {myNotesLabel}
+              <ChevronRight size={12} strokeWidth={2.5} aria-hidden />
+            </button>
+          ) : null}
         </div>
       </div>
       <div
