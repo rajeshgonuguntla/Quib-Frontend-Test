@@ -46,6 +46,10 @@ Read [CUIB.md](CUIB.md) before judging a diff. Source of truth is `src/styles/ap
 - [ ] New logic has tests.
 - [ ] User-visible UI was (or will be) checked in a browser, including a phone width if the change is mobile.
 
+**PR write-up** (when opening or updating a PR)
+- [ ] Body matches `.cursor/skills/create-pr/PR_TEMPLATE.md`: Summary, What changed, Files, Test plan, Guardrails, Risk / rollout, Screenshots.
+- [ ] No empty `- ` bullets or skipped headings. Include branch, commits vs base, tsc/lint/test results.
+
 ## Output
 
 ```
