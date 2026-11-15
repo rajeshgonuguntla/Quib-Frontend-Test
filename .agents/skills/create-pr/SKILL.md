@@ -46,7 +46,9 @@ If the branch has no upstream: `git push -u origin HEAD`. Do not force-push main
 
 **5. Open the PR**
 
-Fill every section in [PR_TEMPLATE.md](PR_TEMPLATE.md). Title is **why**, matching commit voice (example: `Replace phone study chips with a left-side dot scrubber.`).
+Fill **every** section in [PR_TEMPLATE.md](PR_TEMPLATE.md). No empty `- ` bullets, no skipped headings, no “TBD”. Include branch, commits vs base, and a Files list (`path` — why). Title is **why**, matching commit voice (example: `Replace phone study chips with a left-side dot scrubber.`).
+
+If any required section is blank, stop. That is a failed code check — do not `gh pr create`.
 
 ```bash
 gh pr create --title "the pr title" --body "$(cat <<'EOF'
@@ -64,8 +66,9 @@ On Windows PowerShell, pass the body via a here-string or a temp file; do not sk
 - Title
 - Summary (1–3 user-facing bullets)
 - What changed (areas/files, not a dump)
-- Test plan (desktop; phone &lt;768 if UI; empty/error if relevant)
-- Guardrails (`design-guardrails passed`)
+- Files (`path` — why for each)
+- Test plan (desktop; phone &lt;768 if UI; empty/error if relevant; tsc, lint, test)
+- Guardrails (`design-guardrails passed`, plus Blocks / Notes)
 - Risk / rollout
 - Screenshots **or** “not UI”
 
