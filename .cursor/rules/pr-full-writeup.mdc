@@ -1,0 +1,19 @@
+---
+description: Every Cubit PR and pre-PR code check must use the full PR template with no empty sections.
+alwaysApply: true
+---
+
+# Full PR write-up (locked)
+
+Source: `.cursor/skills/create-pr/PR_TEMPLATE.md` and `.github/PULL_REQUEST_TEMPLATE.md`.
+
+When the user asks for a PR, a code check, or a push that will be reviewed:
+
+1. Run `.cursor/skills/design-guardrails` on the diff. Fail closed on blocks.
+2. Fill **every** template section before opening or updating the PR. Do not omit Files, Test plan, Guardrails, Risk / rollout, or Screenshots.
+3. Put real content in every bullet. Empty `- ` lines, “TBD”, or skipped headings fail the check.
+4. Include the branch, commits vs `origin/main`, and each touched file with a one-line why.
+5. Record `npx tsc --noEmit`, `npm run lint`, and `npm test` (pass/fail). Add `npm run build` when the change can affect the bundle.
+6. Title is **why**, matching commit voice. User-facing name is Cubit.
+
+Do not open a PR, or tell the user a PR is done, until the body matches that template.
