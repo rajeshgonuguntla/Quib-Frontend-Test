@@ -38,7 +38,7 @@ function NavList({
   };
 
   return (
-    <div className={collapsed ? 'flex min-h-0 flex-1 flex-col justify-evenly' : 'flex flex-col gap-px'}>
+    <div className="flex flex-col gap-px">
       {items.map((item) => {
         const badgeCount = item.badgeKey === 'total'
           ? (libraryStats.total || libraryStats.inProgress + libraryStats.saved + libraryStats.completed)
@@ -111,70 +111,61 @@ export function AppSidebar({ pathname, search, onNavigate, layout = 'sidebar' }:
     }
   }
 
-  const collapsedItems = [...primaryItems, ...createItems, ...footerItems];
-
   return (
     <nav
       id={isDrawer ? undefined : 'cuib-sidebar-nav'}
       className={isDrawer ? 'flex flex-col' : 'flex h-full min-h-0 flex-col'}
       aria-label="Main"
     >
-      {collapsed ? (
+      <div className="shrink-0">
         <NavList
-          items={collapsedItems}
+          items={primaryItems}
           pathname={pathname}
           search={search}
           onNavigate={onNavigate}
-          collapsed
+          collapsed={collapsed}
         />
-      ) : (
-        <>
-          <div className="shrink-0">
+        {createItems.length > 0 ? (
+          <div className={collapsed ? 'mt-1' : 'mt-5'}>
+            {collapsed ? null : (
+              <p
+                className="mb-1 px-2.5 uppercase"
+                style={{
+                  fontFamily: 'var(--mono)',
+                  fontSize: 10,
+                  letterSpacing: '0.06em',
+                  color: 'var(--ink-faint)',
+                }}
+              >
+                Create
+              </p>
+            )}
             <NavList
-              items={primaryItems}
+              items={createItems}
               pathname={pathname}
               search={search}
               onNavigate={onNavigate}
+              collapsed={collapsed}
             />
-            {createItems.length > 0 ? (
-              <div className="mt-5">
-                <p
-                  className="mb-1 px-2.5 uppercase"
-                  style={{
-                    fontFamily: 'var(--mono)',
-                    fontSize: 10,
-                    letterSpacing: '0.06em',
-                    color: 'var(--ink-faint)',
-                  }}
-                >
-                  Create
-                </p>
-                <NavList
-                  items={createItems}
-                  pathname={pathname}
-                  search={search}
-                  onNavigate={onNavigate}
-                />
-              </div>
-            ) : null}
           </div>
+        ) : null}
+      </div>
 
-          <div
-            className={isDrawer ? 'mt-4 shrink-0 pt-4' : 'mt-auto shrink-0 pt-4'}
-            style={{ borderTop: '1px solid var(--border)' }}
-          >
-            {footerItems.length > 0 ? (
-              <NavList
-                items={footerItems}
-                pathname={pathname}
-                search={search}
-                onNavigate={onNavigate}
-              />
-            ) : null}
-            <SidebarUpgradeChip onNavigate={onNavigate} collapsed={collapsed} />
-          </div>
-        </>
-      )}
+      <div
+        className={isDrawer ? 'mt-4 shrink-0 pt-4' : 'mt-auto shrink-0 pt-4'}
+        style={{ borderTop: '1px solid var(--border)' }}
+      >
+        {footerItems.length > 0 ? (
+          <NavList
+            items={footerItems}
+            pathname={pathname}
+            search={search}
+            onNavigate={onNavigate}
+            collapsed={collapsed}
+          />
+        ) : null}
+        <SidebarUpgradeChip onNavigate={onNavigate} collapsed={collapsed} />
+      </div>
     </nav>
   );
 }
