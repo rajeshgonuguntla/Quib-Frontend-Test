@@ -38,7 +38,7 @@ function NavList({
   };
 
   return (
-    <div className="flex flex-col gap-px">
+    <div className={collapsed ? 'flex flex-col' : 'flex flex-col gap-px'}>
       {items.map((item) => {
         const badgeCount = item.badgeKey === 'total'
           ? (libraryStats.total || libraryStats.inProgress + libraryStats.saved + libraryStats.completed)
@@ -126,7 +126,7 @@ export function AppSidebar({ pathname, search, onNavigate, layout = 'sidebar' }:
           collapsed={collapsed}
         />
         {createItems.length > 0 ? (
-          <div className="mt-5">
+          <div className={collapsed ? 'mt-2' : 'mt-5'}>
             {!collapsed ? (
               <p
                 className="mb-1 px-2.5 uppercase"
@@ -152,7 +152,13 @@ export function AppSidebar({ pathname, search, onNavigate, layout = 'sidebar' }:
       </div>
 
       <div
-        className={isDrawer ? 'mt-4 shrink-0 pt-4' : 'mt-auto shrink-0 pt-4'}
+        className={
+          isDrawer
+            ? 'mt-4 shrink-0 pt-4'
+            : collapsed
+              ? 'mt-2 shrink-0 pt-2'
+              : 'mt-auto shrink-0 pt-4'
+        }
         style={{ borderTop: '1px solid var(--border)' }}
       >
         {footerItems.length > 0 ? (
