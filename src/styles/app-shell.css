@@ -62,7 +62,7 @@
 }
 
 .cuib-app .cuib-shell--sidebar-collapsed {
-  grid-template-columns: 72px 1fr;
+  grid-template-columns: 52px 1fr;
   gap: 16px;
 }
 
@@ -79,7 +79,7 @@
 }
 
 .cuib-app .cuib-shell--sidebar-collapsed .cuib-sidebar {
-  padding-right: 8px;
+  padding: 0 4px 16px 0;
 }
 
 .cuib-app .cuib-sidebar > nav {

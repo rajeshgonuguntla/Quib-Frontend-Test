@@ -25,7 +25,7 @@ export function SidebarNavItem({ item, active, onClick, collapsed = false }: Sid
       className={cn(
         'relative flex w-full items-center rounded-md text-left text-[13px] transition-colors duration-150',
         collapsed
-          ? 'min-h-11 justify-center px-0 py-2'
+          ? 'h-6 justify-center px-0'
           : 'justify-between gap-2.5 py-[7px] pl-3.5 pr-1',
         active ? 'font-semibold text-[var(--ink)]' : 'font-medium text-[var(--ink-faint)] hover:bg-[var(--fill)] hover:text-[var(--ink-soft)]',
       )}
