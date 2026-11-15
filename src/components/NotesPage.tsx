@@ -6,9 +6,9 @@ export function NotesPage() {
     <div>
       <PageHeader
         title="Notes"
-        description="Drafts save on this device. Open My notes to switch between them."
+        description="Drafts save on this device. Pick a note below to switch between them."
       />
-      <StandaloneNotesWorkspace />
+      <StandaloneNotesWorkspace libraryLayout="below" />
     </div>
   );
 }
