@@ -24,6 +24,8 @@ import {
   resultsSummaryCopy,
 } from '../utils/resultsReview';
 
+const EMPTY_ANSWERS: Record<number, string | string[]> = {};
+
 interface QuizMeta {
   title: string;
   channelName: string;
@@ -98,7 +100,7 @@ export function Results() {
       }),
   );
 
-  const answers: Record<number, string | string[]> = location.state?.answers ?? {};
+  const answers: Record<number, string | string[]> = location.state?.answers ?? EMPTY_ANSWERS;
 
   useEffect(() => {
     if (loadedResult || !id || !isUuid(id)) return;
@@ -169,9 +171,10 @@ export function Results() {
 
   const sectionScores = (apiResult?.sectionScores ?? []).filter((s) => (s.totalCount ?? 0) > 0);
 
+  const questionReview = apiResult?.questionReview;
   const reviewRows: ResultsQuestionRow[] = useMemo(() => {
-    if (apiResult?.questionReview?.length) {
-      return apiResult.questionReview.map((q, i) => ({
+    if (questionReview?.length) {
+      return questionReview.map((q, i) => ({
         index: i + 1,
         prompt: q.question,
         sectionKicker:
@@ -197,7 +200,7 @@ export function Results() {
         correctAnswer: q.answer,
       };
     });
-  }, [apiResult?.questionReview, questions, answers, sectionScores]);
+  }, [questionReview, questions, answers, sectionScores]);
 
   const totalQuestions = apiResult?.totalCount ?? (reviewRows.length || questions.length);
   const correctAnswers =

@@ -1,13 +1,20 @@
 import { Link } from 'react-router';
 import { useTheme } from './ThemeContext';
 import { LandingNav } from './landing/LandingNav';
+import { LandingPanelOverlay, useLandingPanel } from './landing/LandingPanelOverlay';
 
 export function LegalPage({ kind }: { kind: 'terms' | 'privacy' }) {
   const { isDark } = useTheme();
+  const { panel, setPanel } = useLandingPanel();
   const title = kind === 'terms' ? 'Terms of Service' : 'Privacy Policy';
   return (
     <div className={`landing-page min-h-screen ${isDark ? '' : 'light'}`}>
-      <LandingNav isDark={isDark} />
+      <LandingNav
+        isDark={isDark}
+        activePanel={panel}
+        onOpenPanel={(id) => setPanel((prev) => (prev === id ? null : id))}
+        onClosePanel={() => setPanel(null)}
+      />
       <article className="mx-auto max-w-2xl px-5 pb-16 pt-24 text-[var(--landing-fg)]">
         <p className="landing-mono-label mb-2">Legal</p>
         <h1 className="text-3xl font-semibold tracking-tight">{title}</h1>
@@ -18,6 +25,7 @@ export function LegalPage({ kind }: { kind: 'terms' | 'privacy' }) {
         </p>
         <Link to="/" className="mt-8 inline-block text-sm underline">Back to home</Link>
       </article>
+      <LandingPanelOverlay panel={panel} onClose={() => setPanel(null)} />
     </div>
   );
 }

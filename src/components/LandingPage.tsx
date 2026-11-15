@@ -1,16 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router';
-import { AnimatePresence, motion } from 'framer-motion';
-import { X } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { isTokenValid, useAuthSessionKey } from '../auth';
 import { useTheme } from './ThemeContext';
 import { CubeLoader } from './CubeLoader';
 import { LandingNav } from './landing/LandingNav';
-import {
-  LandingFeaturesContent,
-  LandingLearnContent,
-  type LandingPanelId,
-} from './landing/LandingSimpleBelow';
+import { LandingPanelOverlay, useLandingPanel } from './landing/LandingPanelOverlay';
 import { StudentMasterInput } from './StudentMasterInput';
 import GoogleLoginButton from './GoogleLoginButton';
 import { CUBIT_LOGO } from '../cubit/subjects';
@@ -21,7 +16,7 @@ export function LandingPage() {
   const sessionKey = useAuthSessionKey();
   const signedIn = sessionKey !== 'guest' && isTokenValid();
   const [isLoading, setIsLoading] = useState(false);
-  const [panel, setPanel] = useState<LandingPanelId | null>(null);
+  const { panel, setPanel } = useLandingPanel();
 
   useEffect(() => {
     if (location.state?.fromSignup) {
@@ -38,15 +33,6 @@ export function LandingPage() {
       document.body.style.overflow = prev;
     };
   }, []);
-
-  useEffect(() => {
-    if (!panel) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setPanel(null);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [panel]);
 
   if (isLoading) return <CubeLoader />;
 
@@ -124,40 +110,7 @@ export function LandingPage() {
         </div>
       </section>
 
-      <AnimatePresence>
-        {panel ? (
-          <motion.div
-            key={panel}
-            role="dialog"
-            aria-modal="true"
-            aria-label={panel === 'features' ? 'Features' : 'Learn'}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[90] flex flex-col bg-[var(--landing-bg)] pt-14"
-          >
-            <div className="landing-grid-bg pointer-events-none absolute inset-0" />
-            <div className="relative flex shrink-0 items-center justify-end px-5 py-3 md:px-8">
-              <button
-                type="button"
-                onClick={() => setPanel(null)}
-                className="inline-flex size-11 items-center justify-center rounded-lg text-[var(--landing-muted)] transition-colors hover:bg-[var(--landing-card)] hover:text-[var(--landing-fg)]"
-                aria-label="Close"
-              >
-                <X size={18} />
-              </button>
-            </div>
-            <div className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-16 md:px-8">
-              {panel === 'features' ? (
-                <LandingFeaturesContent onGetStarted={() => setPanel(null)} />
-              ) : (
-                <LandingLearnContent onGetStarted={() => setPanel(null)} />
-              )}
-            </div>
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
+      <LandingPanelOverlay panel={panel} onClose={() => setPanel(null)} />
     </div>
   );
 }

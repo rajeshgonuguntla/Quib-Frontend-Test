@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import GoogleLoginButton from './GoogleLoginButton';
 import { useTheme } from './ThemeContext';
 import { LandingNav } from './landing/LandingNav';
+import { LandingPanelOverlay, useLandingPanel } from './landing/LandingPanelOverlay';
 import { rememberReferralCode } from '../utils/referralCode';
 import { CREATOR_FLOW_ENABLED } from '../utils/signInIntent';
 
@@ -105,6 +106,7 @@ export function SignIn() {
   const location = useLocation();
   const navigate = useNavigate();
   const [studentLoginBlocked, setStudentLoginBlocked] = useState<string | null>(null);
+  const { panel, setPanel } = useLandingPanel();
   const pendingUrl =
     (location.state?.youtubeUrl as string | undefined) ||
     (location.state?.playlistUrl as string | undefined) ||
@@ -125,7 +127,12 @@ export function SignIn() {
   return (
     <div className={`landing-page min-h-screen overflow-x-hidden ${isDark ? '' : 'light'}`}>
       <div className="landing-grid-bg pointer-events-none fixed inset-0" />
-      <LandingNav isDark={isDark} />
+      <LandingNav
+        isDark={isDark}
+        activePanel={panel}
+        onOpenPanel={(id) => setPanel((prev) => (prev === id ? null : id))}
+        onClosePanel={() => setPanel(null)}
+      />
 
       <section className="relative flex min-h-screen flex-col items-center justify-center px-5 pt-14 pb-12 md:px-8">
         <div className="relative z-10 w-full max-w-5xl">
@@ -207,6 +214,7 @@ export function SignIn() {
           </Link>
         </div>
       </section>
+      <LandingPanelOverlay panel={panel} onClose={() => setPanel(null)} />
     </div>
   );
 }

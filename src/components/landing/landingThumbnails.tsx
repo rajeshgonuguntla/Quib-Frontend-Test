@@ -1,4 +1,4 @@
-import { useId, type SVGProps, type ReactElement } from 'react';
+import { useId, type ReactElement, type SVGProps } from 'react';
 
 type SvgProps = SVGProps<SVGSVGElement>;
 
@@ -23,7 +23,7 @@ function ThumbShell({ children, className, ...props }: SvgProps) {
         </filter>
       </defs>
       <rect width="320" height="180" fill={`url(#${bgId})`} />
-      {typeof children === 'function' ? children(glowId) : children}
+      {children}
     </svg>
   );
 }

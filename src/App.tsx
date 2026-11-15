@@ -1,3 +1,4 @@
+import { Component, lazy, Suspense, type ComponentType, type ReactNode } from 'react';
 import { BrowserRouter as Router, Navigate, Route, Routes } from 'react-router';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { ThemeProvider } from './components/ThemeContext';
@@ -5,38 +6,53 @@ import { UserProfileProvider } from './context/UserProfileContext';
 import { GOOGLE_CLIENT_ID } from './config/google';
 import { LandingPage } from './components/LandingPage';
 import { SignIn } from './components/SignIn';
-import { Dashboard } from './components/Dashboard';
-import { Onboarding } from './components/Onboarding';
-import { Library } from './components/Library';
-import { MyCourses } from './components/MyCourses';
-import { PracticePage } from './components/PracticePage';
-import { NotesPage } from './components/NotesPage';
-import { ReviewPage } from './components/ReviewPage';
-import { MyCertificates } from './components/MyCertificates';
-import { QuizSetup } from './components/QuizSetup';
-import { PlaylistSetup } from './components/PlaylistSetup';
-import { QuizTaking } from './components/QuizTaking';
-import { Results } from './components/Results';
-import { Certificate } from './components/Certificate';
-import { Verification } from './components/Verification';
-import { Settings } from './components/Settings';
-import { Upgrade, UpgradeSuccess } from './components/Upgrade';
 import { LegalPage } from './components/LegalPage';
-// Educators page kept in src/components/Educators.tsx for later; public route redirects to home for now.
-import { EducatorStudio } from './components/EducatorStudio';
-import { EducatorMyCourses } from './components/EducatorMyCourses';
-import { EducatorAnalytics } from './components/EducatorAnalytics';
-import { AdminInsights } from './components/AdminInsights';
-import { CourseEditor } from './components/CourseEditor';
-import { Governments } from './components/Governments';
-import { EducatorProfile } from './components/EducatorProfile';
-import { CourseBuilderFollowupsPage } from './components/CourseBuilderFollowupsPage';
-import { CourseDetails } from './components/CourseDetails';
-import { BrowseCoursesRedirect, CreatorsRedirect, Discover } from './components/Discover';
 import { isTokenValid, ProtectedRoute, PublicOnlyRoute } from './auth';
-import { INTERESTS_KEY } from './components/Onboarding';
-import { AppShell } from './shell/AppShell';
-import { Component, type ReactNode } from 'react';
+import { INTERESTS_KEY } from './utils/onboardingStorage';
+
+function lazyNamed<M extends Record<string, unknown>>(
+  loader: () => Promise<M>,
+  name: keyof M,
+) {
+  return lazy(async () => {
+    const mod = await loader();
+    return { default: mod[name] as ComponentType };
+  });
+}
+
+const Dashboard = lazyNamed(() => import('./components/Dashboard'), 'Dashboard');
+const Onboarding = lazyNamed(() => import('./components/Onboarding'), 'Onboarding');
+const Library = lazyNamed(() => import('./components/Library'), 'Library');
+const MyCourses = lazyNamed(() => import('./components/MyCourses'), 'MyCourses');
+const PracticePage = lazyNamed(() => import('./components/PracticePage'), 'PracticePage');
+const NotesPage = lazyNamed(() => import('./components/NotesPage'), 'NotesPage');
+const ReviewPage = lazyNamed(() => import('./components/ReviewPage'), 'ReviewPage');
+const MyCertificates = lazyNamed(() => import('./components/MyCertificates'), 'MyCertificates');
+const QuizSetup = lazyNamed(() => import('./components/QuizSetup'), 'QuizSetup');
+const PlaylistSetup = lazyNamed(() => import('./components/PlaylistSetup'), 'PlaylistSetup');
+const QuizTaking = lazyNamed(() => import('./components/QuizTaking'), 'QuizTaking');
+const Results = lazyNamed(() => import('./components/Results'), 'Results');
+const Certificate = lazyNamed(() => import('./components/Certificate'), 'Certificate');
+const Verification = lazyNamed(() => import('./components/Verification'), 'Verification');
+const Settings = lazyNamed(() => import('./components/Settings'), 'Settings');
+const Upgrade = lazyNamed(() => import('./components/Upgrade'), 'Upgrade');
+const UpgradeSuccess = lazyNamed(() => import('./components/Upgrade'), 'UpgradeSuccess');
+const EducatorStudio = lazyNamed(() => import('./components/EducatorStudio'), 'EducatorStudio');
+const EducatorMyCourses = lazyNamed(() => import('./components/EducatorMyCourses'), 'EducatorMyCourses');
+const EducatorAnalytics = lazyNamed(() => import('./components/EducatorAnalytics'), 'EducatorAnalytics');
+const AdminInsights = lazyNamed(() => import('./components/AdminInsights'), 'AdminInsights');
+const CourseEditor = lazyNamed(() => import('./components/CourseEditor'), 'CourseEditor');
+const Governments = lazyNamed(() => import('./components/Governments'), 'Governments');
+const EducatorProfile = lazyNamed(() => import('./components/EducatorProfile'), 'EducatorProfile');
+const CourseBuilderFollowupsPage = lazyNamed(
+  () => import('./components/CourseBuilderFollowupsPage'),
+  'CourseBuilderFollowupsPage',
+);
+const CourseDetails = lazyNamed(() => import('./components/CourseDetails'), 'CourseDetails');
+const Discover = lazyNamed(() => import('./components/Discover'), 'Discover');
+const BrowseCoursesRedirect = lazyNamed(() => import('./components/Discover'), 'BrowseCoursesRedirect');
+const CreatorsRedirect = lazyNamed(() => import('./components/Discover'), 'CreatorsRedirect');
+const AppShell = lazyNamed(() => import('./shell/AppShell'), 'AppShell');
 
 class RouteErrorBoundary extends Component<{ children: ReactNode }, { message: string | null }> {
   state = { message: null as string | null };
@@ -65,6 +81,23 @@ class RouteErrorBoundary extends Component<{ children: ReactNode }, { message: s
   }
 }
 
+function RouteFallback() {
+  return (
+    <div
+      className="cuib-app flex min-h-dvh items-center justify-center"
+      aria-busy="true"
+      aria-label="Loading"
+    >
+      <div
+        className="h-0.5 w-24 overflow-hidden rounded-full"
+        style={{ background: 'var(--border)' }}
+      >
+        <div className="h-full w-1/2 rounded-full" style={{ background: 'var(--accent)' }} />
+      </div>
+    </div>
+  );
+}
+
 function GuestHome() {
   if (!isTokenValid()) {
     return <LandingPage />;
@@ -80,6 +113,7 @@ export default function App() {
         <Router>
           <UserProfileProvider>
             <RouteErrorBoundary>
+            <Suspense fallback={<RouteFallback />}>
             <Routes>
               <Route path="/" element={<GuestHome />} />
               <Route path="/terms" element={<LegalPage kind="terms" />} />
@@ -131,6 +165,7 @@ export default function App() {
                 </Route>
               </Route>
             </Routes>
+            </Suspense>
             </RouteErrorBoundary>
           </UserProfileProvider>
         </Router>

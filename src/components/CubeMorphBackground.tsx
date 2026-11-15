@@ -181,7 +181,7 @@ export function CubeMorphBackground({ isDark }: Props) {
         el.g.setAttribute('transform', `translate(${c.x}, ${c.y})`);
         el.g.style.opacity = String(c.op);
         el.brand.style.opacity = String(c.brand);
-        cubeGroup.appendChild(el.g);
+        groupRef.current?.appendChild(el.g);
       });
     }
 
