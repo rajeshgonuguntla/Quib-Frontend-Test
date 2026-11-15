@@ -6,9 +6,9 @@ import { Check, ArrowRight } from 'lucide-react';
 import { QuibLogo } from './QuibLogo';
 import { fetchInterests, saveOnboarding } from '../api/catalogApi';
 import type { CatalogInterest } from '../types/catalog';
+import { EDUCATORS_KEY, INTERESTS_KEY } from '../utils/onboardingStorage';
 
-export const INTERESTS_KEY = 'quib_interests';
-export const EDUCATORS_KEY = 'quib_educators';
+export { EDUCATORS_KEY, INTERESTS_KEY };
 
 interface Interest {
   id: string;

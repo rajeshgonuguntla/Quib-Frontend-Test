@@ -44,7 +44,7 @@ function loadYoutubeApi(): Promise<void> {
     return Promise.resolve();
   }
   if (!youtubeApiPromise) {
-    youtubeApiPromise = new Promise((resolve, reject) => {
+    const pending = new Promise<void>((resolve, reject) => {
       const previous = window.onYouTubeIframeAPIReady;
       const timeout = window.setTimeout(() => {
         reject(new Error('YouTube IFrame API load timed out'));
@@ -63,10 +63,12 @@ function loadYoutubeApi(): Promise<void> {
         };
         document.head.appendChild(tag);
       }
-    }).catch((err) => {
-      youtubeApiPromise = null;
-      throw err;
     });
+    youtubeApiPromise = pending;
+    void pending.catch(() => {
+      youtubeApiPromise = null;
+    });
+    return pending;
   }
   return youtubeApiPromise;
 }

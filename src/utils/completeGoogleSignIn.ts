@@ -5,7 +5,7 @@ import { fetchUserProfile } from '../api/userApi';
 import { fetchOnboarding } from '../api/catalogApi';
 import { clearLocalSession, clearToken, setSession } from '../auth';
 import { logClientError } from './logClientError';
-import { INTERESTS_KEY, EDUCATORS_KEY } from '../components/Onboarding';
+import { EDUCATORS_KEY, INTERESTS_KEY } from './onboardingStorage';
 import type { UserProfile } from '../types/userProfile';
 import type { OnboardingState } from '../types/catalog';
 import {

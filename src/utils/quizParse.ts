@@ -56,7 +56,11 @@ export function normalizeQuestions(rawQuestions: BackendQuestion[]): ParsedQuizQ
           const n = o.trim().toLowerCase();
           return n === 'true' || n === 'false';
         });
-      const type = options?.length ? (isTrueFalse ? 'trueFalse' : 'mcq') : 'shortAnswer';
+      const type: ParsedQuizQuestion['type'] = options?.length
+        ? isTrueFalse
+          ? 'trueFalse'
+          : 'mcq'
+        : 'shortAnswer';
       return {
         id: index,
         type,

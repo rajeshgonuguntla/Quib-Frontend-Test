@@ -9,6 +9,7 @@ import {
   titleFromNotesHtml,
   upsertStandaloneNote,
   writeStandaloneNotesLibrary,
+  type StandaloneNotesLibrary,
 } from './standaloneNotes';
 
 describe('standaloneNotes', () => {
@@ -39,7 +40,7 @@ describe('standaloneNotes', () => {
   it('upserts and sorts by updatedAt', () => {
     const a = createStandaloneNote('<p>First</p>');
     const b = createStandaloneNote('<p>Second</p>');
-    let lib = { notes: [a], activeId: a.id };
+    let lib: StandaloneNotesLibrary = { notes: [a], activeId: a.id };
     lib = upsertStandaloneNote(lib, b);
     writeStandaloneNotesLibrary(lib);
     const read = readStandaloneNotesLibrary();
@@ -49,7 +50,7 @@ describe('standaloneNotes', () => {
 
   it('keeps a custom rename when content is saved again', () => {
     const note = createStandaloneNote('<p>Body text</p>');
-    let lib = { notes: [note], activeId: note.id };
+    let lib: StandaloneNotesLibrary = { notes: [note], activeId: note.id };
     lib = renameStandaloneNote(lib, note.id, 'SAT prep');
     expect(lib.notes[0]?.title).toBe('SAT prep');
     expect(lib.notes[0]?.titleCustom).toBe(true);

@@ -1,7 +1,7 @@
 import { Navigate, Outlet, useLocation } from 'react-router';
 import { useEffect, useState } from 'react';
 import { useUserProfile } from './context/UserProfileContext';
-import { INTERESTS_KEY } from './components/Onboarding';
+import { INTERESTS_KEY } from './utils/onboardingStorage';
 import { SIGN_IN_PATH } from './utils/navigation';
 import { safeAppPath } from './utils/safeAppPath';
 
