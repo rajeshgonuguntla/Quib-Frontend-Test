@@ -104,7 +104,7 @@
   border: 0;
   border-radius: 0;
   background: transparent;
-  color: var(--ink-faint);
+  color: var(--accent);
   transition: color 150ms ease;
 }
 
@@ -124,7 +124,7 @@
 }
 
 .cuib-app .cuib-edge-toggle:hover {
-  color: var(--ink);
+  color: var(--brand);
 }
 
 .cuib-app .cuib-edge-toggle--vertical {
