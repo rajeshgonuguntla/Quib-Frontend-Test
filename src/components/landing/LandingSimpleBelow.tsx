@@ -126,7 +126,7 @@ const LEARN_CARDS = [
   },
 ] as const;
 
-export type LandingPanelId = 'features' | 'learn';
+export type LandingPanelId = 'features' | 'learn' | 'pricing';
 
 type LandingPanelCtaProps = {
   onGetStarted?: () => void;
