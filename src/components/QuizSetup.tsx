@@ -20,6 +20,10 @@ import {
   type ApiQuizSection,
 } from '../api/quizApi';
 import { resolveExamType } from '../utils/examType';
+import {
+  isRecoverableGenerateFailure,
+  recoverGeneratedQuizId,
+} from '../utils/recoverGeneratedQuiz';
 
 interface Question {
   id: number;
@@ -240,6 +244,7 @@ export function QuizSetup() {
     'custom';
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState(0);
+  const [recovering, setRecovering] = useState(false);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [setupError, setSetupError] = useState<string | null>(null);
   const [videoMeta, setVideoMeta] = useState<QuizMeta>({
@@ -340,15 +345,72 @@ export function QuizSetup() {
             promptRequest,
           );
           sessionStorage.setItem('quizExamType', generateExamType);
-          const response = await axios.post('/api/quiz/generate-from-prompt', {
-            prompt: promptRequest.trim(),
+          const generateStartedAtMs = Date.now();
+          let settled = false;
+
+          const openRecoveredQuiz = (recoveredId: string) => {
+            sessionStorage.setItem('currentQuizId', recoveredId);
+            sessionStorage.setItem('quizExamType', generateExamType);
+            setLoadedExamType(generateExamType);
+            navigate(`/quiz-setup/${recoveredId}`, {
+              replace: true,
+              state: { ...location.state, examType: generateExamType },
+            });
+          };
+
+          // Parallel poll: if Chrome drops the POST, the quiz may still land in /api/quizzes.
+          const backgroundRecover = recoverGeneratedQuizId({
+            startedAtMs: generateStartedAtMs,
             examType: generateExamType,
-            config: {
-              difficulty: location.state?.difficulty || 'medium',
-              timedExam: true,
-              questionTypes: location.state?.questionTypes,
-            },
+            initialDelayMs: 75_000,
+            giveUpMs: 180_000,
+            isCancelled: () => settled || !isMounted,
+          }).then((id) => {
+            if (!id || settled || !isMounted) return null;
+            settled = true;
+            if (isMounted) setRecovering(true);
+            openRecoveredQuiz(id);
+            return id;
           });
+
+          let response;
+          try {
+            response = await axios.post('/api/quiz/generate-from-prompt', {
+              prompt: promptRequest.trim(),
+              examType: generateExamType,
+              config: {
+                difficulty: location.state?.difficulty || 'medium',
+                timedExam: true,
+                questionTypes: location.state?.questionTypes,
+              },
+            });
+            if (settled) return;
+            settled = true;
+          } catch (err) {
+            if (settled || !isMounted) return;
+            if (!isRecoverableGenerateFailure(err)) {
+              settled = true;
+              throw err;
+            }
+            if (isMounted) setRecovering(true);
+            const recoveredId =
+              (await backgroundRecover) ||
+              (await recoverGeneratedQuizId({
+                startedAtMs: generateStartedAtMs,
+                examType: generateExamType,
+                giveUpMs: 120_000,
+                isCancelled: () => !isMounted,
+              }));
+            if (!recoveredId) {
+              settled = true;
+              throw err;
+            }
+            if (!settled) {
+              settled = true;
+              openRecoveredQuiz(recoveredId);
+            }
+            return;
+          }
 
           const parsedQuestions = response.data.questions?.length
             ? mapApiQuestionsToFrontend(response.data.questions, response.data.sections)
@@ -460,7 +522,8 @@ export function QuizSetup() {
       isMounted = false;
       clearInterval(interval);
     };
-  }, [youtubeUrl, promptRequest, examType, id]);
+    // ponytail: omit examType — loadedExamType updates would re-fire generate mid-request.
+  }, [youtubeUrl, promptRequest, id]);
 
   useEffect(() => {
     if (youtubeUrl) {
@@ -536,9 +599,11 @@ export function QuizSetup() {
           </div>
 
           <p className="text-[12px] leading-relaxed" style={{ color: C.text3 }}>
-            {promptRequest
-              ? 'Stay on this page — we will open the exam when it is ready.'
-              : 'Hang tight while Cubit builds your questions.'}
+            {recovering
+              ? 'Connection interrupted — checking whether your exam was already saved…'
+              : promptRequest
+                ? 'Stay on this page — GRE/SAT prep can take a couple of minutes.'
+                : 'Hang tight while Cubit builds your questions.'}
           </p>
         </div>
         </div>
