@@ -101,8 +101,8 @@ const ROUTE_META: Record<string, RouteMeta> = {
   '/educator-analytics': { title: 'Analytics', section: 'Insights', parent: { label: 'Home', path: '/dashboard' } },
   '/admin/insights': { title: 'Platform Insights', section: 'Admin', parent: { label: 'Home', path: '/dashboard' } },
   '/settings': { title: 'Settings', section: 'Account', parent: { label: 'Home', path: '/dashboard' } },
-  '/upgrade': { title: 'Upgrade', section: 'Unlimited', parent: { label: 'Home', path: '/dashboard' } },
-  '/upgrade/success': { title: 'Subscription', section: 'Unlimited', parent: { label: 'Upgrade', path: '/upgrade' } },
+  '/upgrade': { title: 'Upgrade', section: 'Plan', parent: { label: 'Home', path: '/dashboard' } },
+  '/upgrade/success': { title: 'Subscription', section: 'Plan', parent: { label: 'Upgrade', path: '/upgrade' } },
   '/quiz-setup': { title: 'Quiz setup', section: 'Practice', parent: { label: 'Practice', path: '/practice' } },
   '/playlist-setup': { title: 'Playlist setup', section: 'Practice', parent: { label: 'Practice', path: '/practice' } },
 };

@@ -1,34 +1,16 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { Check } from 'lucide-react';
-import { SIGN_IN_HASH_PATH } from '../../utils/navigation';
 import { BRAND_SUPPORT_EMAIL } from '../../brand';
+import {
+  STUDENT_ADDONS,
+  STUDENT_FREE_FEATURES,
+  STUDENT_PRO_FEATURES,
+  STUDENT_SPRINT_FEATURES,
+} from '../../lib/studentPricing';
+import { SIGN_IN_HASH_PATH } from '../../utils/navigation';
 
 type Audience = 'students' | 'educators';
-
-const STUDENT_FREE = [
-  'Limited daily practice questions',
-  'Saved explanations',
-  '3 tutor chats a week',
-  'Basic progress view',
-] as const;
-
-const STUDENT_PRO = [
-  'Unlimited practice questions',
-  'A daily study plan',
-  'A weekly parent progress report',
-  'The full personal tutor',
-  'The mistake notebook + Cubit Notes',
-] as const;
-
-const STUDENT_SPRINT = [
-  'Full Pro for 90 days',
-  'No subscription',
-  'Built around a test date',
-  'Target your weak areas',
-  'Build on your strengths',
-  'Track your practice',
-] as const;
 
 const EDUCATOR_PRO = [
   'Unlimited courses',
@@ -172,7 +154,7 @@ export function LandingPricingContent({ onGetStarted }: { onGetStarted?: () => v
               <h3 className="text-lg font-semibold text-[var(--landing-fg)]">Free</h3>
               <p className="mt-1 text-3xl font-semibold tracking-tight text-[var(--landing-fg)]">₹0</p>
               <p className="text-sm text-[var(--landing-muted)]">$0</p>
-              <FeatureList items={STUDENT_FREE} />
+              <FeatureList items={STUDENT_FREE_FEATURES} />
               <OutlineCta to={signIn} onClick={onGetStarted}>
                 Start free
               </OutlineCta>
@@ -180,7 +162,7 @@ export function LandingPricingContent({ onGetStarted }: { onGetStarted?: () => v
 
             <article className="flex flex-col rounded-xl border border-[var(--landing-border)] bg-[var(--landing-card)] p-5 text-left">
               <h3 className="text-lg font-semibold text-[var(--landing-fg)]">Pro</h3>
-              <FeatureList items={STUDENT_PRO} />
+              <FeatureList items={STUDENT_PRO_FEATURES} />
               <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-3">
                 <div className="flex flex-col rounded-lg border border-[var(--landing-border)] p-3">
                   <p className="text-sm font-medium text-[var(--landing-fg)]">Monthly</p>
@@ -230,7 +212,7 @@ export function LandingPricingContent({ onGetStarted }: { onGetStarted?: () => v
               <p className="mt-1 text-3xl font-semibold tracking-tight text-[var(--landing-fg)]">₹3,500</p>
               <p className="text-sm text-[var(--landing-muted)]">$40</p>
               <p className="text-sm text-[var(--landing-muted)]">One-time, for 90 days</p>
-              <FeatureList items={STUDENT_SPRINT} />
+              <FeatureList items={STUDENT_SPRINT_FEATURES} />
               <OutlineCta to={signIn} onClick={onGetStarted}>
                 Get the Sprint Pass
               </OutlineCta>
@@ -240,11 +222,7 @@ export function LandingPricingContent({ onGetStarted }: { onGetStarted?: () => v
           <h3 className="mt-10 text-sm font-semibold text-[var(--landing-fg)]">Add-ons</h3>
           <p className="mt-1 text-[12px] text-[var(--landing-muted)]">Priced in Indian rupees.</p>
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-            {[
-              { title: 'GRE essay feedback pack', price: '₹299 for 10 essays' },
-              { title: 'Extra mock test with analysis', price: '₹199 each' },
-              { title: 'Sibling or friend discount', price: '20% off' },
-            ].map((addon) => (
+            {STUDENT_ADDONS.map((addon) => (
               <article
                 key={addon.title}
                 className="rounded-xl border border-[var(--landing-border)] bg-[var(--landing-card)] px-4 py-4 text-left"
