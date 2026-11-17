@@ -6,6 +6,7 @@ import {
   LandingLearnContent,
   type LandingPanelId,
 } from './LandingSimpleBelow';
+import { LandingPricingContent } from './LandingPricing';
 
 export function useLandingPanel() {
   const [panel, setPanel] = useState<LandingPanelId | null>(null);
@@ -35,7 +36,7 @@ export function LandingPanelOverlay({ panel, onClose }: LandingPanelOverlayProps
           key={panel}
           role="dialog"
           aria-modal="true"
-          aria-label={panel === 'features' ? 'Features' : 'Learn'}
+          aria-label={panel === 'features' ? 'Features' : panel === 'learn' ? 'Learn' : 'Pricing'}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -56,8 +57,10 @@ export function LandingPanelOverlay({ panel, onClose }: LandingPanelOverlayProps
           <div className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-16 md:px-8">
             {panel === 'features' ? (
               <LandingFeaturesContent onGetStarted={onClose} />
-            ) : (
+            ) : panel === 'learn' ? (
               <LandingLearnContent onGetStarted={onClose} />
+            ) : (
+              <LandingPricingContent onGetStarted={onClose} />
             )}
           </div>
         </motion.div>

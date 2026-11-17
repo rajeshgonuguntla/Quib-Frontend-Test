@@ -61,6 +61,7 @@ export function LandingNav({ isDark, activePanel, onOpenPanel, onClosePanel }: L
       <ul className="absolute left-1/2 flex -translate-x-1/2 list-none items-center gap-5 md:gap-8">
         <li>{navBtn('features', 'Features')}</li>
         <li>{navBtn('learn', 'Learn')}</li>
+        <li>{navBtn('pricing', 'Pricing')}</li>
         {SHOW_GOVERNMENTS_NAV ? (
           <li>
             <Link to="/governments" className="text-sm text-[var(--landing-muted)] no-underline transition-colors hover:text-[var(--landing-fg)]">
