@@ -104,7 +104,8 @@
   border: 0;
   border-radius: 0;
   background: transparent;
-  color: var(--accent);
+  /* Brighter Cubit orange (#ff7a1a) so divider chevrons stay readable in light mode too. */
+  color: #ff7a1a;
   transition: color 150ms ease;
 }
 
@@ -121,10 +122,11 @@
 .cuib-app .cuib-edge-toggle > svg {
   position: relative;
   z-index: 1;
+  stroke-width: 2.6;
 }
 
 .cuib-app .cuib-edge-toggle:hover {
-  color: var(--brand);
+  color: #e8650a;
 }
 
 .cuib-app .cuib-edge-toggle--vertical {

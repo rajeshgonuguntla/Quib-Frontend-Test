@@ -161,7 +161,7 @@ export function Dashboard() {
           aria-controls="dashboard-continue-learning"
           aria-label={continueOpen ? 'Collapse continue learning' : 'Expand continue learning'}
         >
-          {continueOpen ? <ChevronUp size={14} strokeWidth={2.2} /> : <ChevronDown size={14} strokeWidth={2.2} />}
+          {continueOpen ? <ChevronUp size={14} strokeWidth={2.6} /> : <ChevronDown size={14} strokeWidth={2.6} />}
         </button>
       </div>
 

@@ -77,9 +77,9 @@ function AppShellLayout() {
               aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             >
               {sidebarCollapsed ? (
-                <ChevronRight size={14} strokeWidth={2.2} />
+                <ChevronRight size={14} strokeWidth={2.6} />
               ) : (
-                <ChevronLeft size={14} strokeWidth={2.2} />
+                <ChevronLeft size={14} strokeWidth={2.6} />
               )}
             </button>
           </aside>
