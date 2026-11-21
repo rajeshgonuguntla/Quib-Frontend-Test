@@ -92,15 +92,20 @@ export function LandingPage() {
             >
               <StudentMasterInput signedIn={signedIn} />
               {!signedIn && (
-                <div
-                  data-landing-google-signin
-                  className="signin-google-wrap mt-4 flex justify-center"
-                >
-                  <GoogleLoginButton
-                    signInIntent="student"
-                    theme={isDark ? 'filled_black' : 'outline'}
-                    size="large"
-                  />
+                <div className="mt-4 flex flex-col items-center">
+                  <p className="mb-2 text-center text-sm text-[var(--landing-muted)]">
+                    Students and educators log in
+                  </p>
+                  <div
+                    data-landing-google-signin
+                    className="signin-google-wrap flex w-full justify-center"
+                  >
+                    <GoogleLoginButton
+                      signInIntent="student"
+                      theme={isDark ? 'filled_black' : 'outline'}
+                      size="large"
+                    />
+                  </div>
                 </div>
               )}
             </motion.div>
