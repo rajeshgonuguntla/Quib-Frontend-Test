@@ -39,6 +39,11 @@ export function isAdminAccount(profile?: UserProfile | null): boolean {
   return profile?.role === 'admin';
 }
 
+/** Cubit Studio v2 is admin-only. Educators and learners keep today's app. */
+export function isStudioV2Account(profile?: UserProfile | null): boolean {
+  return isAdminAccount(profile);
+}
+
 /** Backend role — educator accounts always get creator tooling in the app. */
 export function isEducatorAccount(profile?: UserProfile | null): boolean {
   return profile?.role === 'educator' || profile?.role === 'admin';

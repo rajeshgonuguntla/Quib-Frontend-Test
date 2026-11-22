@@ -9,8 +9,9 @@ const S = {
 };
 const navIds = (page: Page) => page.getByTestId('nav-item').evaluateAll((els) => els.map((e) => e.getAttribute('data-nav-id')));
 
-test.describe('PR-01 · flag, educator nav and routes', () => {
-  test('educator sees the creator-only rail: Cubit Studio, My courses, Settings', async ({ page }) => {
+test.describe('PR-01 · flag, admin nav and routes', () => {
+  test('admin sees the creator-only rail: Cubit Studio, My courses, Settings', async ({ page }) => {
+    if (!isRef) await mockSession(page, 'admin');
     await open(page, S.courses);
     expect(await navIds(page)).toEqual(['studio', 'my-courses-educator', 'settings']);
     await expect(page.getByTestId('nav-item').first()).toHaveText('Cubit Studio');
@@ -40,6 +41,14 @@ test.describe('PR-01 · flag, educator nav and routes', () => {
     expect(await navIds(page)).not.toContain('studio');
     if (isRef) await expect(page.getByTestId('ref-location')).toHaveText('/dashboard');
     else await expect(page).toHaveURL(/\/dashboard$/);
+  });
+
+  test('educators do not get the studio rail', async ({ page }) => {
+    test.skip(isRef, 'reference kit still shows the educator rail');
+    await mockSession(page, 'educator');
+    await open(page, S.courses);
+    expect(await navIds(page)).not.toContain('studio');
+    await expect(page).toHaveURL(/\/dashboard$/);
   });
 
   test('clicking nav items navigates', async ({ page }) => {

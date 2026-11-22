@@ -24,8 +24,8 @@ export interface Screen {
 
 export type Role = 'educator' | 'admin' | 'learner';
 
-/** Fake a signed-in session for APP mode. /api/users/me (Exists) is the only call the shell needs. */
-export async function mockSession(page: Page, role: Role = 'educator'): Promise<void> {
+/** Fake a signed-in session for APP mode. Studio v2 is admin-only, so the default role is admin. */
+export async function mockSession(page: Page, role: Role = 'admin'): Promise<void> {
   await page.addInitScript(() => {
     localStorage.setItem('cuib_session_exp', String(Math.floor(Date.now() / 1000) + 3600));
   });
@@ -41,6 +41,8 @@ export async function mockSession(page: Page, role: Role = 'educator'): Promise<
       json: { plan: 'free', status: 'none', unlimited: false, canManageBilling: false },
     }),
   );
+  // Home still requests quizzes after an educator or learner is sent away from Studio.
+  await page.route('**/api/quizzes', (route) => route.fulfill({ json: [] }));
 }
 
 export async function open(page: Page, s: Screen, opts: { theme?: 'light' | 'dark' } = {}): Promise<void> {
