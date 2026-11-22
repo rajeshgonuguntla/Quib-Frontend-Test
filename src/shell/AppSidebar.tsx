@@ -1,7 +1,8 @@
 import { useNavigate } from 'react-router';
 import { SidebarNavItem } from '../components/SidebarNavItem';
-import { NAV_GROUPS, isNavItemActive, type NavItem } from './navConfig';
-import { filterNavGroups, isEducatorExperience, isAdminAccount } from '../utils/signInIntent';
+import { EDUCATOR_NAV_GROUPS, NAV_GROUPS, isNavItemActive, type NavItem } from './navConfig';
+import { STUDIO_V2_ENABLED } from '../config/features';
+import { filterNavGroups, isEducatorAccount, isEducatorExperience, isAdminAccount } from '../utils/signInIntent';
 import { useUserProfile } from '../context/UserProfileContext';
 import { useShell } from './ShellContext';
 import { billingPlanLabel, hidesUpgradeCta } from '../api/billingApi';
@@ -92,8 +93,11 @@ export function AppSidebar({ pathname, search, onNavigate, layout = 'sidebar' }:
   const { sidebarCollapsed } = useShell();
   const isDrawer = layout === 'drawer';
   const collapsed = !isDrawer && sidebarCollapsed;
-  const navGroups = filterNavGroups(NAV_GROUPS, isEducatorExperience(profile), profile)
-    .filter((group) => group.items.length > 0);
+  const studioV2Rail = STUDIO_V2_ENABLED && isEducatorAccount(profile);
+  const navGroups = (studioV2Rail
+    ? EDUCATOR_NAV_GROUPS
+    : filterNavGroups(NAV_GROUPS, isEducatorExperience(profile), profile)
+  ).filter((group) => group.items.length > 0);
 
   const primaryItems: NavItem[] = [];
   const createItems: NavItem[] = [];
@@ -164,7 +168,7 @@ export function AppSidebar({ pathname, search, onNavigate, layout = 'sidebar' }:
             collapsed={collapsed}
           />
         ) : null}
-        <SidebarUpgradeChip onNavigate={onNavigate} collapsed={collapsed} />
+        {studioV2Rail ? null : <SidebarUpgradeChip onNavigate={onNavigate} collapsed={collapsed} />}
       </div>
     </nav>
   );

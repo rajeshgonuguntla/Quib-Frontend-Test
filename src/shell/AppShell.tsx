@@ -8,7 +8,8 @@ import { ShellProvider } from './ShellContext';
 import { isCourseEditorRoute, isEducatorWorkspaceRoute } from '../utils/editorWorkspace';
 import { cn } from '../components/ui/utils';
 import { useUserProfile } from '../context/UserProfileContext';
-import { isAdminAccount } from '../utils/signInIntent';
+import { STUDIO_V2_ENABLED } from '../config/features';
+import { isAdminAccount, isEducatorAccount } from '../utils/signInIntent';
 import { billingPlanLabel, hidesUpgradeCta } from '../api/billingApi';
 import { useShell } from './ShellContext';
 
@@ -18,6 +19,7 @@ function MobileUpgradeFab() {
   const { profile } = useUserProfile();
   const { billing } = useShell();
   if (!profile || isAdminAccount(profile)) return null;
+  if (STUDIO_V2_ENABLED && isEducatorAccount(profile)) return null;
   if (billing && hidesUpgradeCta(billing)) return null;
 
   return (
@@ -54,7 +56,7 @@ function AppShellLayout() {
 
   return (
     <div className="cuib-app min-h-screen">
-      <header className="cuib-topnav sticky top-0 z-50">
+      <header className="cuib-topnav sticky top-0 z-50" data-testid="app-topbar">
         <AppTopbar />
       </header>
 
@@ -66,7 +68,7 @@ function AppShellLayout() {
         )}
       >
         {!educatorWorkspace && (
-          <aside className="cuib-sidebar">
+          <aside className="cuib-sidebar" data-testid="app-sidebar">
             <AppSidebar pathname={location.pathname} search={location.search} />
             <button
               type="button"
