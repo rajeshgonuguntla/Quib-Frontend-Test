@@ -5,7 +5,7 @@ import { AppSidebar } from './AppSidebar';
 import { AppTopbar } from './AppTopbar';
 import { PageTransition } from './motion';
 import { ShellProvider } from './ShellContext';
-import { isCourseEditorRoute, isEducatorWorkspaceRoute } from '../utils/editorWorkspace';
+import { isCourseEditorRoute, isEducatorWorkspaceRoute, isStudioV2Route } from '../utils/editorWorkspace';
 import { cn } from '../components/ui/utils';
 import { useUserProfile } from '../context/UserProfileContext';
 import { STUDIO_V2_ENABLED } from '../config/features';
@@ -44,7 +44,7 @@ function AppShellLayout() {
   const educatorWorkspace = isEducatorWorkspaceRoute(location.pathname);
   const courseEditor = isCourseEditorRoute(location.pathname);
 
-  if (courseEditor) {
+  if (courseEditor || isStudioV2Route(location.pathname)) {
     return (
       <div className="cuib-app flex h-dvh flex-col overflow-hidden">
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">

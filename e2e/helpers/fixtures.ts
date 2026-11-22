@@ -32,6 +32,15 @@ export async function mockSession(page: Page, role: Role = 'educator'): Promise<
   await page.route('**/api/users/me', (route) =>
     route.fulfill({ json: { id: 'e2e-user', name: 'Priya Raman', email: 'priya@example.com', role } }),
   );
+  // The shell also loads billing and enrollment stats. Stub them so a missing backend is not a console error.
+  await page.route('**/api/users/me/**', (route) =>
+    route.fulfill({ json: { total: 0, inProgress: 0, saved: 0, completed: 0, avgScore: 0 } }),
+  );
+  await page.route('**/api/billing/me', (route) =>
+    route.fulfill({
+      json: { plan: 'free', status: 'none', unlimited: false, canManageBilling: false },
+    }),
+  );
 }
 
 export async function open(page: Page, s: Screen, opts: { theme?: 'light' | 'dark' } = {}): Promise<void> {
