@@ -13,8 +13,8 @@ test.describe('PR-01 · flag, admin nav and routes', () => {
   test('admin sees the creator-only rail: Cubit Studio, My courses, Settings', async ({ page }) => {
     if (!isRef) await mockSession(page, 'admin');
     await open(page, S.courses);
-    expect(await navIds(page)).toEqual(['studio', 'my-courses-educator', 'settings']);
     await expect(page.getByTestId('nav-item').first()).toHaveText('Cubit Studio');
+    expect(await navIds(page)).toEqual(['studio', 'my-courses-educator', 'settings']);
     await expect(page.getByTestId('nav-item').filter({ hasText: 'Analytics' })).toHaveCount(0);
     await expect(page.getByTestId('nav-item').locator('.badge, [data-testid="nav-badge"]')).toHaveCount(0);
   });
