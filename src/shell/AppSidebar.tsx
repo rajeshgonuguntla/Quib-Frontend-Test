@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router';
 import { SidebarNavItem } from '../components/SidebarNavItem';
 import { EDUCATOR_NAV_GROUPS, NAV_GROUPS, isNavItemActive, type NavItem } from './navConfig';
 import { STUDIO_V2_ENABLED } from '../config/features';
-import { filterNavGroups, isEducatorAccount, isEducatorExperience, isAdminAccount } from '../utils/signInIntent';
+import { filterNavGroups, isEducatorExperience, isAdminAccount, isStudioV2Account } from '../utils/signInIntent';
 import { useUserProfile } from '../context/UserProfileContext';
 import { useShell } from './ShellContext';
 import { billingPlanLabel, hidesUpgradeCta } from '../api/billingApi';
@@ -93,7 +93,7 @@ export function AppSidebar({ pathname, search, onNavigate, layout = 'sidebar' }:
   const { sidebarCollapsed } = useShell();
   const isDrawer = layout === 'drawer';
   const collapsed = !isDrawer && sidebarCollapsed;
-  const studioV2Rail = STUDIO_V2_ENABLED && isEducatorAccount(profile);
+  const studioV2Rail = STUDIO_V2_ENABLED && isStudioV2Account(profile);
   const navGroups = (studioV2Rail
     ? EDUCATOR_NAV_GROUPS
     : filterNavGroups(NAV_GROUPS, isEducatorExperience(profile), profile)
