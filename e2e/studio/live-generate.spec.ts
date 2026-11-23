@@ -45,8 +45,7 @@ test('a pasted playlist generates from that URL and the outline comes back', asy
   });
   await page.route(`**/api/educator/courses/${courseId}/assistant`, async (route) => {
     const body = route.request().postDataJSON() as { message?: string };
-    expect(body.message).toContain('lesson 1 in module 1 (lesson id l1)');
-    expect(body.message).toContain('Shorten the notes');
+    expect(body.message).toBe('Shorten the notes');
     await route.fulfill({
       json: {
         reply: 'Shortened the notes.',
@@ -78,18 +77,17 @@ test('a pasted playlist generates from that URL and the outline comes back', asy
   await page.getByTestId('source-generate').click();
   await expect(page.getByTestId('studio-status')).toBeVisible();
   await expect(page).toHaveURL(new RegExp(courseId));
-  await expect(page.getByTestId('outline-item').filter({ hasText: 'Slope in 12 minutes' })).toBeVisible();
+  await expect(page.getByTestId('course-player').getByText('Slope in 12 minutes').first()).toBeVisible();
   expect(posted?.youtubeUrl).toBe(playlistUrl);
   expect(posted?.options?.builderNotes).toContain('Title: Algebra sprint');
   expect(JSON.stringify(posted)).not.toContain('PLsatmath');
 
-  await page.getByTestId('row-add').click();
   await page.getByTestId('composer-input').fill('Shorten the notes');
   await page.getByTestId('composer-send').click();
   await expect(page.getByText('Shortened the notes.')).toBeVisible();
   await page.getByRole('button', { name: 'Accept' }).click();
   await expect(page.getByText('Accepted')).toBeVisible();
-  await expect(page.getByTestId('outline-item').filter({ hasText: 'Slope, shortened' })).toBeVisible();
+  await expect(page.getByTestId('course-player').getByText('Slope, shortened').first()).toBeVisible();
 });
 
 test('generate stays a phone-sized target', async ({ page }) => {
@@ -163,7 +161,7 @@ test('reject dismisses an edit without saving, and a failed accept stays pending
     },
   }));
   await open(page, { pr: 'PR-04', state: 'Course', app: `/educator-studio/${courseId}` });
-  await expect(page.getByTestId('outline-item')).toBeVisible();
+  await expect(page.getByTestId('course-player').getByText('Slope in 12 minutes').first()).toBeVisible();
   await page.getByTestId('composer-input').fill('Shorten the notes');
   await page.getByTestId('composer-send').click();
   await expect(page.getByText('Here is an edit.')).toBeVisible();

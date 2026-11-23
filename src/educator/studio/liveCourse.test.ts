@@ -1,7 +1,7 @@
 import axios, { type AxiosResponse } from 'axios';
 import { describe, expect, it } from 'vitest';
 import { playlist } from './model';
-import { apiError, assistantText, describeCourseEdit, draftThread, editCard, generationBody, mapGeneratedCourse, proposedEdit } from './liveCourse';
+import { apiError, assistantText, describeCourseEdit, draftThread, editCard, generationBody, mapGeneratedCourse, proposedEdit, youtubeEmbedId } from './liveCourse';
 import type { StudioCourse } from './model';
 import { DEFAULT_GENERATION_OPTIONS } from '../../types/courseGeneration';
 
@@ -65,6 +65,7 @@ describe('studio live course mapping', () => {
     ]);
     expect(course.modules[0]?.items.map((item) => item.kind)).toEqual(['video', 'drill']);
     expect(course.modules[0]?.items[0]?.content.notes?.[0]?.text).toBe('m is the slope.');
+    expect(course.modules[0]?.items[0]?.content.videoId).toBeUndefined();
 
     const bare = mapGeneratedCourse({
       title: 'Bare',
@@ -113,6 +114,50 @@ describe('studio live course mapping', () => {
     expect(course.modules[0]?.items[0]?.content.points?.map((point) => point.text)).toEqual(['Line one', 'Line two']);
     expect(course.modules[1]?.items[0]?.title).toBe('Empty');
     expect(course.modules[1]?.items[0]?.content.points?.[0]?.text).toBe('Nothing here yet');
+  });
+
+  it('keeps the YouTube id the learner player embeds', () => {
+    expect(youtubeEmbedId('abc123', undefined)).toBe('abc123');
+    expect(youtubeEmbedId(undefined, 'https://youtu.be/shortId')).toBe('shortId');
+    expect(youtubeEmbedId(undefined, undefined, 'https://www.youtube.com/watch?v=watchId')).toBe('watchId');
+    expect(youtubeEmbedId(undefined, undefined, 'https://www.youtube.com/playlist?list=PLreal')).toBe('');
+
+    const fromLesson = mapGeneratedCourse({
+      title: 'Algebra',
+      modules: [{
+        id: 'm1',
+        title: 'Lines',
+        description: '',
+        lessons: [{
+          id: 'l1',
+          title: 'Slope',
+          duration: '12:00',
+          type: 'video',
+          videoUrl: 'https://www.youtube.com/watch?v=slopeVid',
+        }],
+        quiz: [],
+      }],
+    }, 'id');
+    expect(fromLesson.modules[0]?.items[0]?.content.videoId).toBe('slopeVid');
+
+    const fromPlaylist = mapGeneratedCourse({
+      title: 'Algebra',
+      playlistVideos: [{
+        videoId: 'listedVid',
+        videoUrl: 'https://www.youtube.com/watch?v=listedVid',
+        title: 'Slope',
+        duration: '12:00',
+        playlistIndex: 0,
+      }],
+      modules: [{
+        id: 'm1',
+        title: 'Lines',
+        description: '',
+        lessons: [{ id: 'l1', title: 'Slope', duration: '12:00', type: 'video' }],
+        quiz: [],
+      }],
+    }, 'id');
+    expect(fromPlaylist.modules[0]?.items[0]?.content.videoId).toBe('listedVid');
   });
 
   it('describes a module rename instead of repeating the old course title', () => {
