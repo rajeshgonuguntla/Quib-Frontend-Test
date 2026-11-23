@@ -1,17 +1,28 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
+import { fetchCourse, generateCourse, updateCourse } from '../../api/educatorApi';
+import { sendEducatorAssistantMessage } from '../../api/educatorAssistantApi';
 import { useUserProfile } from '../../context/UserProfileContext';
 import { useRequireStudioV2 } from '../../hooks/useRequireStudioV2';
+import type { CourseUpdatePayload } from '../../types/courseGeneration';
 import '../../styles/studio.css';
 import { ChatPane } from './chat/ChatPane';
 import { EmptyState } from './chat/EmptyState';
 import {
-  detectLink,
+  apiError,
+  assistantText,
+  draftThread,
+  editCard,
+  generationBody,
+  mapGeneratedCourse,
+} from './liveCourse';
+import {
   findCourseRow,
+  isLiveStudioCourse,
   isSeededCourse,
-  playlist,
   seededCourse,
   seededMessages,
+  type DiffOp,
   type ItemRef,
   type StudioCard,
   type StudioChatMessage,
@@ -74,22 +85,6 @@ function replyFor(text: string): StudioChatMessage {
   };
 }
 
-function draftFor(url: string): StudioChatMessage[] {
-  const kind = detectLink(url);
-  const user = { id: `user-${Date.now()}`, role: 'user' as const, text: url };
-  if (kind === 'invalid') {
-    return [user, {
-      id: `ai-${Date.now()}`,
-      role: 'ai',
-      text: "Paste a YouTube video, playlist, web page or PDF link and I'll turn it into a course.",
-    }];
-  }
-  const text = kind === 'playlist'
-    ? 'Found a YouTube playlist with 8 videos. Pick the videos, check the title and description, then generate.'
-    : `Found a ${kind === 'video' ? 'YouTube video' : kind}. The full sample course is SAT Math Sprint.`;
-  return [user, { id: `ai-${Date.now()}`, role: 'ai', text, card: { type: 'source', kind } }];
-}
-
 function sparseCourse(title: string): StudioCourse {
   return {
     id: 'sample',
@@ -116,6 +111,19 @@ function sparseCourse(title: string): StudioCourse {
   };
 }
 
+function withOpStatus(current: StudioChatMessage[], opId: string, status: DiffOp['status']) {
+  return current.map((message) => {
+    if (message.card?.type !== 'diff') return message;
+    return {
+      ...message,
+      card: {
+        ...message.card,
+        ops: message.card.ops.map((op) => (op.id === opId ? { ...op, status } : op)),
+      },
+    };
+  });
+}
+
 export function StudioPage() {
   useRequireStudioV2();
   const { courseId } = useParams();
@@ -124,35 +132,77 @@ export function StudioPage() {
   const userId = profile?.id;
   const isEmpty = !courseId;
   const seeded = isSeededCourse(courseId);
-  const course = useMemo(() => {
-    if (seeded) return seededCourse;
-    if (!courseId) return null;
-    return sparseCourse(findCourseRow(courseId)?.title || 'Course');
-  }, [courseId, seeded]);
+  const live = isLiveStudioCourse(courseId);
+  const [liveCourse, setLiveCourse] = useState<StudioCourse | null>(null);
   const [messages, setMessages] = useState<StudioChatMessage[]>(seeded ? seededMessages : []);
   const [draft, setDraft] = useState<StudioChatMessage[] | null>(null);
+  const [generating, setGenerating] = useState(false);
   const [refs, setRefs] = useState<ItemRef[]>([]);
   const [collapsed, setCollapsed] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const updates = useRef(new Map<string, CourseUpdatePayload>());
+  const sessionRef = useRef<string | undefined>(undefined);
+  const revisionRef = useRef<string | undefined>(undefined);
+  const savingRef = useRef(false);
+  const chattingRef = useRef(false);
+  const generatingRef = useRef(false);
+
+  const course = useMemo(() => {
+    if (seeded) return seededCourse;
+    if (liveCourse) return liveCourse;
+    if (!courseId || live) return null;
+    return sparseCourse(findCourseRow(courseId)?.title || 'Course');
+  }, [courseId, seeded, live, liveCourse]);
 
   useEffect(() => {
-    if (isSeededCourse(courseId)) {
+    setDraft(null);
+    setGenerating(false);
+    setRefs([]);
+    setPreviewOpen(false);
+    updates.current.clear();
+    sessionRef.current = undefined;
+    revisionRef.current = undefined;
+    savingRef.current = false;
+    chattingRef.current = false;
+    generatingRef.current = false;
+    if (seeded) {
+      setLiveCourse(null);
       setMessages(seededMessages);
-    } else if (courseId) {
+      return;
+    }
+    if (!courseId) {
+      setLiveCourse(null);
+      setMessages([]);
+      return;
+    }
+    if (!live) {
+      setLiveCourse(null);
       const title = findCourseRow(courseId)?.title || 'Course';
       setMessages([{
         id: 'sample-open',
         role: 'ai',
         text: `${title} is a static sample. Open SAT Math Sprint for the full chat and outline.`,
       }]);
-    } else {
-      setMessages([]);
+      return;
     }
-    setDraft(null);
-    setRefs([]);
-    setPreviewOpen(false);
-  }, [courseId]);
+    let cancelled = false;
+    setLiveCourse(null);
+    setMessages([{ id: 'loading', role: 'ai', text: 'Loading the course…', pending: true }]);
+    void fetchCourse(courseId).then((data) => {
+      if (cancelled) return;
+      setLiveCourse(mapGeneratedCourse(data, courseId));
+      setMessages([{
+        id: 'ready',
+        role: 'ai',
+        text: 'The outline is on the right. Ask Cubit AI to change the course.',
+      }]);
+    }).catch((err: unknown) => {
+      if (cancelled) return;
+      setMessages([{ id: 'load-error', role: 'ai', text: apiError(err, 'Could not load this course.') }]);
+    });
+    return () => { cancelled = true; };
+  }, [courseId, seeded, live]);
 
   useEffect(() => {
     if (!userId) return;
@@ -165,10 +215,106 @@ export function StudioPage() {
     if (userId) writeChatCollapsed(userId, next);
   }, [userId]);
 
+  const sendLive = async (text: string) => {
+    if (!courseId || chattingRef.current) return;
+    chattingRef.current = true;
+    const mentionRefs = refs;
+    const user: StudioChatMessage = {
+      id: `user-${Date.now()}`,
+      role: 'user',
+      text,
+      refs: mentionRefs.length ? mentionRefs : undefined,
+    };
+    const pendingId = `ai-${Date.now()}`;
+    setRefs([]);
+    setMessages((current) => [...current, user, { id: pendingId, role: 'ai', text: 'Thinking…', pending: true }]);
+    try {
+      const res = await sendEducatorAssistantMessage(courseId, {
+        message: assistantText(text, mentionRefs),
+        ...(sessionRef.current ? { sessionId: sessionRef.current } : {}),
+        ...(revisionRef.current ? { courseRevision: revisionRef.current } : {}),
+      });
+      if (res.sessionId) sessionRef.current = res.sessionId;
+      if (res.courseRevision) revisionRef.current = res.courseRevision;
+      const update = res.hasCourseChanges ? res.courseUpdate : null;
+      if (update) updates.current.set(pendingId, update);
+      setMessages((current) => current.map((message) => (message.id === pendingId ? {
+        id: pendingId,
+        role: 'ai',
+        text: res.reply || 'Done.',
+        card: update ? editCard(pendingId, update) : undefined,
+      } : message)));
+    } catch (err) {
+      setMessages((current) => current.map((message) => (message.id === pendingId ? {
+        id: pendingId,
+        role: 'ai',
+        text: apiError(err, 'Cubit AI could not answer that.'),
+      } : message)));
+    } finally {
+      chattingRef.current = false;
+    }
+  };
+
   const send = (text: string) => {
+    if (live) {
+      void sendLive(text);
+      return;
+    }
     const user: StudioChatMessage = { id: `user-${Date.now()}`, role: 'user', text, refs: refs.length ? refs : undefined };
     setRefs([]);
     setMessages((current) => [...current, user, replyFor(text)]);
+  };
+
+  const generate = async (fields: { title: string; description: string }) => {
+    const source = draft?.find((message) => message.card?.type === 'source' && message.card.url);
+    const url = source?.card?.type === 'source' ? source.card.url : '';
+    if (!url || generatingRef.current) return;
+    generatingRef.current = true;
+    const pendingId = `ai-gen-${Date.now()}`;
+    const body = generationBody(url, fields.title, fields.description);
+    setGenerating(true);
+    setDraft((current) => (current ? [...current, { id: pendingId, role: 'ai', text: 'Building the course…', pending: true }] : current));
+    try {
+      const data = await generateCourse(body.youtubeUrl, body.options);
+      if (!data.courseId) throw new Error('The course was created without an id.');
+      navigate(`/educator-studio/${data.courseId}`);
+    } catch (err) {
+      generatingRef.current = false;
+      setGenerating(false);
+      setDraft((current) => current?.map((message) => (message.id === pendingId ? {
+        id: pendingId,
+        role: 'ai',
+        text: apiError(err, 'Unable to generate the course.'),
+      } : message)) ?? current);
+    }
+  };
+
+  const resolve = (opId: string, status: DiffOp['status']) => {
+    if (!live) return;
+    if (status === 'rejected') {
+      updates.current.delete(opId);
+      setMessages((current) => withOpStatus(current, opId, 'rejected'));
+      return;
+    }
+    const update = updates.current.get(opId);
+    if (!update || !courseId || savingRef.current) return;
+    savingRef.current = true;
+    void (async () => {
+      try {
+        await updateCourse(courseId, update);
+        const fresh = await fetchCourse(courseId);
+        setLiveCourse(mapGeneratedCourse(fresh, courseId));
+        setMessages((current) => withOpStatus(current, opId, 'accepted'));
+      } catch (err) {
+        setMessages((current) => [...current, {
+          id: `ai-save-${Date.now()}`,
+          role: 'ai',
+          text: apiError(err, 'Could not save that edit.'),
+        }]);
+      } finally {
+        savingRef.current = false;
+      }
+    })();
   };
 
   const mention = (item: StudioItem) => {
@@ -193,13 +339,16 @@ export function StudioPage() {
           <PreviewPane course={course} onMention={mention} onFix={(item) => send(`Fix with AI: ${item.title}`)} onClose={() => setPreviewOpen(false)} />
         ) : undefined}
       >
-        {isEmpty && !draft ? <EmptyState onSubmit={(url) => setDraft(draftFor(url || playlist.url))} /> : null}
+        {isEmpty && !draft ? <EmptyState onSubmit={(url) => setDraft(draftThread(url))} /> : null}
         {isEmpty && draft ? (
           <ChatPane
             messages={draft}
+            busy={generating}
             placeholder="Paste a YouTube video, playlist, web page or PDF link"
-            onSend={(text) => setDraft(draftFor(text))}
-            onGenerate={() => navigate('/educator-studio/sat-math-sprint')}
+            onSend={(text) => {
+              if (!generating) setDraft(draftThread(text));
+            }}
+            onGenerate={(fields) => { void generate(fields); }}
           />
         ) : null}
         {!isEmpty ? (
@@ -210,6 +359,7 @@ export function StudioPage() {
             placeholder="Ask Cubit AI to change the course…"
             showQuick
             onSend={send}
+            onResolve={live ? resolve : undefined}
           />
         ) : null}
       </StudioLayout>

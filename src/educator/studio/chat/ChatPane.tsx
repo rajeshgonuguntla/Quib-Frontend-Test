@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowUp, Settings, Sparkles, Upload } from 'lucide-react';
-import type { ItemRef, StudioChatMessage } from '../model';
+import type { DiffOp, ItemRef, StudioChatMessage } from '../model';
 import { CardView } from './cards';
 
 type ChatPaneProps = {
@@ -8,12 +8,14 @@ type ChatPaneProps = {
   refs?: ItemRef[];
   onRemoveRef?: (id: string) => void;
   onSend: (text: string) => void;
-  onGenerate?: () => void;
+  onGenerate?: (draft: { title: string; description: string }) => void;
+  onResolve?: (id: string, status: DiffOp['status']) => void;
+  busy?: boolean;
   placeholder: string;
   showQuick?: boolean;
 };
 
-export function ChatPane({ messages, refs = [], onRemoveRef, onSend, onGenerate, placeholder, showQuick = false }: ChatPaneProps) {
+export function ChatPane({ messages, refs = [], onRemoveRef, onSend, onGenerate, onResolve, busy = false, placeholder, showQuick = false }: ChatPaneProps) {
   const [text, setText] = useState('');
   const scroller = useRef<HTMLDivElement>(null);
   const pinned = useRef(true);
@@ -58,7 +60,12 @@ export function ChatPane({ messages, refs = [], onRemoveRef, onSend, onGenerate,
               <p className={message.role === 'user' ? 'max-w-[90%] rounded-2xl bg-[var(--fill)] px-3 py-2 text-[14px] leading-relaxed text-[var(--ink)]' : 'mt-1 text-[14px] leading-relaxed text-[var(--ink)]'} aria-live={message.role === 'ai' ? 'polite' : undefined}>
                 {message.text}
               </p>
-              <CardView card={message.card} onGenerate={onGenerate} />
+              {message.pending ? (
+                <div data-testid="studio-status" className="studio-status" aria-hidden="true">
+                  <span data-accent="progress" className="studio-status-bar" />
+                </div>
+              ) : null}
+              <CardView card={message.card} busy={busy} onGenerate={onGenerate} onResolve={onResolve} />
             </article>
           ))}
         </div>

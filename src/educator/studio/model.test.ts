@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { courseCounts, detectLink, findCourseRow, isSeededCourse, studioPath, visibleCourses } from './model';
+import { courseCounts, detectLink, findCourseRow, isLiveStudioCourse, isSeededCourse, studioPath, visibleCourses } from './model';
 
 describe('studio static sample', () => {
   it('treats the SAT slug and the list id as the seeded course', () => {
     expect(isSeededCourse('sat-math-sprint')).toBe(true);
     expect(isSeededCourse('sm')).toBe(true);
     expect(isSeededCourse('gv')).toBe(false);
+    expect(isLiveStudioCourse('sat-math-sprint')).toBe(false);
+    expect(isLiveStudioCourse('gv')).toBe(false);
+    expect(isLiveStudioCourse('11111111-1111-1111-1111-111111111111')).toBe(true);
     expect(studioPath('sm')).toBe('/educator-studio/sat-math-sprint');
     expect(studioPath('gv')).toBe('/educator-studio/gv');
     expect(findCourseRow('sat-math-sprint')?.title).toBe('SAT Math Sprint');

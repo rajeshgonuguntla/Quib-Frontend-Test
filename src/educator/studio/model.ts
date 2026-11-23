@@ -100,7 +100,7 @@ export type StudioCard =
       show: Array<'title' | 'description' | 'slug' | 'access' | 'publish'>;
       status: 'pending' | 'confirmed' | 'cancelled';
     }
-  | { type: 'source'; kind: 'playlist' | 'video' | 'web' | 'pdf' };
+  | { type: 'source'; kind: 'playlist' | 'video' | 'web' | 'pdf'; url?: string; live?: boolean };
 
 export interface StudioChatMessage {
   id: string;
@@ -108,6 +108,8 @@ export interface StudioChatMessage {
   text: string;
   refs?: ItemRef[];
   card?: StudioCard;
+  /** One status line plus the hairline, while a request is in flight. */
+  pending?: boolean;
 }
 
 export interface PlaylistVideo {
@@ -136,6 +138,12 @@ export const myCourseStats = myCoursesJson.stats.filter(
 
 export function isSeededCourse(courseId?: string) {
   return courseId === 'sat-math-sprint' || courseId === 'sm';
+}
+
+/** Sample rows stay static. Any other id is a real course the backend can load. */
+export function isLiveStudioCourse(courseId?: string) {
+  if (!courseId || isSeededCourse(courseId)) return false;
+  return !findCourseRow(courseId);
 }
 
 export function studioPath(courseId: string) {

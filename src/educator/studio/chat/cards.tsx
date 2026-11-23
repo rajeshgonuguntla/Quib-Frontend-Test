@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { Check, ListVideo } from 'lucide-react';
-import type { DiffOp, PlaylistVideo, StudioCard } from '../model';
-import { playlist } from '../model';
+import { ListVideo } from 'lucide-react';
+import type { DiffOp, StudioCard } from '../model';
 
 function richParts(text: string) {
   const parts: Array<{ bold: boolean; text: string }> = [];
@@ -56,16 +55,27 @@ export function SummaryCard({ card }: { card: Extract<StudioCard, { type: 'summa
   );
 }
 
-export function DiffCard({ card }: { card: Extract<StudioCard, { type: 'diff' }> }) {
+export function DiffCard({
+  card,
+  onResolve,
+}: {
+  card: Extract<StudioCard, { type: 'diff' }>;
+  onResolve?: (id: string, status: DiffOp['status']) => void;
+}) {
   const [ops, setOps] = useState(card.ops);
+  const shown = onResolve ? card.ops : ops;
   const setStatus = (id: string, status: DiffOp['status']) => {
+    if (onResolve) {
+      onResolve(id, status);
+      return;
+    }
     setOps((current) => current.map((op) => (op.id === id ? { ...op, status } : op)));
   };
   return (
     <section className="mt-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3">
       <p className="text-label text-[10px] text-[var(--ink-faint)]">{card.title}</p>
       <ul className="mt-2 space-y-3">
-        {ops.map((op) => (
+        {shown.map((op) => (
           <li key={op.id}>
             <p className="text-[13px] leading-relaxed text-[var(--ink)]">
               <Rich text={op.summary} />
@@ -174,125 +184,77 @@ export function SettingsCard({ card }: { card: Extract<StudioCard, { type: 'sett
   );
 }
 
-export function SourceCard({ onGenerate }: { onGenerate: () => void }) {
-  const [videos, setVideos] = useState<PlaylistVideo[]>(playlist.videos);
-  const [title, setTitle] = useState(playlist.title);
-  const [description, setDescription] = useState(playlist.description);
-  const [titleHint, setTitleHint] = useState(true);
-  const [descriptionHint, setDescriptionHint] = useState(true);
-  const selected = videos.filter((video) => video.selected);
-  const allSelected = selected.length === videos.length;
-  const minutes = selected.reduce((sum, video) => {
-    const [m, s] = video.duration.split(':').map(Number);
-    return sum + m + (s >= 30 ? 1 : 0);
-  }, 0);
-  const hours = Math.floor(minutes / 60);
-  const remain = minutes % 60;
-
+export function LiveSourceCard({
+  url,
+  kind,
+  busy,
+  onGenerate,
+}: {
+  url: string;
+  kind: 'playlist' | 'video';
+  busy?: boolean;
+  onGenerate: (draft: { title: string; description: string }) => void;
+}) {
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
   return (
     <section data-testid="source-card" className="mt-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 text-left">
       <p data-testid="source-detected" className="flex items-center gap-2 text-[13px] font-semibold text-[var(--ink)]">
         <ListVideo size={16} />
-        {playlist.detectedLabel}
+        {kind === 'playlist' ? 'YouTube playlist' : 'YouTube video'}
       </p>
-      <div className="mt-3 flex items-center justify-between gap-2 text-[12px] text-[var(--ink-soft)]">
-        <span data-testid="source-selected-count">
-          {videos.length} videos · {selected.length} selected · {hours} h {remain} m
-        </span>
-        <button
-          type="button"
-          data-testid="source-select-all"
-          data-accent="link"
-          className="font-semibold text-[var(--accent)]"
-          onClick={() => setVideos((current) => current.map((video) => ({ ...video, selected: !allSelected })))}
-        >
-          {allSelected ? 'Clear all' : 'Select all'}
-        </button>
-      </div>
-      <ul className="mt-2 max-h-64 space-y-1 overflow-auto">
-        {videos.map((video) => (
-          <li key={video.id}>
-            <button
-              type="button"
-              data-testid="source-pick"
-              aria-pressed={video.selected}
-              className="flex min-h-11 w-full items-center gap-3 rounded-lg px-1 text-left"
-              onClick={() => setVideos((current) => current.map((item) => (item.id === video.id ? { ...item, selected: !item.selected } : item)))}
-            >
-              <span
-                data-accent={video.selected ? 'progress' : undefined}
-                className={`grid size-5 shrink-0 place-items-center rounded border ${video.selected ? 'border-[var(--accent)] bg-[var(--accent)] text-white' : 'border-[var(--border)]'}`}
-              >
-                {video.selected ? <Check size={12} /> : null}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-[13px] text-[var(--ink)]">{video.title}</span>
-                {video.captions ? <span className="block text-[11px] text-[var(--ink-faint)]">Captions available</span> : null}
-              </span>
-              <span className="font-[family-name:var(--mono)] text-[11px] text-[var(--ink-faint)]">{video.duration}</span>
-            </button>
-          </li>
-        ))}
-      </ul>
+      <p className="mt-2 break-all text-[12px] text-[var(--ink-soft)]">{url}</p>
       <label className="mt-4 block text-label text-[10px] text-[var(--ink-faint)]" htmlFor="source-title">Title</label>
       <input
         id="source-title"
         data-testid="source-title"
         value={title}
-        onChange={(event) => {
-          setTitle(event.target.value);
-          setTitleHint(false);
-        }}
+        placeholder="Optional title"
+        onChange={(event) => setTitle(event.target.value)}
         className="mt-1 h-11 w-full rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 text-[16px] text-[var(--ink)] outline-none md:text-[14px]"
       />
-      {titleHint ? <p data-testid="prefill-hint" className="mt-1 text-[11px] text-[var(--ink-faint)]">From playlist</p> : null}
       <label className="mt-3 block text-label text-[10px] text-[var(--ink-faint)]" htmlFor="source-desc">Description</label>
       <textarea
         id="source-desc"
         data-testid="source-desc"
         value={description}
         rows={3}
-        onChange={(event) => {
-          setDescription(event.target.value);
-          setDescriptionHint(false);
-        }}
+        placeholder="Optional description"
+        onChange={(event) => setDescription(event.target.value)}
         className="mt-1 w-full rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-[16px] text-[var(--ink)] outline-none md:text-[14px]"
       />
-      {descriptionHint ? <p data-testid="prefill-hint" className="mt-1 text-[11px] text-[var(--ink-faint)]">From playlist</p> : null}
       <button
         type="button"
         data-testid="source-generate"
         data-accent="primary"
-        disabled={selected.length === 0 || title.trim() === ''}
+        disabled={busy}
         className="mt-4 h-11 w-full rounded-lg bg-[var(--accent)] text-[14px] font-semibold text-white disabled:opacity-40"
-        onClick={onGenerate}
+        onClick={() => onGenerate({ title, description })}
       >
-        Generate course
+        {busy ? 'Building the course…' : 'Generate course'}
       </button>
-      <p className="mt-2 text-center text-[12px] text-[var(--ink-faint)]">Static preview. Generate opens the sample course.</p>
+      <p className="mt-2 text-center text-[12px] text-[var(--ink-faint)]">This can take a few minutes.</p>
     </section>
   );
 }
 
-export function CardView({ card, onGenerate }: { card?: StudioCard; onGenerate?: () => void }) {
+export function CardView({
+  card,
+  busy,
+  onGenerate,
+  onResolve,
+}: {
+  card?: StudioCard;
+  busy?: boolean;
+  onGenerate?: (draft: { title: string; description: string }) => void;
+  onResolve?: (id: string, status: DiffOp['status']) => void;
+}) {
   if (!card) return null;
   if (card.type === 'summary') return <SummaryCard card={card} />;
-  if (card.type === 'diff') return <DiffCard card={card} />;
+  if (card.type === 'diff') return <DiffCard card={card} onResolve={onResolve} />;
   if (card.type === 'settings') return <SettingsCard card={card} />;
-  if (card.type === 'source' && card.kind === 'playlist' && onGenerate) return <SourceCard onGenerate={onGenerate} />;
-  if (card.type === 'source') {
-    return (
-      <section data-testid="source-card" className="mt-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 text-left text-[13px] text-[var(--ink-soft)]">
-        {card.kind === 'video' ? 'One YouTube video. The playlist checklist is the sample with the full outline.' : null}
-        {card.kind === 'web' ? 'Web pages are in the static preview. The built course is SAT Math Sprint.' : null}
-        {card.kind === 'pdf' ? 'PDF import is in the static preview. The built course is SAT Math Sprint.' : null}
-        {onGenerate ? (
-          <button type="button" data-testid="source-generate" data-accent="primary" className="mt-3 h-11 w-full rounded-lg bg-[var(--accent)] text-[14px] font-semibold text-white" onClick={onGenerate}>
-            Open sample course
-          </button>
-        ) : null}
-      </section>
-    );
+  if (card.type === 'source' && card.live && card.url && (card.kind === 'playlist' || card.kind === 'video') && onGenerate) {
+    return <LiveSourceCard url={card.url} kind={card.kind} busy={busy} onGenerate={onGenerate} />;
   }
   return null;
 }

@@ -1,6 +1,7 @@
 import axios from 'axios';
 import type {
   CourseGenerationOptions,
+  CourseModule,
   CourseUpdatePayload,
   OwnedCourseSummary,
 } from '../types/courseGeneration';
@@ -48,6 +49,28 @@ export async function generateCourseFromVideos(
   options?: CourseGenerationOptions,
 ) {
   const { data } = await axios.post('/api/course/generate-from-videos', { videoUrls, options });
+  return data;
+}
+
+export interface GeneratedCoursePayload {
+  courseId?: string;
+  publicSlug?: string;
+  isPublished?: boolean;
+  title?: string;
+  description?: string;
+  modules?: CourseModule[];
+}
+
+export async function generateCourse(
+  youtubeUrl: string,
+  options?: CourseGenerationOptions,
+): Promise<GeneratedCoursePayload> {
+  const { data } = await axios.post<GeneratedCoursePayload>('/api/course/generate', { youtubeUrl, options });
+  return data;
+}
+
+export async function fetchCourse(courseId: string): Promise<GeneratedCoursePayload> {
+  const { data } = await axios.get<GeneratedCoursePayload>(`/api/course/${courseId}`);
   return data;
 }
 
