@@ -62,6 +62,9 @@ import {
 import { clearSignInIntent } from '../utils/signInIntent';
 import { goToSignIn, SIGN_IN_PATH } from '../utils/navigation';
 import { getDisplayName } from '../utils/userDisplay';
+import { CourseEditChatDock } from './CourseEditChatDock';
+import { applyEditToCourseView, canEditCourseDetails } from './courseEditChat';
+import type { EditableCourse } from '../types/courseGeneration';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -291,6 +294,8 @@ function LearningMode({
   onChatSignInRequired,
   chatSessionKey,
   initialStudyTab = 'overview',
+  showEditChat = false,
+  onCourseEdited,
 }: {
   course: Course;
   courseId: string;
@@ -300,6 +305,8 @@ function LearningMode({
   onChatSignInRequired: () => void;
   chatSessionKey: string;
   initialStudyTab?: StudyTab;
+  showEditChat?: boolean;
+  onCourseEdited?: (next: EditableCourse) => void;
 }) {
   const { isDark, toggleTheme } = useTheme();
   const C = getC(isDark);
@@ -441,7 +448,7 @@ function LearningMode({
   const lessonIndexInModule = activeModule
     ? (activeModule.lessons ?? []).findIndex((l) => l.id === activeLessonId)
     : -1;
-  const tutorAvailable = showCourseChat;
+  const tutorAvailable = showCourseChat && !showEditChat;
   const { profile, setProfile } = useUserProfile();
   const navigate = useNavigate();
 
@@ -793,9 +800,11 @@ function LearningMode({
       {/* Cuib 3-col layout */}
       <div
         className={`grid flex-1 min-h-0 overflow-hidden ${
-          tutorAvailable
-            ? 'grid-cols-1 md:grid-cols-[240px_minmax(0,1fr)] lg:grid-cols-[240px_minmax(0,1fr)_var(--assistant-w)]'
-            : 'grid-cols-1 md:grid-cols-[240px_minmax(0,1fr)]'
+          showEditChat
+            ? 'grid-cols-1 md:grid-cols-[240px_minmax(0,1fr)] lg:grid-cols-[240px_minmax(0,1fr)_400px]'
+            : tutorAvailable
+              ? 'grid-cols-1 md:grid-cols-[240px_minmax(0,1fr)] lg:grid-cols-[240px_minmax(0,1fr)_var(--assistant-w)]'
+              : 'grid-cols-1 md:grid-cols-[240px_minmax(0,1fr)]'
         }`}
         style={{
           height: 'calc(100vh - 73px)',
@@ -1308,6 +1317,14 @@ function LearningMode({
             />
           </aside>
         )}
+        {showEditChat && onCourseEdited ? (
+          <CourseEditChatDock
+            courseId={courseId}
+            course={course}
+            layout="lesson"
+            onCourseChange={onCourseEdited}
+          />
+        ) : null}
       </div>
 
       {/* Mobile tutor tag */}
@@ -1394,6 +1411,11 @@ export function CourseDetails() {
       setDownloadBusy(false);
     }
   }, [course, downloadBusy]);
+
+  const canEditCourse = canEditCourseDetails(isOwner, profile?.role);
+  const applyCourseEdit = (next: EditableCourse) => {
+    setCourse((prev) => (prev ? applyEditToCourseView(prev, next) : prev));
+  };
 
   useEffect(() => {
     if (youtubeUrl) sessionStorage.setItem('courseYoutubeUrl', youtubeUrl);
@@ -1789,8 +1811,8 @@ export function CourseDetails() {
 
   // ── Learning Mode ──
   const chatSessionKey = `${resolvedCourseId ?? 'course'}-${authSessionKey}`;
-  // Learning view always uses tutor Q&A; plain-language edit assistant lives in CourseEditor only.
-  const showCourseChat = learningMode && !!resolvedCourseId;
+  // Students keep the tutor. Owners who can edit get the save-through chat instead.
+  const showCourseChat = learningMode && !!resolvedCourseId && !canEditCourse;
   const handleChatSignIn = () => {
     goToSignIn(navigate, { returnTo: `/course-details/${resolvedCourseId}` });
   };
@@ -1806,6 +1828,8 @@ export function CourseDetails() {
         onChatSignInRequired={handleChatSignIn}
         chatSessionKey={chatSessionKey}
         initialStudyTab={requestedStudyTool ?? 'overview'}
+        showEditChat={canEditCourse}
+        onCourseEdited={applyCourseEdit}
       />
     );
   }
@@ -1872,8 +1896,8 @@ export function CourseDetails() {
         )}
       />
 
-      <div className="flex" style={{ paddingTop: 56, height: '100%' }}>
-      <div className="min-w-0 flex-1 overflow-y-auto" style={{ paddingBottom: 80 }}>
+      <div className="flex min-h-0" style={{ paddingTop: 56, height: '100%' }}>
+      <div className="min-w-0 flex-1 overflow-y-auto" style={{ paddingBottom: canEditCourse ? 128 : 80 }}>
       <div className="max-w-4xl mx-auto px-6 md:px-10" style={{ paddingTop: 40 }}>
         {/* Header */}
         <div className="mb-10">
@@ -2102,10 +2126,17 @@ export function CourseDetails() {
         </div>
       </div>
       </div>
-
+      {canEditCourse && resolvedCourseId ? (
+        <CourseEditChatDock
+          courseId={resolvedCourseId}
+          course={course}
+          layout="column"
+          onCourseChange={applyCourseEdit}
+        />
+      ) : null}
       </div>
 
-      {resolvedCourseId ? (
+      {resolvedCourseId && !canEditCourse ? (
         <div className="lg:hidden">
           <CourseChatWidget
             key={`${chatSessionKey}-overview`}
