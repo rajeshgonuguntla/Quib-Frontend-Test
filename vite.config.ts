@@ -80,6 +80,7 @@ import { defineConfig } from 'vitest/config';
     test: {
       environment: 'jsdom',
       globals: true,
+      setupFiles: ['src/test/setup.ts'],
       include: ['src/**/*.test.{ts,tsx}'],
     },
   });
