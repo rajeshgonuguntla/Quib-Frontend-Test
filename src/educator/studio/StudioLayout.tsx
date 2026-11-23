@@ -4,18 +4,21 @@ import { EdgeToggle } from './EdgeToggle';
 
 type StudioLayoutProps = {
   isEmpty: boolean;
+  drafting?: boolean;
+  previewOpen?: boolean;
   collapsed: boolean;
   showToggle: boolean;
   onToggle: () => void;
   onExpand: () => void;
+  preview?: ReactNode;
   children?: ReactNode;
 };
 
-export function StudioLayout({ isEmpty, collapsed, showToggle, onToggle, onExpand, children }: StudioLayoutProps) {
+export function StudioLayout({ isEmpty, drafting, previewOpen, collapsed, showToggle, onToggle, onExpand, preview, children }: StudioLayoutProps) {
   return (
     <div
       data-testid="studio-body"
-      className={cn('studio-body', isEmpty && 'is-empty', !isEmpty && collapsed && 'chat-collapsed')}
+      className={cn('studio-body', isEmpty && 'is-empty', drafting && 'is-draft', !isEmpty && collapsed && 'chat-collapsed')}
     >
       <div
         id="studio-chat"
@@ -28,8 +31,8 @@ export function StudioLayout({ isEmpty, collapsed, showToggle, onToggle, onExpan
         {showToggle ? <EdgeToggle collapsed={collapsed} onToggle={onToggle} /> : null}
         <div className="studio-chat-inner">{children}</div>
       </div>
-      <section data-testid="preview" className="studio-preview" aria-label="Live preview">
-        <p className="text-[13px] text-[var(--ink-faint)]">Live preview</p>
+      <section data-testid="preview" className={cn('studio-preview', previewOpen && 'is-sheet')} aria-label="Live preview">
+        {preview ?? <p className="p-5 text-[13px] text-[var(--ink-faint)]">Live preview</p>}
       </section>
     </div>
   );

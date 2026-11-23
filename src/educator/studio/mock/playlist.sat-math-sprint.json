@@ -1,0 +1,65 @@
+{
+  "type": "youtube_playlist",
+  "url": "https://www.youtube.com/playlist?list=PLsatmath-sprint",
+  "title": "SAT Math Sprint",
+  "description": "A 4-week sprint through every SAT Math topic: algebra, advanced math, problem solving and data. Short lessons, daily drills and a full mock test.",
+  "detectedLabel": "Detected YouTube playlist · 8 videos · 1 h 47 m",
+  "videos": [
+    {
+      "id": "v1",
+      "title": "Linear equations in 12 minutes",
+      "duration": "12:10",
+      "captions": true,
+      "selected": true
+    },
+    {
+      "id": "v2",
+      "title": "Systems of equations: substitution and elimination",
+      "duration": "14:32",
+      "captions": true,
+      "selected": true
+    },
+    {
+      "id": "v3",
+      "title": "Inequalities and word problems",
+      "duration": "16:05",
+      "captions": true,
+      "selected": true
+    },
+    {
+      "id": "v4",
+      "title": "Quadratics and parabolas",
+      "duration": "18:40",
+      "captions": true,
+      "selected": true
+    },
+    {
+      "id": "v5",
+      "title": "Exponential growth and decay",
+      "duration": "11:02",
+      "captions": true,
+      "selected": true
+    },
+    {
+      "id": "v6",
+      "title": "Polynomials and the factor theorem",
+      "duration": "13:27",
+      "captions": true,
+      "selected": true
+    },
+    {
+      "id": "v7",
+      "title": "Percentages, ratios and rates",
+      "duration": "10:48",
+      "captions": true,
+      "selected": true
+    },
+    {
+      "id": "v8",
+      "title": "Statistics basics: mean, median and spread",
+      "duration": "09:55",
+      "captions": true,
+      "selected": true
+    }
+  ]
+}
