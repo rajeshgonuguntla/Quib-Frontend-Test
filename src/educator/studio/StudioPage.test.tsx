@@ -199,7 +199,8 @@ describe('studio page with the course APIs', () => {
     await user.click(screen.getByTestId('composer-send'));
     const outline = await screen.findByTestId('outline');
     expect(outline).toHaveTextContent('Variables');
-    expect(outline).toHaveTextContent('2 cards');
+    expect(outline).not.toHaveTextContent('cards');
+    expect(outline).toHaveTextContent('Module quiz');
     expect(outline).toHaveTextContent('2 questions');
     await user.click(screen.getByRole('button', { name: 'Accept' }));
     expect(updateCourse).toHaveBeenCalledWith(courseId, expect.objectContaining({

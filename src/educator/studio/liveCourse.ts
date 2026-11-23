@@ -117,52 +117,16 @@ function lessonItem(moduleId: string, lesson: CourseLesson, index: number): Stud
   };
 }
 
-function studyItems(moduleId: string, lesson: CourseLesson, index: number): StudioItem[] {
-  const id = lesson.id || `${moduleId}-lesson-${index + 1}`;
-  const items: StudioItem[] = [];
-  if (lesson.flashcards?.length) {
-    items.push({
-      id: `${id}-cards`,
-      kind: 'cards',
-      moduleId,
-      title: `${lesson.title || 'Lesson'} cards`,
-      meta: `${lesson.flashcards.length} cards`,
-      content: { kind: 'cards', cards: lesson.flashcards },
-    });
-  }
-  if (lesson.blanks?.length) {
-    items.push({
-      id: `${id}-blanks`,
-      kind: 'blanks',
-      moduleId,
-      title: `${lesson.title || 'Lesson'} blanks`,
-      meta: `${lesson.blanks.length} blanks`,
-      content: {
-        kind: 'blanks',
-        blanks: lesson.blanks.map((blank) => ({
-          sentence: blank.sentence.includes('{') || !blank.answer
-            ? blank.sentence
-            : `${blank.sentence} {${blank.answer}}`,
-        })),
-      },
-    });
-  }
-  return items;
-}
-
 function moduleItems(module: CourseModule, moduleId: string): StudioItem[] {
   const lessons = module.lessons ?? [];
-  const items = lessons.flatMap((lesson, index) => [
-    lessonItem(moduleId, lesson, index),
-    ...studyItems(moduleId, lesson, index),
-  ]);
+  const items = lessons.map((lesson, index) => lessonItem(moduleId, lesson, index));
   if (module.quiz?.length) {
     const shown = module.quiz.slice(0, 5);
     items.push({
       id: `${moduleId}-quiz`,
       kind: 'drill',
       moduleId,
-      title: 'Questions',
+      title: 'Module quiz',
       meta: `${module.quiz.length} questions`,
       content: {
         kind: 'drill',
