@@ -1,0 +1,220 @@
+[
+  {
+    "id": "mmwrcehye0",
+    "role": "ai",
+    "text": "SAT Math Sprint is open. Ask me for any change, or tap + next to a lesson in the preview to mention it.",
+    "createdAt": 1763769600000,
+    "card": {
+      "type": "summary",
+      "title": "SAT Math Sprint",
+      "counts": {
+        "modules": 4,
+        "lessons": 8,
+        "drills": 3,
+        "questions": 39,
+        "decks": 3,
+        "cards": 15,
+        "blanks": 3,
+        "mocks": 1
+      }
+    }
+  },
+  {
+    "id": "mmwrcehye1",
+    "role": "user",
+    "text": "move Polynomials before Quadratics",
+    "createdAt": 1763769660000
+  },
+  {
+    "id": "mmwrcehye2",
+    "role": "ai",
+    "text": "Here's the new order for Advanced math. Nothing changes until you accept.",
+    "createdAt": 1763769720000,
+    "card": {
+      "type": "diff",
+      "title": "Reorder",
+      "ops": [
+        {
+          "id": "mmwrcehye2-op1",
+          "op": {
+            "type": "reorder",
+            "moduleId": "m2",
+            "itemId": "v6",
+            "toIndex": 0
+          },
+          "status": "pending",
+          "summary": "Move <b>Polynomials and the factor theorem</b> before <b>Quadratics and parabolas</b> · Advanced math"
+        }
+      ]
+    }
+  },
+  {
+    "id": "mmwrcehye3",
+    "role": "user",
+    "text": "remove flashcards from Advanced math",
+    "createdAt": 1763769780000
+  },
+  {
+    "id": "mmwrcehye4",
+    "role": "ai",
+    "text": "This removes Flashcards · Advanced math. You can undo it.",
+    "createdAt": 1763769840000,
+    "card": {
+      "type": "diff",
+      "title": "Remove",
+      "ops": [
+        {
+          "id": "mmwrcehye4-op1",
+          "op": {
+            "type": "delete",
+            "itemId": "cards-2"
+          },
+          "status": "pending",
+          "summary": "Remove <b>Flashcards</b> from Advanced math"
+        }
+      ]
+    }
+  },
+  {
+    "id": "mmwrcehye5",
+    "role": "user",
+    "text": "add 5 harder questions on systems",
+    "createdAt": 1763769900000,
+    "refs": [
+      {
+        "id": "drill-1",
+        "label": "Algebra drill"
+      }
+    ]
+  },
+  {
+    "id": "mmwrcehyfb",
+    "role": "ai",
+    "text": "Here are 5 new harder questions for Algebra drill. Each has an answer and an explanation.",
+    "createdAt": 1763769960000,
+    "card": {
+      "type": "diff",
+      "title": "Add questions",
+      "ops": [
+        {
+          "id": "mmwrcehyfb-op1",
+          "op": {
+            "type": "add_questions",
+            "itemId": "drill-1",
+            "questions": [
+              {
+                "id": "qamwrcehyf6",
+                "n": 19,
+                "prompt": "If 2x + 3y = 12 and 4x − y = 10, what is x + y?",
+                "format": "Student-produced response",
+                "hard": true
+              },
+              {
+                "id": "qamwrcehyf7",
+                "n": 20,
+                "prompt": "3x + ky = 6 and 6x + 4y = 12 have infinitely many solutions. What is k?",
+                "format": "Student-produced response",
+                "hard": true
+              },
+              {
+                "id": "qamwrcehyf8",
+                "n": 21,
+                "prompt": "Student tickets cost $8 and adult tickets $12. 40 tickets sold for $400. How many adult tickets were sold?",
+                "format": "Multiple choice",
+                "hard": true
+              },
+              {
+                "id": "qamwrcehyf9",
+                "n": 22,
+                "prompt": "For what value of a do ax + 2y = 5 and 3x + y = 1 have no solution?",
+                "format": "Multiple choice",
+                "hard": true
+              },
+              {
+                "id": "qamwrcehyfa",
+                "n": 23,
+                "prompt": "y = 3x − 4 and y = −x + 8 meet at (a, b). What is a · b?",
+                "format": "Student-produced response",
+                "hard": true
+              }
+            ]
+          },
+          "status": "pending",
+          "summary": "Add <b>5</b> harder questions on systems to <b>Algebra drill</b>"
+        }
+      ]
+    }
+  },
+  {
+    "id": "mmwrcehyfc",
+    "role": "user",
+    "text": "rewrite the notes so they are simpler",
+    "createdAt": 1763770020000,
+    "refs": [
+      {
+        "id": "v2",
+        "label": "Lesson 1.2 Systems of equations"
+      }
+    ]
+  },
+  {
+    "id": "mmwrcehyfd",
+    "role": "ai",
+    "text": "Simpler notes for Lesson 1.2 Systems of equations, same timestamps.",
+    "createdAt": 1763770080000,
+    "card": {
+      "type": "diff",
+      "title": "Rewrite notes",
+      "ops": [
+        {
+          "id": "mmwrcehyfd-op1",
+          "op": {
+            "type": "update_notes",
+            "itemId": "v2",
+            "notes": [
+              {
+                "at": "00:42",
+                "text": "Two equations, one shared answer: the point where both lines cross."
+              },
+              {
+                "at": "03:15",
+                "text": "Substitution: get y alone in one equation, then put it into the other."
+              },
+              {
+                "at": "06:58",
+                "text": "Elimination: add the equations so x or y cancels out."
+              }
+            ]
+          },
+          "status": "pending",
+          "summary": "Rewrite notes for <b>Lesson 1.2 Systems of equations</b>"
+        }
+      ]
+    }
+  },
+  {
+    "id": "mmwrcehyfe",
+    "role": "user",
+    "text": "make it private and publish",
+    "createdAt": 1763770140000
+  },
+  {
+    "id": "mmwrcehyff",
+    "role": "ai",
+    "text": "Check these settings and confirm.",
+    "createdAt": 1763770200000,
+    "card": {
+      "type": "settings",
+      "title": "SAT Math Sprint",
+      "description": "A 4-week sprint through every SAT Math topic: algebra, advanced math, problem solving and data. Short lessons, daily drills and a full mock test.",
+      "slug": "sat-math-sprint",
+      "visibility": "private",
+      "publish": true,
+      "show": [
+        "access",
+        "publish"
+      ],
+      "status": "pending"
+    }
+  }
+]

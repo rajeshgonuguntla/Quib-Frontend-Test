@@ -1,0 +1,741 @@
+{
+  "id": "sm",
+  "title": "SAT Math Sprint",
+  "description": "A 4-week sprint through every SAT Math topic: algebra, advanced math, problem solving and data. Short lessons, daily drills and a full mock test.",
+  "slug": "sat-math-sprint",
+  "status": "published",
+  "dirty": false,
+  "visibility": "public",
+  "modules": [
+    {
+      "id": "m1",
+      "name": "Heart of algebra",
+      "items": [
+        {
+          "id": "v1",
+          "kind": "video",
+          "moduleId": "m1",
+          "title": "Linear equations in 12 minutes",
+          "meta": "12:10",
+          "source": {
+            "type": "lesson",
+            "lessonId": "v1"
+          },
+          "content": {
+            "kind": "video",
+            "duration": "12:10",
+            "notes": [
+              {
+                "at": "01:05",
+                "text": "Slope-intercept form is y = mx + b: m is the slope, b is where the line meets the y-axis."
+              },
+              {
+                "at": "05:40",
+                "text": "To solve, undo operations in reverse order on both sides."
+              },
+              {
+                "at": "09:12",
+                "text": "A coefficient in front of x scales the slope, not the intercept."
+              }
+            ]
+          },
+          "fullTitle": "Linear equations in 12 minutes"
+        },
+        {
+          "id": "v2",
+          "kind": "video",
+          "moduleId": "m1",
+          "title": "Systems of equations",
+          "meta": "14:32",
+          "source": {
+            "type": "lesson",
+            "lessonId": "v2"
+          },
+          "content": {
+            "kind": "video",
+            "duration": "14:32",
+            "notes": [
+              {
+                "at": "00:42",
+                "text": "A system is two equations that share the same x and y. The solution is where the lines cross."
+              },
+              {
+                "at": "03:15",
+                "text": "Substitution: solve one equation for y, then plug it into the other."
+              },
+              {
+                "at": "06:58",
+                "text": "Elimination: scale and add the equations so one variable cancels."
+              }
+            ]
+          },
+          "fullTitle": "Systems of equations: substitution and elimination"
+        },
+        {
+          "id": "v3",
+          "kind": "video",
+          "moduleId": "m1",
+          "title": "Inequalities and word problems",
+          "meta": "16:05",
+          "source": {
+            "type": "lesson",
+            "lessonId": "v3"
+          },
+          "content": {
+            "kind": "video",
+            "duration": "16:05",
+            "notes": [
+              {
+                "at": "02:20",
+                "text": "Flip the inequality sign when you multiply or divide by a negative."
+              },
+              {
+                "at": "08:45",
+                "text": "Turn \"at least\" into ≥ and \"no more than\" into ≤."
+              },
+              {
+                "at": "13:10",
+                "text": "Check the answer against the story: negative tickets are not allowed."
+              }
+            ]
+          },
+          "fullTitle": "Inequalities and word problems"
+        },
+        {
+          "id": "notes-1",
+          "kind": "notes",
+          "moduleId": "m1",
+          "title": "Notes",
+          "meta": "3 notes",
+          "source": {
+            "type": "lessonField",
+            "field": "notes",
+            "lessonIds": [
+              "v1",
+              "v2",
+              "v3"
+            ]
+          },
+          "content": {
+            "kind": "notes",
+            "points": [
+              {
+                "lessonTitle": "Linear equations in 12 minutes",
+                "at": "01:05",
+                "text": "Slope-intercept form is y = mx + b: m is the slope, b is where the line meets the y-axis."
+              },
+              {
+                "lessonTitle": "Systems of equations",
+                "at": "00:42",
+                "text": "A system is two equations that share the same x and y. The solution is where the lines cross."
+              },
+              {
+                "lessonTitle": "Inequalities and word problems",
+                "at": "02:20",
+                "text": "Flip the inequality sign when you multiply or divide by a negative."
+              }
+            ]
+          }
+        },
+        {
+          "id": "drill-1",
+          "kind": "drill",
+          "moduleId": "m1",
+          "title": "Algebra drill",
+          "meta": "18 Qs",
+          "source": {
+            "type": "moduleQuiz",
+            "moduleId": "m1"
+          },
+          "content": {
+            "kind": "drill",
+            "moreCount": 13,
+            "questions": [
+              {
+                "id": "q1-1",
+                "n": 1,
+                "prompt": "If 3x + 7 = 22, what is x?",
+                "format": "Multiple choice"
+              },
+              {
+                "id": "q1-2",
+                "n": 2,
+                "prompt": "Solve the system x + y = 10 and x − y = 4. What is x?",
+                "format": "Multiple choice"
+              },
+              {
+                "id": "q1-3",
+                "n": 3,
+                "prompt": "Which value of x satisfies 2x − 5 > 9?",
+                "format": "Multiple choice"
+              },
+              {
+                "id": "q1-4",
+                "n": 4,
+                "prompt": "A gym charges $25 to join and $15 a month. Which equation gives the cost C after m months?",
+                "format": "Multiple choice"
+              },
+              {
+                "id": "q1-5",
+                "n": 5,
+                "prompt": "How many times do y = 2x + 1 and y = 2x − 3 intersect?",
+                "format": "Student-produced response"
+              }
+            ]
+          }
+        },
+        {
+          "id": "cards-1",
+          "kind": "cards",
+          "moduleId": "m1",
+          "title": "Flashcards",
+          "meta": "6 cards",
+          "source": {
+            "type": "lessonField",
+            "field": "flashcards",
+            "lessonIds": [
+              "v1",
+              "v2",
+              "v3"
+            ]
+          },
+          "content": {
+            "kind": "cards",
+            "cards": [
+              {
+                "front": "Slope-intercept form",
+                "back": "y = mx + b, with slope m and y-intercept b"
+              },
+              {
+                "front": "What is a system of equations?",
+                "back": "Two equations with the same two unknowns; the solution is where the lines cross"
+              },
+              {
+                "front": "Elimination",
+                "back": "Add the equations"
+              },
+              {
+                "front": "When to use substitution",
+                "back": "When one variable has a coefficient of 1"
+              },
+              {
+                "front": "What does no solution look like?",
+                "back": "Parallel lines: same slope, different intercepts"
+              },
+              {
+                "front": "What does no solution look like?",
+                "back": "Two lines that never meet"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blanks-1",
+          "kind": "blanks",
+          "moduleId": "m1",
+          "title": "Fill in the blanks",
+          "meta": "5 blanks",
+          "source": {
+            "type": "lessonField",
+            "field": "blanks",
+            "lessonIds": [
+              "v1",
+              "v2",
+              "v3"
+            ]
+          },
+          "content": {
+            "kind": "blanks",
+            "blanks": [
+              {
+                "sentence": "A system has no solution when the lines are {parallel}.",
+                "at": "10:20"
+              },
+              {
+                "sentence": "Substitution works best when a variable has a coefficient of {1}.",
+                "at": "03:15"
+              },
+              {
+                "sentence": "Flip the inequality sign when you divide by a {negative} number.",
+                "at": "02:20"
+              },
+              {
+                "sentence": "The SAT often asks for {x} rather than x.",
+                "at": "12:47"
+              },
+              {
+                "sentence": "In y = mx + b, the letter {m} is the slope.",
+                "at": "01:05"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "m2",
+      "name": "Advanced math",
+      "items": [
+        {
+          "id": "v4",
+          "kind": "video",
+          "moduleId": "m2",
+          "title": "Quadratics and parabolas",
+          "meta": "18:40",
+          "source": {
+            "type": "lesson",
+            "lessonId": "v4"
+          },
+          "content": {
+            "kind": "video",
+            "duration": "18:40",
+            "notes": [
+              {
+                "at": "01:30",
+                "text": "Vertex form y = a(x − h)² + k puts the vertex at (h, k)."
+              },
+              {
+                "at": "09:10",
+                "text": "Factor to find the roots: set each factor to zero."
+              }
+            ]
+          },
+          "fullTitle": "Quadratics and parabolas"
+        },
+        {
+          "id": "v5",
+          "kind": "video",
+          "moduleId": "m2",
+          "title": "Exponential growth and decay",
+          "meta": "11:02",
+          "source": {
+            "type": "lesson",
+            "lessonId": "v5"
+          },
+          "content": {
+            "kind": "video",
+            "duration": "11:02",
+            "notes": [
+              {
+                "at": "02:05",
+                "text": "y = a·bˣ grows when b > 1 and decays when 0 < b < 1."
+              },
+              {
+                "at": "07:40",
+                "text": "A 5% increase means multiplying by 1.05 each period."
+              }
+            ]
+          },
+          "fullTitle": "Exponential growth and decay"
+        },
+        {
+          "id": "v6",
+          "kind": "video",
+          "moduleId": "m2",
+          "title": "Polynomials and the factor theorem",
+          "meta": "13:27",
+          "source": {
+            "type": "lesson",
+            "lessonId": "v6"
+          },
+          "content": {
+            "kind": "video",
+            "duration": "13:27",
+            "notes": [
+              {
+                "at": "03:00",
+                "text": "The degree is the highest power; it caps the number of real roots."
+              },
+              {
+                "at": "10:15",
+                "text": "If p(a) = 0, then (x − a) is a factor."
+              }
+            ]
+          },
+          "fullTitle": "Polynomials and the factor theorem"
+        },
+        {
+          "id": "notes-2",
+          "kind": "notes",
+          "moduleId": "m2",
+          "title": "Notes",
+          "meta": "3 notes",
+          "source": {
+            "type": "lessonField",
+            "field": "notes",
+            "lessonIds": [
+              "v4",
+              "v5",
+              "v6"
+            ]
+          },
+          "content": {
+            "kind": "notes",
+            "points": [
+              {
+                "lessonTitle": "Quadratics and parabolas",
+                "at": "01:30",
+                "text": "Vertex form y = a(x − h)² + k puts the vertex at (h, k)."
+              },
+              {
+                "lessonTitle": "Exponential growth and decay",
+                "at": "02:05",
+                "text": "y = a·bˣ grows when b > 1 and decays when 0 < b < 1."
+              },
+              {
+                "lessonTitle": "Polynomials and the factor theorem",
+                "at": "03:00",
+                "text": "The degree is the highest power; it caps the number of real roots."
+              }
+            ]
+          }
+        },
+        {
+          "id": "drill-2",
+          "kind": "drill",
+          "moduleId": "m2",
+          "title": "Advanced math drill",
+          "meta": "14 Qs",
+          "source": {
+            "type": "moduleQuiz",
+            "moduleId": "m2"
+          },
+          "content": {
+            "kind": "drill",
+            "moreCount": 10,
+            "questions": [
+              {
+                "id": "q2-1",
+                "n": 1,
+                "prompt": "What is the vertex of y = (x − 3)² + 2?",
+                "format": "Multiple choice"
+              },
+              {
+                "id": "q2-2",
+                "n": 2,
+                "prompt": "For which c does x² + 6x + c = 0 have exactly one solution?",
+                "format": "Student-produced response"
+              },
+              {
+                "id": "q2-3",
+                "n": 3,
+                "prompt": "A town of 500 grows 4% a year. Which expression gives the population after t years?",
+                "format": "Multiple choice"
+              },
+              {
+                "id": "q2-4",
+                "n": 4,
+                "prompt": "If p(2) = 0, which must be a factor of p(x)?",
+                "format": "Multiple choice"
+              }
+            ]
+          }
+        },
+        {
+          "id": "cards-2",
+          "kind": "cards",
+          "moduleId": "m2",
+          "title": "Flashcards",
+          "meta": "5 cards",
+          "source": {
+            "type": "lessonField",
+            "field": "flashcards",
+            "lessonIds": [
+              "v4",
+              "v5",
+              "v6"
+            ]
+          },
+          "content": {
+            "kind": "cards",
+            "cards": [
+              {
+                "front": "Vertex form",
+                "back": "y = a(x − h)² + k, vertex at (h, k)"
+              },
+              {
+                "front": "Discriminant",
+                "back": "b² − 4ac: positive gives 2 roots, zero gives 1, negative gives none"
+              },
+              {
+                "front": "Exponential growth",
+                "back": "y = a·bˣ with b > 1"
+              },
+              {
+                "front": "Factor theorem",
+                "back": "p(a) = 0 means (x − a) is a factor"
+              },
+              {
+                "front": "Degree of a polynomial",
+                "back": "The highest power of x"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blanks-2",
+          "kind": "blanks",
+          "moduleId": "m2",
+          "title": "Fill in the blanks",
+          "meta": "4 blanks",
+          "source": {
+            "type": "lessonField",
+            "field": "blanks",
+            "lessonIds": [
+              "v4",
+              "v5",
+              "v6"
+            ]
+          },
+          "content": {
+            "kind": "blanks",
+            "blanks": [
+              {
+                "sentence": "The vertex of y = (x − 3)² + 2 is ({3}, 2).",
+                "at": "01:30"
+              },
+              {
+                "sentence": "A 5% increase means multiplying by {1.05}.",
+                "at": "07:40"
+              },
+              {
+                "sentence": "If p(2) = 0, then (x − {2}) is a factor.",
+                "at": "10:15"
+              },
+              {
+                "sentence": "A degree 3 polynomial has at most {3} real roots.",
+                "at": "03:00"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "m3",
+      "name": "Problem solving and data analysis",
+      "items": [
+        {
+          "id": "v7",
+          "kind": "video",
+          "moduleId": "m3",
+          "title": "Percentages, ratios and rates",
+          "meta": "10:48",
+          "source": {
+            "type": "lesson",
+            "lessonId": "v7"
+          },
+          "content": {
+            "kind": "video",
+            "duration": "10:48",
+            "notes": [
+              {
+                "at": "01:50",
+                "text": "Percent change = (new − old) ÷ old × 100."
+              },
+              {
+                "at": "06:30",
+                "text": "Keep ratio units in the same order on both sides."
+              }
+            ]
+          },
+          "fullTitle": "Percentages, ratios and rates"
+        },
+        {
+          "id": "v8",
+          "kind": "video",
+          "moduleId": "m3",
+          "title": "Statistics basics",
+          "meta": "09:55",
+          "source": {
+            "type": "lesson",
+            "lessonId": "v8"
+          },
+          "content": {
+            "kind": "video",
+            "duration": "09:55",
+            "notes": [
+              {
+                "at": "02:10",
+                "text": "The median resists outliers; the mean does not."
+              },
+              {
+                "at": "07:05",
+                "text": "Standard deviation measures spread around the mean."
+              }
+            ]
+          },
+          "fullTitle": "Statistics basics: mean, median and spread"
+        },
+        {
+          "id": "notes-3",
+          "kind": "notes",
+          "moduleId": "m3",
+          "title": "Notes",
+          "meta": "2 notes",
+          "source": {
+            "type": "lessonField",
+            "field": "notes",
+            "lessonIds": [
+              "v7",
+              "v8"
+            ]
+          },
+          "content": {
+            "kind": "notes",
+            "points": [
+              {
+                "lessonTitle": "Percentages, ratios and rates",
+                "at": "01:50",
+                "text": "Percent change = (new − old) ÷ old × 100."
+              },
+              {
+                "lessonTitle": "Statistics basics",
+                "at": "02:10",
+                "text": "The median resists outliers; the mean does not."
+              }
+            ]
+          }
+        },
+        {
+          "id": "drill-3",
+          "kind": "drill",
+          "moduleId": "m3",
+          "title": "Data analysis drill",
+          "meta": "7 Qs",
+          "source": {
+            "type": "moduleQuiz",
+            "moduleId": "m3"
+          },
+          "content": {
+            "kind": "drill",
+            "moreCount": 4,
+            "questions": [
+              {
+                "id": "q3-1",
+                "n": 1,
+                "prompt": "A $40 shirt is on sale for $30. What is the percent decrease?",
+                "format": "Multiple choice"
+              },
+              {
+                "id": "q3-2",
+                "n": 2,
+                "prompt": "Which change to {4, 6, 7, 9, 30} lowers the mean but not the median?",
+                "format": "Multiple choice"
+              },
+              {
+                "id": "q3-3",
+                "n": 3,
+                "prompt": "Flour and sugar are in a 5:2 ratio. How much sugar goes with 15 cups of flour?",
+                "format": "Student-produced response"
+              }
+            ]
+          }
+        },
+        {
+          "id": "cards-3",
+          "kind": "cards",
+          "moduleId": "m3",
+          "title": "Flashcards",
+          "meta": "4 cards",
+          "source": {
+            "type": "lessonField",
+            "field": "flashcards",
+            "lessonIds": [
+              "v7",
+              "v8"
+            ]
+          },
+          "content": {
+            "kind": "cards",
+            "cards": [
+              {
+                "front": "Percent change",
+                "back": "(new − old) ÷ old × 100"
+              },
+              {
+                "front": "Median",
+                "back": "The middle value when the data is in order"
+              },
+              {
+                "front": "Mean vs median",
+                "back": "An outlier moves the mean, not the median"
+              },
+              {
+                "front": "Standard deviation",
+                "back": "How spread out the data is around the mean"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blanks-3",
+          "kind": "blanks",
+          "moduleId": "m3",
+          "title": "Fill in the blanks",
+          "meta": "3 blanks",
+          "source": {
+            "type": "lessonField",
+            "field": "blanks",
+            "lessonIds": [
+              "v7",
+              "v8"
+            ]
+          },
+          "content": {
+            "kind": "blanks",
+            "blanks": [
+              {
+                "sentence": "Percent change is the difference divided by the {old} value.",
+                "at": "01:50"
+              },
+              {
+                "sentence": "The {median} resists outliers.",
+                "at": "02:10"
+              },
+              {
+                "sentence": "Standard deviation measures {spread}.",
+                "at": "07:05"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "m-mock",
+      "name": "Mock tests",
+      "items": [
+        {
+          "id": "mock-1",
+          "kind": "mock",
+          "moduleId": "m-mock",
+          "title": "SAT Math mock test",
+          "meta": "44 Qs",
+          "source": {
+            "type": "mockTest",
+            "mockId": "mock-1"
+          },
+          "content": {
+            "kind": "mock",
+            "totalQuestions": 44,
+            "minutes": 70,
+            "adaptive": false,
+            "sections": [
+              {
+                "name": "Module 1",
+                "questions": 22,
+                "minutes": 35
+              },
+              {
+                "name": "Module 2",
+                "questions": 22,
+                "minutes": 35
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

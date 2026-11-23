@@ -8,9 +8,10 @@ import { CUBIT_LOGO } from '../../cubit/subjects';
 type StudioTopBarProps = {
   title: string;
   published: boolean;
+  onPreview?: () => void;
 };
 
-export function StudioTopBar({ title, published }: StudioTopBarProps) {
+export function StudioTopBar({ title, published, onPreview }: StudioTopBarProps) {
   const navigate = useNavigate();
   const { profile } = useUserProfile();
 
@@ -44,7 +45,7 @@ export function StudioTopBar({ title, published }: StudioTopBarProps) {
         </div>
       </div>
       <div className="ml-auto flex shrink-0 items-center gap-1">
-        <button type="button" data-testid="preview-open" className="studio-preview-btn">
+        <button type="button" data-testid="preview-open" className="studio-preview-btn" onClick={onPreview}>
           Preview
         </button>
         <ThemeToggle

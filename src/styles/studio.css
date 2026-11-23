@@ -68,9 +68,14 @@
 }
 
 .studio-body.is-empty .studio-chat {
+  align-items: stretch;
+  justify-content: stretch;
+  border-right: 0;
+}
+
+.studio-body.is-empty:not(.is-draft) .studio-chat-inner {
   align-items: center;
   justify-content: center;
-  border-right: 0;
 }
 
 .studio-body.chat-collapsed .studio-chat {
@@ -82,8 +87,11 @@
 }
 
 .studio-chat-inner {
+  display: flex;
   min-width: 0;
+  min-height: 0;
   flex: 1;
+  flex-direction: column;
 }
 
 .studio-body.chat-collapsed .studio-chat-inner {
@@ -91,15 +99,43 @@
 }
 
 .studio-empty {
-  max-width: 28rem;
-  padding: 24px;
+  width: 100%;
+  max-width: 36rem;
+  padding: 24px 20px 48px;
   text-align: center;
 }
 
 .studio-preview {
+  display: flex;
   min-width: 0;
+  min-height: 0;
+  flex-direction: column;
   background: var(--surface);
-  padding: 20px;
+  padding: 0;
+}
+
+.preview-split {
+  display: grid;
+  min-height: 0;
+  flex: 1;
+  grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
+}
+
+.preview-scroll {
+  min-height: 0;
+  overflow: auto;
+}
+
+.chat-scroll {
+  min-height: 0;
+  flex: 1;
+  overflow: auto;
+}
+
+.composer-input {
+  max-height: 160px;
+  resize: none;
+  font-size: 14px;
 }
 
 .studio-body.is-empty .studio-preview {
@@ -159,5 +195,21 @@
   .studio-preview,
   .cuib-app .studio-chat .studio-chat-toggle {
     display: none;
+  }
+
+  .studio-preview.is-sheet {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    display: flex;
+    background: var(--bg);
+  }
+
+  .preview-split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .composer-input {
+    font-size: 16px;
   }
 }

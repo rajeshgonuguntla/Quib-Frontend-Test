@@ -41,8 +41,10 @@ export async function mockSession(page: Page, role: Role = 'admin'): Promise<voi
       json: { plan: 'free', status: 'none', unlimited: false, canManageBilling: false },
     }),
   );
-  // Home still requests quizzes after an educator or learner is sent away from Studio.
+  // Home still requests quizzes after a learner is sent away from Studio.
   await page.route('**/api/quizzes', (route) => route.fulfill({ json: [] }));
+  // Today's educator screens load this when a non-admin opens My courses. No local backend.
+  await page.route('**/api/educator/**', (route) => route.fulfill({ json: [] }));
 }
 
 export async function open(page: Page, s: Screen, opts: { theme?: 'light' | 'dark' } = {}): Promise<void> {

@@ -1,0 +1,96 @@
+{
+  "stats": [
+    {
+      "label": "Courses",
+      "value": "5",
+      "sub": "3 published · 2 drafts"
+    },
+    {
+      "label": "Enrolled",
+      "value": "206",
+      "sub": "Across 3 courses"
+    },
+    {
+      "label": "Active · Nov",
+      "value": "184",
+      "sub": "Billed 184 × ₹149 = ₹27,416"
+    },
+    {
+      "label": "Avg. completion",
+      "value": "62%",
+      "sub": "Up 8 points from Oct"
+    },
+    {
+      "label": "Avg. quiz score",
+      "value": "72%",
+      "sub": "Up 4 points from Oct"
+    },
+    {
+      "label": "Video hours",
+      "value": "9.4 / 15",
+      "sub": "YouTube only · resets Dec 1"
+    }
+  ],
+  "courses": [
+    {
+      "courseId": "sm",
+      "title": "SAT Math Sprint",
+      "initials": "SM",
+      "status": "published",
+      "link": "mycubit.app/c/sat-math-sprint",
+      "subtitle": null,
+      "students": 112,
+      "completionPct": 68,
+      "avgScorePct": 74,
+      "updatedLabel": "2h ago"
+    },
+    {
+      "courseId": "gv",
+      "title": "GRE Verbal: Text Completion",
+      "initials": "GV",
+      "status": "published",
+      "link": "mycubit.app/c/gre-text-completion",
+      "subtitle": null,
+      "students": 48,
+      "completionPct": 55,
+      "avgScorePct": 69,
+      "updatedLabel": "Yesterday"
+    },
+    {
+      "courseId": "sr",
+      "title": "SAT Reading Bootcamp",
+      "initials": "SR",
+      "status": "published",
+      "link": null,
+      "subtitle": "Invite only",
+      "students": 24,
+      "completionPct": 41,
+      "avgScorePct": 71,
+      "updatedLabel": "Nov 12"
+    },
+    {
+      "courseId": "gq",
+      "title": "GRE Quant: Data Analysis",
+      "initials": "GQ",
+      "status": "draft",
+      "link": null,
+      "subtitle": "Importing from YouTube · 6 of 11 videos",
+      "students": null,
+      "completionPct": null,
+      "avgScorePct": null,
+      "updatedLabel": "10 min ago"
+    },
+    {
+      "courseId": "ds",
+      "title": "Digital SAT Full Mocks",
+      "initials": "DS",
+      "status": "draft",
+      "link": null,
+      "subtitle": "3 mock tests, no lessons yet",
+      "students": null,
+      "completionPct": null,
+      "avgScorePct": null,
+      "updatedLabel": "Nov 9"
+    }
+  ]
+}

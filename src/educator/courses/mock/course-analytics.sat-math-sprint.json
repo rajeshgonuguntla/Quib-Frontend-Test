@@ -1,0 +1,134 @@
+{
+  "courseId": "sm",
+  "title": "SAT Math Sprint",
+  "range": "30d",
+  "meta": "134 enrolled · 112 active · 1,482 tutor questions",
+  "topics": [
+    {
+      "name": "Exponential functions",
+      "pct": 48,
+      "weak": true
+    },
+    {
+      "name": "Circles and arcs",
+      "pct": 53,
+      "weak": true
+    },
+    {
+      "name": "Systems with no solution",
+      "pct": 59,
+      "weak": true
+    },
+    {
+      "name": "Percent change",
+      "pct": 64,
+      "weak": false
+    },
+    {
+      "name": "Quadratics and parabolas",
+      "pct": 71,
+      "weak": false
+    },
+    {
+      "name": "Linear equations",
+      "pct": 82,
+      "weak": false
+    }
+  ],
+  "tutorQuestions": [
+    {
+      "q": "Systems of equations · 06:58",
+      "count": 214
+    },
+    {
+      "q": "Quadratics · vertex form · 09:12",
+      "count": 167
+    },
+    {
+      "q": "Mock test 1 · Q31",
+      "count": 98
+    },
+    {
+      "q": "Exponential functions · 04:40",
+      "count": 91
+    },
+    {
+      "q": "Percent change · 02:05",
+      "count": 63
+    }
+  ],
+  "students": [
+    {
+      "name": "Aarav Kumar",
+      "progressPct": 92,
+      "quizAvg": "88%",
+      "mock1": "41 / 44",
+      "weakestTopic": "Circles and arcs",
+      "tutorQuestions": 31,
+      "lastActive": "Today"
+    },
+    {
+      "name": "Meera Shah",
+      "progressPct": 76,
+      "quizAvg": "79%",
+      "mock1": "36 / 44",
+      "weakestTopic": "Exponential functions",
+      "tutorQuestions": 22,
+      "lastActive": "Today"
+    },
+    {
+      "name": "Liam Patel",
+      "progressPct": 64,
+      "quizAvg": "71%",
+      "mock1": "33 / 44",
+      "weakestTopic": "Systems with no solution",
+      "tutorQuestions": 18,
+      "lastActive": "Yesterday"
+    },
+    {
+      "name": "Sara Reddy",
+      "progressPct": 58,
+      "quizAvg": "66%",
+      "mock1": "29 / 44",
+      "weakestTopic": "Exponential functions",
+      "tutorQuestions": 27,
+      "lastActive": "Yesterday"
+    },
+    {
+      "name": "Noah Joseph",
+      "progressPct": 47,
+      "quizAvg": "62%",
+      "mock1": "Not taken",
+      "weakestTopic": "Percent change",
+      "tutorQuestions": 9,
+      "lastActive": "Nov 17"
+    },
+    {
+      "name": "Isha Verma",
+      "progressPct": 39,
+      "quizAvg": "58%",
+      "mock1": "Not taken",
+      "weakestTopic": "Circles and arcs",
+      "tutorQuestions": 14,
+      "lastActive": "Nov 16"
+    },
+    {
+      "name": "Rohan Gupta",
+      "progressPct": 21,
+      "quizAvg": "54%",
+      "mock1": "Not taken",
+      "weakestTopic": "Exponential functions",
+      "tutorQuestions": 4,
+      "lastActive": "Nov 11"
+    },
+    {
+      "name": "Emma Chen",
+      "progressPct": 12,
+      "quizAvg": "—",
+      "mock1": "Not taken",
+      "weakestTopic": "Not enough data",
+      "tutorQuestions": 1,
+      "lastActive": "Nov 8"
+    }
+  ]
+}
