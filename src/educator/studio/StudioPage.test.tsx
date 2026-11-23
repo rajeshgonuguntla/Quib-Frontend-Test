@@ -52,6 +52,14 @@ function serverError(status: number, data: { message?: string; details?: string 
 describe('studio page with the course APIs', () => {
   beforeEach(() => {
     localStorage.clear();
+    if (!('ResizeObserver' in globalThis)) {
+      class ResizeObserverStub {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      }
+      vi.stubGlobal('ResizeObserver', ResizeObserverStub);
+    }
     vi.mocked(generateCourse).mockReset();
     vi.mocked(fetchCourse).mockReset();
     vi.mocked(sendEducatorAssistantMessage).mockReset();
@@ -103,7 +111,7 @@ describe('studio page with the course APIs', () => {
     await user.type(screen.getByTestId('composer-input'), playlistUrl);
     await user.click(screen.getByTestId('composer-send'));
     await user.click(screen.getByTestId('source-generate'));
-    expect(await screen.findByTestId('outline-item')).toHaveTextContent('Slope in 12 minutes');
+    expect(await screen.findByTestId('course-player')).toHaveTextContent('Slope in 12 minutes');
     await user.type(screen.getByTestId('composer-input'), 'Shorten the notes');
     await user.click(screen.getByTestId('composer-send'));
     expect(await screen.findByText('Shortened the notes.')).toBeInTheDocument();
@@ -140,10 +148,10 @@ describe('studio page with the course APIs', () => {
       sessionId: 'sess-1',
     });
     renderStudio(`/educator-studio/${courseId}`);
-    expect(await screen.findByText('Introduction to Python')).toBeInTheDocument();
+    expect(await screen.findByTestId('course-player')).toHaveTextContent('Introduction to Python');
     await user.type(screen.getByTestId('composer-input'), 'Rename this module');
     await user.click(screen.getByTestId('composer-send'));
-    expect(await screen.findByTestId('outline-module')).toHaveTextContent('Python Fundamentals & Setup');
+    expect(await screen.findByTestId('course-player')).toHaveTextContent('Python Fundamentals & Setup');
     await user.click(screen.getByRole('button', { name: 'Accept' }));
     expect(updateCourse).toHaveBeenCalledWith(courseId, expect.objectContaining({
       modules: [expect.objectContaining({ title: 'Python Fundamentals & Setup' })],
@@ -197,11 +205,11 @@ describe('studio page with the course APIs', () => {
     expect(await screen.findByTestId('studio-course-title')).toHaveTextContent('Python for Beginners');
     await user.type(screen.getByTestId('composer-input'), 'Add a lesson, a flashcard, and a quiz question');
     await user.click(screen.getByTestId('composer-send'));
-    const outline = await screen.findByTestId('outline');
-    expect(outline).toHaveTextContent('Variables');
-    expect(outline).not.toHaveTextContent('cards');
-    expect(outline).toHaveTextContent('Module quiz');
-    expect(outline).toHaveTextContent('2 questions');
+    const player = await screen.findByTestId('course-player');
+    await user.hover(screen.getByRole('button', { name: 'Introduction to Python' }));
+    expect(await screen.findByRole('menuitem', { name: /Variables/ })).toBeInTheDocument();
+    expect(player).toHaveTextContent('Module quiz');
+    expect(player).toHaveTextContent('2 QUESTIONS');
     await user.click(screen.getByRole('button', { name: 'Accept' }));
     expect(updateCourse).toHaveBeenCalledWith(courseId, expect.objectContaining({
       modules: [expect.objectContaining({

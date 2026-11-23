@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { fetchCourse, generateCourse, updateCourse } from '../../api/educatorApi';
+import { fetchCourse, generateCourse, updateCourse, type GeneratedCoursePayload } from '../../api/educatorApi';
+import { CoursePlayer, type Course } from '../../components/CourseDetails';
 import { sendEducatorAssistantMessage } from '../../api/educatorAssistantApi';
 import { useUserProfile } from '../../context/UserProfileContext';
 import { useRequireStudioV2 } from '../../hooks/useRequireStudioV2';
@@ -88,6 +89,24 @@ function replyFor(text: string): StudioChatMessage {
   };
 }
 
+function playerCourse(data: GeneratedCoursePayload): Course {
+  return {
+    title: data.title || 'Course',
+    description: data.description ?? '',
+    difficulty: data.difficulty || 'Intermediate',
+    date: '',
+    modules: (data.modules ?? []).map((module) => ({
+      id: module.id,
+      title: module.title,
+      description: module.description ?? '',
+      lessons: module.lessons ?? [],
+      quiz: module.quiz ?? [],
+    })),
+    playlistUrl: data.playlistUrl,
+    playlistVideos: data.playlistVideos,
+  };
+}
+
 function sparseCourse(title: string): StudioCourse {
   return {
     id: 'sample',
@@ -137,6 +156,7 @@ export function StudioPage() {
   const seeded = isSeededCourse(courseId);
   const live = isLiveStudioCourse(courseId);
   const [liveCourse, setLiveCourse] = useState<StudioCourse | null>(null);
+  const [livePayload, setLivePayload] = useState<GeneratedCoursePayload | null>(null);
   const [messages, setMessages] = useState<StudioChatMessage[]>(seeded ? seededMessages : []);
   const [draft, setDraft] = useState<StudioChatMessage[] | null>(null);
   const [generating, setGenerating] = useState(false);
@@ -173,16 +193,19 @@ export function StudioPage() {
     generatingRef.current = false;
     if (seeded) {
       setLiveCourse(null);
+      setLivePayload(null);
       setMessages(seededMessages);
       return;
     }
     if (!courseId) {
       setLiveCourse(null);
+      setLivePayload(null);
       setMessages([]);
       return;
     }
     if (!live) {
       setLiveCourse(null);
+      setLivePayload(null);
       const title = findCourseRow(courseId)?.title || 'Course';
       setMessages([{
         id: 'sample-open',
@@ -193,15 +216,17 @@ export function StudioPage() {
     }
     let cancelled = false;
     setLiveCourse(null);
+    setLivePayload(null);
     setMessages([{ id: 'loading', role: 'ai', text: 'Loading the course…', pending: true }]);
     void fetchCourse(courseId).then((data) => {
       if (cancelled) return;
       savedCourse.current = toEditableCourse(data);
+      setLivePayload({ ...data, courseId });
       setLiveCourse(mapGeneratedCourse(data, courseId));
       setMessages([{
         id: 'ready',
         role: 'ai',
-        text: 'The outline is on the right. Ask Cubit AI to change the course.',
+        text: 'The course is on the right. Ask Cubit AI to change it.',
       }]);
     }).catch((err: unknown) => {
       if (cancelled) return;
@@ -248,6 +273,13 @@ export function StudioPage() {
       const payload = proposedEdit(base, update, operations);
       if (payload) {
         updates.current.set(pendingId, payload);
+        setLivePayload((current) => ({
+          ...current,
+          ...payload,
+          courseId,
+          playlistUrl: current?.playlistUrl,
+          playlistVideos: current?.playlistVideos,
+        }));
         setLiveCourse(mapGeneratedCourse(payload, courseId));
       }
       setMessages((current) => current.map((message) => (message.id === pendingId ? {
@@ -305,7 +337,15 @@ export function StudioPage() {
     if (!live) return;
     if (status === 'rejected') {
       updates.current.delete(opId);
-      if (savedCourse.current && courseId) setLiveCourse(mapGeneratedCourse(savedCourse.current, courseId));
+      if (savedCourse.current && courseId) {
+        setLivePayload((current) => ({
+          ...savedCourse.current,
+          courseId,
+          playlistUrl: current?.playlistUrl,
+          playlistVideos: current?.playlistVideos,
+        }));
+        setLiveCourse(mapGeneratedCourse(savedCourse.current, courseId));
+      }
       setMessages((current) => withOpStatus(current, opId, 'rejected'));
       return;
     }
@@ -317,6 +357,7 @@ export function StudioPage() {
         await updateCourse(courseId, update);
         const fresh = await fetchCourse(courseId);
         savedCourse.current = toEditableCourse(fresh);
+        setLivePayload({ ...fresh, courseId });
         setLiveCourse(mapGeneratedCourse(fresh, courseId));
         setMessages((current) => withOpStatus(current, opId, 'accepted'));
       } catch (err) {
@@ -349,7 +390,10 @@ export function StudioPage() {
         showToggle={!isEmpty && hydrated}
         onToggle={() => persist(!collapsed)}
         onExpand={() => persist(false)}
-        preview={course ? (
+        previewClassName={live && livePayload ? 'is-player' : undefined}
+        preview={live && livePayload && courseId ? (
+          <CoursePlayer course={playerCourse(livePayload)} courseId={courseId} youtubeUrl={livePayload.playlistUrl ?? ''} />
+        ) : course ? (
           <PreviewPane course={course} onMention={mention} onFix={(item) => send(`Fix with AI: ${item.title}`)} onClose={() => setPreviewOpen(false)} />
         ) : undefined}
       >

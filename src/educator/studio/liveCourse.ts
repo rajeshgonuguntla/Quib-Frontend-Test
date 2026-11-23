@@ -101,10 +101,33 @@ function notePoints(lesson: CourseLesson): NotePoint[] {
   return points;
 }
 
-function lessonItem(moduleId: string, lesson: CourseLesson, index: number): StudioItem {
+/** Same id the learner course player embeds: lesson video, then its URL, then the course link. */
+export function youtubeEmbedId(videoId?: string, videoUrl?: string, fallbackUrl?: string): string {
+  if (videoId?.trim()) return videoId.trim();
+  for (const url of [videoUrl, fallbackUrl]) {
+    if (!url) continue;
+    const watch = url.match(/[?&]v=([^&#]+)/);
+    const short = url.match(/youtu\.be\/([^?&#]+)/);
+    const embed = url.match(/youtube\.com\/embed\/([^?&#]+)/);
+    const id = watch?.[1] || short?.[1] || embed?.[1];
+    if (id) return id;
+  }
+  return '';
+}
+
+function lessonVideoId(lesson: CourseLesson, data: GeneratedCoursePayload): string {
+  const direct = youtubeEmbedId(lesson.videoId, lesson.videoUrl, data.playlistUrl);
+  if (direct) return direct;
+  const lessonTitle = (lesson.title || '').trim();
+  const titled = (data.playlistVideos ?? []).find((video) => video.title?.trim() && video.title.trim() === lessonTitle);
+  return titled ? youtubeEmbedId(titled.videoId, titled.videoUrl) : '';
+}
+
+function lessonItem(moduleId: string, lesson: CourseLesson, index: number, data: GeneratedCoursePayload): StudioItem {
   const points = notePoints(lesson);
   const video = lesson.type !== 'reading';
   const id = lesson.id || `${moduleId}-lesson-${index + 1}`;
+  const embedId = video ? lessonVideoId(lesson, data) : '';
   return {
     id,
     kind: video ? 'video' : (points.length ? 'notes' : 'reading'),
@@ -112,14 +135,14 @@ function lessonItem(moduleId: string, lesson: CourseLesson, index: number): Stud
     title: lesson.title || 'Lesson',
     meta: lesson.duration || 'Lesson',
     content: video
-      ? { kind: 'video', duration: lesson.duration || '', notes: points }
+      ? { kind: 'video', duration: lesson.duration || '', videoId: embedId || undefined, notes: points }
       : { kind: points.length ? 'notes' : 'reading', points },
   };
 }
 
-function moduleItems(module: CourseModule, moduleId: string): StudioItem[] {
+function moduleItems(module: CourseModule, moduleId: string, data: GeneratedCoursePayload): StudioItem[] {
   const lessons = module.lessons ?? [];
-  const items = lessons.map((lesson, index) => lessonItem(moduleId, lesson, index));
+  const items = lessons.map((lesson, index) => lessonItem(moduleId, lesson, index, data));
   if (module.quiz?.length) {
     const shown = module.quiz.slice(0, 5);
     items.push({
@@ -162,7 +185,7 @@ export function mapGeneratedCourse(data: GeneratedCoursePayload, fallbackId: str
     return {
       id,
       name: module.title || `Module ${index + 1}`,
-      items: moduleItems(module, id),
+      items: moduleItems(module, id, data),
     };
   });
   return {

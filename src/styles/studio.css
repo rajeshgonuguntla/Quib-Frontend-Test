@@ -114,6 +114,16 @@
   padding: 0;
 }
 
+.studio-preview.is-player {
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.studio-preview.is-player > .course-player {
+  min-height: 0;
+  flex: 1;
+}
+
 .preview-split {
   display: grid;
   min-height: 0;
