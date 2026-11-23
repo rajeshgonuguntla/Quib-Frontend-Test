@@ -61,9 +61,9 @@ describe('studio live course mapping', () => {
     expect(course.modules[0]?.name).toBe('Lines');
     expect(course.modules[0]?.items.map((item) => item.title)).toEqual([
       'Slope in 12 minutes',
-      'Slope in 12 minutes cards',
-      'Questions',
+      'Module quiz',
     ]);
+    expect(course.modules[0]?.items.map((item) => item.kind)).toEqual(['video', 'drill']);
     expect(course.modules[0]?.items[0]?.content.notes?.[0]?.text).toBe('m is the slope.');
 
     const bare = mapGeneratedCourse({
@@ -109,8 +109,8 @@ describe('studio live course mapping', () => {
     }, 'id');
     expect(course.status).toBe('published');
     expect(course.visibility).toBe('public');
-    expect(course.modules[0]?.items.map((item) => item.kind)).toEqual(['notes', 'blanks']);
-    expect(course.modules[0]?.items[1]?.content.blanks?.[0]?.sentence).toContain('{m}');
+    expect(course.modules[0]?.items.map((item) => item.kind)).toEqual(['notes']);
+    expect(course.modules[0]?.items[0]?.content.points?.map((point) => point.text)).toEqual(['Line one', 'Line two']);
     expect(course.modules[1]?.items[0]?.title).toBe('Empty');
     expect(course.modules[1]?.items[0]?.content.points?.[0]?.text).toBe('Nothing here yet');
   });
