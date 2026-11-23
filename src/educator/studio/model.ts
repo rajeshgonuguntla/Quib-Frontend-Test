@@ -20,6 +20,8 @@ export interface DrillQuestion {
 export interface ItemContent {
   kind: string;
   duration?: string;
+  /** YouTube id, same one the learner player embeds. */
+  videoId?: string;
   notes?: NotePoint[];
   points?: NotePoint[];
   questions?: DrillQuestion[];
