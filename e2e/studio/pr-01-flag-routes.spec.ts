@@ -55,7 +55,8 @@ test.describe('PR-01 · flag, admin nav and routes', () => {
     await mockSession(page, 'educator');
     await open(page, S.courses);
     expect(await navIds(page)).not.toContain('studio');
-    await expect(page).toHaveURL(/\/dashboard$/);
+    await expect(page).toHaveURL(/\/educator-courses$/);
+    await expect(page.getByRole('heading', { name: 'My courses' })).toBeVisible();
   });
 
   test('clicking nav items navigates', async ({ page }) => {
@@ -86,18 +87,16 @@ test.describe('PR-01 · session and API integration', () => {
     expect(await navIds(page)).toEqual(['studio', 'my-courses-educator', 'settings']);
   });
 
-  test('an educator profile from /api/users/me stays on today\'s home', async ({ page }) => {
+  test('an educator profile from /api/users/me keeps today\'s courses page', async ({ page }) => {
     const me = page.waitForResponse((res) => new URL(res.url()).pathname === '/api/users/me');
-    const quizzes = page.waitForResponse((res) => new URL(res.url()).pathname === '/api/quizzes');
     await mockSession(page, 'educator');
     await open(page, S.courses);
 
     expect((await me).status()).toBe(200);
     await expect((await me).json()).resolves.toMatchObject({ role: 'educator' });
-    expect((await quizzes).status()).toBe(200);
-    await expect(page).toHaveURL(/\/dashboard$/);
+    await expect(page).toHaveURL(/\/educator-courses$/);
     expect(await navIds(page)).not.toContain('studio');
-    await expect(page.getByRole('heading', { name: /welcome back/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'My courses' })).toBeVisible();
   });
 
   test('a signed-out visit does not open Cubit Studio', async ({ page }) => {

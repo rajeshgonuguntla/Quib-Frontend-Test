@@ -4,11 +4,12 @@ import { motion } from 'framer-motion';
 type PageHeaderProps = {
   label?: string;
   title: string;
+  titleTestId?: string;
   description?: string;
   actions?: ReactNode;
 };
 
-export function PageHeader({ label, title, description, actions }: PageHeaderProps) {
+export function PageHeader({ label, title, titleTestId, description, actions }: PageHeaderProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
@@ -18,7 +19,7 @@ export function PageHeader({ label, title, description, actions }: PageHeaderPro
     >
       <div>
         {label && <p className="text-label mb-2 text-muted-foreground">{label}</p>}
-        <h1 className="text-[20px] font-bold tracking-[-0.015em] text-[var(--ink)]">{title}</h1>
+        <h1 data-testid={titleTestId} className="text-[20px] font-bold tracking-[-0.015em] text-[var(--ink)]">{title}</h1>
         {description && <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">{description}</p>}
       </div>
       {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
