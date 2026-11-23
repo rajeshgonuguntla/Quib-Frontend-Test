@@ -4,6 +4,7 @@ import type {
   CourseModule,
   CourseUpdatePayload,
   OwnedCourseSummary,
+  PlaylistVideo,
 } from '../types/courseGeneration';
 
 export interface YoutubeConnectionStatus {
@@ -58,7 +59,11 @@ export interface GeneratedCoursePayload {
   isPublished?: boolean;
   title?: string;
   description?: string;
+  difficulty?: string;
+  category?: string;
+  contentLanguage?: string;
   modules?: CourseModule[];
+  playlistVideos?: PlaylistVideo[];
 }
 
 export async function generateCourse(

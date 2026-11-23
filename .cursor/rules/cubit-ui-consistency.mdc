@@ -26,4 +26,4 @@ Source of truth: `src/styles/app-shell.css`, `src/brand.ts`, `.cursor/skills/des
 - Drive-by `build/` artifacts, theme mocks, or unrelated files in UI commits.
 - New localStorage/UI preference helpers without a small `*.test.ts` next to them.
 
-Before push / PR: run `.cursor/skills/design-guardrails` and fail closed on blocks. Fill every section of `.cursor/skills/create-pr/PR_TEMPLATE.md` — do not open a PR with empty bullets.
+Before push / PR: run `npm run check` and `.cursor/skills/design-guardrails`. `npm run check` must exit 0 before `gh pr create`. A later GitHub Actions run does not replace that. Fail closed on a failed check or a guardrail block. Fill every section of `.cursor/skills/create-pr/PR_TEMPLATE.md` — do not open a PR with empty bullets.

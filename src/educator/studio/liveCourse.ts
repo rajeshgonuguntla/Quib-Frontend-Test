@@ -1,6 +1,7 @@
 import axios from 'axios';
 import type { GeneratedCoursePayload } from '../../api/educatorApi';
-import { DEFAULT_GENERATION_OPTIONS, type CourseGenerationOptions, type CourseLesson, type CourseModule, type CourseUpdatePayload } from '../../types/courseGeneration';
+import { DEFAULT_GENERATION_OPTIONS, type CourseEditOperation, type CourseGenerationOptions, type CourseLesson, type CourseModule, type CourseUpdatePayload, type EditableCourse } from '../../types/courseGeneration';
+import { buildSavePayloadFromAssistant } from '../../utils/courseEditOperations';
 import { detectLink, type ItemRef, type NotePoint, type StudioChatMessage, type StudioCourse, type StudioItem } from './model';
 
 export function generationBody(url: string, title: string, description: string): {
@@ -46,10 +47,32 @@ export function draftThread(url: string, now = Date.now()): StudioChatMessage[] 
   }];
 }
 
-export function assistantText(text: string, refs: ItemRef[]) {
+export function assistantText(text: string, refs: ItemRef[], course?: StudioCourse | null) {
   const body = text.trim();
   if (!refs.length) return body;
-  return `${refs.map((ref) => `@${ref.label}`).join(' ')} ${body}`;
+  const mentions = refs.map((ref) => `@${ref.label}`).join(' ');
+  if (!course || /\b(?:module|lesson)\s+\d+/i.test(body)) return `${mentions} ${body}`;
+  const locators = refs.map((ref) => locateRef(course, ref)).filter((line) => line.length > 0);
+  if (!locators.length) return `${mentions} ${body}`;
+  return `${locators.join('; ')}. ${body}`;
+}
+
+function locateRef(course: StudioCourse, ref: ItemRef) {
+  for (let index = 0; index < course.modules.length; index += 1) {
+    const module = course.modules[index];
+    const moduleNo = index + 1;
+    if (ref.id === `${module.id}-quiz`) return `module ${moduleNo} quiz (module id ${module.id})`;
+    if (module.id === ref.id) return `module ${moduleNo} (id ${module.id})`;
+    const item = module.items.find((entry) => entry.id === ref.id);
+    if (!item) continue;
+    if (item.kind === 'drill') return `module ${moduleNo} quiz (module id ${module.id})`;
+    const lessonId = item.id.replace(/-(?:cards|blanks)$/, '');
+    const lessons = module.items.filter((entry) => entry.kind === 'video' || entry.kind === 'reading' || entry.kind === 'notes');
+    const lessonNo = Math.max(1, lessons.findIndex((entry) => entry.id === lessonId) + 1);
+    const focus = item.kind === 'cards' ? ' flashcards' : item.kind === 'blanks' ? ' blanks' : '';
+    return `lesson ${lessonNo} in module ${moduleNo}${focus} (lesson id ${lessonId})`;
+  }
+  return '';
 }
 
 export function apiError(err: unknown, fallback: string) {
@@ -200,15 +223,173 @@ export function mapGeneratedCourse(data: GeneratedCoursePayload, fallbackId: str
   };
 }
 
-export function editCard(messageId: string, update: CourseUpdatePayload): StudioChatMessage['card'] {
-  const title = update.title?.trim();
+export function toEditableCourse(data: GeneratedCoursePayload): EditableCourse {
+  return {
+    title: data.title ?? '',
+    description: data.description ?? '',
+    difficulty: data.difficulty ?? 'Intermediate',
+    category: data.category,
+    contentLanguage: data.contentLanguage,
+    modules: data.modules ?? [],
+    playlistVideos: data.playlistVideos,
+  };
+}
+
+function courseSnapshot(course: Pick<EditableCourse, 'title' | 'description' | 'difficulty' | 'category' | 'contentLanguage' | 'modules'>) {
+  return JSON.stringify({
+    title: course.title,
+    description: course.description,
+    difficulty: course.difficulty,
+    category: course.category,
+    contentLanguage: course.contentLanguage,
+    modules: course.modules,
+  });
+}
+
+function replacement<T>(next: object, key: string, previous: T): T {
+  if (!(key in next)) return previous;
+  const value = (next as Record<string, unknown>)[key];
+  if (value == null) return previous;
+  return value as T;
+}
+
+function mergeLesson(previous: CourseLesson | undefined, next: CourseLesson): CourseLesson {
+  if (!previous) return next;
+  return {
+    ...previous,
+    ...next,
+    summary: replacement(next, 'summary', previous.summary),
+    notes: replacement(next, 'notes', previous.notes),
+    takeaway: replacement(next, 'takeaway', previous.takeaway),
+    keyConcepts: replacement(next, 'keyConcepts', previous.keyConcepts),
+    flashcards: replacement(next, 'flashcards', previous.flashcards),
+    blanks: replacement(next, 'blanks', previous.blanks),
+  };
+}
+
+function mergeModule(previous: CourseModule | undefined, next: CourseModule): CourseModule {
+  if (!previous) return next;
+  const lessons = next.lessons?.length
+    ? next.lessons.map((lesson) => mergeLesson(previous.lessons.find((item) => item.id === lesson.id), lesson))
+    : previous.lessons;
+  return {
+    ...previous,
+    ...next,
+    description: replacement(next, 'description', previous.description),
+    lessons,
+    quiz: replacement(next, 'quiz', previous.quiz),
+  };
+}
+
+/** Keep the assistant's course, including quiz, flashcards, and added or removed lessons. */
+function mergeReturnedCourse(base: EditableCourse, update: CourseUpdatePayload): CourseUpdatePayload {
+  const merged: EditableCourse = {
+    ...base,
+    title: update.title?.trim() ? update.title : base.title,
+    description: update.description ?? base.description,
+    difficulty: update.difficulty ?? base.difficulty,
+    category: update.category ?? base.category,
+    contentLanguage: update.contentLanguage ?? base.contentLanguage,
+    modules: update.modules?.length
+      ? update.modules.map((module) => mergeModule(base.modules.find((item) => item.id === module.id), module))
+      : base.modules,
+  };
+  const { playlistVideos: _videos, ...payload } = merged;
+  return {
+    ...payload,
+    includedVideoIds: update.includedVideoIds?.length ? update.includedVideoIds : [],
+  };
+}
+
+/** The assistant's courseUpdate is the edited course. Operations are only a fallback. */
+export function proposedEdit(
+  base: EditableCourse | null,
+  update: CourseUpdatePayload | null,
+  operations?: CourseEditOperation[] | null,
+): CourseUpdatePayload | null {
+  const source = base ?? (update ? toEditableCourse(update) : null);
+  if (!source) return null;
+  const payload = update?.modules?.length
+    ? mergeReturnedCourse(source, update)
+    : operations?.length
+      ? buildSavePayloadFromAssistant(source, { operations })
+      : null;
+  if (!payload || (base && courseSnapshot(base) === courseSnapshot(payload))) return null;
+  return payload;
+}
+
+export function describeCourseEdit(
+  before: Pick<EditableCourse, 'title' | 'modules'> | EditableCourse | null,
+  after: Pick<EditableCourse, 'title' | 'modules'> | EditableCourse | null,
+): string {
+  if (!before || !after) return 'Apply this edit to the course.';
+  const bits: string[] = [];
+  if (before.title.trim() !== after.title.trim()) bits.push(`Rename the course to <b>${after.title}</b>.`);
+  const beforeIds = before.modules.map((module) => module.id);
+  const afterIds = after.modules.map((module) => module.id);
+  for (const module of after.modules) {
+    if (!beforeIds.includes(module.id)) bits.push(`Add the module <b>${module.title}</b>.`);
+  }
+  for (const module of before.modules) {
+    if (!afterIds.includes(module.id)) bits.push(`Remove the module <b>${module.title}</b>.`);
+  }
+  if (
+    beforeIds.length === afterIds.length
+    && beforeIds.join() !== afterIds.join()
+    && beforeIds.every((id) => afterIds.includes(id))
+  ) bits.push('Reorder the modules.');
+  for (const module of after.modules) {
+    const previous = before.modules.find((item) => item.id === module.id);
+    if (!previous) continue;
+    if (previous.title !== module.title) bits.push(`Rename <b>${previous.title}</b> to <b>${module.title}</b>.`);
+    const previousLessons = previous.lessons ?? [];
+    const nextLessons = module.lessons ?? [];
+    for (const lesson of nextLessons) {
+      if (!previousLessons.some((item) => item.id === lesson.id)) bits.push(`Add the lesson <b>${lesson.title}</b>.`);
+    }
+    for (const lesson of previousLessons) {
+      if (!nextLessons.some((item) => item.id === lesson.id)) bits.push(`Remove the lesson <b>${lesson.title}</b>.`);
+    }
+    const previousLessonIds = previousLessons.map((lesson) => lesson.id);
+    const nextLessonIds = nextLessons.map((lesson) => lesson.id);
+    if (
+      previousLessonIds.length === nextLessonIds.length
+      && previousLessonIds.join() !== nextLessonIds.join()
+      && previousLessonIds.every((id) => nextLessonIds.includes(id))
+    ) bits.push(`Reorder the lessons in <b>${module.title}</b>.`);
+    for (const lesson of nextLessons) {
+      const old = previousLessons.find((item) => item.id === lesson.id);
+      if (!old) continue;
+      if (old.title !== lesson.title) bits.push(`Rename <b>${old.title}</b> to <b>${lesson.title}</b>.`);
+      const oldCards = old.flashcards?.length ?? 0;
+      const nextCards = lesson.flashcards?.length ?? 0;
+      if (oldCards !== nextCards) bits.push(`Change <b>${lesson.title}</b> flashcards from ${oldCards} to ${nextCards}.`);
+      const oldBlanks = old.blanks?.length ?? 0;
+      const nextBlanks = lesson.blanks?.length ?? 0;
+      if (oldBlanks !== nextBlanks) bits.push(`Change <b>${lesson.title}</b> blanks from ${oldBlanks} to ${nextBlanks}.`);
+      if ((old.notes ?? '') !== (lesson.notes ?? '') || (old.summary ?? '') !== (lesson.summary ?? '')) {
+        bits.push(`Update the notes for <b>${lesson.title}</b>.`);
+      }
+    }
+    const oldQuiz = previous.quiz?.length ?? 0;
+    const nextQuiz = module.quiz?.length ?? 0;
+    if (oldQuiz !== nextQuiz) bits.push(`Change <b>${module.title}</b> quiz questions from ${oldQuiz} to ${nextQuiz}.`);
+    else if (JSON.stringify(previous.quiz ?? []) !== JSON.stringify(module.quiz ?? [])) {
+      bits.push(`Update the quiz for <b>${module.title}</b>.`);
+    }
+  }
+  if (!bits.length) return 'Apply this edit to the course.';
+  return bits.slice(0, 6).join(' ');
+}
+
+export function editCard(messageId: string, summary: string): StudioChatMessage['card'] {
   return {
     type: 'diff',
     title: 'Suggested edit',
     ops: [{
       id: messageId,
       status: 'pending',
-      summary: title ? `Update the course, including the title <b>${title}</b>.` : 'Apply this edit to the course.',
+      summary,
       op: { type: 'course_update' },
     }],
   };

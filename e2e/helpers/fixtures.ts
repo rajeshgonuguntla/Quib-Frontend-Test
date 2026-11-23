@@ -78,7 +78,10 @@ export const test = base.extend({
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(String(e)));
     page.on('console', (m) => {
-      if (m.type() === 'error') errors.push(m.text());
+      if (m.type() !== 'error') return;
+      // Chrome logs this for a mocked 4xx/5xx. The app is expected to show that error in the UI.
+      if (/Failed to load resource: the server responded with a status of [45]\d\d/.test(m.text())) return;
+      errors.push(m.text());
     });
     if (!isRef) await mockSession(page);
     await use(page);

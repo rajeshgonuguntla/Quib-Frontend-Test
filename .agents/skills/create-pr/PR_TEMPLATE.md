@@ -17,7 +17,8 @@
 - [ ] Empty / error / loading, if relevant:
 - [ ] `npx tsc --noEmit`
 - [ ] `npm run lint`
-- [ ] `npm test`
+- [ ] `npm test` — unit, component, and integration
+- [ ] `npm run e2e` — studio end-to-end, screenshot baselines, accessibility, Chrome, Firefox, and Safari
 
 ## Guardrails
 
