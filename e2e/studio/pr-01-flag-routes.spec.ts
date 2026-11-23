@@ -26,7 +26,14 @@ test.describe('PR-01 · flag, admin nav and routes', () => {
 
   test('Cubit Studio is active on /educator-studio', async ({ page }) => {
     await open(page, S.studio);
-    await expect(page.locator('[data-testid="nav-item"][aria-current="page"]')).toHaveAttribute('data-nav-id', 'studio');
+    if (isRef) {
+      await expect(page.locator('[data-testid="nav-item"][aria-current="page"]')).toHaveAttribute('data-nav-id', 'studio');
+      return;
+    }
+    // The app studio is full-bleed: its own frame, no shell sidebar.
+    await expect(page.getByTestId('studio')).toBeVisible();
+    await expect(page.getByTestId('studio-empty')).toBeVisible();
+    await expect(page.getByTestId('app-sidebar')).toHaveCount(0);
   });
 
   test('/educator-analytics redirects to /educator-courses', async ({ page }) => {
@@ -55,6 +62,61 @@ test.describe('PR-01 · flag, admin nav and routes', () => {
     await open(page, S.courses);
     await page.locator('[data-testid="nav-item"][data-nav-id="studio"]').click();
     if (isRef) await expect(page.getByTestId('ref-location')).toHaveText('/educator-studio');
-    else await expect(page).toHaveURL(/\/educator-studio$/);
+    else {
+      await expect(page).toHaveURL(/\/educator-studio$/);
+      await expect(page.getByTestId('studio')).toBeVisible();
+    }
+  });
+});
+
+test.describe('PR-01 · session and API integration', () => {
+  test.skip(isRef, 'reference kit does not call the app API');
+
+  test('admin rail follows GET /api/users/me, billing, and enrollment stats', async ({ page }) => {
+    const me = page.waitForResponse((res) => new URL(res.url()).pathname === '/api/users/me');
+    const billing = page.waitForResponse((res) => new URL(res.url()).pathname === '/api/billing/me');
+    const stats = page.waitForResponse((res) => new URL(res.url()).pathname === '/api/users/me/enrollments/stats');
+    await mockSession(page, 'admin');
+    await open(page, S.courses);
+
+    expect((await me).status()).toBe(200);
+    await expect((await me).json()).resolves.toMatchObject({ id: 'e2e-user', role: 'admin' });
+    expect((await billing).status()).toBe(200);
+    expect((await stats).status()).toBe(200);
+    expect(await navIds(page)).toEqual(['studio', 'my-courses-educator', 'settings']);
+  });
+
+  test('an educator profile from /api/users/me stays on today\'s home', async ({ page }) => {
+    const me = page.waitForResponse((res) => new URL(res.url()).pathname === '/api/users/me');
+    const quizzes = page.waitForResponse((res) => new URL(res.url()).pathname === '/api/quizzes');
+    await mockSession(page, 'educator');
+    await open(page, S.courses);
+
+    expect((await me).status()).toBe(200);
+    await expect((await me).json()).resolves.toMatchObject({ role: 'educator' });
+    expect((await quizzes).status()).toBe(200);
+    await expect(page).toHaveURL(/\/dashboard$/);
+    expect(await navIds(page)).not.toContain('studio');
+    await expect(page.getByRole('heading', { name: /welcome back/i })).toBeVisible();
+  });
+
+  test('a signed-out visit does not open Cubit Studio', async ({ page }) => {
+    await page.route('**/api/auth/logout', (route) => route.fulfill({ status: 204, body: '' }));
+    await page.addInitScript(() => localStorage.removeItem('cuib_session_exp'));
+    await page.goto('/educator-studio');
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.getByTestId('studio')).toHaveCount(0);
+    await expect(page.getByTestId('nav-item')).toHaveCount(0);
+  });
+
+  test('an admin course thread stays in the studio frame', async ({ page }) => {
+    const me = page.waitForResponse((res) => new URL(res.url()).pathname === '/api/users/me');
+    await mockSession(page, 'admin');
+    await page.goto('/educator-studio/sat-math-sprint');
+    expect((await me).status()).toBe(200);
+    await expect((await me).json()).resolves.toMatchObject({ role: 'admin' });
+    await expect(page.getByTestId('studio-course-title')).toHaveText('SAT Math Sprint');
+    await expect(page.getByTestId('preview')).toBeVisible();
+    await expect(page.getByTestId('app-sidebar')).toHaveCount(0);
   });
 });

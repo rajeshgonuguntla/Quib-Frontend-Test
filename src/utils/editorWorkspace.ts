@@ -5,10 +5,16 @@ export function isCourseEditorRoute(pathname: string): boolean {
   return /\/educator-courses\/[^/]+\/edit$/.test(pathname);
 }
 
-/** Course thread and the legacy studio page hide the sidebar. Studio v2 keeps `/educator-studio` in the shell. */
+export function isStudioPath(pathname: string): boolean {
+  return pathname === '/educator-studio' || pathname.startsWith('/educator-studio/');
+}
+
+/** Studio v2 replaces the app chrome with the studio frame on every studio route. */
+export function isStudioV2Route(pathname: string): boolean {
+  return STUDIO_V2_ENABLED && isStudioPath(pathname);
+}
+
+/** Studio and the course editor hide the app sidebar. */
 export function isEducatorWorkspaceRoute(pathname: string): boolean {
-  if (isCourseEditorRoute(pathname)) return true;
-  if (/^\/educator-studio\/[^/]+/.test(pathname)) return true;
-  if (!STUDIO_V2_ENABLED && pathname.startsWith('/educator-studio')) return true;
-  return false;
+  return isCourseEditorRoute(pathname) || isStudioPath(pathname);
 }
