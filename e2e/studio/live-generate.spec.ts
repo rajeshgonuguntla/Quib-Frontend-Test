@@ -45,7 +45,8 @@ test('a pasted playlist generates from that URL and the outline comes back', asy
   });
   await page.route(`**/api/educator/courses/${courseId}/assistant`, async (route) => {
     const body = route.request().postDataJSON() as { message?: string };
-    expect(body.message).toContain('@Slope in 12 minutes');
+    expect(body.message).toContain('lesson 1 in module 1 (lesson id l1)');
+    expect(body.message).toContain('Shorten the notes');
     await route.fulfill({
       json: {
         reply: 'Shortened the notes.',
@@ -54,7 +55,10 @@ test('a pasted playlist generates from that URL and the outline comes back', asy
           title: 'Algebra sprint',
           description: 'Slope and intercepts',
           difficulty: 'Intermediate',
-          modules: course.modules,
+          modules: [{
+            ...course.modules[0],
+            lessons: [{ ...course.modules[0].lessons[0], title: 'Slope, shortened' }],
+          }],
         },
         sessionId: 'sess-1',
         courseRevision: 'rev-1',
@@ -150,7 +154,10 @@ test('reject dismisses an edit without saving, and a failed accept stays pending
         title: 'Algebra sprint',
         description: 'Slope and intercepts',
         difficulty: 'Intermediate',
-        modules: course.modules,
+        modules: [{
+          ...course.modules[0],
+          lessons: [{ ...course.modules[0].lessons[0], title: 'Slope, edited' }],
+        }],
       },
       sessionId: 'sess-1',
     },
