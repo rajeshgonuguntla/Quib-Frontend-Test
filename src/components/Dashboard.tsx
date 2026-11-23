@@ -4,6 +4,7 @@ import { ChevronDown, ChevronUp, Play } from 'lucide-react';
 import axios from 'axios';
 import { fetchEnrollments } from '../api/catalogApi';
 import { useUserProfile } from '../context/UserProfileContext';
+import { isAdminAccount } from '../utils/signInIntent';
 import { getFirstName } from '../utils/userDisplay';
 import { ytThumb } from '../utils/catalogMap';
 import { StudentMasterInput } from './StudentMasterInput';
@@ -30,6 +31,8 @@ export function Dashboard() {
   const location = useLocation();
   const { profile } = useUserProfile();
   const firstName = getFirstName(profile);
+  const isAdmin = isAdminAccount(profile);
+  const sectionTitle = isAdmin ? 'Recent publishes' : 'Continue learning';
 
   const [inProgress, setInProgress] = useState<ProgressItem[]>([]);
   const [continueOpen, setContinueOpen] = useState(() => readContinueLearningOpen());
@@ -159,7 +162,7 @@ export function Dashboard() {
           className="cuib-edge-toggle cuib-edge-toggle--horizontal"
           aria-expanded={continueOpen}
           aria-controls="dashboard-continue-learning"
-          aria-label={continueOpen ? 'Collapse continue learning' : 'Expand continue learning'}
+          aria-label={continueOpen ? `Collapse ${sectionTitle.toLowerCase()}` : `Expand ${sectionTitle.toLowerCase()}`}
         >
           {continueOpen ? <ChevronUp size={14} strokeWidth={2.6} /> : <ChevronDown size={14} strokeWidth={2.6} />}
         </button>
@@ -169,20 +172,22 @@ export function Dashboard() {
         <div id="dashboard-continue-learning">
           <div className="mb-5 flex items-end justify-between">
             <h2 style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--ink-soft)' }}>
-              Continue learning
+              {sectionTitle}
             </h2>
-            <button
-              type="button"
-              onClick={() => navigate('/my-courses')}
-              className="flex items-center gap-1 pb-0.5 text-[var(--ink-faint)] transition-colors hover:text-[var(--accent)]"
-              style={{ fontFamily: 'var(--mono)', fontSize: 12 }}
-            >
-              View all
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <path d="M5 12h14" />
-                <path d="M13 6l6 6-6 6" />
-              </svg>
-            </button>
+            {isAdmin ? null : (
+              <button
+                type="button"
+                onClick={() => navigate('/my-courses')}
+                className="flex items-center gap-1 pb-0.5 text-[var(--ink-faint)] transition-colors hover:text-[var(--accent)]"
+                style={{ fontFamily: 'var(--mono)', fontSize: 12 }}
+              >
+                View all
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M5 12h14" />
+                  <path d="M13 6l6 6-6 6" />
+                </svg>
+              </button>
+            )}
           </div>
 
           {inProgress.length === 0 ? (
