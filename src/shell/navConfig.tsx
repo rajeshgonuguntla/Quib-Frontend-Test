@@ -55,7 +55,8 @@ export const EDUCATOR_NAV_GROUPS: NavGroup[] = [
   {
     label: 'Create',
     items: [
-      { id: 'studio', label: 'Cubit Studio', path: '/educator-studio', icon: <GraduationCap size={17} /> },
+      { id: 'studio', label: 'Cubit Studio', path: '/dashboard', icon: <GraduationCap size={17} /> },
+      { id: 'published-courses', label: 'Published courses', path: '/educator-courses/published', icon: <BookOpen size={17} /> },
       { id: 'my-courses-educator', label: 'My courses', path: '/educator-courses', icon: <BookMarked size={17} /> },
     ],
   },
@@ -86,8 +87,13 @@ export function isNavItemActive(pathname: string, _search: string, id: string, p
       || pathname.startsWith('/my-quizzes')
       || pathname.startsWith('/certificates');
   }
-  if (id === 'studio') return pathname.startsWith('/educator-studio');
-  if (id === 'my-courses-educator') return pathname.startsWith('/educator-courses');
+  if (id === 'studio') {
+    return pathname === '/dashboard' || pathname === '/home' || pathname.startsWith('/educator-studio');
+  }
+  if (id === 'published-courses') return pathname.startsWith('/educator-courses/published');
+  if (id === 'my-courses-educator') {
+    return pathname.startsWith('/educator-courses') && !pathname.startsWith('/educator-courses/published');
+  }
   if (id === 'educator-analytics') return pathname.startsWith('/educator-analytics');
   if (id === 'admin-insights') return pathname.startsWith('/admin/insights');
   if (id === 'settings') return pathname.startsWith('/settings');
@@ -115,6 +121,7 @@ const ROUTE_META: Record<string, RouteMeta> = {
   '/certificates': { title: 'Certificates', section: 'Library', parent: { label: 'Home', path: '/dashboard' } },
   '/educator-studio': { title: 'Cubit Studio', section: 'Create', parent: { label: 'Home', path: '/dashboard' } },
   '/educator-courses': { title: 'My courses', section: 'Create', parent: { label: 'Home', path: '/dashboard' } },
+  '/educator-courses/published': { title: 'Published courses', section: 'Create', parent: { label: 'Home', path: '/dashboard' } },
   '/educator-analytics': { title: 'Analytics', section: 'Insights', parent: { label: 'Home', path: '/dashboard' } },
   '/admin/insights': { title: 'Platform Insights', section: 'Admin', parent: { label: 'Home', path: '/dashboard' } },
   '/settings': { title: 'Settings', section: 'Account', parent: { label: 'Home', path: '/dashboard' } },
@@ -127,6 +134,9 @@ const ROUTE_META: Record<string, RouteMeta> = {
 export function getRouteMeta(pathname: string): RouteMeta {
   if (/^\/educator-studio\/[^/]+/.test(pathname)) {
     return { title: 'Cubit Studio', section: 'Create', parent: { label: 'My courses', path: '/educator-courses' } };
+  }
+  if (pathname.startsWith('/educator-courses/published')) {
+    return ROUTE_META['/educator-courses/published']!;
   }
   if (pathname.startsWith('/educator-courses/')) {
     return { title: 'Edit course', section: 'Create', parent: { label: 'My courses', path: '/educator-courses' } };

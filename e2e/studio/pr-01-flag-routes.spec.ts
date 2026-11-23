@@ -14,7 +14,12 @@ test.describe('PR-01 · flag, admin nav and routes', () => {
     if (!isRef) await mockSession(page, 'admin');
     await open(page, S.courses);
     await expect(page.getByTestId('nav-item').first()).toHaveText('Cubit Studio');
-    expect(await navIds(page)).toEqual(['studio', 'my-courses-educator', 'settings']);
+    if (isRef) {
+      expect(await navIds(page)).toEqual(['studio', 'my-courses-educator', 'settings']);
+    } else {
+      await expect(page.getByTestId('nav-item').nth(1)).toHaveText('Published courses');
+      expect(await navIds(page)).toEqual(['studio', 'published-courses', 'my-courses-educator', 'settings']);
+    }
     await expect(page.getByTestId('nav-item').filter({ hasText: 'Analytics' })).toHaveCount(0);
     await expect(page.getByTestId('nav-item').locator('.badge, [data-testid="nav-badge"]')).toHaveCount(0);
   });
@@ -64,8 +69,10 @@ test.describe('PR-01 · flag, admin nav and routes', () => {
     await page.locator('[data-testid="nav-item"][data-nav-id="studio"]').click();
     if (isRef) await expect(page.getByTestId('ref-location')).toHaveText('/educator-studio');
     else {
-      await expect(page).toHaveURL(/\/educator-studio$/);
-      await expect(page.getByTestId('studio')).toBeVisible();
+      await expect(page).toHaveURL(/\/dashboard$/);
+      await expect(page.getByRole('heading', { name: /Welcome back/ })).toBeVisible();
+      await expect(page.getByRole('textbox', { name: 'YouTube URL to create a course' })).toBeVisible();
+      await expect(page.getByTestId('studio')).toHaveCount(0);
     }
   });
 });
@@ -84,7 +91,7 @@ test.describe('PR-01 · session and API integration', () => {
     await expect((await me).json()).resolves.toMatchObject({ id: 'e2e-user', role: 'admin' });
     expect((await billing).status()).toBe(200);
     expect((await stats).status()).toBe(200);
-    expect(await navIds(page)).toEqual(['studio', 'my-courses-educator', 'settings']);
+    expect(await navIds(page)).toEqual(['studio', 'published-courses', 'my-courses-educator', 'settings']);
   });
 
   test('an educator profile from /api/users/me keeps today\'s courses page', async ({ page }) => {
