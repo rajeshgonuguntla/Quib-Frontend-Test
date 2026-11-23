@@ -94,7 +94,7 @@ function RouteFallback() {
         className="h-0.5 w-24 overflow-hidden rounded-full"
         style={{ background: 'var(--border)' }}
       >
-        <div className="h-full w-1/2 rounded-full" style={{ background: 'var(--accent)' }} />
+        <div className="h-full w-1/2 rounded-full" data-accent="progress" style={{ background: 'var(--accent)' }} />
       </div>
     </div>
   );

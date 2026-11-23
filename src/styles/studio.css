@@ -1,0 +1,163 @@
+.studio {
+  display: flex;
+  height: 100dvh;
+  min-height: 0;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.studio-top {
+  display: flex;
+  height: 60px;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--border);
+  padding: 0 16px;
+}
+
+.studio-icon-btn {
+  display: inline-flex;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink-soft);
+}
+
+.studio-icon-btn:hover {
+  background: var(--fill);
+  color: var(--ink);
+}
+
+.studio-body {
+  --chat-w: 400px;
+  display: grid;
+  min-height: 0;
+  flex: 1;
+  grid-template-columns: var(--chat-w) minmax(0, 1fr);
+}
+
+.studio-body.chat-collapsed {
+  --chat-w: 40px;
+}
+
+.studio-body.is-empty {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .studio-body {
+    transition: grid-template-columns 0.25s ease;
+  }
+}
+
+.studio-chat {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.studio-body.is-empty .studio-chat {
+  align-items: center;
+  justify-content: center;
+  border-right: 0;
+}
+
+.studio-body.chat-collapsed .studio-chat {
+  cursor: pointer;
+}
+
+.studio-body.chat-collapsed .studio-chat:hover {
+  background: var(--fill);
+}
+
+.studio-chat-inner {
+  min-width: 0;
+  flex: 1;
+}
+
+.studio-body.chat-collapsed .studio-chat-inner {
+  visibility: hidden;
+}
+
+.studio-empty {
+  max-width: 28rem;
+  padding: 24px;
+  text-align: center;
+}
+
+.studio-preview {
+  min-width: 0;
+  background: var(--surface);
+  padding: 20px;
+}
+
+.studio-body.is-empty .studio-preview {
+  display: none;
+}
+
+.cuib-app .studio-chat .studio-chat-toggle {
+  top: 18px;
+  left: 100%;
+  color: var(--ink-soft);
+  transform: translateX(-50%);
+}
+
+.cuib-app .studio-chat .studio-chat-toggle:hover {
+  color: var(--ink);
+}
+
+.studio-preview-btn {
+  display: none;
+  height: 44px;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 0 12px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+@media (max-width: 767px) {
+  .studio-top {
+    height: 56px;
+    gap: 6px;
+    padding: 0 8px 0 4px;
+  }
+
+  .studio-logo,
+  .studio-theme,
+  .studio-avatar {
+    display: none;
+  }
+
+  .studio-preview-btn {
+    display: inline-flex;
+  }
+
+  .studio-body,
+  .studio-body.chat-collapsed {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .studio-chat {
+    border-right: 0;
+  }
+
+  .studio-preview,
+  .cuib-app .studio-chat .studio-chat-toggle {
+    display: none;
+  }
+}
