@@ -72,6 +72,10 @@ type StudentMasterInputProps = {
   signedIn?: boolean;
   /** Lock the start bar to one tool (Practice page uses quiz). */
   lockMode?: LearnerStartMode;
+  /** Studio uses the same bar, then keeps the URL in the studio chat. */
+  onCourseSubmit?: (url: string) => void;
+  inputTestId?: string;
+  submitTestId?: string;
 };
 
 function VideoGlyph() {
@@ -83,7 +87,14 @@ function VideoGlyph() {
   );
 }
 
-export function StudentMasterInput({ className, signedIn = true, lockMode }: StudentMasterInputProps) {
+export function StudentMasterInput({
+  className,
+  signedIn = true,
+  lockMode,
+  onCourseSubmit,
+  inputTestId,
+  submitTestId,
+}: StudentMasterInputProps) {
   const navigate = useNavigate();
   const { setProfile } = useUserProfile();
   const { isDark } = useTheme();
@@ -122,6 +133,14 @@ export function StudentMasterInput({ className, signedIn = true, lockMode }: Stu
       activeRef.current = false;
       if (timerRef.current) clearTimeout(timerRef.current);
       setPhText('');
+      return;
+    }
+
+    const media = typeof window.matchMedia === 'function'
+      ? window.matchMedia('(prefers-reduced-motion: reduce)')
+      : null;
+    if (media?.matches) {
+      setPhText(phrases[0] ?? '');
       return;
     }
 
@@ -247,6 +266,13 @@ export function StudentMasterInput({ className, signedIn = true, lockMode }: Stu
       return;
     }
 
+    if (onCourseSubmit && mode === 'course') {
+      if (!trimmed) return;
+      setError(null);
+      onCourseSubmit(trimmed);
+      return;
+    }
+
     if (isQuizMode) {
       const isYt = isYoutubePlaylistUrl(trimmed) || isYoutubeVideoUrl(trimmed);
       if (isYt) {
@@ -368,7 +394,8 @@ export function StudentMasterInput({ className, signedIn = true, lockMode }: Stu
                 onFocus={() => setFocused(true)}
                 onBlur={() => setFocused(false)}
                 placeholder=" "
-                className="relative z-[1] w-full bg-transparent py-[13px] text-[13px] outline-none"
+                data-testid={inputTestId}
+                className="relative z-[1] w-full bg-transparent py-[13px] text-[16px] outline-none md:text-[13px]"
                 style={{
                   fontFamily: 'var(--mono)',
                   color: 'var(--ink)',
@@ -389,7 +416,7 @@ export function StudentMasterInput({ className, signedIn = true, lockMode }: Stu
               {showTypewriter && (
                 <div className="pointer-events-none absolute inset-y-0 left-0 z-0 flex items-center gap-0.5 overflow-hidden whitespace-nowrap" aria-hidden>
                   <span className="truncate text-[13px] text-[var(--ink-faint)]" style={{ fontFamily: 'var(--mono)' }}>{phText}</span>
-                  <span className="inline-block h-[13px] w-[1.5px] shrink-0 animate-pulse bg-[var(--ink-faint)]" />
+                  <span className="inline-block h-[13px] w-[1.5px] shrink-0 animate-pulse bg-[var(--ink-faint)] motion-reduce:hidden" />
                 </div>
               )}
             </div>
@@ -470,6 +497,7 @@ export function StudentMasterInput({ className, signedIn = true, lockMode }: Stu
               ) : (
                 <button
                   type="submit"
+                  data-testid={submitTestId}
                   className="absolute inset-0 z-10 rounded-full"
                   aria-label={
                     isQuizMode
