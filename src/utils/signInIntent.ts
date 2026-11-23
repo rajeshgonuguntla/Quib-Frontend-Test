@@ -1,8 +1,10 @@
 import type { UserProfile } from '../types/userProfile';
 import type { NavGroup } from '../shell/navConfig';
+import { STUDIO_V2_ENABLED } from '../config/features';
 
 export const SIGN_IN_INTENT_KEY = 'quib_sign_in_intent';
-export const CREATOR_HOME_PATH = '/educator-studio?tab=url';
+/** Studio v2 drops the legacy `?tab=url` handoff. The old flow keeps it. */
+export const CREATOR_HOME_PATH = STUDIO_V2_ENABLED ? '/educator-studio' : '/educator-studio?tab=url';
 
 /**
  * Master switch for creator / educator product surface (sign-in card, studio nav, educator routes).
@@ -35,6 +37,11 @@ export function clearSignInIntent(): void {
 /** Cuib platform administrators only — not educators. */
 export function isAdminAccount(profile?: UserProfile | null): boolean {
   return profile?.role === 'admin';
+}
+
+/** Cubit Studio v2 is admin-only. Educators and learners keep today's app. */
+export function isStudioV2Account(profile?: UserProfile | null): boolean {
+  return isAdminAccount(profile);
 }
 
 /** Backend role — educator accounts always get creator tooling in the app. */

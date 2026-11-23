@@ -54,7 +54,7 @@ function AppShellLayout() {
 
   return (
     <div className="cuib-app min-h-screen">
-      <header className="cuib-topnav sticky top-0 z-50">
+      <header className="cuib-topnav sticky top-0 z-50" data-testid="app-topbar">
         <AppTopbar />
       </header>
 
@@ -66,7 +66,7 @@ function AppShellLayout() {
         )}
       >
         {!educatorWorkspace && (
-          <aside className="cuib-sidebar">
+          <aside className="cuib-sidebar" data-testid="app-sidebar">
             <AppSidebar pathname={location.pathname} search={location.search} />
             <button
               type="button"

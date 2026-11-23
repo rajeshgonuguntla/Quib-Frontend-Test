@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { NAV_GROUPS, getRouteMeta, isNavItemActive } from './navConfig';
+import { EDUCATOR_NAV_GROUPS, NAV_GROUPS, getRouteMeta, isNavItemActive } from './navConfig';
 
 const learnerIds = NAV_GROUPS[0]!.items.map((item) => item.id);
 
@@ -45,6 +45,27 @@ describe('learner left nav', () => {
     expect(getRouteMeta('/course-details/abc').parent).toEqual({
       label: 'My courses',
       path: '/my-courses',
+    });
+  });
+});
+
+describe('educator nav (Studio v2)', () => {
+  it('is creator-only', () => {
+    expect(EDUCATOR_NAV_GROUPS.flatMap((group) => group.items.map((item) => item.id))).toEqual([
+      'studio',
+      'my-courses-educator',
+      'settings',
+    ]);
+    expect(EDUCATOR_NAV_GROUPS[0]!.items[0]!.label).toBe('Cubit Studio');
+  });
+
+  it('keeps Cubit Studio active on course threads', () => {
+    expect(isNavItemActive('/educator-studio/abc', '', 'studio', '/educator-studio')).toBe(true);
+    expect(isNavItemActive('/educator-courses', '', 'my-courses-educator', '/educator-courses')).toBe(true);
+    expect(getRouteMeta('/educator-studio').title).toBe('Cubit Studio');
+    expect(getRouteMeta('/educator-studio/abc').parent).toEqual({
+      label: 'My courses',
+      path: '/educator-courses',
     });
   });
 });

@@ -50,6 +50,23 @@ export const NAV_GROUPS: NavGroup[] = [
   },
 ];
 
+/** Creator rail when Studio v2 is on. Settings stays a footer item in AppSidebar. */
+export const EDUCATOR_NAV_GROUPS: NavGroup[] = [
+  {
+    label: 'Create',
+    items: [
+      { id: 'studio', label: 'Cubit Studio', path: '/educator-studio', icon: <GraduationCap size={17} /> },
+      { id: 'my-courses-educator', label: 'My courses', path: '/educator-courses', icon: <BookMarked size={17} /> },
+    ],
+  },
+  {
+    label: '',
+    items: [
+      { id: 'settings', label: 'Settings', path: '/settings', icon: <Settings size={17} /> },
+    ],
+  },
+];
+
 export function isNavItemActive(pathname: string, _search: string, id: string, path: string): boolean {
   if (id === 'home' || id === 'dashboard') return pathname === '/dashboard' || pathname === '/home';
   if (id === 'my-courses') {
@@ -96,7 +113,7 @@ const ROUTE_META: Record<string, RouteMeta> = {
   '/library': { title: 'Progress', section: 'Library', parent: { label: 'Home', path: '/dashboard' } },
   '/my-quizzes': { title: 'Progress', section: 'Library', parent: { label: 'Home', path: '/dashboard' } },
   '/certificates': { title: 'Certificates', section: 'Library', parent: { label: 'Home', path: '/dashboard' } },
-  '/educator-studio': { title: 'Studio', section: 'Create', parent: { label: 'Home', path: '/dashboard' } },
+  '/educator-studio': { title: 'Cubit Studio', section: 'Create', parent: { label: 'Home', path: '/dashboard' } },
   '/educator-courses': { title: 'My courses', section: 'Create', parent: { label: 'Home', path: '/dashboard' } },
   '/educator-analytics': { title: 'Analytics', section: 'Insights', parent: { label: 'Home', path: '/dashboard' } },
   '/admin/insights': { title: 'Platform Insights', section: 'Admin', parent: { label: 'Home', path: '/dashboard' } },
@@ -108,6 +125,9 @@ const ROUTE_META: Record<string, RouteMeta> = {
 };
 
 export function getRouteMeta(pathname: string): RouteMeta {
+  if (/^\/educator-studio\/[^/]+/.test(pathname)) {
+    return { title: 'Cubit Studio', section: 'Create', parent: { label: 'My courses', path: '/educator-courses' } };
+  }
   if (pathname.startsWith('/educator-courses/')) {
     return { title: 'Edit course', section: 'Create', parent: { label: 'My courses', path: '/educator-courses' } };
   }

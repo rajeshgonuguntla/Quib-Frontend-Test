@@ -8,6 +8,8 @@ import { LandingPage } from './components/LandingPage';
 import { SignIn } from './components/SignIn';
 import { LegalPage } from './components/LegalPage';
 import { isTokenValid, ProtectedRoute, PublicOnlyRoute } from './auth';
+import { STUDIO_V2_ENABLED } from './config/features';
+import { educatorRoutes } from './educator/routes';
 import { INTERESTS_KEY } from './utils/onboardingStorage';
 
 function lazyNamed<M extends Record<string, unknown>>(
@@ -124,7 +126,10 @@ export default function App() {
               <Route path="/verify/:certId" element={<Verification />} />
               <Route path="/governments" element={<Governments />} />
               <Route path="/educators" element={<Navigate to="/" replace />} />
-              <Route path="/educator-course-builder" element={<Navigate to="/educator-studio?tab=url" replace />} />
+              <Route
+                path="/educator-course-builder"
+                element={<Navigate to={STUDIO_V2_ENABLED ? '/educator-studio' : '/educator-studio?tab=url'} replace />}
+              />
               <Route path="/course-details" element={<CourseDetails />} />
               <Route path="/course-details/:courseId" element={<CourseDetails />} />
 
@@ -148,11 +153,17 @@ export default function App() {
                   <Route path="/practice" element={<PracticePage />} />
                   <Route path="/notes" element={<NotesPage />} />
                   <Route path="/review" element={<ReviewPage />} />
-                  <Route path="/educator-studio" element={<EducatorStudio />} />
-                  <Route path="/educator-courses" element={<EducatorMyCourses />} />
-                  <Route path="/educator-analytics" element={<EducatorAnalytics />} />
+                  {STUDIO_V2_ENABLED ? (
+                    educatorRoutes()
+                  ) : (
+                    <>
+                      <Route path="/educator-studio" element={<EducatorStudio />} />
+                      <Route path="/educator-courses" element={<EducatorMyCourses />} />
+                      <Route path="/educator-analytics" element={<EducatorAnalytics />} />
+                      <Route path="/educator-courses/:courseId/edit" element={<CourseEditor />} />
+                    </>
+                  )}
                   <Route path="/admin/insights" element={<AdminInsights />} />
-                  <Route path="/educator-courses/:courseId/edit" element={<CourseEditor />} />
                   <Route path="/home" element={<Navigate to="/dashboard" replace />} />
                   <Route path="/educator/:id" element={<EducatorProfile />} />
                   <Route path="/my-quizzes" element={<Navigate to="/library?tab=saved" replace />} />

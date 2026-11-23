@@ -19,6 +19,9 @@ export function SidebarNavItem({ item, active, onClick, collapsed = false }: Sid
   return (
     <button
       type="button"
+      data-testid="nav-item"
+      data-nav-id={item.id}
+      aria-current={active ? 'page' : undefined}
       onClick={onClick}
       title={collapsed ? item.label : undefined}
       aria-label={collapsed ? item.label : undefined}
@@ -31,6 +34,7 @@ export function SidebarNavItem({ item, active, onClick, collapsed = false }: Sid
       )}
     >
       <span
+        data-accent="nav"
         className="absolute left-0 top-1/2 w-[2px] -translate-y-1/2 rounded-full bg-[var(--accent)] transition-[height] duration-150"
         style={{ height: active ? 14 : 0 }}
       />
