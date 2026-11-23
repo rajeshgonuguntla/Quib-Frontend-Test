@@ -1,4 +1,4 @@
-import type { OwnedCourseSummary } from '../../types/courseGeneration';
+import type { EnrollmentSummary } from '../../types/catalog';
 
 export type PublishedCourseRow = {
   courseId: string;
@@ -23,27 +23,23 @@ function initials(title: string): string {
   return (letters || 'C').toUpperCase();
 }
 
-function updatedLabel(iso?: string): string {
-  if (!iso) return '–';
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return '–';
-  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+function percent(value: number | null | undefined): number | null {
+  if (value == null || Number.isNaN(value)) return null;
+  return Math.round(value);
 }
 
-/** Courses this profile has published, in the My courses row shape. */
-export function toPublishedRows(courses: OwnedCourseSummary[]): PublishedCourseRow[] {
-  return courses
-    .filter((course) => course.published)
-    .map((course) => ({
-      courseId: course.courseId,
-      title: course.title,
-      initials: initials(course.title),
-      status: 'published' as const,
-      link: null,
-      subtitle: `${course.moduleCount} modules`,
-      students: null,
-      completionPct: null,
-      avgScorePct: null,
-      updatedLabel: updatedLabel(course.updatedAt ?? course.createdAt),
-    }));
+/** Every course from the profile list (the same set as View all), in the course-table row shape. */
+export function toEnrollmentRows(courses: EnrollmentSummary[]): PublishedCourseRow[] {
+  return courses.map((course) => ({
+    courseId: course.courseId,
+    title: course.title,
+    initials: initials(course.title),
+    status: 'published' as const,
+    link: null,
+    subtitle: [course.channel, course.category].filter(Boolean).join(' · ') || null,
+    students: null,
+    completionPct: percent(course.progress),
+    avgScorePct: percent(course.score),
+    updatedLabel: course.durationLabel?.trim() || '–',
+  }));
 }
