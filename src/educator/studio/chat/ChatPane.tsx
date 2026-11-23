@@ -46,13 +46,13 @@ export function ChatPane({ messages, refs = [], onRemoveRef, onSend, onGenerate,
       >
         <div data-testid="chat-thread" className="space-y-4">
           {messages.map((message) => (
-            <article key={message.id} data-testid={message.role === 'user' ? 'msg-user' : 'msg-ai'} className={message.role === 'user' ? 'flex justify-end' : ''}>
+            <article key={message.id} data-testid={message.role === 'user' ? 'msg-user' : 'msg-ai'} className={message.role === 'user' ? 'flex flex-col items-end' : ''}>
               {message.role === 'ai' ? <p className="text-label text-[10px] text-[var(--ink-faint)]">Cubit AI</p> : null}
               {message.refs && message.refs.length > 0 ? (
-                <div className="mb-1 flex flex-wrap justify-end gap-1">
+                <div className="mb-1 flex max-w-[90%] flex-wrap justify-end gap-1">
                   {message.refs.map((ref) => (
-                    <span key={ref.id} data-accent="chip" className="rounded-full bg-[var(--accent-soft)] px-2 py-0.5 text-[11px] font-semibold text-[var(--accent)]">
-                      @{ref.label}
+                    <span key={ref.id} data-accent="chip" title={ref.label} className="inline-flex h-7 max-w-full min-w-0 items-center rounded-full bg-[var(--accent-soft)] px-2.5 text-[12px] font-semibold text-[var(--accent)]">
+                      <span className="truncate">@{ref.label}</span>
                     </span>
                   ))}
                 </div>
@@ -81,8 +81,9 @@ export function ChatPane({ messages, refs = [], onRemoveRef, onSend, onGenerate,
         {refs.length > 0 ? (
           <div data-testid="ref-chips" className="mb-2 flex flex-wrap gap-1">
             {refs.map((ref) => (
-              <button key={ref.id} type="button" data-accent="chip" className="rounded-full bg-[var(--accent-soft)] px-2 py-1 text-[11px] font-semibold text-[var(--accent)]" onClick={() => onRemoveRef?.(ref.id)}>
-                @{ref.label} ×
+              <button key={ref.id} type="button" data-accent="chip" title={ref.label} aria-label={`Remove ${ref.label}`} className="inline-flex h-11 max-w-full min-w-0 items-center gap-1 rounded-full bg-[var(--accent-soft)] px-3 text-[12px] font-semibold text-[var(--accent)] md:h-8" onClick={() => onRemoveRef?.(ref.id)}>
+                <span className="truncate">@{ref.label}</span>
+                <span aria-hidden="true" className="shrink-0">×</span>
               </button>
             ))}
           </div>
