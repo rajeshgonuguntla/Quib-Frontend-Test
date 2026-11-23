@@ -105,7 +105,7 @@ interface Module {
   quiz: QuizQuestion[];
 }
 
-interface Course {
+export interface Course {
   title: string;
   description: string;
   difficulty: string;
@@ -296,6 +296,7 @@ function LearningMode({
   initialStudyTab = 'overview',
   showEditChat = false,
   onCourseEdited,
+  embedded = false,
 }: {
   course: Course;
   courseId: string;
@@ -307,6 +308,8 @@ function LearningMode({
   initialStudyTab?: StudyTab;
   showEditChat?: boolean;
   onCourseEdited?: (next: EditableCourse) => void;
+  /** Fill the parent instead of the viewport. Skips learner progress calls. */
+  embedded?: boolean;
 }) {
   const { isDark, toggleTheme } = useTheme();
   const C = getC(isDark);
@@ -415,10 +418,12 @@ function LearningMode({
   };
 
   useEffect(() => {
+    if (embedded) return;
     void reloadProgress();
-  }, [courseId]);
+  }, [courseId, embedded]);
 
   useEffect(() => {
+    if (embedded) return;
     let mounted = true;
     fetchCourseAssignmentSummary(courseId)
       .then((summary) => {
@@ -430,14 +435,14 @@ function LearningMode({
     return () => {
       mounted = false;
     };
-  }, [courseId]);
+  }, [courseId, embedded]);
 
   useEffect(() => {
-    if (!activeLessonId || !chatSignedIn) return;
+    if (embedded || !activeLessonId || !chatSignedIn) return;
     void recordLessonView(courseId, activeLessonId).catch(() => {
       /* enrolled learners only; ignore for preview / anonymous */
     });
-  }, [activeLessonId, courseId, chatSignedIn]);
+  }, [activeLessonId, courseId, chatSignedIn, embedded]);
 
   const activeLesson = allLessons.find((l) => l.id === activeLessonId);
   const activeModule =
@@ -467,7 +472,7 @@ function LearningMode({
   }, [courseId]);
 
   useEffect(() => {
-    if (!chatSignedIn || resumeAppliedRef.current) return;
+    if (embedded || !chatSignedIn || resumeAppliedRef.current) return;
     let cancelled = false;
     void fetchCourseProgress(courseId)
       .then((progress) => {
@@ -491,7 +496,7 @@ function LearningMode({
     return () => {
       cancelled = true;
     };
-  }, [courseId, chatSignedIn, lessonIdsKey]);
+  }, [courseId, chatSignedIn, lessonIdsKey, embedded]);
 
   const openLesson = (id: string) => {
     const lesson = allLessons.find((l) => l.id === id);
@@ -662,7 +667,7 @@ function LearningMode({
   );
 
   return (
-    <div style={{ height: '100vh', overflow: 'hidden', background: C.bg, color: C.text, fontFamily: 'var(--display)' }}>
+    <div data-testid={embedded ? 'course-player' : undefined} className={embedded ? 'course-player' : undefined} style={{ height: embedded ? '100%' : '100vh', minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: C.bg, color: C.text, fontFamily: 'var(--display)' }}>
       {/* Cuib module bar */}
       <div
         className="cuib-module-bar flex items-center gap-6 sm:gap-8 px-4 sm:px-10 shrink-0"
@@ -807,7 +812,9 @@ function LearningMode({
               : 'grid-cols-1 md:grid-cols-[240px_minmax(0,1fr)]'
         }`}
         style={{
-          height: 'calc(100vh - 73px)',
+          height: embedded ? undefined : 'calc(100vh - 73px)',
+          flex: embedded ? 1 : undefined,
+          minHeight: 0,
           ['--assistant-w' as string]: `${assistantWidth}px`,
         }}
       >
@@ -1349,6 +1356,30 @@ function LearningMode({
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
+
+/** The learner course player, for the admin studio to show beside the editor chat. */
+export function CoursePlayer({
+  course,
+  courseId,
+  youtubeUrl = '',
+}: {
+  course: Course;
+  courseId: string;
+  youtubeUrl?: string;
+}) {
+  return (
+    <LearningMode
+      course={course}
+      courseId={courseId}
+      youtubeUrl={youtubeUrl}
+      showCourseChat={false}
+      chatSignedIn={false}
+      onChatSignInRequired={() => {}}
+      chatSessionKey={courseId}
+      embedded
+    />
+  );
+}
 
 export function CourseDetails() {
   const { isDark, toggleTheme } = useTheme();

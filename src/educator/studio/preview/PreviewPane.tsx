@@ -11,6 +11,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
+import { YoutubeLessonPlayer } from '../../../components/YoutubeLessonPlayer';
 import type { StudioCourse, StudioItem } from '../model';
 
 const ICONS = {
@@ -75,9 +76,22 @@ function ItemView({ course, item, onAdd, onFix }: { course: StudioCourse; item: 
       </div>
       {content.kind === 'video' ? (
         <>
-          <div data-testid="view-video" className="mt-4 grid h-40 place-items-center rounded-xl bg-[var(--fill)] text-[var(--ink-faint)]">
-            <span className="inline-flex items-center gap-2 text-[13px]"><CirclePlay size={18} /> {content.duration}</span>
-          </div>
+          {content.videoId ? (
+            <div data-testid="view-video" className="mt-4 w-full overflow-hidden rounded-xl bg-[var(--fill)]" style={{ aspectRatio: '16 / 8.6' }}>
+              <YoutubeLessonPlayer
+                videoId={content.videoId}
+                title={item.fullTitle || item.title}
+                courseId={course.id}
+                lessonId={item.id}
+                trackProgress={false}
+                className="h-full w-full"
+              />
+            </div>
+          ) : (
+            <div data-testid="view-video" className="mt-4 grid h-40 place-items-center rounded-xl bg-[var(--fill)] text-[var(--ink-faint)]">
+              <span className="inline-flex items-center gap-2 text-[13px]"><CirclePlay size={18} /> {content.duration}</span>
+            </div>
+          )}
           <p className="text-label mt-5 text-[10px] text-[var(--ink-faint)]">AI notes</p>
           <ul data-testid="view-notes" className="mt-2">
             {(content.notes ?? []).map((note) => (

@@ -63,6 +63,7 @@ export interface GeneratedCoursePayload {
   category?: string;
   contentLanguage?: string;
   modules?: CourseModule[];
+  playlistUrl?: string;
   playlistVideos?: PlaylistVideo[];
 }
 
