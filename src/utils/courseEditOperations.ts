@@ -121,11 +121,98 @@ function applyModulePathSet(course: EditableCourse, remainder: string, value: un
     else if (field === 'takeaway' && typeof value === 'string') lesson.takeaway = value;
     else if (field === 'duration' && typeof value === 'string') lesson.duration = value;
     else if (field === 'type' && (value === 'video' || value === 'reading')) lesson.type = value;
+    else if (field === 'keyConcepts') {
+      const concepts = stringList(value);
+      if (!concepts) return course;
+      lesson.keyConcepts = concepts;
+    } else if (field === 'flashcards') {
+      const cards = cardList(value);
+      if (!cards) return course;
+      lesson.flashcards = cards;
+    } else if (field === 'blanks') {
+      const blanks = blankList(value);
+      if (!blanks) return course;
+      lesson.blanks = blanks;
+    } else return course;
     lessons[li] = lesson;
     modules[mi] = { ...modules[mi], lessons };
     return { ...course, modules };
   }
+  if (parts[1] === 'quiz' && parts.length >= 4) {
+    const index = Number(parts[2]);
+    const quiz = modules[mi].quiz.map((question) => ({ ...question, options: [...question.options] }));
+    if (!Number.isInteger(index) || index < 0 || index >= quiz.length) return course;
+    const question = { ...quiz[index] };
+    const field = parts[3];
+    if (field === 'question' && typeof value === 'string') question.question = value;
+    else if (field === 'answer' && typeof value === 'number') question.answer = value;
+    else if (field === 'options') {
+      const options = stringList(value);
+      if (!options) return course;
+      question.options = options;
+    } else return course;
+    quiz[index] = question;
+    modules[mi] = { ...modules[mi], quiz };
+    return { ...course, modules };
+  }
+  if (parts[1] === 'quiz' && parts.length === 2) {
+    const quiz = quizList(value);
+    if (!quiz) return course;
+    modules[mi] = { ...modules[mi], quiz };
+    return { ...course, modules };
+  }
   return course;
+}
+
+function stringList(value: unknown): string[] | null {
+  if (!Array.isArray(value)) return null;
+  const list: string[] = [];
+  for (const item of value) {
+    if (typeof item !== 'string') return null;
+    list.push(item);
+  }
+  return list;
+}
+
+function cardList(value: unknown): { front: string; back: string }[] | null {
+  if (!Array.isArray(value)) return null;
+  const cards: { front: string; back: string }[] = [];
+  for (const item of value) {
+    if (!item || typeof item !== 'object') return null;
+    const card = item as { front?: unknown; back?: unknown };
+    if (typeof card.front !== 'string' || typeof card.back !== 'string') return null;
+    cards.push({ front: card.front, back: card.back });
+  }
+  return cards;
+}
+
+function blankList(value: unknown): { sentence: string; answer: string; hint?: string }[] | null {
+  if (!Array.isArray(value)) return null;
+  const blanks: { sentence: string; answer: string; hint?: string }[] = [];
+  for (const item of value) {
+    if (!item || typeof item !== 'object') return null;
+    const blank = item as { sentence?: unknown; answer?: unknown; hint?: unknown };
+    if (typeof blank.sentence !== 'string' || typeof blank.answer !== 'string') return null;
+    blanks.push({
+      sentence: blank.sentence,
+      answer: blank.answer,
+      ...(typeof blank.hint === 'string' ? { hint: blank.hint } : {}),
+    });
+  }
+  return blanks;
+}
+
+function quizList(value: unknown): CourseModule['quiz'] | null {
+  if (!Array.isArray(value)) return null;
+  const quiz: CourseModule['quiz'] = [];
+  for (const item of value) {
+    if (!item || typeof item !== 'object') return null;
+    const question = item as { question?: unknown; options?: unknown; answer?: unknown };
+    const options = stringList(question.options);
+    if (typeof question.question !== 'string' || !options || typeof question.answer !== 'number') return null;
+    quiz.push({ question: question.question, options, answer: question.answer });
+  }
+  return quiz;
 }
 
 function applyReorderModules(course: EditableCourse, order: string[]): EditableCourse {

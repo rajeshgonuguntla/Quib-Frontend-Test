@@ -44,11 +44,13 @@ Read [CUIB.md](CUIB.md) before judging a diff. Source of truth is `src/styles/ap
 - [ ] No drive-by refactors or unrelated files.
 - [ ] No secrets (`.env`, credentials).
 - [ ] New logic has tests.
+- [ ] `npm run check` was run for this change. `npm test` covers unit, component, and integration tests. `npm run e2e` covers studio end-to-end flows, Chrome screenshot baselines, accessibility, and Chrome, Firefox, and Safari. A failure here is a block.
+- [ ] A UI change that moves a baselined studio screen updates the matching file in `e2e/studio/**/*-snapshots` in the same change.
 - [ ] User-visible UI was (or will be) checked in a browser, including a phone width if the change is mobile.
 
 **PR write-up** (when opening or updating a PR)
 - [ ] Body matches `.cursor/skills/create-pr/PR_TEMPLATE.md`: Summary, What changed, Files, Test plan, Guardrails, Risk / rollout, Screenshots.
-- [ ] No empty `- ` bullets or skipped headings. Include branch, commits vs base, tsc/lint/test results.
+- [ ] No empty `- ` bullets or skipped headings. Include branch, commits vs base, and the `npm run check` results (lint, tsc, unit/component/integration, studio e2e).
 
 ## Output
 

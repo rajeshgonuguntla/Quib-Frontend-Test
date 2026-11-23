@@ -4,17 +4,20 @@ import { fetchCourse, generateCourse, updateCourse } from '../../api/educatorApi
 import { sendEducatorAssistantMessage } from '../../api/educatorAssistantApi';
 import { useUserProfile } from '../../context/UserProfileContext';
 import { useRequireStudioV2 } from '../../hooks/useRequireStudioV2';
-import type { CourseUpdatePayload } from '../../types/courseGeneration';
+import type { CourseUpdatePayload, EditableCourse } from '../../types/courseGeneration';
 import '../../styles/studio.css';
 import { ChatPane } from './chat/ChatPane';
 import { EmptyState } from './chat/EmptyState';
 import {
   apiError,
   assistantText,
+  describeCourseEdit,
   draftThread,
   editCard,
   generationBody,
   mapGeneratedCourse,
+  proposedEdit,
+  toEditableCourse,
 } from './liveCourse';
 import {
   findCourseRow,
@@ -142,6 +145,7 @@ export function StudioPage() {
   const [hydrated, setHydrated] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const updates = useRef(new Map<string, CourseUpdatePayload>());
+  const savedCourse = useRef<EditableCourse | null>(null);
   const sessionRef = useRef<string | undefined>(undefined);
   const revisionRef = useRef<string | undefined>(undefined);
   const savingRef = useRef(false);
@@ -161,6 +165,7 @@ export function StudioPage() {
     setRefs([]);
     setPreviewOpen(false);
     updates.current.clear();
+    savedCourse.current = null;
     sessionRef.current = undefined;
     revisionRef.current = undefined;
     savingRef.current = false;
@@ -191,6 +196,7 @@ export function StudioPage() {
     setMessages([{ id: 'loading', role: 'ai', text: 'Loading the course…', pending: true }]);
     void fetchCourse(courseId).then((data) => {
       if (cancelled) return;
+      savedCourse.current = toEditableCourse(data);
       setLiveCourse(mapGeneratedCourse(data, courseId));
       setMessages([{
         id: 'ready',
@@ -230,19 +236,25 @@ export function StudioPage() {
     setMessages((current) => [...current, user, { id: pendingId, role: 'ai', text: 'Thinking…', pending: true }]);
     try {
       const res = await sendEducatorAssistantMessage(courseId, {
-        message: assistantText(text, mentionRefs),
+        message: assistantText(text, mentionRefs, course),
         ...(sessionRef.current ? { sessionId: sessionRef.current } : {}),
         ...(revisionRef.current ? { courseRevision: revisionRef.current } : {}),
       });
       if (res.sessionId) sessionRef.current = res.sessionId;
       if (res.courseRevision) revisionRef.current = res.courseRevision;
       const update = res.hasCourseChanges ? res.courseUpdate : null;
-      if (update) updates.current.set(pendingId, update);
+      const operations = res.hasCourseChanges ? (res.operations ?? null) : null;
+      const base = savedCourse.current;
+      const payload = proposedEdit(base, update, operations);
+      if (payload) {
+        updates.current.set(pendingId, payload);
+        setLiveCourse(mapGeneratedCourse(payload, courseId));
+      }
       setMessages((current) => current.map((message) => (message.id === pendingId ? {
         id: pendingId,
         role: 'ai',
         text: res.reply || 'Done.',
-        card: update ? editCard(pendingId, update) : undefined,
+        card: payload ? editCard(pendingId, describeCourseEdit(base, payload)) : undefined,
       } : message)));
     } catch (err) {
       setMessages((current) => current.map((message) => (message.id === pendingId ? {
@@ -293,6 +305,7 @@ export function StudioPage() {
     if (!live) return;
     if (status === 'rejected') {
       updates.current.delete(opId);
+      if (savedCourse.current && courseId) setLiveCourse(mapGeneratedCourse(savedCourse.current, courseId));
       setMessages((current) => withOpStatus(current, opId, 'rejected'));
       return;
     }
@@ -303,6 +316,7 @@ export function StudioPage() {
       try {
         await updateCourse(courseId, update);
         const fresh = await fetchCourse(courseId);
+        savedCourse.current = toEditableCourse(fresh);
         setLiveCourse(mapGeneratedCourse(fresh, courseId));
         setMessages((current) => withOpStatus(current, opId, 'accepted'));
       } catch (err) {
