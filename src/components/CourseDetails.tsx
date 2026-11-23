@@ -169,7 +169,7 @@ function ModuleLessonFlyout({
   module,
   origin,
   C,
-  isDark,
+  isDark: _isDark,
   activeLessonId,
   completedLessons,
   passedModules,
@@ -197,14 +197,11 @@ function ModuleLessonFlyout({
       role="menu"
       onMouseEnter={onKeepOpen}
       onMouseLeave={onClose}
-      className="fixed z-[300] max-h-[min(360px,70vh)] overflow-y-auto rounded-xl py-1.5 shadow-xl"
+      className="fixed z-[300] max-h-[min(360px,70vh)] overflow-y-auto rounded-xl border border-[var(--border)] bg-[var(--surface)] py-1.5 shadow-[var(--shadow)]"
       style={{
         top: origin.bottom + 4,
         left,
         width,
-        background: C.bg,
-        border: `1px solid ${C.border2}`,
-        boxShadow: isDark ? '0 16px 40px rgba(0,0,0,0.55)' : '0 16px 40px rgba(0,0,0,0.12)',
       }}
     >
       {module.lessons.map((lesson, i) => {
@@ -218,13 +215,13 @@ function ModuleLessonFlyout({
             onClick={() => onOpenLesson(lesson.id)}
             className="flex w-full items-center gap-2 px-3 py-2 text-left cursor-pointer"
             style={{
-              background: isActive ? (isDark ? 'rgba(225,6,0,0.1)' : 'rgba(225,6,0,0.06)') : 'transparent',
+              background: isActive ? 'var(--accent-soft)' : 'transparent',
               border: 'none',
               color: isActive ? C.text : C.text2,
             }}
           >
             {isDone ? (
-              <CheckCircle className="w-3.5 h-3.5 shrink-0" style={{ color: '#22c55e' }} />
+              <CheckCircle className="w-3.5 h-3.5 shrink-0 text-[var(--accent)]" />
             ) : lesson.type === 'video' ? (
               <PlayCircle className="w-3.5 h-3.5 shrink-0" style={{ color: isActive ? C.red : C.text3 }} />
             ) : (
@@ -248,7 +245,7 @@ function ModuleLessonFlyout({
           style={{ background: 'transparent', border: 'none', borderTop: `1px solid ${C.border}`, color: C.text2 }}
         >
           {passedModules.has(module.id) ? (
-            <CheckCircle className="w-3.5 h-3.5 shrink-0" style={{ color: '#22c55e' }} />
+            <CheckCircle className="w-3.5 h-3.5 shrink-0 text-[var(--accent)]" />
           ) : (
             <CircleHelp className="w-3.5 h-3.5 shrink-0" style={{ color: C.text3 }} />
           )}
@@ -667,16 +664,10 @@ function LearningMode({
   );
 
   return (
-    <div data-testid={embedded ? 'course-player' : undefined} className={embedded ? 'course-player' : undefined} style={{ height: embedded ? '100%' : '100vh', minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: C.bg, color: C.text, fontFamily: 'var(--display)' }}>
+    <div data-testid={embedded ? 'course-player' : undefined} className={`cuib-app ${embedded ? 'course-player' : ''}`} style={{ height: embedded ? '100%' : '100vh', minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--bg)', color: 'var(--ink)', fontFamily: 'var(--display)' }}>
       {/* Cuib module bar */}
       <div
-        className="cuib-module-bar flex items-center gap-6 sm:gap-8 px-4 sm:px-10 shrink-0"
-        style={{
-          paddingTop: 18,
-          paddingBottom: 16,
-          borderBottom: `1px solid ${C.border}`,
-          background: C.bg,
-        }}
+        className="cuib-module-bar flex shrink-0 items-center gap-6 border-b border-[var(--border)] bg-[var(--bg)] px-4 py-3.5 sm:gap-8 sm:px-10"
       >
         <Link
           to="/dashboard"
@@ -819,14 +810,7 @@ function LearningMode({
         }}
       >
         {/* Left lesson side */}
-        <aside
-          className="hidden md:flex flex-col overflow-y-auto min-h-0"
-          style={{
-            borderRight: `1px solid ${C.border}`,
-            padding: '28px 24px 24px 28px',
-            background: C.bg,
-          }}
-        >
+        <aside className="hidden min-h-0 flex-col overflow-y-auto border-r border-[var(--border)] bg-[var(--bg)] p-6 md:flex">
           {lessonActive && activeLesson ? (
             <>
               <p
@@ -924,7 +908,7 @@ function LearningMode({
         </aside>
 
         {/* Main panel */}
-        <main className="min-h-0 min-w-0 overflow-y-auto p-0 md:p-7 md:pb-20">
+        <main className="min-h-0 min-w-0 overflow-y-auto p-0 md:p-6 md:pb-20">
           <div className="flex min-h-full">
           {lessonActive && (
             <StudyTabDots
@@ -938,15 +922,7 @@ function LearningMode({
           <div className="min-h-full min-w-0 flex-1">
           {lessonActive && activeLesson && (
             <div
-              className={`min-h-full rounded-none border-0 pl-12 pr-5 pt-5 pb-24 shadow-none md:rounded-2xl md:border md:p-[26px_24px] ${
-                isDark
-                  ? 'md:shadow-[0_1px_2px_rgba(0,0,0,0.2),0_6px_24px_rgba(0,0,0,0.35)]'
-                  : 'md:shadow-[0_1px_2px_rgba(0,0,0,0.03),0_6px_20px_rgba(0,0,0,0.05)]'
-              }`}
-              style={{
-                background: C.bg,
-                borderColor: C.border,
-              }}
+              className="min-h-full rounded-none border-0 bg-[var(--bg)] pb-24 pl-12 pr-5 pt-5 shadow-none md:rounded-2xl md:border md:border-[var(--border)] md:bg-[var(--surface)] md:p-6 md:shadow-[var(--shadow)]"
             >
               {phoneKicker}
               <p
@@ -972,8 +948,6 @@ function LearningMode({
                 <StudyToolHeading
                   key={studyTab}
                   label={STUDY_TABS.find((tab) => tab.id === studyTab)?.label ?? ''}
-                  accent={C.red}
-                  isDark={isDark}
                 />
               </div>
 
@@ -1007,7 +981,7 @@ function LearningMode({
                       />
                     </div>
                   ) : activeLesson.type === 'video' ? (
-                    <div className="w-full rounded-xl p-6 mb-6 text-center text-sm" style={{ background: C.bg1, border: `1px solid ${C.border}`, color: C.text3 }}>
+                    <div className="mb-6 w-full rounded-xl border border-[var(--border)] bg-[var(--fill)] p-6 text-center text-sm text-[var(--ink-faint)]">
                       Video player unavailable for this lesson.
                     </div>
                   ) : null}
@@ -1030,8 +1004,7 @@ function LearningMode({
                   <div className="flex flex-col gap-2 mt-6">
                     <div className="flex items-center gap-3">
                       {completedLessons.has(activeLessonId) ? (
-                        <div className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-[0.82rem] font-[500]"
-                          style={{ background: 'rgba(34,197,94,0.1)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.25)' }}>
+                        <div className="flex h-11 items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--accent-soft)] px-5 text-[0.82rem] font-[500] text-[var(--accent)]">
                           <CheckCircle className="w-4 h-4" /> Completed
                         </div>
                       ) : (
@@ -1091,11 +1064,7 @@ function LearningMode({
 
           {activeQuizModule && (
             <div
-              className="min-h-full rounded-none border-0 pl-12 pr-5 pt-5 pb-24 md:rounded-2xl md:border md:p-[26px_24px]"
-              style={{
-                background: C.bg,
-                borderColor: C.border,
-              }}
+              className="min-h-full rounded-none border-0 bg-[var(--bg)] pb-24 pl-12 pr-5 pt-5 shadow-none md:rounded-2xl md:border md:border-[var(--border)] md:bg-[var(--surface)] md:p-6 md:shadow-[var(--shadow)]"
             >
               {phoneKicker}
               <p className="text-[0.7rem] mb-4 uppercase tracking-widest" style={{ color: C.text3, fontFamily: 'var(--mono)' }}>{activeQuizModule.title}</p>
@@ -1111,7 +1080,7 @@ function LearningMode({
                   const showReveal = quizSubmitted && !retrying;
                   const missed = isModuleQuizQuestionWrong(quizResult?.questionResults, qi);
                   return (
-                    <div key={qi} className="rounded-2xl p-6" style={{ background: isDark ? C.bg1 : '#ffffff', border: `1px solid ${C.border}` }}>
+                    <div key={qi} className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)]">
                       {isDark ? (
                         <p className="text-[0.875rem] font-[500] mb-4 leading-relaxed" style={{ color: C.text }}>
                           <span style={{ color: C.red, fontFamily: 'var(--mono)', fontSize: '0.72rem', marginRight: 8 }}>
@@ -1205,17 +1174,15 @@ function LearningMode({
                   )}
                   <button onClick={handleQuizSubmit}
                     disabled={Object.keys(quizAnswers).length < activeQuizModule.quiz.length}
-                    className="px-8 py-3 rounded-lg text-[0.875rem] font-[600] cursor-pointer transition-all"
-                    style={{ background: Object.keys(quizAnswers).length === activeQuizModule.quiz.length ? C.red : C.bg2, color: Object.keys(quizAnswers).length === activeQuizModule.quiz.length ? '#fff' : C.text3, border: 'none' }}>
+                    className="h-11 cursor-pointer rounded-lg bg-[var(--accent)] px-8 text-[0.875rem] font-[600] text-white disabled:bg-[var(--fill)] disabled:text-[var(--ink-faint)]">
                     Submit Quiz
                   </button>
                 </div>
               ) : (
-                <div className="rounded-2xl p-6" style={{ background: quizPassed ? 'rgba(34,197,94,0.08)' : 'rgba(225,6,0,0.06)', border: `1px solid ${quizPassed ? 'rgba(34,197,94,0.25)' : 'rgba(225,6,0,0.2)'}` }}>
+                <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)]">
                   <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0"
-                      style={{ background: quizPassed ? 'rgba(34,197,94,0.15)' : C.redDim, border: `1px solid ${quizPassed ? 'rgba(34,197,94,0.3)' : 'rgba(225,6,0,0.2)'}` }}>
-                      <span className="font-[600] tabular-nums" style={{ fontSize: '1.1rem', color: quizPassed ? '#22c55e' : C.red }}>{quizScore}/{quizTotal}</span>
+                    <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--accent-soft)]">
+                      <span className="font-[600] tabular-nums text-[1.1rem] text-[var(--accent)]">{quizScore}/{quizTotal}</span>
                     </div>
                     <div>
                       <p className="font-[600] text-[0.95rem]" style={{ color: C.text }}>{quizPassed ? 'Great work!' : 'Keep going'}</p>
@@ -1783,7 +1750,7 @@ export function CourseDetails() {
   // ── Error ──
   if (error || !course) {
     return (
-      <div style={{ minHeight: '100vh', background: C.bg, color: C.text, fontFamily: 'var(--display)', display: 'flex', flexDirection: 'column' }}>
+      <div className="cuib-app flex min-h-screen flex-col" style={{ background: 'var(--bg)', color: 'var(--ink)', fontFamily: 'var(--display)' }}>
         <CoursePageNav
           C={C}
           isDark={isDark}
@@ -1803,7 +1770,7 @@ export function CourseDetails() {
           {trialExhausted ? (
             <TrialUpgradePrompt message={error ?? "You've used your 3 free courses. Upgrade to Unlimited to continue."} onBack={handleBack} />
           ) : (
-            <div className="w-full max-w-md rounded-xl p-6" style={{ background: C.bg1, border: '1px solid rgba(225,6,0,0.3)' }}>
+            <div className="w-full max-w-md rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)]">
               <div className="flex items-start gap-3 mb-5">
                 <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: C.red }} />
                 <p className="text-sm leading-relaxed" style={{ color: C.text2 }}>{error ?? 'Something went wrong.'}</p>
@@ -1908,7 +1875,7 @@ export function CourseDetails() {
 
   // ── Course Overview ──
   return (
-    <div style={{ height: '100vh', overflow: 'hidden', background: C.bg, color: C.text, fontFamily: 'var(--display)' }}>
+    <div className="cuib-app" style={{ height: '100vh', overflow: 'hidden', background: 'var(--bg)', color: 'var(--ink)', fontFamily: 'var(--display)' }}>
       <CoursePageNav
         C={C}
         isDark={isDark}
@@ -1929,7 +1896,7 @@ export function CourseDetails() {
 
       <div className="flex min-h-0" style={{ paddingTop: 56, height: '100%' }}>
       <div className="min-w-0 flex-1 overflow-y-auto" style={{ paddingBottom: canEditCourse ? 128 : 80 }}>
-      <div className="max-w-4xl mx-auto px-6 md:px-10" style={{ paddingTop: 40 }}>
+      <div className="mx-auto max-w-4xl px-4 py-6 sm:px-10">
         {/* Header */}
         <div className="mb-10">
           <h1
@@ -1960,8 +1927,7 @@ export function CourseDetails() {
                 ? [{ icon: <PlayCircle className="w-3.5 h-3.5" />, label: `${sourcePlaylistSize} source videos` }]
                 : []),
             ].map((b) => (
-              <div key={b.label} className="flex items-center gap-2 px-4 py-2 rounded-lg text-[0.78rem] font-[500]"
-                style={{ background: C.redDim, border: `1px solid ${isDark ? 'rgba(225,6,0,0.2)' : 'rgba(225,6,0,0.12)'}`, color: C.red }}>
+              <div key={b.label} className="flex h-11 items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--accent-soft)] px-4 text-[0.78rem] font-[500] text-[var(--accent)]">
                 {b.icon}{b.label}
               </div>
             ))}
@@ -1970,8 +1936,7 @@ export function CourseDetails() {
 
         {isOwner && !isEducator && !isPublished && (
           <div
-            className="mb-8 rounded-2xl px-5 py-4 text-[0.8rem]"
-            style={{ background: C.bg1, border: `1px solid ${C.border}`, color: C.text2 }}
+            className="mb-8 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-5 py-4 text-[0.8rem] text-[var(--ink-soft)] shadow-[var(--shadow)]"
           >
             Course created. Educator accounts can publish courses to the catalog after generation.
           </div>
@@ -1982,8 +1947,7 @@ export function CourseDetails() {
             <button
               type="button"
               onClick={() => resolvedCourseId && navigate(`/educator-courses/${resolvedCourseId}/edit`)}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-[0.82rem] font-[600] cursor-pointer"
-              style={{ background: C.bg2, border: `1px solid ${C.border2}`, color: C.text2 }}
+              className="flex h-11 cursor-pointer items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 text-[0.82rem] font-[600] text-[var(--ink)] shadow-[var(--shadow)]"
             >
               <Pencil className="w-4 h-4" /> Edit course
             </button>
@@ -1992,8 +1956,7 @@ export function CourseDetails() {
                 type="button"
                 onClick={() => void handleUnpublish()}
                 disabled={publishing}
-                className="px-4 py-2 rounded-lg text-[0.82rem] font-[600] cursor-pointer disabled:opacity-60"
-                style={{ background: C.bg2, border: `1px solid ${C.border2}`, color: C.text2 }}
+                className="h-11 cursor-pointer rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 text-[0.82rem] font-[600] text-[var(--ink)] shadow-[var(--shadow)] disabled:opacity-60"
               >
                 Unpublish
               </button>
@@ -2002,8 +1965,7 @@ export function CourseDetails() {
               type="button"
               onClick={() => void handleDelete()}
               disabled={publishing}
-              className="px-4 py-2 rounded-lg text-[0.82rem] font-[600] cursor-pointer disabled:opacity-60"
-              style={{ background: 'rgba(225,6,0,0.08)', border: '1px solid rgba(225,6,0,0.2)', color: C.red }}
+              className="h-11 cursor-pointer rounded-lg border border-[var(--border)] bg-[var(--fill)] px-4 text-[0.82rem] font-[600] text-[var(--ink)] disabled:opacity-60"
             >
               Delete
             </button>
@@ -2012,8 +1974,7 @@ export function CourseDetails() {
 
         {(canPublish || (isOwner && isPublished)) && (
           <div
-            className="mb-8 rounded-2xl p-5"
-            style={{ background: C.bg1, border: `1px solid ${C.border}` }}
+            className="mb-8 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)]"
           >
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
@@ -2049,7 +2010,7 @@ export function CourseDetails() {
                     className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-[0.82rem] font-[600] cursor-pointer"
                     style={{ background: C.bg2, border: `1px solid ${C.border2}`, color: C.text2 }}
                   >
-                    {copiedLink ? <CheckCircle2 className="w-4 h-4" style={{ color: '#22c55e' }} /> : <Copy className="w-4 h-4" />}
+                    {copiedLink ? <CheckCircle2 className="h-4 w-4 text-[var(--accent)]" /> : <Copy className="h-4 w-4" />}
                     {copiedLink ? 'Copied' : 'Copy course link'}
                   </button>
                 )}
@@ -2069,8 +2030,7 @@ export function CourseDetails() {
             Course Modules
           </h2>
           <button onClick={handleStartLearning}
-            className="flex items-center gap-2 px-6 py-2.5 rounded-lg text-[0.875rem] font-[600] transition-all cursor-pointer"
-            style={{ background: C.red, color: '#fff', border: 'none', boxShadow: '0 4px 16px rgba(225,6,0,0.3)' }}
+            className="flex h-11 cursor-pointer items-center gap-2 rounded-lg bg-[var(--accent)] px-6 text-[0.875rem] font-[600] text-white"
             onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.9')}
             onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}>
             {startButtonLabel} <ArrowUpRight className="w-4 h-4" />
@@ -2081,7 +2041,7 @@ export function CourseDetails() {
           {modules.map((mod, modIdx) => {
             const isExpanded = expandedModules.has(mod.id);
             return (
-              <div key={mod.id} className="rounded-2xl overflow-hidden" style={{ border: `1px solid ${C.border}`, background: C.bg1 }}>
+              <div key={mod.id} className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow)]">
                 <button onClick={() => toggleModule(mod.id)} className="w-full flex items-center justify-between px-5 py-4 text-left cursor-pointer"
                   style={{ background: 'transparent', border: 'none' }}
                   onMouseEnter={(e) => (e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.015)')}
@@ -2092,8 +2052,7 @@ export function CourseDetails() {
                     <span className="text-[0.95rem] font-[600]" style={{ color: C.text }}>{mod.title}</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-[0.72rem] font-[500] px-3 py-1 rounded-full"
-                      style={{ background: isDark ? 'rgba(225,6,0,0.12)' : 'rgba(225,6,0,0.08)', color: C.red, border: `1px solid ${isDark ? 'rgba(225,6,0,0.2)' : 'rgba(225,6,0,0.12)'}` }}>
+                    <span className="rounded-full border border-[var(--border)] bg-[var(--accent-soft)] px-3 py-1 text-[0.72rem] font-[500] text-[var(--accent)]">
                       {(mod.lessons ?? []).length} Lessons
                     </span>
                     {isExpanded ? <ChevronDown className="w-4 h-4" style={{ color: C.text3 }} /> : <ChevronRight className="w-4 h-4" style={{ color: C.text3 }} />}
@@ -2120,16 +2079,13 @@ export function CourseDetails() {
                           </div>
                         ))}
                       </div>
-                      <div className="flex items-center gap-3 py-3 px-3 rounded-lg"
-                        style={{ background: C.redDim, border: `1px solid ${isDark ? 'rgba(225,6,0,0.15)' : 'rgba(225,6,0,0.1)'}` }}>
-                        <span className="text-sm flex-shrink-0">📝</span>
+                      <div className="flex items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--fill)] px-3 py-3">
                         <div className="flex-1">
-                          <span className="text-[0.82rem] font-[500]" style={{ color: C.red }}>Module Quiz</span>
-                          <span className="text-[0.72rem] ml-2" style={{ color: isDark ? 'rgba(225,6,0,0.6)' : 'rgba(225,6,0,0.5)' }}>· {mod.quiz?.length ?? 0} questions</span>
+                          <span className="text-[0.82rem] font-[500] text-[var(--ink)]">Module quiz</span>
+                          <span className="ml-2 text-[0.72rem] text-[var(--ink-soft)]">· {mod.quiz?.length ?? 0} questions</span>
                         </div>
                         <button onClick={handleStartLearning}
-                          className="text-[0.72rem] font-[600] px-3 py-1.5 rounded-lg cursor-pointer"
-                          style={{ background: C.red, color: '#fff', border: 'none' }}
+                          className="h-11 cursor-pointer rounded-lg bg-[var(--accent)] px-3 text-[0.72rem] font-[600] text-white"
                           onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.85')}
                           onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}>
                           Take Quiz →
@@ -2145,8 +2101,7 @@ export function CourseDetails() {
 
         <div className="mt-10 text-center">
           <button onClick={handleStartLearning}
-            className="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl text-[0.9rem] font-[600] cursor-pointer transition-all"
-            style={{ background: C.red, color: '#fff', border: 'none', boxShadow: '0 6px 24px rgba(225,6,0,0.3)' }}
+            className="inline-flex h-11 cursor-pointer items-center gap-2 rounded-lg bg-[var(--accent)] px-8 text-[0.9rem] font-[600] text-white"
             onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.9')}
             onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}>
             {startButtonLabel} <ArrowUpRight className="w-4 h-4" />
