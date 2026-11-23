@@ -1,13 +1,12 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { ChevronRight, Pencil, Plus, Search, Trash2 } from 'lucide-react';
-import { deleteCourse } from '../../api/catalogApi';
-import { fetchOwnedCourses } from '../../api/educatorApi';
+import { deleteCourse, fetchEnrollments } from '../../api/catalogApi';
 import { useRequireStudioV2 } from '../../hooks/useRequireStudioV2';
 import { PageHeader } from '../../shell/PageHeader';
 import { courseCounts, myCourseRows, myCourseStats, studioPath, visibleCourses, type CourseFilter } from '../studio/model';
 import { CourseAnalyticsPanel } from './CourseAnalyticsPanel';
-import { toPublishedRows, type PublishedCourseRow } from './publishedCourses';
+import { toEnrollmentRows, type PublishedCourseRow } from './publishedCourses';
 
 type Row = (typeof myCourseRows)[number];
 
@@ -56,14 +55,14 @@ export function MyCoursesPage({ variant = 'all' }: { variant?: 'all' | 'publishe
   useEffect(() => {
     if (!publishedOnly) return;
     let cancel = false;
-    fetchOwnedCourses()
+    fetchEnrollments()
       .then((courses) => {
-        if (!cancel) setOwned(toPublishedRows(courses));
+        if (!cancel) setOwned(toEnrollmentRows(courses));
       })
       .catch(() => {
         if (!cancel) {
           setOwned([]);
-          setLoadError('Could not load your published courses.');
+          setLoadError('Could not load your courses.');
         }
       });
     return () => {
@@ -104,7 +103,7 @@ export function MyCoursesPage({ variant = 'all' }: { variant?: 'all' | 'publishe
         title={publishedOnly ? 'Published courses' : 'My courses'}
         titleTestId="page-title"
         description={publishedOnly
-          ? 'Courses you have published on your profile.'
+          ? 'All the courses on your profile.'
           : 'Your drafts and published courses, and how students are doing in each one.'}
         actions={
           <Link to="/educator-studio" data-testid="new-course" data-accent="primary" className="inline-flex h-11 items-center gap-1.5 rounded-lg bg-[var(--accent)] px-4 text-sm font-semibold text-white">
@@ -115,7 +114,7 @@ export function MyCoursesPage({ variant = 'all' }: { variant?: 'all' | 'publishe
       {publishedOnly ? (
         <div className="mb-6 grid grid-cols-2 overflow-hidden rounded-xl border border-[var(--border)] md:grid-cols-4">
           <div data-testid="stat" className="px-4 py-3">
-            <p className="text-label text-[10px] text-[var(--ink-faint)]">Published</p>
+            <p className="text-label text-[10px] text-[var(--ink-faint)]">Courses</p>
             <p className="mt-1 text-[28px] font-semibold tracking-[-0.04em] text-[var(--ink)]">{owned?.length ?? '–'}</p>
             <p className="text-[12px] text-[var(--ink-soft)]">On your profile</p>
           </div>
@@ -167,7 +166,7 @@ export function MyCoursesPage({ variant = 'all' }: { variant?: 'all' | 'publishe
         )}
         <label className="search-box md:max-w-xs">
           <Search size={14} />
-          <input data-testid="course-search" value={query} placeholder={publishedOnly ? 'Search published courses' : 'Search your courses'} onChange={(event) => setQuery(event.target.value)} />
+          <input data-testid="course-search" value={query} placeholder={publishedOnly ? 'Search courses' : 'Search your courses'} onChange={(event) => setQuery(event.target.value)} />
         </label>
       </div>
       {notice ? (
@@ -192,10 +191,10 @@ export function MyCoursesPage({ variant = 'all' }: { variant?: 'all' | 'publishe
         <p role="alert" className="mb-3 text-[13px] text-[var(--ink-soft)]">{loadError}</p>
       ) : null}
       {publishedOnly && owned === null ? (
-        <p className="py-10 text-center text-[14px] text-[var(--ink-soft)]">Loading published courses…</p>
+        <p className="py-10 text-center text-[14px] text-[var(--ink-soft)]">Loading courses…</p>
       ) : rows.length === 0 ? (
         <p data-testid="course-empty" className="py-10 text-center text-[14px] text-[var(--ink-soft)]">
-          {publishedOnly ? 'No published courses yet.' : 'No courses match.'}
+          {publishedOnly ? 'No courses yet.' : 'No courses match.'}
         </p>
       ) : phone ? (
         <div data-testid="course-cards" className="space-y-3">
