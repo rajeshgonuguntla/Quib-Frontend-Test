@@ -1,10 +1,13 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { ChevronRight, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { deleteCourse } from '../../api/catalogApi';
+import { fetchOwnedCourses } from '../../api/educatorApi';
 import { useRequireStudioV2 } from '../../hooks/useRequireStudioV2';
 import { PageHeader } from '../../shell/PageHeader';
 import { courseCounts, myCourseRows, myCourseStats, studioPath, visibleCourses, type CourseFilter } from '../studio/model';
 import { CourseAnalyticsPanel } from './CourseAnalyticsPanel';
+import { toPublishedRows, type PublishedCourseRow } from './publishedCourses';
 
 type Row = (typeof myCourseRows)[number];
 
@@ -38,37 +41,87 @@ function useIsPhone() {
   return phone;
 }
 
-export function MyCoursesPage() {
+export function MyCoursesPage({ variant = 'all' }: { variant?: 'all' | 'published' } = {}) {
   useRequireStudioV2();
+  const publishedOnly = variant === 'published';
   const phone = useIsPhone();
   const [filter, setFilter] = useState<CourseFilter>('all');
   const [query, setQuery] = useState('');
   const [removed, setRemoved] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [owned, setOwned] = useState<PublishedCourseRow[] | null>(publishedOnly ? null : []);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  const rows = useMemo(() => visibleCourses(filter, query, removed), [filter, query, removed]);
+  useEffect(() => {
+    if (!publishedOnly) return;
+    let cancel = false;
+    fetchOwnedCourses()
+      .then((courses) => {
+        if (!cancel) setOwned(toPublishedRows(courses));
+      })
+      .catch(() => {
+        if (!cancel) {
+          setOwned([]);
+          setLoadError('Could not load your published courses.');
+        }
+      });
+    return () => {
+      cancel = true;
+    };
+  }, [publishedOnly]);
+
+  const rows = useMemo(() => {
+    if (!publishedOnly) return visibleCourses(filter, query, removed);
+    const needle = query.trim().toLowerCase();
+    return (owned ?? []).filter((row) => {
+      if (row.courseId === removed) return false;
+      if (needle && !row.title.toLowerCase().includes(needle)) return false;
+      return true;
+    });
+  }, [publishedOnly, filter, query, removed, owned]);
   const counts = useMemo(() => courseCounts(removed), [removed]);
 
-  const remove = (row: Row) => {
-    setRemoved(row.courseId);
+  const remove = (row: { courseId: string; title: string }) => {
     setOpenId(null);
-    setNotice(`Deleted “${row.title}”.`);
+    if (!publishedOnly) {
+      setRemoved(row.courseId);
+      setNotice(`Deleted “${row.title}”.`);
+      return;
+    }
+    void deleteCourse(row.courseId)
+      .then(() => {
+        setOwned((current) => (current ?? []).filter((item) => item.courseId !== row.courseId));
+        setNotice(`Deleted “${row.title}”.`);
+      })
+      .catch(() => setNotice(`Could not delete “${row.title}”.`));
   };
 
   return (
     <div className="mx-auto max-w-6xl">
       <PageHeader
         label="Create"
-        title="My courses"
+        title={publishedOnly ? 'Published courses' : 'My courses'}
         titleTestId="page-title"
-        description="Your drafts and published courses, and how students are doing in each one."
+        description={publishedOnly
+          ? 'Courses you have published on your profile.'
+          : 'Your drafts and published courses, and how students are doing in each one.'}
         actions={
           <Link to="/educator-studio" data-testid="new-course" data-accent="primary" className="inline-flex h-11 items-center gap-1.5 rounded-lg bg-[var(--accent)] px-4 text-sm font-semibold text-white">
             <Plus size={16} /> New course
           </Link>
         }
       />
+      {publishedOnly ? (
+        <div className="mb-6 grid grid-cols-2 overflow-hidden rounded-xl border border-[var(--border)] md:grid-cols-4">
+          <div data-testid="stat" className="px-4 py-3">
+            <p className="text-label text-[10px] text-[var(--ink-faint)]">Published</p>
+            <p className="mt-1 text-[28px] font-semibold tracking-[-0.04em] text-[var(--ink)]">{owned?.length ?? '–'}</p>
+            <p className="text-[12px] text-[var(--ink-soft)]">On your profile</p>
+          </div>
+        </div>
+      ) : null}
+      {!publishedOnly ? (
       <div className="mb-6 grid grid-cols-2 overflow-hidden rounded-xl border border-[var(--border)] md:grid-cols-4">
         {myCourseStats.map((stat, index) => (
           <div key={stat.label} data-testid="stat" className={`px-4 py-3 ${index > 0 ? 'border-[var(--border)] md:border-l' : ''} ${index >= 2 ? 'border-t md:border-t-0' : ''}`}>
@@ -82,7 +135,9 @@ export function MyCoursesPage() {
           </div>
         ))}
       </div>
+      ) : null}
       <div data-testid="course-filter" className="mb-3 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        {publishedOnly ? <div /> : (
         <div role="tablist" className="flex items-center gap-1">
           {([
             ['all', 'All', counts.all],
@@ -109,9 +164,10 @@ export function MyCoursesPage() {
             );
           })}
         </div>
+        )}
         <label className="search-box md:max-w-xs">
           <Search size={14} />
-          <input data-testid="course-search" value={query} placeholder="Search your courses" onChange={(event) => setQuery(event.target.value)} />
+          <input data-testid="course-search" value={query} placeholder={publishedOnly ? 'Search published courses' : 'Search your courses'} onChange={(event) => setQuery(event.target.value)} />
         </label>
       </div>
       {notice ? (
@@ -132,8 +188,15 @@ export function MyCoursesPage() {
           ) : null}
         </p>
       ) : null}
-      {rows.length === 0 ? (
-        <p data-testid="course-empty" className="py-10 text-center text-[14px] text-[var(--ink-soft)]">No courses match.</p>
+      {loadError ? (
+        <p role="alert" className="mb-3 text-[13px] text-[var(--ink-soft)]">{loadError}</p>
+      ) : null}
+      {publishedOnly && owned === null ? (
+        <p className="py-10 text-center text-[14px] text-[var(--ink-soft)]">Loading published courses…</p>
+      ) : rows.length === 0 ? (
+        <p data-testid="course-empty" className="py-10 text-center text-[14px] text-[var(--ink-soft)]">
+          {publishedOnly ? 'No published courses yet.' : 'No courses match.'}
+        </p>
       ) : phone ? (
         <div data-testid="course-cards" className="space-y-3">
           {rows.map((row) => (

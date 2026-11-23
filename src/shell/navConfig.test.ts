@@ -53,15 +53,25 @@ describe('educator nav (Studio v2)', () => {
   it('is creator-only', () => {
     expect(EDUCATOR_NAV_GROUPS.flatMap((group) => group.items.map((item) => item.id))).toEqual([
       'studio',
+      'published-courses',
       'my-courses-educator',
       'settings',
     ]);
     expect(EDUCATOR_NAV_GROUPS[0]!.items[0]!.label).toBe('Cubit Studio');
+    expect(EDUCATOR_NAV_GROUPS[0]!.items[0]!.path).toBe('/dashboard');
+    expect(EDUCATOR_NAV_GROUPS[0]!.items[1]).toMatchObject({
+      label: 'Published courses',
+      path: '/educator-courses/published',
+    });
   });
 
-  it('keeps Cubit Studio active on course threads', () => {
-    expect(isNavItemActive('/educator-studio/abc', '', 'studio', '/educator-studio')).toBe(true);
+  it('opens the learner home from Cubit Studio and stays active there', () => {
+    expect(isNavItemActive('/dashboard', '', 'studio', '/dashboard')).toBe(true);
+    expect(isNavItemActive('/educator-studio/abc', '', 'studio', '/dashboard')).toBe(true);
     expect(isNavItemActive('/educator-courses', '', 'my-courses-educator', '/educator-courses')).toBe(true);
+    expect(isNavItemActive('/educator-courses/published', '', 'published-courses', '/educator-courses/published')).toBe(true);
+    expect(isNavItemActive('/educator-courses/published', '', 'my-courses-educator', '/educator-courses')).toBe(false);
+    expect(getRouteMeta('/educator-courses/published').title).toBe('Published courses');
     expect(getRouteMeta('/educator-studio').title).toBe('Cubit Studio');
     expect(getRouteMeta('/educator-studio/abc').parent).toEqual({
       label: 'My courses',

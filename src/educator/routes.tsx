@@ -64,6 +64,7 @@ export function educatorRoutes() {
       <Route path="/educator-studio" element={<WhenAdmin admin={<StudioPage />} legacy={<EducatorStudio />} />} />
       <Route path="/educator-studio/:courseId" element={<StudioCourseEntry />} />
       <Route path="/educator-courses" element={<WhenAdmin admin={<MyCoursesPage />} legacy={<EducatorMyCourses />} />} />
+      <Route path="/educator-courses/published" element={<WhenAdmin admin={<MyCoursesPage variant="published" />} legacy={<Navigate to="/educator-courses" replace />} />} />
       <Route path="/educator-courses/:courseId/edit" element={<CourseEditorEntry />} />
       <Route
         path="/educator-analytics"
