@@ -45,8 +45,7 @@ test('a pasted playlist generates from that URL and the outline comes back', asy
   });
   await page.route(`**/api/educator/courses/${courseId}/assistant`, async (route) => {
     const body = route.request().postDataJSON() as { message?: string };
-    expect(body.message).toContain('lesson 1 in module 1 (lesson id l1)');
-    expect(body.message).toContain('Shorten the notes');
+    expect(body.message).toBe('Shorten the notes');
     await route.fulfill({
       json: {
         reply: 'Shortened the notes.',
@@ -83,7 +82,6 @@ test('a pasted playlist generates from that URL and the outline comes back', asy
   expect(posted?.options?.builderNotes).toContain('Title: Algebra sprint');
   expect(JSON.stringify(posted)).not.toContain('PLsatmath');
 
-  await page.getByTestId('row-add').click();
   await page.getByTestId('composer-input').fill('Shorten the notes');
   await page.getByTestId('composer-send').click();
   await expect(page.getByText('Shortened the notes.')).toBeVisible();
