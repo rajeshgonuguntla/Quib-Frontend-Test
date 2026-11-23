@@ -74,8 +74,8 @@
 }
 
 .studio-body.is-empty:not(.is-draft) .studio-chat-inner {
-  align-items: center;
-  justify-content: center;
+  align-items: stretch;
+  justify-content: flex-start;
 }
 
 .studio-body.chat-collapsed .studio-chat {
@@ -100,9 +100,8 @@
 
 .studio-empty {
   width: 100%;
-  max-width: 36rem;
-  padding: 24px 20px 48px;
-  text-align: center;
+  padding: 24px 40px 40px;
+  text-align: left;
 }
 
 .studio-preview {
@@ -177,6 +176,10 @@
 }
 
 @media (max-width: 767px) {
+  .studio-empty {
+    padding: 16px 16px 32px;
+  }
+
   .studio-top {
     height: 56px;
     gap: 6px;
