@@ -2,7 +2,7 @@
  * e2e/helpers/fixtures.ts — copy into the repo in PR-02.
  *
  * Every Studio spec runs in two modes:
- *   APP mode (default): against the running app (`npm run dev` with VITE_STUDIO_V2=true, VITE_STUDIO_API_MODE=mock).
+ *   APP mode (default): against the running app (`npm run dev`). An admin session sees Cubit Studio.
  *   REF mode: against the handoff kit's reference.html files. Set STUDIO_REF_DIR=/path/to/cubit-studio-handoff.
  * The same data-testid contract (see _shared/TESTIDS.md) is used in both, so a spec that passes on the
  * reference and on your branch means the branch behaves like the approved design.

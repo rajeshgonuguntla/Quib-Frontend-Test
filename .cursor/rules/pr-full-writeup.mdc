@@ -7,7 +7,7 @@ alwaysApply: true
 
 Source: `.cursor/skills/create-pr/PR_TEMPLATE.md` and `.github/PULL_REQUEST_TEMPLATE.md`.
 
-When the user asks for a PR, a code check, or a push that will be reviewed:
+When the user asks for a PR, a code check, or a push that will be reviewed, follow `.cursor/skills/create-pr/SKILL.md` from the start. Do not open a pull request from the GitHub web form, and do not use a short Summary / Test plan body.
 
 1. Run `.cursor/skills/design-guardrails` on the diff. Fail closed on blocks.
 2. Fill **every** template section before opening or updating the PR. Do not omit Files, Test plan, Guardrails, Risk / rollout, or Screenshots.
