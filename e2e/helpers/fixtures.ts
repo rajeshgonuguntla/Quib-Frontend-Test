@@ -81,6 +81,8 @@ export const test = base.extend({
       if (m.type() !== 'error') return;
       // Chrome logs this for a mocked 4xx/5xx. The app is expected to show that error in the UI.
       if (/Failed to load resource: the server responded with a status of [45]\d\d/.test(m.text())) return;
+      // Google's sign-in script logs this on localhost. It is not an app error.
+      if (/GSI_LOGGER/.test(m.text())) return;
       errors.push(m.text());
     });
     if (!isRef) await mockSession(page);
