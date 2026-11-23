@@ -1,17 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { isStudioV2Account } from './signInIntent';
+import { isAdminAccount } from './signInIntent';
 import type { UserProfile } from '../types/userProfile';
 
 function profile(role: UserProfile['role']): UserProfile {
   return { role };
 }
 
-describe('isStudioV2Account', () => {
-  it('allows only an admin', () => {
-    expect(isStudioV2Account(profile('admin'))).toBe(true);
-    expect(isStudioV2Account(profile('educator'))).toBe(false);
-    expect(isStudioV2Account(profile('learner'))).toBe(false);
-    expect(isStudioV2Account(null)).toBe(false);
-    expect(isStudioV2Account(undefined)).toBe(false);
+describe('isAdminAccount', () => {
+  it('matches the postgres admin role only', () => {
+    expect(isAdminAccount(profile('admin'))).toBe(true);
+    expect(isAdminAccount(profile('educator'))).toBe(false);
+    expect(isAdminAccount(profile('learner'))).toBe(false);
+    expect(isAdminAccount(null)).toBe(false);
+    expect(isAdminAccount(undefined)).toBe(false);
   });
 });

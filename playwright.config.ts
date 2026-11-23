@@ -23,7 +23,6 @@ export default defineConfig({
           url: baseURL,
           reuseExistingServer: true,
           env: {
-            VITE_STUDIO_V2: 'true',
             VITE_STUDIO_API_MODE: 'mock',
             BROWSER: 'none',
           },

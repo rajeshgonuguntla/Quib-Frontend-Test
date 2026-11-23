@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { STUDIO_V2_ENABLED } from '../config/features';
+import type { UserProfile } from '../types/userProfile';
 import { isEducatorWorkspaceRoute, isStudioV2Route } from './editorWorkspace';
+
+const admin = { role: 'admin' } as UserProfile;
+const educator = { role: 'educator' } as UserProfile;
 
 describe('isEducatorWorkspaceRoute', () => {
   it('keeps the course editor full-bleed', () => {
@@ -12,9 +15,11 @@ describe('isEducatorWorkspaceRoute', () => {
     expect(isEducatorWorkspaceRoute('/educator-studio/abc')).toBe(true);
   });
 
-  it('uses the studio frame only when Studio v2 is on', () => {
-    expect(isStudioV2Route('/educator-studio')).toBe(STUDIO_V2_ENABLED);
-    expect(isStudioV2Route('/educator-studio/abc')).toBe(STUDIO_V2_ENABLED);
-    expect(isStudioV2Route('/dashboard')).toBe(false);
+  it('uses the studio frame only for a postgres admin', () => {
+    expect(isStudioV2Route('/educator-studio', admin)).toBe(true);
+    expect(isStudioV2Route('/educator-studio/abc', admin)).toBe(true);
+    expect(isStudioV2Route('/educator-studio', educator)).toBe(false);
+    expect(isStudioV2Route('/educator-studio', null)).toBe(false);
+    expect(isStudioV2Route('/dashboard', admin)).toBe(false);
   });
 });

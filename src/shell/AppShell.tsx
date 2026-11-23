@@ -39,10 +39,11 @@ function MobileUpgradeFab() {
 function AppShellLayout() {
   const location = useLocation();
   const { sidebarCollapsed, setSidebarCollapsed } = useShell();
+  const { profile } = useUserProfile();
   const educatorWorkspace = isEducatorWorkspaceRoute(location.pathname);
   const courseEditor = isCourseEditorRoute(location.pathname);
 
-  if (courseEditor || isStudioV2Route(location.pathname)) {
+  if (courseEditor || isStudioV2Route(location.pathname, profile)) {
     return (
       <div className="cuib-app flex h-dvh flex-col overflow-hidden">
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
