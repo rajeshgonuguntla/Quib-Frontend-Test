@@ -4,7 +4,7 @@ import { ChevronDown, ChevronUp, Play } from 'lucide-react';
 import axios from 'axios';
 import { fetchEnrollments } from '../api/catalogApi';
 import { useUserProfile } from '../context/UserProfileContext';
-import { isAdminAccount } from '../utils/signInIntent';
+import { isEducatorAccount } from '../utils/signInIntent';
 import { getFirstName } from '../utils/userDisplay';
 import { ytThumb } from '../utils/catalogMap';
 import { StudentMasterInput } from './StudentMasterInput';
@@ -31,8 +31,8 @@ export function Dashboard() {
   const location = useLocation();
   const { profile } = useUserProfile();
   const firstName = getFirstName(profile);
-  const isAdmin = isAdminAccount(profile);
-  const sectionTitle = isAdmin ? 'Recent publishes' : 'Continue learning';
+  const studioAccount = isEducatorAccount(profile);
+  const sectionTitle = studioAccount ? 'Recent publishes' : 'Continue learning';
 
   const [inProgress, setInProgress] = useState<ProgressItem[]>([]);
   const [continueOpen, setContinueOpen] = useState(() => readContinueLearningOpen());
@@ -174,7 +174,7 @@ export function Dashboard() {
             <h2 style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--ink-soft)' }}>
               {sectionTitle}
             </h2>
-            {isAdmin ? null : (
+            {studioAccount ? null : (
               <button
                 type="button"
                 onClick={() => navigate('/my-courses')}

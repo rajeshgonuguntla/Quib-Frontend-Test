@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { useUserProfile } from '../context/UserProfileContext';
-import { isAdminAccount, clearSignInIntent } from '../utils/signInIntent';
+import { isAdminAccount, isEducatorAccount, clearSignInIntent } from '../utils/signInIntent';
 import { SIGN_IN_PATH } from '../utils/navigation';
 import { updateUserProfile } from '../api/userApi';
 import { getDisplayName } from '../utils/userDisplay';
@@ -80,8 +80,9 @@ export function Settings() {
 
   const displayName = getDisplayName(profile);
   const isAdmin = isAdminAccount(profile);
+  const studioAccount = isEducatorAccount(profile);
   const planLabel = billingPlanLabel(billing, isAdmin);
-  const showUpgrade = !!profile && !isAdmin && !(billing && hidesUpgradeCta(billing));
+  const showUpgrade = !!profile && !studioAccount && !(billing && hidesUpgradeCta(billing));
 
   return (
     <section className="browse-hero">
@@ -161,7 +162,9 @@ export function Settings() {
                   ? 'Upgrade for unlimited courses and offline downloads'
                   : isAdmin
                     ? 'Platform admin — Unlimited with no payment restrictions.'
-                    : 'Your plan is active.'}
+                    : studioAccount
+                      ? 'Unlimited with no payment restrictions.'
+                      : 'Your plan is active.'}
               </div>
             </div>
           </div>
@@ -212,18 +215,18 @@ function fmtDate(iso?: string | null): string {
 
 function BillingPanel({ onChanged }: { onChanged: () => void }) {
   const { profile } = useUserProfile();
-  const isAdmin = isAdminAccount(profile);
+  const studioAccount = isEducatorAccount(profile);
   const [status, setStatus] = useState<BillingStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [refundMsg, setRefundMsg] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isAdmin) return;
+    if (studioAccount) return;
     fetchBillingMe()
       .then(setStatus)
       .catch(() => setError('Could not load billing status.'));
-  }, [isAdmin]);
+  }, [studioAccount]);
 
   const manage = async () => {
     setBusy(true);
@@ -260,8 +263,12 @@ function BillingPanel({ onChanged }: { onChanged: () => void }) {
     <div className="settings-section">
       <div className="settings-section-title">Billing</div>
       {error && <p className="settings-row-sub">{error}</p>}
-      {isAdmin ? (
-        <p className="settings-row-sub">Platform admin — Unlimited generation with no payment restrictions.</p>
+      {studioAccount ? (
+        <p className="settings-row-sub">
+          {isAdminAccount(profile)
+            ? 'Platform admin — Unlimited generation with no payment restrictions.'
+            : 'Unlimited generation with no payment restrictions.'}
+        </p>
       ) : !status ? (
         <p className="settings-row-sub">Loading…</p>
       ) : (

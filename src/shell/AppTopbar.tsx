@@ -14,7 +14,7 @@ import {
 import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from '../components/ui/sheet';
 import { billingPlanLabel, hidesUpgradeCta } from '../api/billingApi';
 import { clearToken } from '../auth';
-import { clearSignInIntent, isAdminAccount } from '../utils/signInIntent';
+import { clearSignInIntent, isAdminAccount, isEducatorAccount } from '../utils/signInIntent';
 import { SIGN_IN_PATH } from '../utils/navigation';
 import { getDisplayName, getFirstName } from '../utils/userDisplay';
 import { AppSidebar } from './AppSidebar';
@@ -41,7 +41,7 @@ export function AppTopbar() {
   const { billing } = useShell();
   const [navOpen, setNavOpen] = useState(false);
   const isAdmin = isAdminAccount(profile);
-  const hideUpgrade = !profile || isAdmin || (billing != null && hidesUpgradeCta(billing));
+  const hideUpgrade = !profile || isEducatorAccount(profile) || (billing != null && hidesUpgradeCta(billing));
   const firstName = getFirstName(profile);
   const displayName = getDisplayName(profile);
   const planLabel = billingPlanLabel(billing, isAdmin);

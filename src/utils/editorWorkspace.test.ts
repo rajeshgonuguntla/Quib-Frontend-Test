@@ -15,10 +15,11 @@ describe('isEducatorWorkspaceRoute', () => {
     expect(isEducatorWorkspaceRoute('/educator-studio/abc')).toBe(true);
   });
 
-  it('uses the studio frame only for a postgres admin', () => {
+  it('uses the studio frame for an admin and an educator', () => {
     expect(isStudioV2Route('/educator-studio', admin)).toBe(true);
     expect(isStudioV2Route('/educator-studio/abc', admin)).toBe(true);
-    expect(isStudioV2Route('/educator-studio', educator)).toBe(false);
+    expect(isStudioV2Route('/educator-studio', educator)).toBe(true);
+    expect(isStudioV2Route('/educator-studio/abc', educator)).toBe(true);
     expect(isStudioV2Route('/educator-studio', null)).toBe(false);
     expect(isStudioV2Route('/dashboard', admin)).toBe(false);
   });

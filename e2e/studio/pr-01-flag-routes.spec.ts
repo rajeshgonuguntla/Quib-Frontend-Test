@@ -55,11 +55,13 @@ test.describe('PR-01 · flag, admin nav and routes', () => {
     else await expect(page).toHaveURL(/\/dashboard$/);
   });
 
-  test('educators do not get the studio rail', async ({ page }) => {
+  test('educators see the same rail as admins', async ({ page }) => {
     test.skip(isRef, 'reference kit still shows the educator rail');
     await mockSession(page, 'educator');
     await open(page, S.courses);
-    expect(await navIds(page)).not.toContain('studio');
+    await expect(page.getByTestId('nav-item').first()).toHaveText('Cubit Studio');
+    await expect(page.getByTestId('nav-item').nth(1)).toHaveText('Published courses');
+    expect(await navIds(page)).toEqual(['studio', 'published-courses', 'my-courses-educator', 'settings']);
     await expect(page).toHaveURL(/\/educator-courses$/);
     await expect(page.getByRole('heading', { name: 'My courses' })).toBeVisible();
   });
@@ -94,7 +96,7 @@ test.describe('PR-01 · session and API integration', () => {
     expect(await navIds(page)).toEqual(['studio', 'published-courses', 'my-courses-educator', 'settings']);
   });
 
-  test('an educator profile from /api/users/me keeps today\'s courses page', async ({ page }) => {
+  test('an educator profile from /api/users/me sees the same rail as an admin', async ({ page }) => {
     const me = page.waitForResponse((res) => new URL(res.url()).pathname === '/api/users/me');
     await mockSession(page, 'educator');
     await open(page, S.courses);
@@ -102,7 +104,7 @@ test.describe('PR-01 · session and API integration', () => {
     expect((await me).status()).toBe(200);
     await expect((await me).json()).resolves.toMatchObject({ role: 'educator' });
     await expect(page).toHaveURL(/\/educator-courses$/);
-    expect(await navIds(page)).not.toContain('studio');
+    expect(await navIds(page)).toEqual(['studio', 'published-courses', 'my-courses-educator', 'settings']);
     await expect(page.getByRole('heading', { name: 'My courses' })).toBeVisible();
   });
 
