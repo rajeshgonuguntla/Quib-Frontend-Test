@@ -24,7 +24,7 @@ export interface Screen {
 
 export type Role = 'educator' | 'admin' | 'learner';
 
-/** Fake a signed-in session for APP mode. Studio v2 is admin-only, so the default role is admin. */
+/** Fake a signed-in session for APP mode. Studio v2 is for admins and educators; the default role is admin. */
 export async function mockSession(page: Page, role: Role = 'admin'): Promise<void> {
   await page.addInitScript(() => {
     localStorage.setItem('cuib_session_exp', String(Math.floor(Date.now() / 1000) + 3600));

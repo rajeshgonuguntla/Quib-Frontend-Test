@@ -4,7 +4,7 @@ import { Sparkles } from 'lucide-react';
 import { createUnlimitedCheckout, fetchBillingMe, hasPaidSubscription, isTrialExhausted } from '../api/billingApi';
 import { useUserProfile } from '../context/UserProfileContext';
 import type { StudentCheckoutPlan } from '../lib/studentPricing';
-import { isAdminAccount } from '../utils/signInIntent';
+import { isAdminAccount, isEducatorAccount } from '../utils/signInIntent';
 import { PageHeader } from '../shell/PageHeader';
 import { StudentPricingPlans } from './StudentPricingPlans';
 import { Button } from './ui/button';
@@ -13,6 +13,7 @@ export function Upgrade() {
   const navigate = useNavigate();
   const { profile } = useUserProfile();
   const isAdmin = isAdminAccount(profile);
+  const studioAccount = isEducatorAccount(profile);
   const [searchParams] = useSearchParams();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,7 +21,7 @@ export function Upgrade() {
   const cancelled = searchParams.get('checkout') === 'cancelled';
 
   useEffect(() => {
-    if (isAdmin) return;
+    if (studioAccount) return;
     let mounted = true;
     fetchBillingMe()
       .then((me) => {
@@ -32,7 +33,7 @@ export function Upgrade() {
     return () => {
       mounted = false;
     };
-  }, [isAdmin]);
+  }, [studioAccount]);
 
   const subscribe = async (plan: StudentCheckoutPlan) => {
     setBusy(true);
@@ -65,12 +66,14 @@ export function Upgrade() {
           Checkout was cancelled. You can pick a plan whenever you’re ready.
         </p>
       )}
-      {isAdmin ? (
+      {studioAccount ? (
         <p
           className="mb-4 rounded-md border px-4 py-3 text-sm"
           style={{ borderColor: 'var(--border)', background: 'var(--fill)', color: 'var(--ink)' }}
         >
-          Platform admin accounts have full access with no payment. Checkout is not required.
+          {isAdmin
+            ? 'Platform admin accounts have full access with no payment. Checkout is not required.'
+            : 'This account has full access with no payment. Checkout is not required.'}
         </p>
       ) : alreadyUnlimited ? (
         <p
@@ -89,7 +92,7 @@ export function Upgrade() {
         </p>
       ) : null}
 
-      {isAdmin ? null : (
+      {studioAccount ? null : (
         <>
           <StudentPricingPlans
             busy={busy}

@@ -1,7 +1,7 @@
 import { lazy, type ReactNode } from 'react';
 import { Navigate, Route, useParams } from 'react-router';
 import { useUserProfile } from '../context/UserProfileContext';
-import { isAdminAccount } from '../utils/signInIntent';
+import { isEducatorAccount } from '../utils/signInIntent';
 
 const StudioPage = lazy(() =>
   import('./studio/StudioPage').then((mod) => ({ default: mod.StudioPage })),
@@ -22,11 +22,11 @@ const CourseEditor = lazy(() =>
   import('../components/CourseEditor').then((mod) => ({ default: mod.CourseEditor })),
 );
 
-/** Postgres `users.role = admin` sees Cubit Studio. Everyone else keeps today's screens. */
+/** Admins and educators see Cubit Studio. Learners keep today's screens. */
 function WhenAdmin({ admin, legacy }: { admin: ReactNode; legacy: ReactNode }) {
   const { profile, loading } = useUserProfile();
   if (loading) return null;
-  return isAdminAccount(profile) ? admin : legacy;
+  return isEducatorAccount(profile) ? admin : legacy;
 }
 
 function StudioCourseEntry() {

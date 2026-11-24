@@ -38,7 +38,7 @@ export function isAdminAccount(profile?: UserProfile | null): boolean {
   return profile?.role === 'admin';
 }
 
-/** Backend role — educator accounts always get creator tooling in the app. */
+/** Educator and admin share the Cubit Studio interface. Learners do not. */
 export function isEducatorAccount(profile?: UserProfile | null): boolean {
   return profile?.role === 'educator' || profile?.role === 'admin';
 }
@@ -66,7 +66,7 @@ export function filterNavGroups(groups: NavGroup[], showEducatorNav: boolean, pr
     ...group,
     items: group.items.filter((item) => {
       if (item.id === 'upgrade') {
-        return !isAdminAccount(profile);
+        return !isEducatorAccount(profile);
       }
       if (ADMIN_NAV_IDS.has(item.id)) {
         return isAdminAccount(profile);

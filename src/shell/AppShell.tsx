@@ -8,7 +8,7 @@ import { ShellProvider } from './ShellContext';
 import { isCourseEditorRoute, isEducatorWorkspaceRoute, isStudioV2Route } from '../utils/editorWorkspace';
 import { cn } from '../components/ui/utils';
 import { useUserProfile } from '../context/UserProfileContext';
-import { isAdminAccount } from '../utils/signInIntent';
+import { isEducatorAccount } from '../utils/signInIntent';
 import { billingPlanLabel, hidesUpgradeCta } from '../api/billingApi';
 import { useShell } from './ShellContext';
 
@@ -17,7 +17,7 @@ function MobileUpgradeFab() {
   const navigate = useNavigate();
   const { profile } = useUserProfile();
   const { billing } = useShell();
-  if (!profile || isAdminAccount(profile)) return null;
+  if (!profile || isEducatorAccount(profile)) return null;
   if (billing && hidesUpgradeCta(billing)) return null;
 
   return (
