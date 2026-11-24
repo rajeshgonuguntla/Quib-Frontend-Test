@@ -88,7 +88,8 @@ export function resolveDefaultDestination(
     return '/onboarding';
   }
   if (isEducatorAccount(profile)) {
-    return '/educator-studio';
+    // My courses keeps the creator rail on screen. Cubit Studio itself hides that sidebar.
+    return '/educator-courses';
   }
   if (CREATOR_FLOW_ENABLED && intent === 'creator') {
     return CREATOR_HOME_PATH;

@@ -31,8 +31,8 @@ describe('resolveDefaultDestination', () => {
   it('follows the postgres role, not the sign-in button', () => {
     expect(resolveDefaultDestination(profile('learner'), 'student', true)).toBe('/dashboard');
     expect(resolveDefaultDestination(profile('learner'), 'creator', true)).toBe('/dashboard');
-    expect(resolveDefaultDestination(profile('educator'), 'student', true)).toBe('/educator-studio');
-    expect(resolveDefaultDestination(profile('admin'), 'student', true)).toBe('/educator-studio');
+    expect(resolveDefaultDestination(profile('educator'), 'student', true)).toBe('/educator-courses');
+    expect(resolveDefaultDestination(profile('admin'), 'student', true)).toBe('/educator-courses');
     expect(resolveDefaultDestination(null, 'student', true)).toBe('/dashboard');
   });
 });

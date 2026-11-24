@@ -44,7 +44,7 @@ export function Dashboard() {
   useEffect(() => {
     if (profileLoading) return;
     if (studioAccount) {
-      navigate('/educator-studio', { replace: true });
+      navigate('/educator-courses', { replace: true });
       return;
     }
 

@@ -115,19 +115,21 @@ test.describe('profile based nav', () => {
     }
   });
 
-  test('an educator opening Home is sent to Cubit Studio', async ({ page }) => {
+  test('an educator opening Home sees the creator rail', async ({ page }) => {
     await mockSession(page, 'educator');
     await open(page, LEARNER_HOME);
-    await expect(page).toHaveURL(/\/educator-studio$/);
-    await expect(page.getByTestId('studio')).toBeVisible();
+    await expect(page).toHaveURL(/\/educator-courses$/);
+    await expect(page.getByTestId('app-sidebar')).toBeVisible();
+    await expect.poll(() => navIds(page)).toEqual(CREATOR_NAV);
   });
 
   test('a student sign-in still follows the educator role', async ({ page }) => {
     await page.addInitScript(() => localStorage.setItem('quib_sign_in_intent', 'student'));
     await mockSession(page, 'educator');
     await open(page, LEARNER_HOME);
-    await expect(page).toHaveURL(/\/educator-studio$/);
-    await expect(page.getByTestId('studio')).toBeVisible();
+    await expect(page).toHaveURL(/\/educator-courses$/);
+    await expect(page.getByTestId('app-sidebar')).toBeVisible();
+    await expect.poll(() => navIds(page)).toEqual(CREATOR_NAV);
   });
 });
 
