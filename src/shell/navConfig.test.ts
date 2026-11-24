@@ -23,9 +23,14 @@ describe('learner left nav', () => {
     ]);
   });
 
-  it('does not put Browse or Creators in the learner rail', () => {
+  it('does not put Browse, Creators, or Cubit Studio in the learner rail', () => {
+    expect(NAV_GROUPS).toHaveLength(1);
     expect(learnerIds).not.toContain('browse');
     expect(learnerIds).not.toContain('creators');
+    expect(learnerIds).not.toContain('studio');
+    expect(learnerIds).not.toContain('published-courses');
+    expect(learnerIds).not.toContain('my-courses-educator');
+    expect(learnerIds).not.toContain('educator-analytics');
   });
 
   it('marks the matching rail item active', () => {

@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import {
-  BarChart3,
   BookMarked,
   BookOpen,
   GraduationCap,
@@ -38,14 +37,6 @@ export const NAV_GROUPS: NavGroup[] = [
       { id: 'progress', label: 'Progress', path: '/library?tab=all', icon: <LineChart size={17} /> },
       { id: 'admin-insights', label: 'Platform insights', path: '/admin/insights', icon: <Shield size={17} /> },
       { id: 'settings', label: 'Settings', path: '/settings', icon: <Settings size={17} /> },
-    ],
-  },
-  {
-    label: 'Create',
-    items: [
-      { id: 'studio', label: 'Studio', path: '/educator-studio', icon: <GraduationCap size={17} /> },
-      { id: 'my-courses-educator', label: 'My courses', path: '/educator-courses', icon: <BookMarked size={17} /> },
-      { id: 'educator-analytics', label: 'Analytics', path: '/educator-analytics', icon: <BarChart3 size={17} /> },
     ],
   },
 ];
