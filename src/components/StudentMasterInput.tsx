@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
+import { useLocation, useNavigate } from 'react-router';
 import { GoogleLogin, type CredentialResponse } from '@react-oauth/google';
 import { ArrowRight, Upload } from 'lucide-react';
 import {
@@ -27,6 +27,9 @@ import {
   type SampleExamType,
 } from '../utils/learnerStartMode';
 import { inferExamTypeFromText, resolveExamType } from '../utils/examType';
+import { fetchEnrollments } from '../api/catalogApi';
+import { sendCourseChat, type CourseChatMessage } from '../api/courseChatApi';
+import { cubitAskError, isCubitQuestion, pickCubitAskCourse } from '../utils/cubitAsk';
 import { StandaloneNotesWorkspace } from './StandaloneNotesWorkspace';
 
 export type { LearnerStartMode, SampleExamType } from '../utils/learnerStartMode';
@@ -96,6 +99,7 @@ export function StudentMasterInput({
   submitTestId,
 }: StudentMasterInputProps) {
   const navigate = useNavigate();
+  const location = useLocation();
   const { setProfile } = useUserProfile();
   const { isDark } = useTheme();
   const [mode, setMode] = useState<LearnerStartMode>(lockMode ?? 'cubit');
@@ -108,6 +112,12 @@ export function StudentMasterInput({
   const [isSigningIn, setIsSigningIn] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const pendingRef = useRef<LearnerStartState | null>(null);
+  const cubitCourseRef = useRef<{ id: string; title: string } | null>(null);
+  const cubitHistoryRef = useRef<CourseChatMessage[]>([]);
+  const cubitAskedRef = useRef(false);
+  const [cubitReply, setCubitReply] = useState<string | null>(null);
+  const [cubitCourseTitle, setCubitCourseTitle] = useState<string | null>(null);
+  const [cubitBusy, setCubitBusy] = useState(false);
   const phraseIdx = useRef(0);
   const activeRef = useRef(true);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -183,6 +193,10 @@ export function StudentMasterInput({
       return { ok: true, pending: { signInIntent: 'student' } };
     }
 
+    if (mode === 'cubit' && isCubitQuestion(trimmed)) {
+      return { ok: true, pending: { cubitAsk: trimmed, signInIntent: 'student' } };
+    }
+
     if (isQuizMode) {
       const isYt = isYoutubePlaylistUrl(trimmed) || isYoutubeVideoUrl(trimmed);
       if (isYt) {
@@ -255,6 +269,45 @@ export function StudentMasterInput({
     });
   };
 
+  const askCubit = useCallback(async (text: string) => {
+    setCubitBusy(true);
+    setError(null);
+    try {
+      if (!cubitCourseRef.current) {
+        const course = pickCubitAskCourse(await fetchEnrollments());
+        if (!course) {
+          setError('Enroll in a course to ask Cubit.');
+          return;
+        }
+        cubitCourseRef.current = { id: course.courseId, title: course.title };
+      }
+      const course = cubitCourseRef.current;
+      const history = cubitHistoryRef.current.slice(-8);
+      const res = await sendCourseChat(course.id, text, { history });
+      const reply = res.reply?.trim() || 'Cubit did not send a reply.';
+      cubitHistoryRef.current = [
+        ...history,
+        { role: 'user', content: text },
+        { role: 'assistant', content: reply },
+      ];
+      setCubitCourseTitle(course.title);
+      setCubitReply(reply);
+      setInputValue('');
+    } catch (err) {
+      setError(cubitAskError(err));
+    } finally {
+      setCubitBusy(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const question = typeof location.state?.cubitAsk === 'string' ? location.state.cubitAsk.trim() : '';
+    if (!signedIn || !question || cubitAskedRef.current) return;
+    cubitAskedRef.current = true;
+    setMode('cubit');
+    void askCubit(question);
+  }, [askCubit, location.state, signedIn]);
+
   const submitInput = (e?: FormEvent) => {
     e?.preventDefault();
     if (!isLearnerStartModeReady(mode)) return;
@@ -263,6 +316,11 @@ export function StudentMasterInput({
 
     if (!signedIn) {
       openLandingGoogleChooser();
+      return;
+    }
+
+    if (mode === 'cubit' && isCubitQuestion(trimmed)) {
+      void askCubit(trimmed);
       return;
     }
 
@@ -533,6 +591,19 @@ export function StudentMasterInput({
         <p className="mt-2 text-xs text-[var(--accent)]" role="alert">
           {error}
         </p>
+      )}
+
+      {cubitBusy && (
+        <p className="mt-2 text-[11px] text-[var(--ink-soft)]">Asking Cubit…</p>
+      )}
+
+      {cubitReply && (
+        <div className="mt-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5">
+          {cubitCourseTitle ? (
+            <p className="font-mono text-[10px] text-[var(--ink-faint)]">{cubitCourseTitle}</p>
+          ) : null}
+          <p className="mt-1 text-[13px] leading-relaxed text-[var(--ink)]">{cubitReply}</p>
+        </div>
       )}
     </div>
   );
