@@ -21,7 +21,6 @@ function WhenAdmin({ admin, legacy }: { admin: ReactNode; legacy: ReactNode }) {
 }
 
 function StudioCourseEntry() {
-  const { courseId } = useParams();
   return (
     <WhenAdmin
       admin={<StudioPage />}
