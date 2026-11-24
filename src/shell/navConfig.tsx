@@ -55,7 +55,7 @@ export const EDUCATOR_NAV_GROUPS: NavGroup[] = [
   {
     label: 'Create',
     items: [
-      { id: 'studio', label: 'Cubit Studio', path: '/dashboard', icon: <GraduationCap size={17} /> },
+      { id: 'studio', label: 'Cubit Studio', path: '/educator-studio', icon: <GraduationCap size={17} /> },
       { id: 'published-courses', label: 'Published courses', path: '/educator-courses/published', icon: <BookOpen size={17} /> },
       { id: 'my-courses-educator', label: 'My courses', path: '/educator-courses', icon: <BookMarked size={17} /> },
     ],
@@ -87,9 +87,7 @@ export function isNavItemActive(pathname: string, _search: string, id: string, p
       || pathname.startsWith('/my-quizzes')
       || pathname.startsWith('/certificates');
   }
-  if (id === 'studio') {
-    return pathname === '/dashboard' || pathname === '/home' || pathname.startsWith('/educator-studio');
-  }
+  if (id === 'studio') return pathname.startsWith('/educator-studio');
   if (id === 'published-courses') return pathname.startsWith('/educator-courses/published');
   if (id === 'my-courses-educator') {
     return pathname.startsWith('/educator-courses') && !pathname.startsWith('/educator-courses/published');

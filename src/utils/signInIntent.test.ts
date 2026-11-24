@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isAdminAccount, isEducatorAccount } from './signInIntent';
+import { isAdminAccount, isEducatorAccount, resolveDefaultDestination } from './signInIntent';
 import type { UserProfile } from '../types/userProfile';
 
 function profile(role: UserProfile['role']): UserProfile {
@@ -21,7 +21,17 @@ describe('isEducatorAccount', () => {
     expect(isEducatorAccount(profile('admin'))).toBe(true);
     expect(isEducatorAccount(profile('educator'))).toBe(true);
     expect(isEducatorAccount(profile('learner'))).toBe(false);
+    expect(isEducatorAccount(profile('student'))).toBe(false);
     expect(isEducatorAccount(null)).toBe(false);
     expect(isEducatorAccount(undefined)).toBe(false);
+  });
+});
+
+describe('resolveDefaultDestination', () => {
+  it('sends a finished learner home and a creator to Cubit Studio', () => {
+    expect(resolveDefaultDestination(profile('learner'), 'student', true)).toBe('/dashboard');
+    expect(resolveDefaultDestination(profile('educator'), 'student', true)).toBe('/educator-studio');
+    expect(resolveDefaultDestination(profile('admin'), 'student', true)).toBe('/educator-studio');
+    expect(resolveDefaultDestination(null, 'student', true)).toBe('/dashboard');
   });
 });

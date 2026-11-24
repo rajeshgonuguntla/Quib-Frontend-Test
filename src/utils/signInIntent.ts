@@ -38,7 +38,7 @@ export function isAdminAccount(profile?: UserProfile | null): boolean {
   return profile?.role === 'admin';
 }
 
-/** Educator and admin share the Cubit Studio interface. Learners do not. */
+/** Exact postgres roles only. A learner, a missing role, or any other value stays on the learner rail. */
 export function isEducatorAccount(profile?: UserProfile | null): boolean {
   return profile?.role === 'educator' || profile?.role === 'admin';
 }
@@ -87,13 +87,10 @@ export function resolveDefaultDestination(
   if (!onboardingCompleted) {
     return '/onboarding';
   }
-  if (!CREATOR_FLOW_ENABLED) {
-    return '/dashboard';
-  }
   if (isEducatorAccount(profile)) {
-    return '/dashboard';
+    return '/educator-studio';
   }
-  if (intent === 'creator') {
+  if (CREATOR_FLOW_ENABLED && intent === 'creator') {
     return CREATOR_HOME_PATH;
   }
   return '/dashboard';

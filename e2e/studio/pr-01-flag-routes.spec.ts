@@ -8,6 +8,9 @@ const S = {
   learner: { pr: 'PR-01', state: 'Learner (flag on)', app: '/educator-courses' },
 };
 const navIds = (page: Page) => page.getByTestId('nav-item').evaluateAll((els) => els.map((e) => e.getAttribute('data-nav-id')));
+const LEARNER_NAV = ['home', 'my-courses', 'practice', 'notes', 'review', 'progress', 'settings'];
+const CREATOR_NAV = ['studio', 'published-courses', 'my-courses-educator', 'settings'];
+const LEARNER_HOME = { pr: 'PR-01', state: 'Learner home', app: '/dashboard' };
 
 test.describe('PR-01 · flag, admin nav and routes', () => {
   test('admin sees the creator-only rail: Cubit Studio, My courses, Settings', async ({ page }) => {
@@ -50,9 +53,12 @@ test.describe('PR-01 · flag, admin nav and routes', () => {
   test('learners never reach educator routes', async ({ page }) => {
     if (!isRef) await mockSession(page, 'learner');
     await open(page, S.learner);
-    expect(await navIds(page)).not.toContain('studio');
-    if (isRef) await expect(page.getByTestId('ref-location')).toHaveText('/dashboard');
-    else await expect(page).toHaveURL(/\/dashboard$/);
+    if (isRef) {
+      await expect(page.getByTestId('ref-location')).toHaveText('/dashboard');
+      return;
+    }
+    await expect(page).toHaveURL(/\/dashboard$/);
+    await expect.poll(() => navIds(page)).toEqual(LEARNER_NAV);
   });
 
   test('educators see the same rail as admins', async ({ page }) => {
@@ -71,11 +77,49 @@ test.describe('PR-01 · flag, admin nav and routes', () => {
     await page.locator('[data-testid="nav-item"][data-nav-id="studio"]').click();
     if (isRef) await expect(page.getByTestId('ref-location')).toHaveText('/educator-studio');
     else {
-      await expect(page).toHaveURL(/\/dashboard$/);
-      await expect(page.getByRole('heading', { name: /Welcome back/ })).toBeVisible();
-      await expect(page.getByRole('textbox', { name: 'YouTube URL to create a course' })).toBeVisible();
-      await expect(page.getByTestId('studio')).toHaveCount(0);
+      await expect(page).toHaveURL(/\/educator-studio$/);
+      await expect(page.getByTestId('studio')).toBeVisible();
+      await expect(page.getByTestId('studio-empty')).toBeVisible();
+      await expect(page.getByTestId('app-sidebar')).toHaveCount(0);
     }
+  });
+});
+
+test.describe('profile based nav', () => {
+  test.skip(isRef, 'reference kit does not call the app API');
+
+  test('a learner profile shows Home through Progress', async ({ page }) => {
+    await mockSession(page, 'learner');
+    await open(page, LEARNER_HOME);
+    await expect(page).toHaveURL(/\/dashboard$/);
+    await expect.poll(() => navIds(page)).toEqual(LEARNER_NAV);
+    await expect(page.getByTestId('nav-item').filter({ hasText: 'Cubit Studio' })).toHaveCount(0);
+    await expect(page.getByTestId('nav-item').filter({ hasText: 'Published courses' })).toHaveCount(0);
+  });
+
+  test('an educator profile shows the creator rail', async ({ page }) => {
+    await mockSession(page, 'educator');
+    await open(page, S.courses);
+    await expect.poll(() => navIds(page)).toEqual(CREATOR_NAV);
+    for (const label of ['Home', 'Practice', 'Notes', 'Review', 'Progress']) {
+      await expect(page.getByTestId('nav-item').filter({ hasText: label })).toHaveCount(0);
+    }
+  });
+
+  test('an admin profile shows the creator rail', async ({ page }) => {
+    await mockSession(page, 'admin');
+    await open(page, S.courses);
+    await expect.poll(() => navIds(page)).toEqual(CREATOR_NAV);
+    for (const label of ['Home', 'Practice', 'Notes', 'Review', 'Progress']) {
+      await expect(page.getByTestId('nav-item').filter({ hasText: label })).toHaveCount(0);
+    }
+  });
+
+  test('an educator opening Home is sent to Cubit Studio', async ({ page }) => {
+    await mockSession(page, 'educator');
+    await open(page, LEARNER_HOME);
+    await expect(page).toHaveURL(/\/educator-studio$/);
+    await expect(page.getByTestId('studio')).toBeVisible();
   });
 });
 

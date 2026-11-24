@@ -29,7 +29,7 @@ type ProgressItem = {
 export function Dashboard() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { profile } = useUserProfile();
+  const { profile, loading: profileLoading } = useUserProfile();
   const firstName = getFirstName(profile);
   const studioAccount = isEducatorAccount(profile);
   const sectionTitle = studioAccount ? 'Recent publishes' : 'Continue learning';
@@ -42,6 +42,12 @@ export function Dashboard() {
   }, [continueOpen]);
 
   useEffect(() => {
+    if (profileLoading) return;
+    if (studioAccount) {
+      navigate('/educator-studio', { replace: true });
+      return;
+    }
+
     const stashed = consumePendingLearnerStart();
     if (stashed) {
       navigate(stashed.path, { state: stashed.state, replace: true });
@@ -75,9 +81,10 @@ export function Dashboard() {
     if (incomingVideoUrl) {
       navigate('/course-builder', { state: { youtubeUrl: incomingVideoUrl, startTool }, replace: true });
     }
-  }, [location.state, navigate]);
+  }, [location.state, navigate, profileLoading, studioAccount]);
 
   useEffect(() => {
+    if (profileLoading || studioAccount) return;
     const load = async () => {
       try {
         const [quizzesRes, enrollments] = await Promise.all([
@@ -141,7 +148,7 @@ export function Dashboard() {
       }
     };
     void load();
-  }, [location.pathname]);
+  }, [location.pathname, profileLoading, studioAccount]);
 
   return (
     <div>
