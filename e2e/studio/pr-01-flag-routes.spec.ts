@@ -104,6 +104,7 @@ test.describe('PR-01 · session and API integration', () => {
     expect((await me).status()).toBe(200);
     await expect((await me).json()).resolves.toMatchObject({ role: 'educator' });
     await expect(page).toHaveURL(/\/educator-courses$/);
+    await expect(page.getByTestId('nav-item').first()).toHaveText('Cubit Studio');
     expect(await navIds(page)).toEqual(['studio', 'published-courses', 'my-courses-educator', 'settings']);
     await expect(page.getByRole('heading', { name: 'My courses' })).toBeVisible();
   });
