@@ -10,7 +10,7 @@ export function isStudioPath(pathname: string): boolean {
   return pathname === '/educator-studio' || pathname.startsWith('/educator-studio/');
 }
 
-/** Admins and educators get the studio frame. Learners keep the existing studio chrome. */
+/** Educator and admin get the studio frame. A learner keeps the learner shell. */
 export function isStudioV2Route(pathname: string, profile?: UserProfile | null): boolean {
   return isEducatorAccount(profile) && isStudioPath(pathname);
 }

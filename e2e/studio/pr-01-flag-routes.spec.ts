@@ -121,6 +121,14 @@ test.describe('profile based nav', () => {
     await expect(page).toHaveURL(/\/educator-studio$/);
     await expect(page.getByTestId('studio')).toBeVisible();
   });
+
+  test('a student sign-in still follows the educator role', async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem('quib_sign_in_intent', 'student'));
+    await mockSession(page, 'educator');
+    await open(page, LEARNER_HOME);
+    await expect(page).toHaveURL(/\/educator-studio$/);
+    await expect(page.getByTestId('studio')).toBeVisible();
+  });
 });
 
 test.describe('PR-01 · session and API integration', () => {

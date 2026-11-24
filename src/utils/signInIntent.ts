@@ -38,7 +38,7 @@ export function isAdminAccount(profile?: UserProfile | null): boolean {
   return profile?.role === 'admin';
 }
 
-/** Exact postgres roles only. A learner, a missing role, or any other value stays on the learner rail. */
+/** Postgres `users.role` is educator or admin. Learner, missing, and any other value stay on the learner rail. */
 export function isEducatorAccount(profile?: UserProfile | null): boolean {
   return profile?.role === 'educator' || profile?.role === 'admin';
 }
