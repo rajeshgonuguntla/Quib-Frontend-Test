@@ -98,7 +98,7 @@ export function StudentMasterInput({
   const navigate = useNavigate();
   const { setProfile } = useUserProfile();
   const { isDark } = useTheme();
-  const [mode, setMode] = useState<LearnerStartMode>(lockMode ?? 'course');
+  const [mode, setMode] = useState<LearnerStartMode>(lockMode ?? 'cubit');
   const [examType, setExamType] = useState<SampleExamType>('custom');
   const [examPinned, setExamPinned] = useState(false);
   const [inputValue, setInputValue] = useState('');
@@ -266,7 +266,7 @@ export function StudentMasterInput({
       return;
     }
 
-    if (onCourseSubmit && mode === 'course') {
+    if (onCourseSubmit && (mode === 'course' || mode === 'cubit')) {
       if (!trimmed) return;
       setError(null);
       onCourseSubmit(trimmed);
