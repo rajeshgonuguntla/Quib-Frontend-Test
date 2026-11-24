@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router';
 import { useUserProfile } from '../context/UserProfileContext';
 import { isEducatorAccount } from '../utils/signInIntent';
 
-/** Admins and educators stay. Learners and signed-out sessions go to Home. */
+/** Educator and admin stay. A learner and a signed-out session go to Home. */
 export function useRequireStudioV2() {
   const navigate = useNavigate();
   const { profile, loading } = useUserProfile();

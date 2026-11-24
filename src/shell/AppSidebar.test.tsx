@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppSidebar } from './AppSidebar';
+import { SIGN_IN_INTENT_KEY } from '../utils/signInIntent';
 
 const profileState = vi.hoisted(() => ({
   role: 'learner' as string | undefined,
@@ -32,6 +33,7 @@ function renderSidebar(pathname = '/dashboard') {
 describe('profile based nav', () => {
   beforeEach(() => {
     profileState.role = 'learner';
+    localStorage.removeItem(SIGN_IN_INTENT_KEY);
   });
 
   it('keeps a learner on Home through Progress', () => {
@@ -58,6 +60,13 @@ describe('profile based nav', () => {
 
   it('gives an admin the same creator rail', () => {
     profileState.role = 'admin';
+    renderSidebar('/educator-courses');
+    expect(navIds()).toEqual(['studio', 'published-courses', 'my-courses-educator', 'settings']);
+  });
+
+  it('keeps the creator rail for an educator even after a student sign-in', () => {
+    localStorage.setItem(SIGN_IN_INTENT_KEY, 'student');
+    profileState.role = 'educator';
     renderSidebar('/educator-courses');
     expect(navIds()).toEqual(['studio', 'published-courses', 'my-courses-educator', 'settings']);
   });

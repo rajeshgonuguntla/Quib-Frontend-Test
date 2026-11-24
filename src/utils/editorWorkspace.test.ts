@@ -22,5 +22,6 @@ describe('isEducatorWorkspaceRoute', () => {
     expect(isStudioV2Route('/educator-studio/abc', educator)).toBe(true);
     expect(isStudioV2Route('/educator-studio', null)).toBe(false);
     expect(isStudioV2Route('/dashboard', admin)).toBe(false);
+    expect(isStudioV2Route('/educator-studio', { role: 'learner' })).toBe(false);
   });
 });
