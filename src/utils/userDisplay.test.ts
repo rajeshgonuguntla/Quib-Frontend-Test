@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getAvatarLetter, getDisplayName, getFirstName } from './userDisplay';
+import { accountRoleLabel, getAvatarLetter, getDisplayName, getFirstName } from './userDisplay';
 
 describe('userDisplay', () => {
   it('does not invent a Learner / there identity before profile loads', () => {
@@ -13,5 +13,12 @@ describe('userDisplay', () => {
     expect(getDisplayName(profile)).toBe('Vamsi Rao');
     expect(getFirstName(profile)).toBe('Vamsi');
     expect(getAvatarLetter(profile)).toBe('V');
+  });
+
+  it('labels the signed-in role for the account menu', () => {
+    expect(accountRoleLabel(null)).toBe('Student');
+    expect(accountRoleLabel({ role: 'learner' })).toBe('Student');
+    expect(accountRoleLabel({ role: 'educator' })).toBe('Educator');
+    expect(accountRoleLabel({ role: 'admin' })).toBe('Admin');
   });
 });

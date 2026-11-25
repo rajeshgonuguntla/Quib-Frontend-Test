@@ -12,7 +12,7 @@ import { isEducatorAccount } from '../utils/signInIntent';
 import { billingPlanLabel, hidesUpgradeCta } from '../api/billingApi';
 import { useShell } from './ShellContext';
 
-/** Mobile-only — desktop upgrade chip lives in the sidebar under Settings. */
+/** Mobile-only — desktop Upgrade sits on the sidebar account row. */
 function MobileUpgradeFab() {
   const navigate = useNavigate();
   const { profile } = useUserProfile();
