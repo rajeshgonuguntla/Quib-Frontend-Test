@@ -9,6 +9,8 @@ import { UserAvatar } from './UserAvatar';
 import type { UserProfile } from '../types/userProfile';
 import { useShell } from '../shell/ShellContext';
 import { clearToken } from '../auth';
+import { BRAND_SUPPORT_EMAIL } from '../brand';
+import { resolveUserPlace, type UserPlace } from '../utils/userLocation';
 import {
   billingPlanLabel,
   createBillingPortal,
@@ -30,6 +32,17 @@ export function Settings() {
   const [saving, setSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', bio: '' });
+  const [place, setPlace] = useState<UserPlace | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    void resolveUserPlace().then((next) => {
+      if (active) setPlace(next);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!profile) return;
@@ -180,6 +193,18 @@ export function Settings() {
 
       <div className="settings-section">
         <div className="settings-section-title">Account</div>
+        <div className="settings-row">
+          <div className="settings-row-left">
+            <div className="settings-row-text">
+              <div className="settings-row-label">Location</div>
+              <div className="settings-row-sub">
+                {place
+                  ? `${place.label} · ${place.source === 'browser' ? 'from this browser' : place.source === 'network' ? 'from your network' : 'from your time zone'}`
+                  : 'Finding your location…'}
+              </div>
+            </div>
+          </div>
+        </div>
         <button type="button" className="settings-link" onClick={handleSignOut}>Sign out</button>
       </div>
 
@@ -187,7 +212,7 @@ export function Settings() {
 
       <div className="settings-section">
         <div className="settings-section-title">Help</div>
-        <a className="settings-link" href="mailto:support@cuib.ai">support@cuib.ai</a>
+        <a className="settings-link" href={`mailto:${BRAND_SUPPORT_EMAIL}`}>{BRAND_SUPPORT_EMAIL}</a>
         <Link className="settings-link" to="/discover?tab=courses">Browse courses</Link>
       </div>
 

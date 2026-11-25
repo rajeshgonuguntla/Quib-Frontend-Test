@@ -8,8 +8,8 @@ const S = {
   learner: { pr: 'PR-01', state: 'Learner (flag on)', app: '/educator-courses' },
 };
 const navIds = (page: Page) => page.getByTestId('nav-item').evaluateAll((els) => els.map((e) => e.getAttribute('data-nav-id')));
-const LEARNER_NAV = ['home', 'my-courses', 'practice', 'notes', 'review', 'progress', 'settings'];
-const CREATOR_NAV = ['studio', 'published-courses', 'my-courses-educator', 'settings'];
+const LEARNER_NAV = ['home', 'my-courses', 'practice', 'notes', 'review', 'progress'];
+const CREATOR_NAV = ['studio', 'published-courses', 'my-courses-educator'];
 const LEARNER_HOME = { pr: 'PR-01', state: 'Learner home', app: '/dashboard' };
 
 test.describe('PR-01 · flag, admin nav and routes', () => {
@@ -18,10 +18,10 @@ test.describe('PR-01 · flag, admin nav and routes', () => {
     await open(page, S.courses);
     await expect(page.getByTestId('nav-item').first()).toHaveText('Cubit Studio');
     if (isRef) {
-      expect(await navIds(page)).toEqual(['studio', 'my-courses-educator', 'settings']);
+      expect(await navIds(page)).toEqual(['studio', 'my-courses-educator']);
     } else {
       await expect(page.getByTestId('nav-item').nth(1)).toHaveText('Published courses');
-      expect(await navIds(page)).toEqual(['studio', 'published-courses', 'my-courses-educator', 'settings']);
+      expect(await navIds(page)).toEqual(['studio', 'published-courses', 'my-courses-educator']);
     }
     await expect(page.getByTestId('nav-item').filter({ hasText: 'Analytics' })).toHaveCount(0);
     await expect(page.getByTestId('nav-item').locator('.badge, [data-testid="nav-badge"]')).toHaveCount(0);
@@ -67,7 +67,7 @@ test.describe('PR-01 · flag, admin nav and routes', () => {
     await open(page, S.courses);
     await expect(page.getByTestId('nav-item').first()).toHaveText('Cubit Studio');
     await expect(page.getByTestId('nav-item').nth(1)).toHaveText('Published courses');
-    expect(await navIds(page)).toEqual(['studio', 'published-courses', 'my-courses-educator', 'settings']);
+    expect(await navIds(page)).toEqual(['studio', 'published-courses', 'my-courses-educator']);
     await expect(page).toHaveURL(/\/educator-courses$/);
     await expect(page.getByRole('heading', { name: 'My courses' })).toBeVisible();
   });
@@ -147,7 +147,7 @@ test.describe('PR-01 · session and API integration', () => {
     await expect((await me).json()).resolves.toMatchObject({ id: 'e2e-user', role: 'admin' });
     expect((await billing).status()).toBe(200);
     expect((await stats).status()).toBe(200);
-    expect(await navIds(page)).toEqual(['studio', 'published-courses', 'my-courses-educator', 'settings']);
+    expect(await navIds(page)).toEqual(['studio', 'published-courses', 'my-courses-educator']);
   });
 
   test('an educator profile from /api/users/me sees the same rail as an admin', async ({ page }) => {
@@ -159,7 +159,7 @@ test.describe('PR-01 · session and API integration', () => {
     await expect((await me).json()).resolves.toMatchObject({ role: 'educator' });
     await expect(page).toHaveURL(/\/educator-courses$/);
     await expect(page.getByTestId('nav-item').first()).toHaveText('Cubit Studio');
-    expect(await navIds(page)).toEqual(['studio', 'published-courses', 'my-courses-educator', 'settings']);
+    expect(await navIds(page)).toEqual(['studio', 'published-courses', 'my-courses-educator']);
     await expect(page.getByRole('heading', { name: 'My courses' })).toBeVisible();
   });
 

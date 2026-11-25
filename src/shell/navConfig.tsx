@@ -41,7 +41,7 @@ export const NAV_GROUPS: NavGroup[] = [
   },
 ];
 
-/** Creator rail when Studio v2 is on. Settings stays a footer item in AppSidebar. */
+/** Creator rail when Studio v2 is on. Settings opens from the sidebar account name. */
 export const EDUCATOR_NAV_GROUPS: NavGroup[] = [
   {
     label: 'Create',

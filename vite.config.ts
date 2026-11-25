@@ -1,11 +1,13 @@
 import { defineConfig } from 'vitest/config';
+  import { loadEnv } from 'vite';
   import react from '@vitejs/plugin-react';
   import tailwindcss from '@tailwindcss/vite';
   import path from 'path';
 
-  const apiTarget = process.env.VITE_API_BASE_URL || 'http://localhost:8451';
-
-  export default defineConfig({
+  export default defineConfig(({ mode }) => {
+    const env = loadEnv(mode, process.cwd(), '');
+    const apiTarget = env.DEV_API_PROXY || 'http://localhost:8451';
+    return {
     plugins: [react(), tailwindcss()],
     resolve: {
       extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
@@ -67,7 +69,18 @@ import { defineConfig } from 'vitest/config';
         '/api': {
           target: apiTarget,
           changeOrigin: true,
-          secure: false,
+          secure: apiTarget.startsWith('https'),
+          cookieDomainRewrite: '',
+          headers: { 'X-Forwarded-Proto': 'http' },
+          configure: (proxy) => {
+            proxy.on('proxyRes', (proxyRes) => {
+              const cookies = proxyRes.headers['set-cookie'];
+              if (!cookies) return;
+              proxyRes.headers['set-cookie'] = cookies.map((cookie) =>
+                cookie.replace(/;\s*Secure/gi, '').replace(/;\s*Domain=[^;]*/gi, ''),
+              );
+            });
+          },
         },
       },
     },
@@ -83,4 +96,5 @@ import { defineConfig } from 'vitest/config';
       setupFiles: ['src/test/setup.ts'],
       include: ['src/**/*.test.{ts,tsx}'],
     },
+  };
   });

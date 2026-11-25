@@ -33,7 +33,7 @@ export function clearSignInIntent(): void {
   localStorage.removeItem(SIGN_IN_INTENT_KEY);
 }
 
-/** Cuib platform administrators only — not educators. Matches Postgres `users.role`. */
+/** Cubit platform administrators only — not educators. Matches Postgres `users.role`. */
 export function isAdminAccount(profile?: UserProfile | null): boolean {
   return profile?.role === 'admin';
 }

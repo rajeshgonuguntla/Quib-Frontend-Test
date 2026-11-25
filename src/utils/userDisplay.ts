@@ -68,6 +68,13 @@ export function getInitials(profile: UserProfile | null | undefined): string {
   return '?';
 }
 
+/** Label under the signed-in name. Missing and learner both read as Student. */
+export function accountRoleLabel(profile: UserProfile | null | undefined): string {
+  if (profile?.role === 'admin') return 'Admin';
+  if (profile?.role === 'educator') return 'Educator';
+  return 'Student';
+}
+
 export function getCertificateRecipientName(profile: UserProfile | null | undefined): string {
   if (!profile) return 'Learner';
   return profile.certificateDisplayName?.trim() || getDisplayName(profile);

@@ -1,8 +1,8 @@
 import type { Page } from '@playwright/test';
 import { test, expect, open, isRef, mockSession } from '../helpers/fixtures';
 
-const LEARNER_NAV = ['home', 'my-courses', 'practice', 'notes', 'review', 'progress', 'settings'];
-const CREATOR_NAV = ['studio', 'published-courses', 'my-courses-educator', 'settings'];
+const LEARNER_NAV = ['home', 'my-courses', 'practice', 'notes', 'review', 'progress'];
+const CREATOR_NAV = ['studio', 'published-courses', 'my-courses-educator'];
 const navIds = (page: Page) => page.getByTestId('nav-item').evaluateAll((els) => els.map((el) => el.getAttribute('data-nav-id')));
 
 const screen = (app: string) => ({ pr: 'PR-01', state: 'Role shell', app });

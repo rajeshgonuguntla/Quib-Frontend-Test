@@ -1,20 +1,29 @@
 import { useNavigate } from 'react-router';
+import { LogOut, Settings } from 'lucide-react';
 import { SidebarNavItem } from '../components/SidebarNavItem';
+import { UserAvatar } from '../components/UserAvatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '../components/ui/dropdown-menu';
 import { EDUCATOR_NAV_GROUPS, NAV_GROUPS, isNavItemActive, type NavItem } from './navConfig';
-import { filterNavGroups, isEducatorExperience, isEducatorAccount } from '../utils/signInIntent';
+import { clearSignInIntent, filterNavGroups, isEducatorExperience, isEducatorAccount } from '../utils/signInIntent';
 import { useUserProfile } from '../context/UserProfileContext';
 import { useShell } from './ShellContext';
 import { billingPlanLabel, hidesUpgradeCta } from '../api/billingApi';
+import { clearToken } from '../auth';
+import { SIGN_IN_PATH } from '../utils/navigation';
+import { accountRoleLabel, getDisplayName } from '../utils/userDisplay';
 
 type AppSidebarProps = {
   pathname: string;
   search: string;
   onNavigate?: () => void;
-  /** `drawer` = mobile sheet — keep Settings in normal flow (mt-auto was pushing it off-screen). */
+  /** `drawer` = mobile sheet. Settings stays inside the account name, not the link list. */
   layout?: 'sidebar' | 'drawer';
 };
-
-const FOOTER_NAV_IDS = new Set(['settings']);
 
 function NavList({
   items,
@@ -60,29 +69,84 @@ function NavList({
   );
 }
 
-function SidebarUpgradeChip({ onNavigate, collapsed }: { onNavigate?: () => void; collapsed?: boolean }) {
+function SidebarAccount({ onNavigate, collapsed }: { onNavigate?: () => void; collapsed?: boolean }) {
   const navigate = useNavigate();
-  const { profile } = useUserProfile();
+  const { profile, loading: profileLoading, setProfile } = useUserProfile();
   const { billing } = useShell();
-  if (!profile || isEducatorAccount(profile)) return null;
-  if (billing && hidesUpgradeCta(billing)) return null;
-  if (collapsed) return null;
+  const displayName = getDisplayName(profile);
+  const learner = Boolean(profile) && !isEducatorAccount(profile);
+  const showUpgrade = learner && !(billing && hidesUpgradeCta(billing));
+  const subtitle = learner ? billingPlanLabel(billing, false) : accountRoleLabel(profile);
+
+  const go = (path: string) => {
+    navigate(path);
+    onNavigate?.();
+  };
+
+  const handleSignOut = () => {
+    clearToken();
+    clearSignInIntent();
+    setProfile(null);
+    onNavigate?.();
+    navigate(SIGN_IN_PATH);
+  };
 
   return (
-    <div className="cuib-upgrade-chip mt-3">
-      <span className="text-[12.5px] font-semibold text-[var(--ink-soft)]">
-        {billingPlanLabel(billing, false)}
-      </span>
-      <button
-        type="button"
-        onClick={() => {
-          navigate('/upgrade');
-          onNavigate?.();
-        }}
-        className="rounded-full bg-[var(--accent)] px-4 py-[9px] text-[12.5px] font-bold text-white transition-opacity hover:opacity-[0.88] active:scale-95"
-      >
-        Upgrade
-      </button>
+    <div className={collapsed ? 'flex justify-center' : 'flex items-center gap-2'}>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            className={
+              collapsed
+                ? 'flex size-11 items-center justify-center rounded-full outline-none'
+                : 'flex min-h-11 min-w-0 flex-1 items-center gap-2.5 rounded-xl text-left outline-none'
+            }
+            aria-label="Account menu"
+          >
+            <UserAvatar profile={profile} size="md" variant="mono" />
+            {collapsed ? null : (
+              <span className="min-w-0">
+                <span className="block truncate text-[14px] font-semibold leading-4 text-[var(--ink)]">
+                  {displayName || (profileLoading ? 'Loading…' : 'Account')}
+                </span>
+                <span className="mt-0.5 block truncate font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--ink-faint)]">
+                  {subtitle}
+                </span>
+              </span>
+            )}
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          side="top"
+          align="start"
+          className="z-[80] w-[220px] rounded-xl border-[var(--border)] bg-[var(--surface)] p-1.5 text-[var(--ink)] shadow-[var(--shadow)]"
+        >
+          <DropdownMenuItem
+            onClick={() => go('/settings')}
+            className="min-h-11 cursor-pointer gap-3 rounded-lg px-3 text-[14px] font-medium text-[var(--ink)] focus:bg-[var(--fill)] focus:text-[var(--ink)]"
+          >
+            <Settings size={16} className="text-[var(--ink-soft)]" />
+            Settings
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={handleSignOut}
+            className="min-h-11 cursor-pointer gap-3 rounded-lg px-3 text-[14px] font-medium text-[var(--ink)] focus:bg-[var(--fill)] focus:text-[var(--ink)]"
+          >
+            <LogOut size={16} className="text-[var(--ink-soft)]" />
+            Log out
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      {!collapsed && showUpgrade ? (
+        <button
+          type="button"
+          onClick={() => go('/upgrade')}
+          className="shrink-0 text-[14px] font-semibold text-[var(--accent)]"
+        >
+          Upgrade
+        </button>
+      ) : null}
     </div>
   );
 }
@@ -100,7 +164,6 @@ export function AppSidebar({ pathname, search, onNavigate, layout = 'sidebar' }:
 
   const primaryItems: NavItem[] = [];
   const createItems: NavItem[] = [];
-  const footerItems: NavItem[] = [];
 
   for (const group of navGroups) {
     if (group.label === 'Create') {
@@ -108,9 +171,8 @@ export function AppSidebar({ pathname, search, onNavigate, layout = 'sidebar' }:
       continue;
     }
     for (const item of group.items) {
-      // Drawer: keep Settings with primary links so it isn't stuck below the fold.
-      if (!isDrawer && FOOTER_NAV_IDS.has(item.id)) footerItems.push(item);
-      else primaryItems.push(item);
+      if (item.id === 'settings') continue;
+      primaryItems.push(item);
     }
   }
 
@@ -155,19 +217,10 @@ export function AppSidebar({ pathname, search, onNavigate, layout = 'sidebar' }:
       </div>
 
       <div
-        className={isDrawer ? 'mt-4 shrink-0 pt-4' : 'mt-auto shrink-0 pt-4'}
+        className={isDrawer ? 'mt-4 shrink-0 pt-3' : 'mt-auto shrink-0 pt-3'}
         style={{ borderTop: '1px solid var(--border)' }}
       >
-        {footerItems.length > 0 ? (
-          <NavList
-            items={footerItems}
-            pathname={pathname}
-            search={search}
-            onNavigate={onNavigate}
-            collapsed={collapsed}
-          />
-        ) : null}
-        {studioV2Rail ? null : <SidebarUpgradeChip onNavigate={onNavigate} collapsed={collapsed} />}
+        <SidebarAccount onNavigate={onNavigate} collapsed={collapsed} />
       </div>
     </nav>
   );

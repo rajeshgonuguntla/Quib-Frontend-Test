@@ -26,9 +26,11 @@ function loadLibrary(): StandaloneNotesLibrary {
 type StandaloneNotesWorkspaceProps = {
   /** `below` is Notes tab only — dashboard / landing keep the side library. */
   libraryLayout?: 'side' | 'below';
+  /** Fill the expanded search card instead of a short standalone editor. */
+  fill?: boolean;
 };
 
-export function StandaloneNotesWorkspace({ libraryLayout = 'side' }: StandaloneNotesWorkspaceProps) {
+export function StandaloneNotesWorkspace({ libraryLayout = 'side', fill = false }: StandaloneNotesWorkspaceProps) {
   const libraryBelow = libraryLayout === 'below';
   const [library, setLibrary] = useState<StandaloneNotesLibrary>(() => loadLibrary());
   const [panelOpen, setPanelOpen] = useState(false);
@@ -130,9 +132,10 @@ export function StandaloneNotesWorkspace({ libraryLayout = 'side' }: StandaloneN
   const libraryVisible = libraryBelow || panelOpen;
 
   return (
-    <div className="relative z-[1]">
+    <div className={cn('relative z-[1]', fill && 'h-full min-h-0')}>
       <div
         className={cn(
+          fill && 'h-full min-h-0',
           libraryBelow
             ? 'flex flex-col gap-2'
             : cn('grid gap-0', panelOpen ? 'md:grid-cols-[minmax(0,1fr)_220px]' : 'grid-cols-1'),
@@ -147,10 +150,11 @@ export function StandaloneNotesWorkspace({ libraryLayout = 'side' }: StandaloneN
           showMyNotesControl={!libraryBelow}
           ariaLabel="Notes"
           className={cn(
-            'overflow-hidden rounded-2xl shadow-[var(--shadow)]',
-            !libraryBelow && panelOpen && 'md:rounded-r-none',
+            'overflow-hidden',
+            fill ? 'flex h-full min-h-0 flex-col rounded-none shadow-none' : 'rounded-2xl shadow-[var(--shadow)]',
+            !libraryBelow && panelOpen && !fill && 'md:rounded-r-none',
           )}
-          minHeightClassName="min-h-[200px] max-h-[420px]"
+          minHeightClassName={fill ? 'min-h-[160px] flex-1 overflow-y-auto' : 'min-h-[200px] max-h-[420px]'}
           onPersist={onPersist}
         />
 
@@ -158,6 +162,7 @@ export function StandaloneNotesWorkspace({ libraryLayout = 'side' }: StandaloneN
           <aside
             className={cn(
               'flex flex-col border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow)]',
+              fill && 'min-h-0 overflow-y-auto md:h-full',
               libraryBelow
                 ? 'rounded-2xl'
                 : 'mt-2 rounded-2xl md:mt-0 md:border-l-0 md:rounded-l-none md:rounded-r-2xl md:shadow-none',

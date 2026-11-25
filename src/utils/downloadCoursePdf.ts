@@ -626,5 +626,5 @@ export async function downloadCoursePdf(course: DownloadableCourse): Promise<voi
   });
 
   addFooter(doc, doc.getNumberOfPages());
-  doc.save(`${slugify(course.title)}-cuib-course.pdf`);
+  doc.save(`${slugify(course.title)}-cubit-course.pdf`);
 }

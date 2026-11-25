@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { ChevronDown, ChevronUp, Play } from 'lucide-react';
 import axios from 'axios';
+import { useAuthSessionKey } from '../auth';
 import { fetchEnrollments } from '../api/catalogApi';
 import { useUserProfile } from '../context/UserProfileContext';
 import { isEducatorAccount } from '../utils/signInIntent';
@@ -13,6 +14,7 @@ import {
   readContinueLearningOpen,
   writeContinueLearningOpen,
 } from '../utils/dashboardContinueLearning';
+import { dismissDashboardWelcome, isWelcomeDismissed } from '../utils/dashboardWelcome';
 
 type ProgressItem = {
   id: string;
@@ -34,12 +36,18 @@ export function Dashboard() {
   const studioAccount = isEducatorAccount(profile);
   const sectionTitle = studioAccount ? 'Recent publishes' : 'Continue learning';
 
+  const sessionKey = useAuthSessionKey();
   const [inProgress, setInProgress] = useState<ProgressItem[]>([]);
   const [continueOpen, setContinueOpen] = useState(() => readContinueLearningOpen());
+  const [showWelcome, setShowWelcome] = useState(() => !isWelcomeDismissed(sessionKey));
 
   useEffect(() => {
     writeContinueLearningOpen(continueOpen);
   }, [continueOpen]);
+
+  useEffect(() => {
+    setShowWelcome(!isWelcomeDismissed(sessionKey));
+  }, [sessionKey]);
 
   useEffect(() => {
     if (profileLoading) return;
@@ -152,14 +160,22 @@ export function Dashboard() {
 
   return (
     <div>
-      <h1
-        className="mb-5"
-        style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-0.015em', color: 'var(--ink)' }}
-      >
-        {firstName ? `Welcome back, ${firstName}` : 'Welcome back'}
-      </h1>
+      {showWelcome ? (
+        <h1
+          className="mb-5"
+          style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-0.015em', color: 'var(--ink)' }}
+        >
+          {firstName ? `Welcome back, ${firstName}` : 'Welcome back'}
+        </h1>
+      ) : null}
 
-      <StudentMasterInput />
+      <StudentMasterInput
+        greetingVisible={showWelcome}
+        onChatOpen={() => {
+          dismissDashboardWelcome(sessionKey);
+          setShowWelcome(false);
+        }}
+      />
 
       <div className="relative my-5">
         <div className="h-px bg-[var(--border)]" />

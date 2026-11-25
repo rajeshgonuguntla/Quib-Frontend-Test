@@ -38,7 +38,10 @@ describe('profile based nav', () => {
 
   it('keeps a learner on Home through Progress', () => {
     renderSidebar();
-    expect(navIds()).toEqual(['home', 'my-courses', 'practice', 'notes', 'review', 'progress', 'settings']);
+    expect(navIds()).toEqual(['home', 'my-courses', 'practice', 'notes', 'review', 'progress']);
+    expect(screen.getByRole('button', { name: 'Account menu' })).toBeInTheDocument();
+    expect(screen.getByText('Free plan')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Upgrade' })).toBeInTheDocument();
     expect(screen.queryByText('Cubit Studio')).not.toBeInTheDocument();
     expect(screen.queryByText('Published courses')).not.toBeInTheDocument();
   });
@@ -46,13 +49,13 @@ describe('profile based nav', () => {
   it('keeps a missing role on the learner rail', () => {
     profileState.role = undefined;
     renderSidebar();
-    expect(navIds()).toEqual(['home', 'my-courses', 'practice', 'notes', 'review', 'progress', 'settings']);
+    expect(navIds()).toEqual(['home', 'my-courses', 'practice', 'notes', 'review', 'progress']);
   });
 
   it('gives an educator the creator rail', () => {
     profileState.role = 'educator';
     renderSidebar('/educator-courses');
-    expect(navIds()).toEqual(['studio', 'published-courses', 'my-courses-educator', 'settings']);
+    expect(navIds()).toEqual(['studio', 'published-courses', 'my-courses-educator']);
     expect(screen.queryByText('Home')).not.toBeInTheDocument();
     expect(screen.queryByText('Practice')).not.toBeInTheDocument();
     expect(screen.queryByText('Progress')).not.toBeInTheDocument();
@@ -61,13 +64,13 @@ describe('profile based nav', () => {
   it('gives an admin the same creator rail', () => {
     profileState.role = 'admin';
     renderSidebar('/educator-courses');
-    expect(navIds()).toEqual(['studio', 'published-courses', 'my-courses-educator', 'settings']);
+    expect(navIds()).toEqual(['studio', 'published-courses', 'my-courses-educator']);
   });
 
   it('keeps the creator rail for an educator even after a student sign-in', () => {
     localStorage.setItem(SIGN_IN_INTENT_KEY, 'student');
     profileState.role = 'educator';
     renderSidebar('/educator-courses');
-    expect(navIds()).toEqual(['studio', 'published-courses', 'my-courses-educator', 'settings']);
+    expect(navIds()).toEqual(['studio', 'published-courses', 'my-courses-educator']);
   });
 });

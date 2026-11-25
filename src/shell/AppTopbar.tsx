@@ -4,21 +4,9 @@ import { Menu, Moon, Sun, X } from 'lucide-react';
 import { useTheme } from '../components/ThemeContext';
 import { UserAvatar } from '../components/UserAvatar';
 import { useUserProfile } from '../context/UserProfileContext';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '../components/ui/dropdown-menu';
 import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from '../components/ui/sheet';
-import { billingPlanLabel, hidesUpgradeCta } from '../api/billingApi';
-import { clearToken } from '../auth';
-import { clearSignInIntent, isAdminAccount, isEducatorAccount } from '../utils/signInIntent';
-import { SIGN_IN_PATH } from '../utils/navigation';
-import { getDisplayName, getFirstName } from '../utils/userDisplay';
+import { getDisplayName } from '../utils/userDisplay';
 import { AppSidebar } from './AppSidebar';
-import { useShell } from './ShellContext';
 import { CUBIT_LOGO } from '../cubit/subjects';
 
 function AppMark() {
@@ -37,21 +25,9 @@ export function AppTopbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { isDark, toggleTheme } = useTheme();
-  const { profile, loading: profileLoading, setProfile } = useUserProfile();
-  const { billing } = useShell();
+  const { profile, loading: profileLoading } = useUserProfile();
   const [navOpen, setNavOpen] = useState(false);
-  const isAdmin = isAdminAccount(profile);
-  const hideUpgrade = !profile || isEducatorAccount(profile) || (billing != null && hidesUpgradeCta(billing));
-  const firstName = getFirstName(profile);
   const displayName = getDisplayName(profile);
-  const planLabel = billingPlanLabel(billing, isAdmin);
-
-  const handleSignOut = () => {
-    clearToken();
-    clearSignInIntent();
-    setProfile(null);
-    navigate(SIGN_IN_PATH);
-  };
 
   const goProfile = () => {
     setNavOpen(false);
@@ -127,50 +103,6 @@ export function AppTopbar() {
         >
           {isDark ? <Sun size={17} /> : <Moon size={17} />}
         </button>
-
-        <DropdownMenu modal>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              className="flex size-10 items-center justify-center overflow-hidden rounded-full border border-[var(--border)] bg-[var(--fill)] outline-none transition-colors hover:border-[var(--ink-faint)]"
-              aria-label="Open profile menu"
-            >
-              <UserAvatar profile={profile} size="md" variant="default" className="size-full" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="end"
-            className="z-[80] w-[220px] rounded-xl border-[var(--border)] bg-[var(--surface)] p-2 text-[var(--ink)] shadow-[var(--shadow)]"
-          >
-            <div className="flex items-center justify-between gap-2.5 rounded-[10px] px-2 py-2">
-              <div className="flex min-w-0 items-center gap-2.5">
-                <UserAvatar profile={profile} size="md" variant="default" />
-                <div className="min-w-0">
-                  <p className="truncate text-[13px] font-semibold leading-snug">
-                    {firstName || (profileLoading ? 'Loading…' : 'Account')}
-                  </p>
-                  <p className="text-[11px] text-[var(--ink-faint)]">{planLabel}</p>
-                </div>
-              </div>
-              {!hideUpgrade && (
-                <button
-                  type="button"
-                  onClick={() => navigate('/upgrade')}
-                  className="shrink-0 text-[11px] font-semibold text-[var(--accent)] hover:opacity-65"
-                >
-                  Upgrade
-                </button>
-              )}
-            </div>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={handleSignOut}
-              className="cursor-pointer text-[13px] text-[var(--ink-faint)] focus:text-[var(--ink)]"
-            >
-              Sign out
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
       </div>
     </>
   );
