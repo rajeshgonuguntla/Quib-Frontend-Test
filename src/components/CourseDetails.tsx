@@ -665,7 +665,7 @@ function LearningMode({
 
   return (
     <div data-testid={embedded ? 'course-player' : undefined} className={`cuib-app ${embedded ? 'course-player' : ''}`} style={{ height: embedded ? '100%' : '100vh', minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--bg)', color: 'var(--ink)', fontFamily: 'var(--display)' }}>
-      {/* Cuib module bar */}
+      {/* Cubit module bar */}
       <div
         className="cuib-module-bar flex shrink-0 items-center gap-6 border-b border-[var(--border)] bg-[var(--bg)] px-4 py-3.5 sm:gap-8 sm:px-10"
       >
@@ -793,7 +793,7 @@ function LearningMode({
         />
       )}
 
-      {/* Cuib 3-col layout */}
+      {/* Cubit 3-col layout */}
       <div
         className={`grid flex-1 min-h-0 overflow-hidden ${
           showEditChat

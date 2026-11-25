@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Outlet, useLocation, useNavigate } from 'react-router';
 import { AnimatePresence } from 'framer-motion';
@@ -11,6 +12,7 @@ import { useUserProfile } from '../context/UserProfileContext';
 import { isEducatorAccount } from '../utils/signInIntent';
 import { billingPlanLabel, hidesUpgradeCta } from '../api/billingApi';
 import { useShell } from './ShellContext';
+import { resolveUserPlace } from '../utils/userLocation';
 
 /** Mobile-only — desktop Upgrade sits on the sidebar account row. */
 function MobileUpgradeFab() {
@@ -34,6 +36,15 @@ function MobileUpgradeFab() {
       </button>
     </div>
   );
+}
+
+function RememberUserPlace() {
+  const { profile } = useUserProfile();
+  useEffect(() => {
+    if (!profile) return;
+    void resolveUserPlace();
+  }, [profile]);
+  return null;
 }
 
 function AppShellLayout() {
@@ -95,6 +106,7 @@ function AppShellLayout() {
       </div>
 
       {!educatorWorkspace && <MobileUpgradeFab />}
+      <RememberUserPlace />
     </div>
   );
 }

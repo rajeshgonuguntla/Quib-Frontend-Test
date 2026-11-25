@@ -4,8 +4,9 @@ import axios from 'axios';
 import { Button } from './Button';
 import { Card } from './Card';
 import { Award, Download, Copy, Linkedin, CheckCircle, QrCode } from 'lucide-react';
-import { QuibLogo, QuibLogoMark } from './QuibLogo';
+import { BRAND_DOMAIN } from '../brand';
 import { useUserProfile } from '../context/UserProfileContext';
+import { QuibLogo, QuibLogoMark } from './QuibLogo';
 import { getCertificateRecipientName } from '../utils/userDisplay';
 
 type CertApi = {
@@ -62,7 +63,7 @@ export function Certificate() {
       score: cert?.scorePercent ?? 0,
       date: issueDate,
       certificateId: code,
-      verificationUrl: code ? `cuib.ai/verify/${code}` : '',
+      verificationUrl: code ? `${BRAND_DOMAIN}/verify/${code}` : '',
     };
   }, [cert, profile]);
 

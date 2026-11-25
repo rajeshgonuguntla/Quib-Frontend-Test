@@ -102,6 +102,10 @@ type StudentMasterInputProps = {
   lockMode?: LearnerStartMode;
   /** Studio uses the same bar, then keeps the URL in the studio chat. */
   onCourseSubmit?: (url: string) => void;
+  /** Dashboard greeting is still on screen, so the open card can sit under it. */
+  greetingVisible?: boolean;
+  /** Fires once when the first chat window opens. */
+  onChatOpen?: () => void;
   inputTestId?: string;
   submitTestId?: string;
 };
@@ -120,6 +124,8 @@ export function StudentMasterInput({
   signedIn = true,
   lockMode,
   onCourseSubmit,
+  greetingVisible = false,
+  onChatOpen,
   inputTestId,
   submitTestId,
 }: StudentMasterInputProps) {
@@ -164,11 +170,11 @@ export function StudentMasterInput({
   const activeRef = useRef(true);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const cubitOpen = chatWindows.length > 0;
-
   const rememberWindows = (next: ChatWindow[]) => {
+    const opening = windowsRef.current.length === 0 && next.length > 0;
     windowsRef.current = next;
     setChatWindows(next);
+    if (opening) onChatOpen?.();
   };
 
   const patchWindow = (id: string, patch: Partial<ChatWindow>) => {
@@ -346,10 +352,12 @@ export function StudentMasterInput({
     }
     setChatsMenuOpen(false);
   }, [mode]);
-  const fillToBottom = cubitOpen && !onCourseSubmit;
   const isQuizMode = mode === 'quiz';
   const isNotesMode = mode === 'notes';
   const isFlashcardsMode = mode === 'flashcards';
+  const modeChatOpen = chatWindows.some((window) => window.mode === mode);
+  const anyChatOpen = chatWindows.length > 0;
+  const fillToBottom = anyChatOpen && !onCourseSubmit;
   const showTypewriter = !focused && !inputValue.trim();
   const phrases = isQuizMode
     ? QUIZ_PHRASES
@@ -530,10 +538,10 @@ export function StudentMasterInput({
   });
 
   useEffect(() => {
-    if (!cubitOpen) return;
+    if (!modeChatOpen) return;
     const tick = window.setInterval(() => setNow(chatStamp()), 30_000);
     return () => window.clearInterval(tick);
-  }, [cubitOpen]);
+  }, [modeChatOpen]);
 
   useEffect(() => {
     const list = tabListRef.current;
@@ -546,7 +554,7 @@ export function StudentMasterInput({
   }, [activeWindowId, chatWindows.length]);
 
   useEffect(() => {
-    if (!cubitOpen) return;
+    if (!modeChatOpen) return;
     const onKey = (event: KeyboardEvent) => {
       if (event.key.toLowerCase() !== 't' || event.altKey || event.shiftKey) return;
       if (!event.metaKey && !event.ctrlKey) return;
@@ -556,7 +564,7 @@ export function StudentMasterInput({
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [cubitOpen]);
+  }, [modeChatOpen]);
 
   useEffect(() => {
     if (!chatsMenuOpen) return;
@@ -761,12 +769,10 @@ export function StudentMasterInput({
         </div>
       )}
 
-      <div className={cn('relative', !lockMode && (cubitOpen ? '-mt-5' : 'pt-5'))}>
-        {!lockMode && !cubitOpen ? startTabRow('top') : null}
+      <div className={cn('relative', !lockMode && (fillToBottom ? (greetingVisible ? '-mt-5' : '') : 'pt-5'))}>
+        {!lockMode && !fillToBottom ? startTabRow('top') : null}
 
-        {isNotesMode && !cubitOpen ? (
-          <StandaloneNotesWorkspace />
-        ) : (
+        {!isNotesMode || anyChatOpen ? (
           <div
             ref={cardRef}
             className={cn(
@@ -777,7 +783,7 @@ export function StudentMasterInput({
             )}
             style={fillHeight != null ? { height: fillHeight } : undefined}
           >
-            {cubitOpen ? (
+            {modeChatOpen ? (
               <div className="relative z-20 flex shrink-0 items-stretch rounded-t-2xl border-b border-[var(--border)] bg-[var(--surface)] pl-1 pr-2">
                 <div
                   ref={tabListRef}
@@ -843,7 +849,7 @@ export function StudentMasterInput({
                       setChatsQuery('');
                       setChatsMenuOpen((open) => !open);
                     }}
-                    className="flex h-11 items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2.5 text-[13px] font-medium text-[var(--ink)]"
+                    className="flex h-11 items-center gap-1.5 rounded-lg px-2.5 text-[13px] font-medium text-[var(--ink)]"
                   >
                     <List size={14} strokeWidth={2.2} />
                     <span className="hidden sm:inline">All chats</span>
@@ -901,7 +907,7 @@ export function StudentMasterInput({
                       type="button"
                       onClick={openNewChat}
                       aria-label="New chat"
-                      className="peer flex size-11 items-center justify-center rounded-lg border border-[var(--border)] text-[var(--ink)]"
+                      className="peer flex size-11 items-center justify-center rounded-lg text-[var(--ink)]"
                     >
                       <Plus size={16} strokeWidth={2.2} />
                     </button>
@@ -922,12 +928,16 @@ export function StudentMasterInput({
                   ? 'min-h-0 flex-1 grid-rows-[1fr]'
                   : cn(
                     'transition-[grid-template-rows] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] motion-reduce:transition-none',
-                    cubitOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
+                    modeChatOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
                   ),
               )}
             >
               <div className="min-h-0 overflow-hidden">
-                {cubitQuestion ? (
+                {isNotesMode ? (
+                  <div className="h-full min-h-0 overflow-y-auto">
+                    <StandaloneNotesWorkspace fill />
+                  </div>
+                ) : cubitQuestion ? (
                   <div
                     className={cn(
                       'flex flex-col overflow-y-auto border-b border-[var(--border)] px-4 py-3',
@@ -962,7 +972,7 @@ export function StudentMasterInput({
                 ) : null}
               </div>
             </div>
-          {cubitOpen && !lockMode ? startTabRow('bar') : null}
+          {fillToBottom && !lockMode ? startTabRow('bar') : null}
           <form
             onSubmit={submitInput}
             className="flex min-h-12 shrink-0 items-center"
@@ -1105,16 +1115,18 @@ export function StudentMasterInput({
             </div>
           </form>
           </div>
-        )}
+        ) : null}
+
+        {isNotesMode && !anyChatOpen ? <StandaloneNotesWorkspace /> : null}
       </div>
 
-      {!error && isNotesMode && (
+      {!error && isNotesMode && !anyChatOpen && (
         <p className="mt-2 text-[11px] leading-snug text-[var(--ink-faint)]">
           Tap My notes for your library. Pick a note on the right to open it here. Drafts save on this device.
         </p>
       )}
 
-      {!error && !cubitOpen && !isQuizMode && !isNotesMode && (
+      {!error && !modeChatOpen && !isQuizMode && !isNotesMode && (
         <p className="mt-2 text-[11px] leading-snug text-[var(--ink-faint)]">
           {signedIn
             ? isFlashcardsMode
@@ -1124,7 +1136,7 @@ export function StudentMasterInput({
         </p>
       )}
 
-      {error && !cubitOpen && (
+      {error && !modeChatOpen && (
         <p className="mt-2 text-xs text-[var(--accent)]" role="alert">
           {error}
         </p>
