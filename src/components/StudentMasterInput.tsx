@@ -27,9 +27,9 @@ import {
   type SampleExamType,
 } from '../utils/learnerStartMode';
 import { inferExamTypeFromText, resolveExamType } from '../utils/examType';
-import { fetchEnrollments } from '../api/catalogApi';
-import { sendCourseChat, type CourseChatMessage } from '../api/courseChatApi';
-import { cubitAskError, isCubitQuestion, pickCubitAskCourse } from '../utils/cubitAsk';
+import { sendCubitChat } from '../api/cubitChatApi';
+import { type CourseChatMessage } from '../api/courseChatApi';
+import { cubitAskError, isCubitQuestion } from '../utils/cubitAsk';
 import {
   CHAT_STRIP_LIMIT,
   chatsForMenu,
@@ -145,7 +145,6 @@ export function StudentMasterInput({
   const cardRef = useRef<HTMLDivElement>(null);
   const [fillHeight, setFillHeight] = useState<number | null>(null);
   const pendingRef = useRef<LearnerStartState | null>(null);
-  const cubitCourseRef = useRef<{ id: string; title: string } | null>(null);
   const cubitHistoryRef = useRef<CourseChatMessage[]>([]);
   const cubitAskedRef = useRef(false);
   const windowSeq = useRef(1);
@@ -592,19 +591,8 @@ export function StudentMasterInput({
     setError(null);
     const stillHere = () => activeWindowIdRef.current === windowId;
     try {
-      if (!cubitCourseRef.current) {
-        const course = pickCubitAskCourse(await fetchEnrollments());
-        if (!course) {
-          const message = 'Enroll in a course to ask Cubit.';
-          patchWindow(windowId, { error: message, busy: false });
-          if (stillHere()) setError(message);
-          return;
-        }
-        cubitCourseRef.current = { id: course.courseId, title: course.title };
-      }
-      const course = cubitCourseRef.current;
       const history = cubitHistoryRef.current.slice(-8);
-      const res = await sendCourseChat(course.id, text, { history });
+      const res = await sendCubitChat(text, history);
       const reply = res.reply?.trim() || 'Cubit did not send a reply.';
       const nextHistory = [
         ...history,
@@ -613,7 +601,6 @@ export function StudentMasterInput({
       ];
       patchWindow(windowId, {
         reply,
-        courseTitle: course.title,
         history: nextHistory,
         busy: false,
         error: null,
@@ -622,7 +609,6 @@ export function StudentMasterInput({
       });
       if (stillHere()) {
         cubitHistoryRef.current = nextHistory;
-        setCubitCourseTitle(course.title);
         setCubitReply(reply);
       }
     } catch (err) {
